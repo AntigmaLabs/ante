@@ -1,5 +1,12 @@
 # Changelog
 
+## v0.preview.28 - 2026-05-21
+
+- Support global `~/.ante/AGENTS.md` alongside project AGENTS.md
+- Update OpenAI model catalog and provider selector fallback
+- Add generic LLM model listing across providers
+- Re-enable antix smoke test in release workflow
+
 ## v0.preview.27 - 2026-05-19
 
 - Add OpenAI Responses WebSocket transport (opt-in)

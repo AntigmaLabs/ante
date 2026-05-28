@@ -170,7 +170,8 @@ pub struct SubagentMetadata {
 
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]
 pub struct ProviderSpec {
-    pub name: String,
+    #[serde(alias = "name")]
+    pub id: String,
     pub display_name: String,
     pub base_url: String,
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
@@ -280,7 +281,10 @@ fn elide(s: &str, max: usize) -> std::borrow::Cow<'_, str> {
 
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]
 pub struct ModelSpec {
-    pub name: String,
+    #[serde(alias = "name")]
+    pub id: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub display_name: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub description: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -383,7 +387,8 @@ mod tests {
 
     fn model_spec(name: &str) -> ModelSpec {
         ModelSpec {
-            name: name.to_string(),
+            id: name.to_string(),
+            display_name: None,
             description: None,
             temperature: None,
             top_p: None,
@@ -397,7 +402,7 @@ mod tests {
 
     fn provider_spec(name: &str) -> ProviderSpec {
         ProviderSpec {
-            name: name.to_string(),
+            id: name.to_string(),
             display_name: name.to_string(),
             base_url: format!("https://api.{name}.test/v1"),
             preferred_models: vec![model_spec("preferred-model")],
@@ -454,7 +459,7 @@ mod tests {
         assert!(matches!(
             decoded,
             Op::UpdateSession(SessionUpdate { model })
-                if model.name == "gpt-5.4" && model.temperature == Some(0.2)
+                if model.id == "gpt-5.4" && model.temperature == Some(0.2)
         ));
     }
 
@@ -474,8 +479,8 @@ mod tests {
         assert!(matches!(
             decoded,
             Evt::SessionUpdated(payload)
-                if payload.model.name == "claude-sonnet-4-6"
-                    && payload.provider.name == "anthropic"
+                if payload.model.id == "claude-sonnet-4-6"
+                    && payload.provider.id == "anthropic"
                     && payload.provider.base_url == "https://api.anthropic.test/v1"
                     && payload.provider.preferred_models.len() == 1
                     && payload.session_id == session_id

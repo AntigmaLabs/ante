@@ -5,10 +5,10 @@ supported.
 
 ## Claude Code
 
-Rust client for [Claude Code](https://code.claude.com/docs/en/cli-reference),
+Rust client for [Claude Code](https://code.claude.com/docs/en/cli-reference).
 
-Other SDK
--[Python SDK](https://github.com/anthropics/claude-agent-sdk-python).
+Other SDKs:
+- [Python SDK](https://github.com/anthropics/claude-agent-sdk-python).
 
 ### Long-lived agent runtime
 
@@ -23,7 +23,7 @@ top of Claude Code.
 
 ### What it provides
 
-- `Claude::connect(options)` then `query` / `send_user_message` for sessions;
+- `Claude::connect(options)` then `query` / `send_user_text` for sessions;
   call `shutdown` when done
 - typed control helpers (`set_model`, `set_permission_mode`, `interrupt`,
   `rewind_files`, `get_mcp_status`, …)
