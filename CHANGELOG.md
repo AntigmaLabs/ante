@@ -1,5 +1,16 @@
 # Changelog
 
+## v0.preview.29 - 2026-05-28
+
+- Add Claude Opus 4.7/4.8 and GPT-5.5-pro to the model catalog
+- Drop the retired Gemini 3.1 Flash Lite preview model
+- Add user model overrides to customize built-in model specs
+- Handle malformed user model config entries leniently
+- Use explicit OPENAI_COMPATIBLE_API_KEY for OpenAI-compatible providers
+- Fix persisting of empty sessions
+- Fix status bar truncation and clipping of overflowing hyperlinks
+- Dependency updates
+
 ## v0.preview.28 - 2026-05-21
 
 - Support global `~/.ante/AGENTS.md` alongside project AGENTS.md
