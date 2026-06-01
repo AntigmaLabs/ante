@@ -5,7 +5,7 @@ edition = "2024"
 
 [dependencies]
 serde = "1.0.228"
-serde_json = "1.0.145"
+serde_json = "1.0.150"
 thiserror = "2.0.17"
 tokio = { version = "1.52.3", features = ["io-util", "macros", "process", "rt-multi-thread"] }
 which = "8.0.0"

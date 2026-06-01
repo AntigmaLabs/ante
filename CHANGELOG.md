@@ -1,5 +1,20 @@
 # Changelog
 
+## v0.preview.30 - 2026-05-31
+
+- Add `ante rage` command to bundle a bug report
+- Persist tool approvals via "always allow" and store allow/ask/deny rules in settings.json
+- Let Edit create a new file via an empty `old_string`
+- Suggest a similar path when Edit targets a missing file
+- Handle CRLF files correctly in Read/Edit
+- Harden Edit/Write filesystem guards
+- Allow arbitrary model ids for explicit providers
+- Improve OpenRouter provider defaults
+- Improve responsiveness of grep/glob searches
+- Fix character-based output truncation
+- Fix image decode limits
+- Dependency updates
+
 ## v0.preview.29 - 2026-05-28
 
 - Add Claude Opus 4.7/4.8 and GPT-5.5-pro to the model catalog

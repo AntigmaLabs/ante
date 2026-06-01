@@ -150,6 +150,9 @@ pub enum ReviewDecision {
     Accept,
     Skip,
     AcceptForSession,
+    /// Approve and persist an allow rule to settings.json so the same call is
+    /// auto-approved across future sessions ("always allow").
+    AcceptAlways,
     Abort,
 }
 
