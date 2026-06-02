@@ -1,5 +1,13 @@
 # Changelog
 
+## v0.preview.31 - 2026-06-02
+
+- Wrap markdown table content in narrow TUI views
+- Fix approval prompt wrapping
+- Use bundled webpki TLS roots for all HTTP clients
+- Use a blocking HTTP client for OTLP telemetry exporters
+- Speed up file searches by pruning VCS directories during traversal
+
 ## v0.preview.30 - 2026-05-31
 
 - Add `ante rage` command to bundle a bug report
