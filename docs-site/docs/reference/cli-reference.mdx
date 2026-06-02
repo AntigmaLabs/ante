@@ -17,6 +17,7 @@ ante [OPTIONS] [COMMAND]
 | `ante serve` | Run a long-lived JSONL or WebSocket protocol server. |
 | `ante gateway` | Run the Slack / Discord channel gateway. |
 | `ante update` | Check for the latest Ante release and install it if available. |
+| `ante rage` | Collect a redacted bug-report bundle (logs + environment) to share with the Ante team. |
 
 ## `ante`
 
@@ -137,6 +138,45 @@ The update command checks for a newer Ante release and installs it when one is a
 ante update
 ante update nightly
 ante update --channel stable
+```
+
+## `ante rage`
+
+```bash
+ante rage [OPTIONS]
+```
+
+When something goes wrong, `ante rage` gathers the context the Ante team needs to investigate into a single shareable archive that you can attach to a GitHub issue. By default it writes `./ante-rage-<timestamp>.tar.gz` and prints a short summary. Nothing is uploaded — the bundle stays local until you share it.
+
+Secrets are redacted before anything is written. API keys and OAuth tokens are reported only as present/absent (never their values), credentials embedded in URLs and known token shapes are masked, conversation transcripts and system prompts are excluded, and `~/.ante/auth/*.json` and `channels.json` are never included.
+
+The archive contains:
+
+| File | Contents |
+|---|---|
+| `report.md` | Ante version, OS/architecture, shell, git branch, the resolved model/provider, a provider authentication table (present/absent), and a redaction notice. |
+| `env.txt` | Ante-relevant environment variables. Safe values are shown verbatim; known secrets appear as `<SET>` / `<UNSET>` only. |
+| `settings.redacted.json` | `~/.ante/settings.json` with secrets removed (MCP server credentials are stripped). |
+| `catalog.redacted.json` | `~/.ante/catalog.json` with secrets removed, included only when a custom catalog exists. |
+| `logs/` | Recent application and crash logs, filtered and scrubbed. `DEBUG`/`TRACE` lines are dropped so request bodies never enter the bundle. |
+
+By default the newest logs are collected, up to 10 files or 10 MB (crash logs are always prioritized). Use `--since` to collect everything within a time window instead.
+
+| Flag | Description |
+|---|---|
+| `--output <PATH>` | Write the bundle to this path instead of `./ante-rage-<timestamp>.tar.gz`. |
+| `--no-compress` | Leave the staging folder uncompressed instead of producing a `.tar.gz`. |
+| `--verbose-logs` | Also include `DEBUG`/`TRACE` log lines. Conversation transcripts and system prompts are still excluded. |
+| `--since <DURATION>` | Collect every log modified within the window, ignoring the file-count and size limits. Accepts `<n>d`, `<n>h`, `<n>m`, or a bare number of days (for example `7d`, `48h`, `90m`, `2`). |
+| `-h`, `--help` | Print command help. |
+
+### Examples
+
+```bash
+ante rage
+ante rage --output ./ante-bug.tar.gz
+ante rage --since 7d
+ante rage --no-compress
 ```
 
 ## Output Formats
