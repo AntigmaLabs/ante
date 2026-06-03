@@ -118,7 +118,13 @@ pub enum TurnEndStatus {
         reason: Option<String>,
     },
     Error {
-        message: String,
+        /// One-line summary (the top of the error chain), e.g.
+        /// "turn exited with error: failed to stream chat".
+        headline: String,
+        /// Expanded cause shown as indented child rows beneath the headline,
+        /// e.g. ["HTTP 400 Bad Request", "<server-provided message>"]. May be
+        /// empty when there is nothing useful to add.
+        details: Vec<String>,
     },
 }
 
