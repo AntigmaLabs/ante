@@ -18,6 +18,7 @@ ante [OPTIONS] [COMMAND]
 | `ante gateway` | Run the Slack / Discord channel gateway. |
 | `ante update` | Check for the latest Ante release and install it if available. |
 | `ante rage` | Collect a redacted bug-report bundle (logs + environment) to share with the Ante team. |
+| `ante catalog` | Print the loaded provider/model catalog as JSON. |
 
 ## `ante`
 
@@ -65,24 +66,20 @@ Server mode exposes the Ante protocol over stdin/stdout by default, or over WebS
 
 | Flag | Description |
 |---|---|
-| `-m`, `--model <MODEL>` | Override the default model name. |
 | `--stdio` | Serve the JSONL protocol over stdin/stdout. This is the default transport. |
-| `--provider <PROVIDER>` | Override the API provider by catalog provider name. |
-| `--ws <ADDR>` | Serve the protocol over WebSocket on the given socket address. |
+| `--ws <ADDR>` | Serve the protocol over WebSocket on the given socket address. Conflicts with `--stdio`. |
 | `--offline-model <PATH>` | Load a local GGUF model at startup for offline mode. |
-| `--yolo` | Skip tool approval prompts for the session. |
-| `--system-prompt <PROMPT>` | Replace the default system prompt entirely. |
-| `--append-system-prompt <TEXT>` | Append content to the default system prompt. |
-| `--allowed-tools <TOOLS>...` | Only allow these tools. Values are space-separated. |
-| `--disallowed-tools <TOOLS>...` | Remove these tools from the session. Values are space-separated. |
 | `-h`, `--help` | Print command help. |
+
+:::note
+`serve` is session-agnostic, so it does not accept the session flags (`--model`, `--provider`, `--yolo`, `--system-prompt`, `--allowed-tools`, …). The connecting client configures those per session over the protocol.
+:::
 
 ### Examples
 
 ```bash
 ante serve
 ante serve --ws 127.0.0.1:8080
-ante serve --provider anthropic --model claude-sonnet-4-6
 ```
 
 ## `ante gateway`
@@ -98,13 +95,8 @@ Gateway mode connects Ante to Slack, Discord, or both using the channels config 
 | `--config <PATH>` | `~/.ante/channels.json` | Path to the channels configuration file. |
 | `--model <MODEL>` | `local` | Model to use for agent sessions. |
 | `--provider <PROVIDER>` | `local` | Provider to use for agent sessions. |
-| `--yolo` | - | Skip tool approval prompts for gateway sessions. |
 | `--output-format <FORMAT>` | `minimal` | Gateway stdout format: `json`, `human`, or `minimal`. |
-| `--system-prompt <PROMPT>` | - | Replace the default system prompt entirely. |
-| `--append-system-prompt <TEXT>` | - | Append content to the default system prompt. |
 | `--offline-model <PATH>` | - | Load a local GGUF model for all gateway conversations. |
-| `--allowed-tools <TOOLS>...` | - | Only allow these tools. Values are space-separated. |
-| `--disallowed-tools <TOOLS>...` | - | Remove these tools from the session. Values are space-separated. |
 | `-h`, `--help` | - | Print command help. |
 
 ### Examples
@@ -177,6 +169,21 @@ ante rage
 ante rage --output ./ante-bug.tar.gz
 ante rage --since 7d
 ante rage --no-compress
+```
+
+## `ante catalog`
+
+```bash
+ante catalog
+```
+
+Print the merged provider/model catalog (built-in presets plus `~/.ante/catalog.json`) to stdout as JSON, in the same schema the catalog file uses. Warnings for skipped catalog entries go to stderr, so stdout stays a clean JSON document that pipes into `jq`. See the [Catalog Reference](/reference/catalog-reference) for the schema.
+
+### Examples
+
+```bash
+ante catalog
+ante catalog | jq '.providers | keys'
 ```
 
 ## Output Formats
