@@ -15,7 +15,13 @@
 > **⚠️ Alpha Preview**
 > Ante is currently in alpha and provided as a research preview. Expect breaking changes and incomplete functionality. macOS and Linux only.
 
-Ante is an AI-native, cloud-native, local-first agent runtime built by [Antigma Labs](https://antigma.ai). A single ~15MB Rust binary with zero runtime dependencies — designed from the ground up for security, performance, and resistance to AI-generated slop.
+Ante is an **AI-native, cloud-native, local-first agent runtime** built by [Antigma Labs](https://antigma.ai) — a single ~15MB Rust binary with zero runtime dependencies.
+
+Today it's the lightest, fastest terminal agent you can run: bring your own key, switch between 12+ providers freely, or go fully offline with local models — no account required. That same tiny core is the point. It's light enough to run by the *thousands* — the substrate we're building for self-organizing intelligence.
+
+> **We care about the harness, not the model or the prompts.**
+
+Most agents ship a Node or Python runtime and a tree of dependencies — fine for a single chat, ruinous when you want a hundred running at once. Ante is hand-written Rust with the heavy parts — `Grep`, `git`, and local inference — embedded in the same binary and run in the same process. The result: **~7× less memory** than Claude Code across 20 parallel tasks, **#1 on the public [Terminal Bench](docs-site/docs/benchmarks/eval.mdx) 1.0 leaderboard**, and a deliberate resistance to AI-generated slop.
 
 ## Key Features
 
@@ -24,12 +30,16 @@ Ante is an AI-native, cloud-native, local-first agent runtime built by [Antigma 
 - **Zero vendor lock-in** — Bring your own API key or local model. Switch between 12+ providers freely. No account required.
 - **Client-daemon architecture** — Run as an interactive TUI, headless CLI, or long-lived server (`ante serve`).
 - **Channel integrations** — Run Ante as a Slack or Discord bot with `ante gateway`.
-- **Multi-agent orchestration** — Spawn sub-agents, coordinate complex tasks across independent, decentralized, or centralized architectures.
+- **Multi-agent orchestration** — Spawn sub-agents and coordinate complex tasks across independent, decentralized, and centralized architectures. [See the patterns →](https://docs.antigma.ai/experimental/agent-org)
 - **Extensible** — Custom skills, sub-agents, and persistent memory across sessions.
-- **Benchmark proven** — Topped the Terminal Bench 1.0 and 2.0 leaderboards. Public, reproducible evals.
+
+> [!NOTE]
+> **Benchmark proven.** Public, [reproducible evals](https://docs.antigma.ai/benchmarks/eval) on user-facing builds.
+> - 🥇 #1 on **Terminal Bench 1.0**
+> - 🥇 #1 on **Terminal Bench 2.0** (verified agent)
+> - More to come
 
 ## Performance
-**We care about the harness not the model nor the prompts.**
 
 Ante is designed for the **cellular-native** thesis: agents lightweight enough to run hundreds of replicas in parallel on a single machine. Its ~15MB Rust core uses a fraction of the memory, CPU, and disk I/O of comparable agents — making mass parallelism practical without specialized infrastructure.
 
@@ -149,7 +159,7 @@ ante update --channel nightly
 │   │  (ante)   │    │ (ante -p) │    │  (stdio / ws)      │  │
 │   └─────┬─────┘    └─────┬─────┘    └─────────┬──────────┘  │
 └─────────┼────────────────┼─────────────────────┼────────────┘
-          │     Op         │                     │
+          │                │                     │
           ▼                ▼                     ▼
 ┌─────────────────────────────────────────────────────────────┐
 │                         Daemon                              │
@@ -186,24 +196,23 @@ Ante works with 12+ providers out of the box:
 Configure providers via environment variables (`ANTHROPIC_API_KEY`, `OPENAI_API_KEY`, etc.) or OAuth. Add custom providers in `~/.ante/catalog.json`.
 
 ## FAQ
-### Why <span style="color: #f59e0b;">An</span>other <span style="color: #f59e0b;">Te</span>rminal agent
-Ante is fast, lightweight, and the only terminal agent with native local inference support built in.
-We believe this self-contained agent core that self organize is the centre of the future of agent economy.
 
-It is just built different. 
+### Why <span style="color: #f59e0b;">An</span>other <span style="color: #f59e0b;">Te</span>rminal agent?
+
+The name is the answer: **An**other **Te**rminal agent — and *ante*, the stake you put on the table to play. Ante is fast, lightweight, and the only terminal agent with native local inference built in. We believe a self-contained agent core that self-organizes is the foundation of the coming agent economy.
 
 <details>
 <summary><b>How is Ante different than other agents</b></summary>
 On the high level, it has most of your favorite features (Multi-agents, skills, etc.) of your favorite agents (like Claude Code, Codex, etc.) 
 
-- Ante is built from scratch in native Rust, we are obsessed with being self contained, so only essential libraries without framework or runtime dependencies. 
+- Ante is built from scratch in native Rust. We're obsessed with being self-contained — only essential libraries, no framework or runtime dependencies. 
 
-- You only need a llm provider configured to run it. Actually if you have the hardware, you don't even need a llm provider because Ante natively support private inference engine. 
+- You only need an LLM provider configured to run it. And if you have the hardware, you don't even need one — Ante natively supports a private inference engine. 
 
 - This resulted in ~15MB self-contained binary and multi-agent orchestration designed to run hundreds of replicas in parallel at scale.
 See the [benchmark details](docs-site/docs/benchmarks/eval.mdx) across 20 parallel tasks for concrete numbers.
 
-- No vendor lock-ins, not even ourself. You don't need an account and can reuse your favorite api credentials. 
+- No vendor lock-in, not even to ourselves. You don't need an account and can reuse your favorite API credentials. 
 
 </details>
 
@@ -214,12 +223,12 @@ Most projects in this space are written in TypeScript or Python and carry heavy 
 
 We genuinely mean it when we say the agent should be self-contained:
 
-- Core components like `Grep` is fully rebuilt and customized and `git` are **embedded into the same binary** (while maintaining ~15MB size) and run **in the same process** at runtime — not shelled out to exterinal processes to prevent accidental resource leakage.
+- Core components like `Grep` (fully rebuilt and customized) and `git` are **embedded into the same binary** (while maintaining ~15MB size) and run **in the same process** at runtime — not shelled out to external processes — to prevent accidental resource leakage.
 - We've built our own inference engine from the ground up. (See [nanochat-rs](https://github.com/AntigmaLabs/nanochat-rs), a toy version of the kind of work that goes into it.)
 - There's an opt-in, fully integrated server-side experience at [antix.antigma.ai](https://antix.antigma.ai).
 - And much more in the pipeline — including a multi-agent platform.
 
-Beyond the footprint, it comes down to agent architecture, and ultimately to *who* is building it and with what philosophy. Those differences in taste and engineering rigor leak into every aspect of the product. It's hard to gauge quality when it's so easy to fork and clone something — so on that front, probably only time can tell.
+Beyond the footprint, it comes down to agent architecture — and ultimately to *who* is building it, and with what philosophy. Anyone can fork a binary; taste and engineering rigor don't copy. Those differences leak into every detail of the product.
 
 </details>
 
