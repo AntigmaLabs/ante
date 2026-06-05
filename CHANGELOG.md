@@ -1,5 +1,14 @@
 # Changelog
 
+## v0.preview.32 - 2026-06-04
+
+- Add `ante catalog` command to print the merged model catalog as JSON
+- Show structured turn errors instead of a raw debug dump
+- Recover from transient connection resets instead of failing the run
+- Fix Anthropic 400 error from unsigned thinking blocks
+- Fix stale OAuth credential cache
+- Migrate the Grep tool to a streaming ripgrep-style search engine
+
 ## v0.preview.31 - 2026-06-02
 
 - Wrap markdown table content in narrow TUI views

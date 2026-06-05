@@ -326,6 +326,14 @@ pub struct ModelSpec {
     pub context_limit: Option<u32>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub thinking: Option<Thinking>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub support_vision: Option<bool>,
+}
+
+impl ModelSpec {
+    pub fn support_vision(&self) -> bool {
+        self.support_vision.unwrap_or(true)
+    }
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, Copy, PartialEq, Eq, Hash)]
@@ -422,6 +430,7 @@ mod tests {
             stop_sequences: None,
             context_limit: None,
             thinking: None,
+            support_vision: None,
         }
     }
 
