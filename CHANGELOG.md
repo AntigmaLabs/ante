@@ -1,5 +1,13 @@
 # Changelog
 
+## v0.preview.33 - 2026-06-04
+
+- Add `ante update --version <V>` to pin or roll back to a specific release
+- Retire the legacy `latest` update channel and transparently resolve it to `stable`
+- Drive vision/image support from model metadata
+- Reduce Read and multiline Grep latency
+- Fix `@`-mention handling: dedupe repeats, honor `\@` escapes after multibyte characters, and stop dropping large mentioned files
+
 ## v0.preview.32 - 2026-06-04
 
 - Add `ante catalog` command to print the merged model catalog as JSON
