@@ -1,5 +1,14 @@
 # Changelog
 
+## v0.preview.34 - 2026-06-06
+
+- Add OpenAI-compatible provider profiles
+- Surface subagent activity as live tool updates instead of separate turn events
+- Recover from transient API decode failures instead of crashing the run
+- Allow `ANTE_INSTALL_DIR` to override the install location and harden the install script
+- Unify the LLM streaming driver across providers for consistent streaming behavior
+- Dependency updates
+
 ## v0.preview.33 - 2026-06-04
 
 - Add `ante update --version <V>` to pin or roll back to a specific release
