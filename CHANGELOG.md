@@ -1,5 +1,14 @@
 # Changelog
 
+## v0.preview.35 - 2026-06-08
+
+- Add OpenRouter provider profiles
+- Show a sign-off message and bug-report hint when exiting the TUI
+- Set the terminal window title to "Ante"
+- Handle redacted thinking blocks from the latest Claude models
+- Prevent the Bash tool from inheriting stdin
+- Fix token usage accounting for Anthropic and OpenAI-compatible streaming
+
 ## v0.preview.34 - 2026-06-06
 
 - Add OpenAI-compatible provider profiles
