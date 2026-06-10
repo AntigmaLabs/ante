@@ -118,8 +118,8 @@ pub enum TurnEndStatus {
         reason: Option<String>,
     },
     Error {
-        /// One-line summary (the top of the error chain), e.g.
-        /// "turn exited with error: failed to stream chat".
+        /// One-line summary. For a classified LLM failure this is the semantic
+        /// error kind, e.g. "rate limited"; otherwise the top of the error chain.
         headline: String,
         /// Expanded cause shown as indented child rows beneath the headline,
         /// e.g. ["HTTP 400 Bad Request", "<server-provided message>"]. May be
