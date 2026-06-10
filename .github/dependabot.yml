@@ -1,0 +1,18 @@
+version: 2
+updates:
+  - package-ecosystem: npm
+    directory: /docs-site
+    schedule:
+      interval: weekly
+    groups:
+      docusaurus:
+        patterns:
+          - '@docusaurus/*'
+      minor-and-patch:
+        update-types:
+          - minor
+          - patch
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly

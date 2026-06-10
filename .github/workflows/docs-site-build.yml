@@ -1,0 +1,29 @@
+name: Docs Site Build
+
+on:
+  pull_request:
+    paths:
+      - 'docs-site/**'
+      - 'CHANGELOG.md'
+      - '.github/workflows/docs-site-build.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'docs-site/**'
+      - 'CHANGELOG.md'
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: docs-site
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: docs-site/.nvmrc
+          cache: npm
+          cache-dependency-path: docs-site/package-lock.json
+      - run: npm ci
+      - run: npm run build

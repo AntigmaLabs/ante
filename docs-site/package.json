@@ -2,6 +2,9 @@
   "name": "ante-docs",
   "version": "0.0.0",
   "private": true,
+  "engines": {
+    "node": ">=22"
+  },
   "scripts": {
     "prestart": "node scripts/sync-changelog.mjs",
     "start": "docusaurus start",
@@ -20,8 +23,8 @@
     "clsx": "^2.0.0",
     "lucide-react": "^1.17.0",
     "prism-react-renderer": "^2.3.0",
-    "react": "^18.0.0",
-    "react-dom": "^18.0.0"
+    "react": "^19.2.7",
+    "react-dom": "^19.2.7"
   },
   "devDependencies": {
     "@docusaurus/module-type-aliases": "^3.10.1",
