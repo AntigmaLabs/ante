@@ -55,7 +55,13 @@ pub enum Evt {
     SessionStart(Box<SessionInitialized>),
     SessionUpdated(Box<SessionInitialized>),
     ExtensionRefreshed(Box<ExtensionRefreshed>),
-    SessionEnd,
+    /// The session span closed. Mirrors `TurnEnd`: carries the span's
+    /// identity, why it ended, and its final usage accounting.
+    SessionEnd {
+        session_id: Id,
+        reason: SessionEndReason,
+        usage: Usage,
+    },
     UserInput(String),
     AgentMessage(String),
     Thinking(String),
@@ -95,6 +101,12 @@ pub enum Evt {
         turn_id: Id,
         reason: TurnPauseReason,
     },
+    /// The turn resumed after a `TurnPause` (e.g. the approval was answered
+    /// or a steer arrived). Closes the pause bracket so clients never have to
+    /// infer resumption from the next tool event.
+    TurnResume {
+        turn_id: Id,
+    },
     TurnEnd {
         turn_id: Id,
         status: TurnEndStatus,
@@ -108,6 +120,14 @@ pub enum Evt {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum TurnPauseReason {
     Approval { tools: Vec<ToolUse>, message: String },
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+pub enum SessionEndReason {
+    /// The session was replaced by a new or resumed session.
+    Replaced,
+    /// The daemon is shutting down.
+    Shutdown,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -460,6 +480,29 @@ mod tests {
             serde_json::from_str::<Evt>(&compact_end).expect("deserialize CompactEnd"),
             Evt::CompactEnd
         ));
+    }
+
+    #[test]
+    fn session_end_and_turn_resume_serde_roundtrip() {
+        let session_id = Id::new("ses");
+        let end = Evt::SessionEnd {
+            session_id,
+            reason: super::SessionEndReason::Shutdown,
+            usage: Usage::new(10, 5),
+        };
+        let json = serde_json::to_string(&end).expect("serialize SessionEnd");
+        let decoded = serde_json::from_str::<Evt>(&json).expect("deserialize SessionEnd");
+        assert!(matches!(
+            decoded,
+            Evt::SessionEnd { session_id: id, reason: super::SessionEndReason::Shutdown, usage }
+                if id == session_id && usage.total() == 15
+        ));
+
+        let turn_id = Id::new("op");
+        let resume = Evt::TurnResume { turn_id };
+        let json = serde_json::to_string(&resume).expect("serialize TurnResume");
+        let decoded = serde_json::from_str::<Evt>(&json).expect("deserialize TurnResume");
+        assert!(matches!(decoded, Evt::TurnResume { turn_id: id } if id == turn_id));
     }
 
     #[test]
