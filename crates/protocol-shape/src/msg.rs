@@ -269,8 +269,6 @@ pub struct SessionOverrides {
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub policy: Option<PermissionMode>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub streaming: Option<bool>,
-    #[serde(default, skip_serializing_if = "Option::is_none")]
     pub system_prompt: Option<String>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub append_system_prompt: Option<String>,
