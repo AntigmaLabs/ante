@@ -20,6 +20,11 @@ Ante stores user preferences in `~/.ante/settings.json`:
   "has_completed_onboarding": true,
   "channel": "stable",
   "status_line": ["model-name", "current-dir"],
+  "status_line_command": {
+    "command": "~/.config/ante/statusline.sh",
+    "padding": 1,
+    "refresh_interval": 5
+  },
   "model_thinking": {
     "claude-sonnet-4-6": "Enabled",
     "gpt-5.4": "Deep"
@@ -43,6 +48,7 @@ Ante stores user preferences in `~/.ante/settings.json`:
 | `has_completed_onboarding` | Whether the onboarding flow has been completed |
 | `channel` | Release channel `ante update` tracks (`stable` or `nightly`). Defaults to `stable`; legacy `latest` values are treated as `stable`. See [Update & Channels](/start/update). |
 | `status_line` | Items to display in the TUI status line footer (see below) |
+| `status_line_command` | Shell command that renders a fully custom status line (see below). Takes precedence over `status_line` while set |
 | `model_thinking` | Per-model thinking level overrides — keys are model names, values are `Disabled` / `Enabled` / `Deep` / `Max` |
 | `mcp_servers` | MCP servers to launch on session start (see [MCP Servers](/extend/mcp)) |
 
@@ -58,6 +64,61 @@ The `status_line` field controls which items appear in the TUI's footer bar. It 
 | `git-branch` | Current Git branch (omitted when unavailable) |
 
 Default: `["model-name", "current-dir"]`. Configure via `~/.ante/settings.json` or the `/statusline` command in the TUI.
+
+### Command-based status line
+
+For full control, `status_line_command` runs a shell command of your choice and renders its output as the status line, replacing the item-based one:
+
+```json
+{
+  "status_line_command": {
+    "command": "~/.config/ante/statusline.sh",
+    "padding": 1,
+    "refresh_interval": 5
+  }
+}
+```
+
+A plain string is accepted as shorthand: `"status_line_command": "echo hello"`.
+
+| Field | Description |
+|---|---|
+| `command` | Script path or inline shell command, run via `sh -c` (required) |
+| `padding` | Extra horizontal padding in columns (default: `0`) |
+| `refresh_interval` | Also re-run every N seconds (minimum 1). Useful for clocks or external data. Omit to run only on session events |
+
+**How it works.** Ante pipes a JSON snapshot of the session to your command's stdin and displays whatever it prints to stdout. The command re-runs (debounced at 300ms) after each assistant message and whenever the model, provider, thinking mode, pull request, working directory, or terminal size changes. Runs are capped at 5 seconds, and a newer run cancels the one in flight.
+
+The JSON input is a compatible subset of [Claude Code's statusline input](https://code.claude.com/docs/en/statusline), so existing Claude Code statusline scripts work unchanged:
+
+```json
+{
+  "cwd": "/work/repo",
+  "session_id": "ses_...",
+  "version": "0.1.0",
+  "model": { "id": "claude-sonnet-4-6", "display_name": "claude-sonnet-4-6" },
+  "workspace": { "current_dir": "/work/repo", "project_dir": "/work/repo" },
+  "thinking": { "enabled": true },
+  "pr": { "number": 7, "url": "https://github.com/..." },
+  "provider": "anthropic"
+}
+```
+
+`pr` is present only when an open pull request is detected for the current branch; `provider` is an Ante extension. The command also receives `COLUMNS` and `LINES` (current terminal size) and `ANTE_PROJECT_DIR` (nearest ancestor with `.git`) in its environment.
+
+**Output.** Each line of stdout becomes a footer row (up to 8). ANSI colors and OSC 8 hyperlinks are rendered; color state carries across lines. Blank lines are dropped, and empty output renders a blank status line.
+
+A minimal example script:
+
+```bash
+#!/bin/sh
+input=$(cat)
+model=$(echo "$input" | jq -r '.model.display_name')
+dir=$(basename "$(echo "$input" | jq -r '.workspace.current_dir')")
+printf '\033[36m[%s]\033[0m %s' "$model" "$dir"
+```
+
+Make it executable (`chmod +x`) before pointing `command` at it. If the command fails — not executable, non-zero exit, or timeout — the footer shows a one-line diagnostic such as `status line: sh: …: Permission denied` based on the script's stderr. Script changes are picked up on the next run, but changes to `settings.json` itself require a restart.
 
 Settings can be overridden per-session via CLI flags.
 
