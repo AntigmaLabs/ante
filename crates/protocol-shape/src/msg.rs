@@ -113,6 +113,11 @@ pub enum Evt {
     },
     UsageUpdate {
         usage: Usage,
+        /// Context-window occupancy for the root session, pre-calculated in core.
+        /// `None` before the first response or when the model's context limit is
+        /// unverified (so clients never render a confidently-wrong percentage).
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        context: Option<ContextWindow>,
     },
     Goodbye,
 }
@@ -373,6 +378,21 @@ pub struct Usage {
     pub cache_creation_tokens: Option<u32>,
 }
 
+/// Context-window occupancy snapshot for the current (root) session, surfaced in
+/// the statusline. `pct_left` is measured against the auto-compact threshold (not
+/// the raw ceiling), so it reads ~100% on a fresh session and 0% when compaction
+/// is imminent.
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq)]
+pub struct ContextWindow {
+    /// Tokens currently occupying the window (cache-inclusive input + output of
+    /// the most recent response).
+    pub used_tokens: u32,
+    /// Raw model context limit (e.g. 200_000).
+    pub limit_tokens: u32,
+    /// Percent of the usable window remaining (0-100); 0 = at the compaction threshold.
+    pub pct_left: u8,
+}
+
 impl Usage {
     pub fn new(input_tokens: u32, output_tokens: u32) -> Self {
         Self { input_tokens, output_tokens, cache_read_tokens: None, cache_creation_tokens: None }
@@ -415,8 +435,14 @@ impl std::ops::AddAssign<Usage> for Usage {
 #[derive(Debug, Clone, Copy, Serialize, Deserialize, Default, Eq, PartialEq)]
 #[serde(rename_all = "snake_case")]
 pub enum PermissionMode {
+    /// Honor user rules; an unmatched call asks unless it is provably safe.
     #[default]
     Default,
+    /// Honor user rules; an unmatched call runs unless it is provably
+    /// dangerous (a deliberately narrow classifier — see
+    /// `tools::shell::is_dangerous`).
+    Auto,
+    /// Bypass all permission checks, including user deny rules.
     Yolo,
 }
 
