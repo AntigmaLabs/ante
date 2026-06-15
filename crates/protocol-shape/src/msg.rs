@@ -437,7 +437,7 @@ impl std::ops::AddAssign<Usage> for Usage {
 pub enum PermissionMode {
     /// Honor user rules; an unmatched call asks unless it is provably safe.
     #[default]
-    Default,
+    Strict,
     /// Honor user rules; an unmatched call runs unless it is provably
     /// dangerous (a deliberately narrow classifier — see
     /// `tools::shell::is_dangerous`).
