@@ -218,11 +218,22 @@ pub struct SessionInitialized {
     pub provider: ProviderSpec,
     pub session_id: Id,
     pub cwd: PathBuf,
+    pub policy: PermissionMode,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+/// Partial update to a live session's mutable state. Each field is optional so
+/// a caller patches only what changed; absent fields are left untouched. The
+/// daemon resolves any catalog-dependent fields and dispatches each to the
+/// matching `Session` setter.
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
 pub struct SessionUpdate {
-    pub model: ModelSpec,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub model: Option<ModelSpec>,
+    /// Permission mode change. Applied via the non-aborting `set_permission_mode`
+    /// setter, so it takes effect on the next turn without disturbing an
+    /// in-flight one.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub policy: Option<PermissionMode>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -367,13 +378,33 @@ pub enum Thinking {
     Max,
 }
 
+/// Token usage for one model response.
+///
+/// Convention, uniform across every provider mapping: `input_tokens` is the
+/// **full, cache-inclusive prompt size**. It always contains `cache_read_tokens`
+/// as a subset (verified live: OpenAI/OpenRouter/DeepSeek report it inside
+/// `prompt_tokens`; the Anthropic mapping adds it back since that API reports
+/// input net of cache). `cache_creation_tokens` is likewise inside `input_tokens`
+/// for providers that report cache writes (Anthropic); the OpenAI-style
+/// providers we use don't report writes at all. So [`Usage::total`]
+/// (`input + output`) is the context-window occupancy.
+///
+/// For **cost**, the cache buckets bill at different rates, so subtract them
+/// from the input rate instead of charging the full rate twice:
+/// `cost = (input - cache_read - cache_creation)·p_in
+///        + cache_read·p_cache_read + cache_creation·p_cache_write
+///        + output·p_out`.
 #[derive(Debug, Clone, Deserialize, Serialize, Default, Copy)]
 #[serde(default)]
 pub struct Usage {
+    /// Full prompt tokens, cache-inclusive (a superset of the two cache fields).
     pub input_tokens: u32,
+    /// Generated output (completion) tokens.
     pub output_tokens: u32,
+    /// Subset of `input_tokens` served from the prompt cache (cheaper rate).
     #[serde(skip_serializing_if = "Option::is_none")]
     pub cache_read_tokens: Option<u32>,
+    /// Subset of `input_tokens` written into the prompt cache (surcharge rate).
     #[serde(skip_serializing_if = "Option::is_none")]
     pub cache_creation_tokens: Option<u32>,
 }
@@ -398,6 +429,7 @@ impl Usage {
         Self { input_tokens, output_tokens, cache_read_tokens: None, cache_creation_tokens: None }
     }
 
+    /// Context-window occupancy: the full (cache-inclusive) prompt plus output.
     pub fn total(&self) -> u32 {
         self.input_tokens.saturating_add(self.output_tokens)
     }
@@ -457,8 +489,8 @@ pub enum Scope {
 #[cfg(test)]
 mod tests {
     use super::{
-        Evt, ExtensionRefreshed, Id, ModelSpec, Op, ProviderSpec, SessionInitialized,
-        SessionUpdate, ToolUse, Usage,
+        Evt, ExtensionRefreshed, Id, ModelSpec, Op, PermissionMode, ProviderSpec,
+        SessionInitialized, SessionUpdate, ToolUse, Usage,
     };
     use std::path::PathBuf;
 
@@ -551,7 +583,8 @@ mod tests {
     #[test]
     fn session_update_op_serde_roundtrip() {
         let op = Op::UpdateSession(SessionUpdate {
-            model: ModelSpec { temperature: Some(0.2), ..model_spec("gpt-5.4") },
+            model: Some(ModelSpec { temperature: Some(0.2), ..model_spec("gpt-5.4") }),
+            policy: Some(PermissionMode::Yolo),
         });
 
         let json = serde_json::to_string(&op).expect("serialize UpdateSession");
@@ -559,7 +592,7 @@ mod tests {
 
         assert!(matches!(
             decoded,
-            Op::UpdateSession(SessionUpdate { model })
+            Op::UpdateSession(SessionUpdate { model: Some(model), policy: Some(PermissionMode::Yolo) })
                 if model.id == "gpt-5.4" && model.temperature == Some(0.2)
         ));
     }
@@ -572,6 +605,7 @@ mod tests {
             provider: provider_spec("anthropic"),
             session_id,
             cwd: PathBuf::from("/tmp/session-updated"),
+            policy: PermissionMode::default(),
         }));
 
         let json = serde_json::to_string(&event).expect("serialize SessionUpdated");
