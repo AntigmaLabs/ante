@@ -218,7 +218,7 @@ pub struct SessionInitialized {
     pub provider: ProviderSpec,
     pub session_id: Id,
     pub cwd: PathBuf,
-    pub policy: PermissionMode,
+    pub permission_mode: PermissionMode,
 }
 
 /// Partial update to a live session's mutable state. Each field is optional so
@@ -233,7 +233,7 @@ pub struct SessionUpdate {
     /// setter, so it takes effect on the next turn without disturbing an
     /// in-flight one.
     #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub policy: Option<PermissionMode>,
+    pub permission_mode: Option<PermissionMode>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -283,7 +283,7 @@ pub struct SessionOverrides {
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub provider: Option<String>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub policy: Option<PermissionMode>,
+    pub permission_mode: Option<PermissionMode>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub system_prompt: Option<String>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
@@ -584,7 +584,7 @@ mod tests {
     fn session_update_op_serde_roundtrip() {
         let op = Op::UpdateSession(SessionUpdate {
             model: Some(ModelSpec { temperature: Some(0.2), ..model_spec("gpt-5.4") }),
-            policy: Some(PermissionMode::Yolo),
+            permission_mode: Some(PermissionMode::Yolo),
         });
 
         let json = serde_json::to_string(&op).expect("serialize UpdateSession");
@@ -592,7 +592,10 @@ mod tests {
 
         assert!(matches!(
             decoded,
-            Op::UpdateSession(SessionUpdate { model: Some(model), policy: Some(PermissionMode::Yolo) })
+            Op::UpdateSession(SessionUpdate {
+                model: Some(model),
+                permission_mode: Some(PermissionMode::Yolo),
+            })
                 if model.id == "gpt-5.4" && model.temperature == Some(0.2)
         ));
     }
@@ -605,7 +608,7 @@ mod tests {
             provider: provider_spec("anthropic"),
             session_id,
             cwd: PathBuf::from("/tmp/session-updated"),
-            policy: PermissionMode::default(),
+            permission_mode: PermissionMode::default(),
         }));
 
         let json = serde_json::to_string(&event).expect("serialize SessionUpdated");
