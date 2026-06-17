@@ -410,8 +410,8 @@ pub struct Usage {
 }
 
 /// Context-window occupancy snapshot for the current (root) session, surfaced in
-/// the statusline. `pct_left` is measured against the auto-compact threshold (not
-/// the raw ceiling), so it reads ~100% on a fresh session and 0% when compaction
+/// the statusline. `pct_used` is measured against the auto-compact threshold (not
+/// the raw ceiling), so it reads ~0% on a fresh session and 100% when compaction
 /// is imminent.
 #[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq)]
 pub struct ContextWindow {
@@ -420,8 +420,8 @@ pub struct ContextWindow {
     pub used_tokens: u32,
     /// Raw model context limit (e.g. 200_000).
     pub limit_tokens: u32,
-    /// Percent of the usable window remaining (0-100); 0 = at the compaction threshold.
-    pub pct_left: u8,
+    /// Percent of the usable window consumed (0-100); 100 = at the compaction threshold.
+    pub pct_used: u8,
 }
 
 impl Usage {
