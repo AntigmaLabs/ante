@@ -15,6 +15,12 @@ Ante is distributed as a single, self-contained binary with no external dependen
 curl -fsSL https://ante.run/install.sh | bash
 ```
 
+By default this installs to `~/.ante/bin`. To install somewhere else, set `ANTE_INSTALL_DIR`:
+
+```sh
+curl -fsSL https://ante.run/install.sh | ANTE_INSTALL_DIR=/usr/local/bin bash
+```
+
 ## Quick examples
 
 ### Interactive session
@@ -42,7 +48,7 @@ cat src/lib.rs | ante -p "review this code for bugs"
 
 ```bash
 # Override model and provider
-ante --provider openai --model gpt-5.4 -p "refactor this function"
+ante --provider openai --model gpt-5.5 -p "refactor this function"
 ```
 
 ### Skip tool approvals
@@ -67,6 +73,9 @@ ante update
 
 # Try the development channel for one update
 ante update nightly
+
+# Roll back or pin to an exact release
+ante update --version v0.preview.33
 ```
 
 ## What's next?
@@ -81,7 +90,7 @@ ante update nightly
   <Card title="Headless Mode" icon="code" href="/usage/headless">
     All CLI flags and output formats.
   </Card>
-  <Card title="Offline Mode" icon="wifi-slash" href="/offline">
+  <Card title="Offline Mode" icon="wifi-slash" href="/experimental/offline">
     Run models locally with no internet.
   </Card>
   <Card title="Server Mode" icon="server" href="/usage/serve">

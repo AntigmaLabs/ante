@@ -18,7 +18,7 @@ Every operation is wrapped in an `OpMsg`:
 
 ```json
 {
-  "op": { "StartSession": { "model": "claude-sonnet-4-6", "provider": "anthropic", "streaming": true } },
+  "op": { "StartSession": { "model": "claude-sonnet-4-6", "provider": "anthropic" } },
   "id": "op_01ARZ3NDEKTSV4RRFFQ69G5FAV"
 }
 ```
@@ -63,8 +63,7 @@ Initialize a new session with model, provider, and configuration.
     "StartSession": {
       "model": "claude-sonnet-4-6",
       "provider": "anthropic",
-      "policy": null,
-      "streaming": true,
+      "permission_mode": null,
       "system_prompt": null,
       "append_system_prompt": null,
       "allowed_tools": null,
@@ -83,8 +82,7 @@ Initialize a new session with model, provider, and configuration.
 |---|---|---|
 | `model` | `string` | Model name (e.g. `"claude-sonnet-4-6"`) |
 | `provider` | `string` | Provider name (e.g. `"anthropic"`, `"openai"`, `"gemini"`, `"xai"`, `"openrouter"`, `"local"`) |
-| `policy` | `PermissionMode?` | Tool approval policy. `null` uses default |
-| `streaming` | `bool` | Enable streaming deltas (`MessageDelta`, `ThinkingDelta`) |
+| `permission_mode` | `PermissionMode?` | Tool approval mode: `"strict"`, `"auto"`, or `"yolo"`. `null` uses `strict` |
 | `system_prompt` | `string?` | Override the default system prompt entirely |
 | `append_system_prompt` | `string?` | Append content to the default system prompt |
 | `allowed_tools` | `string[]?` | Whitelist — only these tools are available |
@@ -94,13 +92,14 @@ Initialize a new session with model, provider, and configuration.
 
 ### UpdateSession
 
-Update the active session without restarting it (e.g. switch models mid-session). Today `SessionUpdate` carries only a new `ModelSpec`; other session options must be set at `StartSession` time.
+Update the active session without restarting it (e.g. switch models or permission mode mid-session). Each field is optional; an absent field is left unchanged. Both apply on the next turn without disturbing an in-flight one — the permission mode change is what `Shift+Tab` cycling sends from the TUI. Other session options must be set at `StartSession` time.
 
 ```json
 {
   "op": {
     "UpdateSession": {
-      "model": { "name": "gpt-5.4", "temperature": 0.2 }
+      "model": { "name": "gpt-5.4", "temperature": 0.2 },
+      "permission_mode": "auto"
     }
   },
   "id": "op_..."
@@ -111,7 +110,8 @@ Update the active session without restarting it (e.g. switch models mid-session)
 
 | Field | Type | Description |
 |---|---|---|
-| `model` | `ModelSpec` | New model specification to use |
+| `model` | `ModelSpec?` | New model specification to use |
+| `permission_mode` | `PermissionMode?` | New permission mode (`"strict"`, `"auto"`, or `"yolo"`) |
 
 ### ResumeSession
 
@@ -168,7 +168,8 @@ Respond to a tool approval request (sent after receiving a `TurnPause` event wit
 |---|---|
 | `Accept` | Allow this tool call |
 | `Skip` | Skip this tool call |
-| `AcceptForSession` | Allow this tool for the rest of the session |
+| `AcceptForSession` | Grant this call for the rest of the session (scoped — see [Session grants](/configuration/permission#session-grants)) |
+| `AcceptAlways` | Grant for the session and persist an allow rule to `settings.json` ("always allow") |
 | `Abort` | Abort the current task |
 
 ### SlashCommand
@@ -239,7 +240,8 @@ Emitted when a session is initialized. Contains metadata about the active model,
       "model": { "name": "claude-sonnet-4-6", "max_tokens": 8192 },
       "provider": "anthropic",
       "session_id": "ses_01ARZ...",
-      "cwd": "/home/user/project"
+      "cwd": "/home/user/project",
+      "permission_mode": "strict"
     }
   }
 }
@@ -253,6 +255,7 @@ Emitted when a session is initialized. Contains metadata about the active model,
 | `provider` | `string` | Active provider name (e.g. `"anthropic"`) |
 | `session_id` | `Id` | Unique session identifier |
 | `cwd` | `string` | Working directory path |
+| `permission_mode` | `PermissionMode` | Active permission mode (`"strict"`, `"auto"`, or `"yolo"`) |
 
 #### SessionUpdated
 
@@ -496,10 +499,17 @@ Each entry in `mcp_servers` reflects what was actually launched and discovered: 
 
 #### UsageUpdate
 
-Token usage statistics for the session.
+Token usage statistics for the session. `context` is omitted before the first response or when the model context limit is unknown. `pct_used` is measured against the auto-compact threshold, so it can reach 100% before the raw token limit.
 
 ```json
-{ "event": { "UsageUpdate": { "usage": { "input_tokens": 1500, "output_tokens": 300 } } } }
+{
+  "event": {
+    "UsageUpdate": {
+      "usage": { "input_tokens": 1500, "output_tokens": 300 },
+      "context": { "used_tokens": 1800, "limit_tokens": 200000, "pct_used": 1 }
+    }
+  }
+}
 ```
 
 #### Info

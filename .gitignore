@@ -23,3 +23,6 @@ target
 **/_site/
 **/.jekyll-cache/
 local/
+
+# Obsidian vault config
+.obsidian/

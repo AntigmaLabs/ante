@@ -1,0 +1,376 @@
+---
+title: "Catalog Reference"
+description: "Built-in providers, models, and the catalog.json schema"
+---
+
+Ante resolves every provider and model from a **catalog**: the built-in presets documented here, with your [`~/.ante/catalog.json`](#catalogjson-schema) merged on top at startup. The catalog is read once per process — restart Ante to pick up edits.
+
+This page is the exhaustive reference. For how to pick a provider day to day and copy-paste customization recipes, see [Providers](/configuration/providers).
+
+## Built-in providers
+
+| Provider | ID | Wire style | Authentication |
+|---|---|---|---|
+| Anthropic | `anthropic` | `AnthropicMessage` | `ANTHROPIC_API_KEY` |
+| Anthropic Subscription | `anthropic-subscription` | `AnthropicMessage` | OAuth |
+| OpenAI | `openai` | `OpenAiResponse` | `OPENAI_API_KEY` |
+| OpenAI Compatible | `openai-compatible` | `OpenAiCompatible` | `OPENAI_COMPATIBLE_API_KEY` |
+| OpenAI Subscription | `openai-subscription` | `OpenAiResponse` | OAuth (Codex) |
+| Gemini | `gemini` | `Gemini` | `GEMINI_API_KEY` |
+| Vertex AI Gemini | `vertex-gemini` | `Gemini` | `VERTEX_GEMINI_API_KEY` |
+| Open Router | `openrouter` | `OpenAiCompatible` | `OPENROUTER_API_KEY` |
+| Grok (xAI) | `xai` | `OpenAiResponse` | `XAI_API_KEY` |
+| Zai | `zai` | `OpenAiCompatible` | `Z_AI_API_KEY` |
+| DeepSeek | `deepseek` | `OpenAiCompatible` | `DEEPSEEK_API_KEY` |
+| Ali Coding Plan | `ali-coding-plan` | `AnthropicMessage` | `ALI_CODING_PLAN_API_KEY` |
+| Antix | `antix` | `AnthropicMessage` | OAuth |
+| Antix (API key) | `antix-api-key` | `AnthropicMessage` | `ANTIX_API_KEY` |
+| Local | `local` | `OpenAiCompatible` | none |
+
+The `ID` column is what you pass to `--provider`. Providers authenticating via OAuth (`anthropic-subscription`, `openai-subscription`, `antix`) sign in interactively through the TUI; the rest read an API key from the listed environment variable.
+
+## Models by provider
+
+Each provider ships a set of `preferred_models` — the ids that appear in the model picker and the default model chosen when that provider is selected. Explicit provider choices are authoritative: if you pass `--provider`, Ante sends the model id you supplied to that provider even when it is not listed in `preferred_models` (see [Resolution](#how-a-model-and-provider-are-chosen)).
+
+### Anthropic
+
+`anthropic` and `anthropic-subscription` serve the same models:
+
+| Model | Description | Context |
+|---|---|---|
+| `claude-haiku-4-5` | Fast and capable | 200K |
+| `claude-sonnet-4-6` | Fast and capable | 1M |
+| `claude-opus-4-8` | Most capable, slower | 1M |
+
+```bash
+ante --provider anthropic --model claude-sonnet-4-6
+```
+
+### OpenAI
+
+| Model | Description |
+|---|---|
+| `gpt-5.5` | Latest flagship GPT model |
+| `gpt-5.5-pro` | Highest reliability on complex problems |
+| `gpt-5.4` | GPT-5.4 model |
+| `gpt-5.4-pro` | Highest reliability on complex problems |
+| `gpt-5.3-codex` | Frontier coding model |
+| `gpt-5-mini` | Faster, cheaper GPT-5 model |
+| `gpt-5-nano` | Smallest GPT-5 model |
+
+```bash
+ante --provider openai --model gpt-5.5
+```
+
+The `openai-subscription` provider (ChatGPT/Codex OAuth) serves only `gpt-5.5` — the other GPT-5 ids aren't available on ChatGPT accounts.
+
+#### OpenAI transports
+
+The `openai` and `openai-subscription` providers can stream responses two ways:
+
+| Transport | Endpoint | Default |
+|---|---|---|
+| `http_sse` (HTTP + SSE) | `https://api.openai.com/v1/responses` (or the subscription equivalent) | ✅ |
+| `websocket_auto` (persistent WebSocket) | `wss://.../v1/responses` | opt-in |
+
+WebSocket mode keeps one connection open per session and continues each turn with `previous_response_id` plus only the new input items. In long agentic tool loops this eliminates per-turn round-trip latency. See OpenAI's [WebSocket mode guide](https://developers.openai.com/api/docs/guides/websocket-mode) for the underlying protocol.
+
+Opt in via the process-scoped env var (default is `http_sse`):
+
+```bash
+ANTE_OPENAI_TRANSPORT=websocket_auto ante --provider openai --model gpt-5-mini
+```
+
+Accepted values: `http_sse`, `websocket_auto`. Unknown values warn and fall back to `http_sse`.
+
+Notes:
+
+- WS only engages on streaming turns (TUI sessions). Headless `--prompt` mode uses non-streaming `chat()` and bypasses WS by design.
+- Any transient WS failure (connect timeout, network blip) falls back to HTTP/SSE for that turn — users never see hard errors caused by the transport choice. Auth failures (`401`/`403`) flip the entire session to HTTP/SSE for the rest of its lifetime.
+- Works against both `api.openai.com` (API-key) and the ChatGPT subscription backend at `chatgpt.com/backend-api/codex`.
+- To verify which transport is active: in debug builds, toggle the debug panel (`Ctrl+L`) and check the **Info** tab for the `OpenAI Transport:` line. Otherwise grep your session log for `transport selected`:
+
+  ```bash
+  grep "transport selected" ~/.ante/logs/ante.*.log.*
+  ```
+
+### Gemini
+
+`gemini` and `vertex-gemini` serve the same models:
+
+| Model | Description | Context |
+|---|---|---|
+| `gemini-3.5-flash` | Gemini 3.5 Flash, agentic workflows | 1M |
+| `gemini-3.1-pro-preview` | Gemini 3.1 Pro with deep thinking | 1M |
+
+```bash
+ante --provider gemini --model gemini-3.1-pro-preview
+```
+
+### Grok (xAI)
+
+| Model | Description |
+|---|---|
+| `grok-4-latest` | Grok 4 |
+
+```bash
+ante --provider xai --model grok-4-latest
+```
+
+### Zai
+
+| Model | Description | Context |
+|---|---|---|
+| `glm-5.2` | Latest GLM-5.2 model | 1M |
+| `glm-5.1` | GLM-5.1 model | 200K |
+
+```bash
+ante --provider zai --model glm-5.2
+```
+
+### Open Router
+
+| Model | Description | Context |
+|---|---|---|
+| `deepseek/deepseek-v4-flash` | DeepSeek V4 Flash | 1.05M |
+| `qwen/qwen3.7-max` | Qwen3.7 Max | 1M |
+| `qwen/qwen3.7-plus` | Qwen3.7 Plus with vision | 1M |
+| `moonshotai/kimi-k2.7-code` | Kimi K2.7 Code reasoning model with vision | 262K |
+| `moonshotai/kimi-k2.6` | Kimi K2.6 reasoning model with vision | 262K |
+| `minimax/minimax-m3` | MiniMax M3 multimodal model | 1.05M |
+| `deepseek/deepseek-v4-pro` | DeepSeek V4 Pro | 1.05M |
+
+Open Router also accepts any model from its [full model list](https://openrouter.ai/models) by id.
+
+```bash
+ante --provider openrouter --model deepseek/deepseek-v4-pro
+```
+
+### DeepSeek
+
+| Model | Description | Context |
+|---|---|---|
+| `deepseek-v4-flash` | DeepSeek V4 Flash | 1M |
+| `deepseek-v4-pro` | DeepSeek V4 Pro | 1M |
+
+```bash
+ante --provider deepseek --model deepseek-v4-flash
+```
+
+Set `DEEPSEEK_API_KEY`, and optionally `DEEPSEEK_BASE_URL`.
+
+### Ali Coding Plan
+
+| Model | Description | Context |
+|---|---|---|
+| `qwen3.5-plus` | Qwen 3.5 Plus with vision | 1M |
+| `qwen3.6-plus` | Latest Qwen 3.6 Plus with vision | 1M |
+| `kimi-k2.5` | Kimi K2.5 reasoning model with vision | 262K |
+| `glm-5.1` | GLM-5.1 model | 200K |
+| `MiniMax-M2.5` | MiniMax M2.5 model | 205K |
+| `qwen3-max-2026-01-23` | Qwen 3 Max snapshot | 1M |
+| `qwen3-coder-next` | Qwen 3 Coder Next coding model | 1M |
+| `qwen3-coder-plus` | Qwen 3 Coder Plus coding model | 1M |
+| `qwen-plus` | Fast and capable | 1M |
+
+```bash
+ante --provider ali-coding-plan --model qwen3.5-plus
+```
+
+Requires a [Coding Plan subscription](https://help.aliyun.com/zh/model-studio/coding-plan) and API key (format: `sk-sp-xxxxx`). The built-in provider speaks the Anthropic wire endpoint. Some models are only available on the OpenAI-compatible endpoint — add a custom catalog entry to reach it:
+
+```json
+{
+  "providers": {
+    "ali-coding-plan-oai": {
+      "id": "ali-coding-plan-oai",
+      "display_name": "Ali Coding Plan (OpenAI)",
+      "base_url": "https://coding.dashscope.aliyuncs.com/v1",
+      "auth": { "bearer": { "env_key": "ALI_CODING_PLAN_API_KEY" } },
+      "wire_style": "OpenAiCompatible",
+      "http_headers": {
+        "User-Agent": "ante-cli/1.0.0",
+        "X-DashScope-UserAgent": "coding-agent"
+      }
+    }
+  }
+}
+```
+
+### Antix
+
+`antix` (OAuth) and `antix-api-key` (API key) serve the same models through Antigma:
+
+| Model | Description | Context |
+|---|---|---|
+| `gemini-3.5-flash` | Gemini 3.5 Flash, agentic workflows | 1M |
+| `qwen3.7-max` | Latest Qwen 3.7 Max | 1M |
+| `qwen3.7-plus` | Latest Qwen 3.7 Plus | 1M |
+| `gemini-3.1-pro-preview` | Gemini 3.1 Pro with deep thinking | 1M |
+| `claude-haiku-4-5` | Fast and capable | 200K |
+| `claude-sonnet-4-6` | Fast and capable | 200K |
+| `claude-opus-4-8` | Most capable, slower | 200K |
+| `gpt-5.5` | Latest flagship GPT model | — |
+| `gpt-5.5-pro` | Highest reliability on complex problems | — |
+| `gpt-5.4` | Latest model powering Codex and Codex CLI | — |
+| `gpt-5.3-codex` | Coding-optimized Codex model | — |
+| `deepseek-v4-flash` | Fast DeepSeek V4 Flash | 1M |
+| `deepseek-v4-pro` | DeepSeek V4 Pro with deep thinking | 1M |
+
+```bash
+ante --provider antix --model claude-sonnet-4-6        # OAuth
+ante --provider antix-api-key --model claude-sonnet-4-6 # ANTIX_API_KEY
+```
+
+### Local
+
+Run GGUF models locally via the built-in llama.cpp engine — no API key or internet required. `local` is a wildcard provider; the available model depends on what the offline server has loaded. See [Offline Mode](/experimental/offline) for setup.
+
+```bash
+ante --provider local
+```
+
+## `catalog.json` schema
+
+`~/.ante/catalog.json` is merged on top of the built-in presets at startup. It has two optional top-level keys, both maps keyed by id:
+
+```json
+{
+  "providers": { /* add or override providers */ },
+  "models":    { /* override fields on existing models */ }
+}
+```
+
+A `providers` entry whose key matches a built-in (e.g. `openai`) replaces that preset; a new key adds a provider. The map key is the id you pass to `--provider`, so keep each entry's `id` equal to its key.
+
+:::note
+`~/.ante` can be relocated with the `ANTE_HOME` environment variable; the catalog is always `$ANTE_HOME/catalog.json`.
+:::
+
+### Provider fields
+
+| Field | Required | Description |
+|---|---|---|
+| `id` | ✅ | Provider id. Must match the map key (`name` is accepted as a legacy alias). This is what you pass to `--provider`. |
+| `display_name` | ✅ | Friendly name shown in the TUI. |
+| `base_url` | ✅ | API base URL. |
+| `wire_style` | ✅ | API dialect Ante speaks — `AnthropicMessage`, `OpenAiCompatible`, `OpenAiResponse`, or `Gemini`. |
+| `auth` | — | How to authenticate (see [Authentication](#authentication)). Omit for a provider that needs no key. |
+| `http_headers` | — | Extra headers sent with every request, as a string→string map. |
+| `preferred_models` | — | Models shown for this provider in the picker and used as provider defaults (see [Model fields](#model-fields)). An empty or omitted list means the provider has no picker/default model of its own. |
+
+```json
+{
+  "providers": {
+    "my-provider": {
+      "id": "my-provider",
+      "display_name": "My Provider",
+      "base_url": "https://api.example.com/v1",
+      "wire_style": "OpenAiCompatible",
+      "auth": { "bearer": { "env_key": "MY_PROVIDER_API_KEY" } },
+      "http_headers": { "X-Org": "my-team" },
+      "preferred_models": [
+        {
+          "id": "my-model",
+          "description": "My fine-tuned model",
+          "max_tokens": 32000,
+          "context_limit": 200000,
+          "thinking": "Enabled"
+        }
+      ]
+    }
+  }
+}
+```
+
+### Authentication
+
+`auth` is a tagged object: the tag chooses where the credential goes, and the credential is either an environment variable (`env_key`) or one of Ante's built-in OAuth flows (`oauth_preset`).
+
+| Form | JSON | Sends |
+|---|---|---|
+| Bearer token | `{ "bearer": { "env_key": "MY_KEY" } }` | `Authorization: Bearer <token>` |
+| Custom header | `{ "header": { "name": "x-api-key", "env_key": "MY_KEY" } }` | `<name>: <token>` |
+| Query param | `{ "query": { "name": "api_key", "env_key": "MY_KEY" } }` | `?<name>=<token>` |
+
+Swap `env_key` for `oauth_preset` to authenticate through a built-in OAuth flow (`anthropic`, `openai`, or `antix`) instead of an env var:
+
+```json
+"auth": { "bearer": { "oauth_preset": "anthropic" } }
+```
+
+A provider counts as authenticated when its credential is present — the env var is set and non-empty, or the OAuth token exists on disk. Providers with no `auth` block are always authenticated. Unauthenticated providers are skipped during auto-detection and shown last in the picker.
+
+### Model fields
+
+The same fields describe a model fully inside a provider's `preferred_models` (where `id` is required) or partially under `models` (where the map key supplies the id). Every field except the id is optional:
+
+| Field | Description |
+|---|---|
+| `id` | Model id. Required in `preferred_models` (`name` is accepted as a legacy alias); supplied by the map key under `models`. |
+| `display_name` | Friendly name. |
+| `description` | Short description shown in the model picker. |
+| `temperature` | Sampling temperature. |
+| `top_p` | Nucleus sampling cutoff. |
+| `top_k` | Top-k sampling cutoff. |
+| `max_tokens` | Maximum output tokens per turn. |
+| `stop_sequences` | List of strings that end generation. |
+| `context_limit` | Context window size, in tokens. |
+| `thinking` | Reasoning effort — `Disabled`, `Enabled`, `Deep`, or `Max`. |
+
+The `models` section patches a model by id wherever it is defined, layering on top of the canonical spec at resolve time. The built-in presets leave it empty:
+
+```json
+{
+  "models": {
+    "claude-sonnet-4-6": { "thinking": "Deep", "max_tokens": 64000 }
+  }
+}
+```
+
+## How a model and provider are chosen
+
+When Ante resolves a model id it layers three sources, last wins:
+
+1. **Canonical spec** — the first provider (in catalog order) whose `preferred_models` lists that id. An unknown id falls back to a bare default spec.
+2. **`models` override** — your partial patch for that id, if any.
+3. **Environment overrides** — the process env vars below win over everything.
+
+Providers are matched to models too. If you pass only `--model`, Ante picks an authenticated provider whose `preferred_models` list contains that id, falling back to an authenticated provider with no `preferred_models`, then to the default provider.
+
+If you pass both `--provider` and `--model`, the explicit provider choice wins as long as that provider is authenticated. Ante still resolves the model id globally first, so known ids inherit catalog metadata and user overrides even when served by a different provider; unknown ids are passed through as bare model specs.
+
+When you don't pass `--model`/`--provider`, Ante auto-detects: it uses the first authenticated provider in catalog order and its first preferred model, falling back to `local` if nothing is authenticated.
+
+## Environment overrides
+
+These process env vars override catalog values for the session without editing the file:
+
+| Variable | Overrides |
+|---|---|
+| `MODEL_BASE_URL` | Base URL for all providers (a per-provider var like `ANTHROPIC_BASE_URL` takes precedence). |
+| `MODEL_TEMPERATURE` | `temperature` |
+| `MODEL_TOP_P` | `top_p` |
+| `MODEL_MAX_TOKENS` | `max_tokens` |
+| `MODEL_CONTEXT_LIMIT` | `context_limit` |
+| `MODEL_THINKING` | `thinking` — accepts `none`, `enabled`, `deep`, or `max` |
+
+Several presets also honor a dedicated base-URL env var that takes precedence over `MODEL_BASE_URL`: `ANTHROPIC_BASE_URL`, `OPENAI_BASE_URL`, `OPENAI_COMPATIBLE_BASE_URL`, `DEEPSEEK_BASE_URL`.
+
+## Error handling
+
+A bad entry doesn't sink the whole file. Ante parses `catalog.json` leniently: any provider or model entry that fails to deserialize is skipped, and the rest still load. Skipped entries are reported at startup, e.g.:
+
+```
+Skipped 1 entry in ~/.ante/catalog.json:
+  - providers.my-provider: missing field `base_url`
+```
+
+Only a file that isn't a JSON object at all is rejected outright. A missing `catalog.json` is fine — Ante just uses the built-in presets.
+
+## Related
+
+- [Providers](/configuration/providers) — choosing a provider and customization recipes
+- [Storage Reference](/reference/storage-reference) — where `catalog.json` lives on disk
+- [Offline Mode](/experimental/offline) — running local GGUF models

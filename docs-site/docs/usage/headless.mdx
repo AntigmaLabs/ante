@@ -47,6 +47,7 @@ ante [OPTIONS] [--prompt <PROMPT>]
 | `-m`, `--model <MODEL>` | Override the model name |
 | `--provider <PROVIDER>` | Override the API provider (e.g. `anthropic`, `openai`, `gemini`, `xai`, `openrouter`, `local`) |
 | `--yolo` | Skip all tool approval prompts |
+| `--permission-mode <MODE>` | Override the permission mode: `strict`, `auto`, or `yolo` |
 | `--output-format <FORMAT>` | Output format: `json`, `human`, `minimal` (default: `minimal`) |
 | `--system-prompt <PROMPT>` | Replace the default system prompt entirely |
 | `--append-system-prompt <TEXT>` | Append text to the system prompt |
@@ -112,9 +113,10 @@ In headless mode, Ante automatically appends the current directory's folder stru
 
 ## Headless behavior notes
 
-- **Streaming is disabled** — Responses are buffered for cleaner output
-- **Yolo policy is implied** — All tool calls are auto-approved (no interactive prompts)
+- **Raw streaming deltas are suppressed** — Output shows complete messages, not the incremental chunks, so logs stay clean
+- **Yolo policy is implied** — All tool calls are auto-approved (no interactive prompts), regardless of `--permission-mode`
 - **Authentication is checked eagerly** — If the provider isn't authenticated, Ante exits immediately with an error
+- **Fails fast if the daemon dies** — If the agent process exits before finishing the task, Ante reports an error instead of a success exit code
 
 ## Resuming a session
 

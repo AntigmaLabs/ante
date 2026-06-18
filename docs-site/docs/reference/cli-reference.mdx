@@ -17,6 +17,8 @@ ante [OPTIONS] [COMMAND]
 | `ante serve` | Run a long-lived JSONL or WebSocket protocol server. |
 | `ante gateway` | Run the Slack / Discord channel gateway. |
 | `ante update` | Check for the latest Ante release and install it if available. |
+| `ante rage` | Collect a redacted bug-report bundle (logs + environment) to share with the Ante team. |
+| `ante catalog` | Print the loaded provider/model catalog as JSON. |
 
 ## `ante`
 
@@ -31,6 +33,7 @@ Without `--prompt`, Ante starts the interactive TUI. With `--prompt`, Ante runs 
 | `-m`, `--model <MODEL>` | Override the default model name. |
 | `--provider <PROVIDER>` | Override the API provider by catalog provider name. |
 | `--yolo` | Skip tool approval prompts for the session. |
+| `--permission-mode <MODE>` | Override the permission mode for this run: `strict`, `auto`, or `yolo`. Conflicts with `--yolo`. |
 | `--system-prompt <PROMPT>` | Replace the default system prompt entirely. |
 | `--append-system-prompt <TEXT>` | Append content to the default system prompt. |
 | `--allowed-tools <TOOLS>...` | Only allow these tools. Values are space-separated. |
@@ -40,7 +43,7 @@ Without `--prompt`, Ante starts the interactive TUI. With `--prompt`, Ante runs 
 | `--check` | Run a verification pass after the headless task completes. |
 | `-r`, `--resume <SESSION_ID>` | Resume a previous session by ID. |
 | `--offline-model <PATH>` | Path to a local GGUF model file for offline inference. |
-| `--simple-agent` | Use the built-in simple agent prompt with `PTY` and `ImageRead` tools. |
+| `--simple-agent` | Use the built-in simple agent prompt with `PTY`, `ImageRead`, and `WebSearch` tools. |
 | `-h`, `--help` | Print command help. |
 | `-V`, `--version` | Print the Ante version. |
 
@@ -50,7 +53,7 @@ Without `--prompt`, Ante starts the interactive TUI. With `--prompt`, Ante runs 
 ante
 ante -p "explain what this project does"
 git diff | ante -p "review this diff for bugs"
-ante --provider openai --model gpt-5.4 -p "refactor the database module"
+ante --provider openai --model gpt-5.5 -p "refactor the database module"
 ante --resume ses_01ARZ3NDEKTSV4RRFFQ69G5FAV -p "now add tests"
 ```
 
@@ -64,24 +67,20 @@ Server mode exposes the Ante protocol over stdin/stdout by default, or over WebS
 
 | Flag | Description |
 |---|---|
-| `-m`, `--model <MODEL>` | Override the default model name. |
 | `--stdio` | Serve the JSONL protocol over stdin/stdout. This is the default transport. |
-| `--provider <PROVIDER>` | Override the API provider by catalog provider name. |
-| `--ws <ADDR>` | Serve the protocol over WebSocket on the given socket address. |
+| `--ws <ADDR>` | Serve the protocol over WebSocket on the given socket address. Conflicts with `--stdio`. |
 | `--offline-model <PATH>` | Load a local GGUF model at startup for offline mode. |
-| `--yolo` | Skip tool approval prompts for the session. |
-| `--system-prompt <PROMPT>` | Replace the default system prompt entirely. |
-| `--append-system-prompt <TEXT>` | Append content to the default system prompt. |
-| `--allowed-tools <TOOLS>...` | Only allow these tools. Values are space-separated. |
-| `--disallowed-tools <TOOLS>...` | Remove these tools from the session. Values are space-separated. |
 | `-h`, `--help` | Print command help. |
+
+:::note
+`serve` is session-agnostic, so it does not accept the session flags (`--model`, `--provider`, `--yolo`, `--system-prompt`, `--allowed-tools`, …). The connecting client configures those per session over the protocol.
+:::
 
 ### Examples
 
 ```bash
 ante serve
 ante serve --ws 127.0.0.1:8080
-ante serve --provider anthropic --model claude-sonnet-4-6
 ```
 
 ## `ante gateway`
@@ -97,13 +96,8 @@ Gateway mode connects Ante to Slack, Discord, or both using the channels config 
 | `--config <PATH>` | `~/.ante/channels.json` | Path to the channels configuration file. |
 | `--model <MODEL>` | `local` | Model to use for agent sessions. |
 | `--provider <PROVIDER>` | `local` | Provider to use for agent sessions. |
-| `--yolo` | - | Skip tool approval prompts for gateway sessions. |
 | `--output-format <FORMAT>` | `minimal` | Gateway stdout format: `json`, `human`, or `minimal`. |
-| `--system-prompt <PROMPT>` | - | Replace the default system prompt entirely. |
-| `--append-system-prompt <TEXT>` | - | Append content to the default system prompt. |
 | `--offline-model <PATH>` | - | Load a local GGUF model for all gateway conversations. |
-| `--allowed-tools <TOOLS>...` | - | Only allow these tools. Values are space-separated. |
-| `--disallowed-tools <TOOLS>...` | - | Remove these tools from the session. Values are space-separated. |
 | `-h`, `--help` | - | Print command help. |
 
 ### Examples
@@ -124,11 +118,12 @@ The update command checks for a newer Ante release and installs it when one is a
 
 | Argument | Description |
 |---|---|
-| `[CHANNEL]` | Release channel to update from (`stable` or `nightly`). Conflicts with `--channel`. |
+| `[CHANNEL]` | Release channel to update from (`stable` or `nightly`). `latest` is accepted as a legacy alias for `stable`. Conflicts with `--channel` and `--version`. |
 
 | Flag | Description |
 |---|---|
 | `--channel <CHANNEL>` | Release channel to update from. Equivalent to the positional form. |
+| `--version <VERSION>` | Install an exact release instead of the channel's newest release. Accepts values with or without a leading `v`, such as `v0.preview.33` or `0.preview.33`. Conflicts with channel arguments. |
 | `-h`, `--help` | Print command help. |
 
 ### Examples
@@ -137,6 +132,61 @@ The update command checks for a newer Ante release and installs it when one is a
 ante update
 ante update nightly
 ante update --channel stable
+ante update --version v0.preview.33
+```
+
+## `ante rage`
+
+```bash
+ante rage [OPTIONS]
+```
+
+When something goes wrong, `ante rage` gathers the context the Ante team needs to investigate into a single shareable archive that you can attach to a GitHub issue. By default it writes `./ante-rage-<timestamp>.tar.gz` and prints a short summary. Nothing is uploaded — the bundle stays local until you share it.
+
+Secrets are redacted before anything is written. API keys and OAuth tokens are reported only as present/absent (never their values), credentials embedded in URLs and known token shapes are masked, conversation transcripts and system prompts are excluded, and `~/.ante/auth/*.json` and `channels.json` are never included.
+
+The archive contains:
+
+| File | Contents |
+|---|---|
+| `report.md` | Ante version, OS/architecture, shell, git branch, the resolved model/provider, a provider authentication table (present/absent), and a redaction notice. |
+| `env.txt` | Ante-relevant environment variables. Safe values are shown verbatim; known secrets appear as `<SET>` / `<UNSET>` only. |
+| `settings.redacted.json` | `~/.ante/settings.json` with secrets removed (MCP server credentials are stripped). |
+| `catalog.redacted.json` | `~/.ante/catalog.json` with secrets removed, included only when a custom catalog exists. |
+| `logs/` | Recent application and crash logs, filtered and scrubbed. `DEBUG`/`TRACE` lines are dropped so request bodies never enter the bundle. |
+
+By default the newest logs are collected, up to 10 files or 10 MB (crash logs are always prioritized). Use `--since` to collect everything within a time window instead.
+
+| Flag | Description |
+|---|---|
+| `--output <PATH>` | Write the bundle to this path instead of `./ante-rage-<timestamp>.tar.gz`. |
+| `--no-compress` | Leave the staging folder uncompressed instead of producing a `.tar.gz`. |
+| `--verbose-logs` | Also include `DEBUG`/`TRACE` log lines. Conversation transcripts and system prompts are still excluded. |
+| `--since <DURATION>` | Collect every log modified within the window, ignoring the file-count and size limits. Accepts `<n>d`, `<n>h`, `<n>m`, or a bare number of days (for example `7d`, `48h`, `90m`, `2`). |
+| `-h`, `--help` | Print command help. |
+
+### Examples
+
+```bash
+ante rage
+ante rage --output ./ante-bug.tar.gz
+ante rage --since 7d
+ante rage --no-compress
+```
+
+## `ante catalog`
+
+```bash
+ante catalog
+```
+
+Print the merged provider/model catalog (built-in presets plus `~/.ante/catalog.json`) to stdout as JSON, in the same schema the catalog file uses. Warnings for skipped catalog entries go to stderr, so stdout stays a clean JSON document that pipes into `jq`. See the [Catalog Reference](/reference/catalog-reference) for the schema.
+
+### Examples
+
+```bash
+ante catalog
+ante catalog | jq '.providers | keys'
 ```
 
 ## Output Formats

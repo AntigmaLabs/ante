@@ -17,6 +17,17 @@ If a newer version exists, Ante runs the installer for the same channel and prin
 
 If you are already on the latest version, Ante prints a confirmation and exits without touching the binary.
 
+## Pin or roll back
+
+Install an exact release with `--version`:
+
+```bash
+ante update --version v0.preview.33
+ante update --version 0.preview.33
+```
+
+This bypasses the channel's "newer than current" check, so it can upgrade, reinstall the current version, or roll back to an older published release. When rolling back, Ante remembers the version you left so the next background update prompt does not immediately offer to reinstall it.
+
 ## Channels
 
 A release channel is a named track of builds. Ante publishes two:
@@ -35,6 +46,8 @@ The default channel is `stable`. The channel a binary tracks is stored in `~/.an
 ```
 
 Setting `channel` to an empty string or omitting it falls back to `stable`.
+
+`latest` is a retired channel name. Existing settings or commands that still use `latest` are treated as `stable`.
 
 ## Switching channels
 
@@ -61,6 +74,12 @@ curl -fsSL https://ante.run/install.sh | bash -s -- nightly
 ```
 
 Without an argument, the installer uses `stable`.
+
+By default the installer writes the binary to `~/.ante/bin`. Set `ANTE_INSTALL_DIR` to install into a directory that is already on your `PATH`:
+
+```bash
+curl -fsSL https://ante.run/install.sh | ANTE_INSTALL_DIR=/usr/local/bin bash
+```
 
 ## How update checks work
 

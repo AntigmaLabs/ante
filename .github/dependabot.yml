@@ -1,0 +1,23 @@
+version: 2
+updates:
+  - package-ecosystem: npm
+    directory: /docs-site
+    schedule:
+      interval: weekly
+    groups:
+      npm-dependencies:
+        patterns:
+          - "*"
+    ignore:
+      # @docusaurus/theme-mermaid only accepts ^0.1.9 as a peer; unpin once it widens the range
+      - dependency-name: "@mermaid-js/layout-elk"
+        versions: [">=0.2.0"]
+
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+    groups:
+      actions-dependencies:
+        patterns:
+          - "*"

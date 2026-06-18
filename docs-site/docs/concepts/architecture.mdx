@@ -141,20 +141,3 @@ Tools can be filtered at session level:
 5. Session spawns a `Turn` which communicates with the LLM
 6. Turn executes tools, requests approvals, and eventually completes
 7. When the context budget nears the limit, auto-compaction summarizes the history
-
-## Storage
-
-Ante stores configuration and state across several locations:
-
-| Location | Purpose |
-|---|---|
-| `~/.ante/settings.json` | User preferences (model, provider, theme) |
-| `~/.ante/catalog.json` | Custom provider/model catalog |
-| `~/.ante/skills/` | User-level skills |
-| `~/.ante/agents/` | User-level sub-agents |
-| `~/.ante/sessions/<session-id>/` | Persisted sessions (for `/resume` and `--resume`) |
-| `~/.ante/projects/<project-id>/memory/` | Per-project auto-memory |
-| `~/.ante/cache/<project-id>/` | Per-project temporary files |
-| `.ante/` | Project-local configuration (skills, sub-agents) |
-
-The `ANTE_HOME` environment variable can override the home config directory.

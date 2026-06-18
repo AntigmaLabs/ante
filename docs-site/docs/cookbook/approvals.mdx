@@ -9,18 +9,21 @@ Ante never runs destructive commands without your explicit approval. When the ag
 
 ## The approval flow
 
-Each tool call shows what the agent wants to do. Use the arrow keys to pick your response, then press Enter to confirm:
+Each tool call shows what the agent wants to do. Use the arrow keys to pick your response and press Enter, or hit the matching number directly:
 
 <img src="/assets/cookbook/approval.gif" alt="Reviewing and approving a tool call" style={{width: '100%', borderRadius: '8px', margin: '16px 0'}} />
 
 | Key | Action |
 |-----|--------|
-| `Up` / `Down` | Navigate between **Yes**, **Yes, and for future**, and **No** |
-| `Enter` | Confirm your selection |
-| `Tab` | Preview the proposed diff before deciding |
+| `↑` / `↓` | Navigate between the options |
+| `1` / `2` / `3` / `4` | Pick an option directly |
+| `y` / `Enter` | Confirm the highlighted option |
+| `Esc` | Reject the tool call |
+| `Tab` | Preview the proposed diff or request details |
 
-- **Yes** — approve this tool call
-- **Yes, and for future** — approve this and auto-approve the same tool for the rest of the session
+- **Yes** — approve this one call
+- **Yes, allow … for this session** — grant it for the rest of the session. The grant is [scoped](/configuration/permission#session-grants) — a Bash command generalizes to a safe prefix (approving `cargo test -p foo` covers `cargo test *`), so sibling calls don't re-prompt
+- **Yes, always allow … (save to settings)** — also persist an allow rule to `settings.json` so it applies in future sessions
 - **No** — reject the tool call; the agent will adjust its approach
 
 Press `Tab` to open a diff view and inspect exact line-by-line changes before committing.

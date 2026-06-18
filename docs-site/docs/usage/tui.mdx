@@ -21,10 +21,14 @@ The main view shows a conversation between you and the agent. Type your prompt i
 
 ### Tool approval
 
-When the agent wants to execute a tool that requires approval (like `Bash` or `Write`), you'll see an approval prompt. You can:
+When the agent wants to execute a tool that requires approval (like `Bash` or `Write`), you'll see an approval prompt. Pick an option with the number keys or arrow keys + Enter:
 
-- **Allow** the tool call
-- **Deny** it and the agent will adjust its approach
+- **Yes** — allow this one call
+- **Yes, allow … for this session** — grant it for the rest of the run ([scoped](/configuration/permission#session-grants), not blanket)
+- **Yes, always allow … (save to settings)** — also persist an allow rule to `settings.json`
+- **No** — reject it; the agent will adjust its approach
+
+Press `Tab` to preview the proposed diff or request details before deciding.
 
 ### Diff view
 
@@ -95,10 +99,12 @@ You can also resume from the CLI with `ante --resume <SESSION_ID>` (or `-r`) in 
 | `Ctrl+Enter` / `Alt+Enter` / `Shift+Enter` | Insert newline |
 | `Up` / `Down` | Move cursor, then navigate history |
 | `Tab` | Complete command or file path suggestion |
+| `Shift+Tab` | Cycle permission mode: `strict` → `auto` → `yolo` |
 | `Ctrl+R` | Start reverse-i-search through prompt history |
-| `Ctrl+C` | Interrupt current task (double-press to exit) |
+| `Ctrl+C` | Interrupt the active turn; double-press to exit when idle |
+| `Ctrl+S` | Steer queued messages into the running turn |
 | `Ctrl+D` | Exit application |
-| `Escape` | Close popup or interrupt active task |
+| `Escape` | Close a popup, or interrupt the active turn when none is open |
 
 ### Global shortcuts
 
@@ -123,10 +129,11 @@ You can also resume from the CLI with `ante --resume <SESSION_ID>` (or `-r`) in 
 
 | Key | Action |
 |---|---|
-| `a` | Accept tool call |
-| `A` | Accept all tool calls for this session |
-| `r` | Reject/skip tool call |
-| `d` | View diff preview |
+| `↑` / `↓` (or `k` / `j`) | Move between options |
+| `1` / `2` / `3` / `4` | Pick Yes / for-session / always-allow / No directly |
+| `y` / `Enter` | Confirm the highlighted option |
+| `Esc` | Reject the tool call |
+| `Tab` | Preview the diff or request details |
 
 ### Reverse search (Ctrl+R mode)
 
@@ -159,12 +166,4 @@ ante --allowed-tools Read Grep Glob
 ante --disallowed-tools Bash Write
 ante --yolo                       # skip all tool approvals
 ante --resume ses_01ARZ3NDEK...   # resume a previous session
-```
-
-## Streaming
-
-Streaming is enabled by default in TUI mode. To disable it:
-
-```bash
-ANTE_DISABLE_STREAMING=1 ante
 ```

@@ -2,27 +2,33 @@
   "name": "ante-docs",
   "version": "0.0.0",
   "private": true,
+  "engines": {
+    "node": ">=22"
+  },
   "scripts": {
+    "prestart": "node scripts/sync-changelog.mjs",
     "start": "docusaurus start",
+    "prebuild": "node scripts/sync-changelog.mjs",
     "build": "docusaurus build",
     "serve": "docusaurus serve",
     "clear": "docusaurus clear"
   },
   "dependencies": {
-    "@docusaurus/core": "^3.8.1",
-    "@docusaurus/preset-classic": "^3.8.1",
-    "@docusaurus/theme-mermaid": "^3.8.1",
-    "@easyops-cn/docusaurus-search-local": "^0.55.1",
+    "@docusaurus/core": "^3.10.1",
+    "@docusaurus/preset-classic": "^3.10.1",
+    "@docusaurus/theme-mermaid": "^3.10.1",
+    "@easyops-cn/docusaurus-search-local": "^0.55.2",
     "@mdx-js/react": "^3.0.0",
+    "@mermaid-js/layout-elk": "^0.1.9",
     "clsx": "^2.0.0",
-    "lucide-react": "latest",
+    "lucide-react": "^1.20.0",
     "prism-react-renderer": "^2.3.0",
-    "react": "^18.0.0",
-    "react-dom": "^18.0.0"
+    "react": "^19.2.7",
+    "react-dom": "^19.2.7"
   },
   "devDependencies": {
-    "@docusaurus/module-type-aliases": "^3.8.1",
-    "@docusaurus/types": "^3.8.1",
-    "typescript": "^5.0.0"
+    "@docusaurus/module-type-aliases": "^3.10.1",
+    "@docusaurus/types": "^3.10.1",
+    "typescript": "^6.0.3"
   }
 }

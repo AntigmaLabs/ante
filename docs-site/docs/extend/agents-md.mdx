@@ -1,0 +1,48 @@
+---
+title: "AGENTS.md"
+description: "Project and global instructions loaded into every Ante session"
+---
+
+`AGENTS.md` files give Ante persistent instructions that are separate from auto-memory. Use them for stable rules the agent should follow every time it works in a project.
+
+## Locations
+
+Ante reads two instruction files when the first user message in a session is submitted:
+
+| Location | Scope |
+|---|---|
+| `~/.ante/AGENTS.md` | Global instructions for all projects |
+| `<project>/AGENTS.md` | Project instructions checked into the codebase |
+
+The global path follows `ANTE_HOME`, so if you set `ANTE_HOME=/path/to/ante-home`, the global file is `/path/to/ante-home/AGENTS.md`.
+
+## How Ante applies instructions
+
+If both files exist, Ante includes them in one reminder block, with the global file first and the project file second. Empty files are ignored. If the global and project paths resolve to the same file, Ante includes it once.
+
+Project instructions are intended for repository-specific rules such as build commands, coding conventions, and architectural constraints. Global instructions are better for personal preferences that apply everywhere, such as response format or language style.
+
+## Example
+
+```markdown title="~/.ante/AGENTS.md"
+# Global preferences
+
+- Keep responses concise.
+- Prefer actionable explanations over background.
+```
+
+```markdown title="AGENTS.md"
+# Project rules
+
+- Run `cargo test --workspace` before changing Rust code.
+- Keep public protocol changes backward compatible.
+- Update docs when CLI flags or config files change.
+```
+
+## AGENTS.md vs MEMORY.md
+
+`AGENTS.md` is authored guidance. Ante reads it as instructions for how to behave.
+
+`MEMORY.md` is generated project memory. Ante uses it to carry learned context across sessions.
+
+Use `AGENTS.md` for rules you want to enforce. Use memory for observations that may change as the agent learns the codebase.

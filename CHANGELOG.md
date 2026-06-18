@@ -1,5 +1,140 @@
 # Changelog
 
+## v0.preview.41 - 2026-06-17
+
+- Rename persisted permission settings to the Claude-style `permissions` key and drop the legacy `permission_settings` alias
+- Scope permission rules to known primary tool args (Bash, Agent, Read, Edit) and render TUI tool-call args as the primary value when known
+
+## v0.preview.40 - 2026-06-16
+
+- Add scoped session permission grants with a subsumption algebra, collapsing batched approval prompts by re-evaluating them against already-granted scopes
+- Cycle permission modes with Shift+Tab
+- Rename the `Default` permission mode to `Strict` and drive permission mode through settings and the protocol
+- Rework turn interrupt and steer keys: Ctrl-C interrupts, Ctrl-S steers, and Esc is contextual and also interrupts an active turn
+- Keep the active turn alive across a session or model update
+- Show a live "still working" timer for quiet long-running tools
+- Report context usage as percent used in the status line
+- Cap compaction output by the remaining context window
+- Harden the safe-command classifier for `date`, `file`, `tree`, and abbreviated git options
+- Fix conservative model token budgets
+- Remove unsupported OpenAI subscription models
+- Remove the leading slash glyph from the empty input prompt
+
+## v0.preview.39 - 2026-06-14
+
+- Add layered permission configuration with an Auto mode and hardened settings handling
+- Stop wildcard permission rules from matching across sequence stages
+- Add a context-window-left metric to the TUI status line
+- Surface a startup notice when settings fail to parse instead of silently ignoring them
+- Add new antix OAuth models
+- Update the model catalog for Anthropic, OpenRouter, and ZAI, and add MiniMax M3 on OpenRouter
+- Stop orphaned subagent turns when a turn is interrupted
+- Classify in-stream OpenAI-compatible error events instead of failing opaquely
+- Improve OpenRouter error detail handling
+- Fix OpenRouter DeepSeek max thinking effort
+
+## v0.preview.38 - 2026-06-12
+
+- Always stream responses end to end and retire the session streaming flag; suppress raw deltas in headless output
+- Harden Bash safety classifiers
+- Add a command-based status line to the TUI (Claude Code-compatible)
+- Suggest a starter prompt and highlight slash commands on a fresh session
+- Handle terminal stop reasons before retrying empty responses
+- Fix OAuth refresh token response parsing
+- Harden WebFetch against binary responses
+- Fail fast in headless mode when the daemon dies, and explain the stdin EOF wait
+- Extend the typed LLM error taxonomy through streaming and provider error classification
+- Rework the session/turn lifecycle with explicit states and symmetric exits
+- Dependency updates
+
+## v0.preview.37 - 2026-06-10
+
+- Update the Anthropic model catalog for the latest Claude models
+- Introduce a typed LLM error taxonomy with per-kind recovery hints in error messages
+- Reconnect dropped streams mid-turn and treat cancellation as a first-class turn outcome, including while a stream is being opened
+- Surface content-filter stops like output-limit truncation instead of failing silently
+- Fix Gemini streaming: emit thought text and signature as one thinking delta, resolve tool-response names from the dialog's tool calls, count thinking tokens in output usage, and classify recitation/blocklist stops
+- Harden OpenAI-compatible streaming: accumulate tool-call deltas split across chunks, flush buffered tool calls on premature stream EOF, isolate malformed tool-call arguments, and keep the system prompt when no user message exists
+- Forward `max_output_tokens` and `temperature` to OpenAI and preserve truncated output
+- Propagate Anthropic message conversion errors instead of dropping messages
+- Honor the HTTP-date form of `Retry-After` headers when rate limited
+
+## v0.preview.35 - 2026-06-08
+
+- Add OpenRouter provider profiles
+- Show a sign-off message and bug-report hint when exiting the TUI
+- Set the terminal window title to "Ante"
+- Handle redacted thinking blocks from the latest Claude models
+- Prevent the Bash tool from inheriting stdin
+- Fix token usage accounting for Anthropic and OpenAI-compatible streaming
+
+## v0.preview.34 - 2026-06-06
+
+- Add OpenAI-compatible provider profiles
+- Surface subagent activity as live tool updates instead of separate turn events
+- Recover from transient API decode failures instead of crashing the run
+- Allow `ANTE_INSTALL_DIR` to override the install location and harden the install script
+- Unify the LLM streaming driver across providers for consistent streaming behavior
+- Dependency updates
+
+## v0.preview.33 - 2026-06-04
+
+- Add `ante update --version <V>` to pin or roll back to a specific release
+- Retire the legacy `latest` update channel and transparently resolve it to `stable`
+- Drive vision/image support from model metadata
+- Reduce Read and multiline Grep latency
+- Fix `@`-mention handling: dedupe repeats, honor `\@` escapes after multibyte characters, and stop dropping large mentioned files
+
+## v0.preview.32 - 2026-06-04
+
+- Add `ante catalog` command to print the merged model catalog as JSON
+- Show structured turn errors instead of a raw debug dump
+- Recover from transient connection resets instead of failing the run
+- Fix Anthropic 400 error from unsigned thinking blocks
+- Fix stale OAuth credential cache
+- Migrate the Grep tool to a streaming ripgrep-style search engine
+
+## v0.preview.31 - 2026-06-02
+
+- Wrap markdown table content in narrow TUI views
+- Fix approval prompt wrapping
+- Use bundled webpki TLS roots for all HTTP clients
+- Use a blocking HTTP client for OTLP telemetry exporters
+- Speed up file searches by pruning VCS directories during traversal
+
+## v0.preview.30 - 2026-05-31
+
+- Add `ante rage` command to bundle a bug report
+- Persist tool approvals via "always allow" and store allow/ask/deny rules in settings.json
+- Let Edit create a new file via an empty `old_string`
+- Suggest a similar path when Edit targets a missing file
+- Handle CRLF files correctly in Read/Edit
+- Harden Edit/Write filesystem guards
+- Allow arbitrary model ids for explicit providers
+- Improve OpenRouter provider defaults
+- Improve responsiveness of grep/glob searches
+- Fix character-based output truncation
+- Fix image decode limits
+- Dependency updates
+
+## v0.preview.29 - 2026-05-28
+
+- Add Claude Opus 4.7/4.8 and GPT-5.5-pro to the model catalog
+- Drop the retired Gemini 3.1 Flash Lite preview model
+- Add user model overrides to customize built-in model specs
+- Handle malformed user model config entries leniently
+- Use explicit OPENAI_COMPATIBLE_API_KEY for OpenAI-compatible providers
+- Fix persisting of empty sessions
+- Fix status bar truncation and clipping of overflowing hyperlinks
+- Dependency updates
+
+## v0.preview.28 - 2026-05-21
+
+- Support global `~/.ante/AGENTS.md` alongside project AGENTS.md
+- Update OpenAI model catalog and provider selector fallback
+- Add generic LLM model listing across providers
+- Re-enable antix smoke test in release workflow
+
 ## v0.preview.27 - 2026-05-19
 
 - Add OpenAI Responses WebSocket transport (opt-in)

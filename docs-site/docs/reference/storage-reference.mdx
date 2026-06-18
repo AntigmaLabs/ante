@@ -1,0 +1,134 @@
+---
+title: "Storage Reference"
+description: "Filesystem locations where Ante stores configuration and state"
+---
+
+Ante persists configuration and state on the local filesystem. This page is a reference for every location Ante reads or writes.
+
+## Locations
+
+| Location | Purpose |
+|---|---|
+| `~/.ante/settings.json` | User preferences (model, provider, theme, MCP servers) |
+| `~/.ante/catalog.json` | Custom provider/model catalog |
+| `~/.ante/AGENTS.md` | Global instructions injected into every project session |
+| `~/.ante/skills/` | User-level skills |
+| `~/.ante/agents/` | User-level sub-agents |
+| `~/.ante/sessions/<session-id>/` | Persisted sessions (for `/resume` and `--resume`) |
+| `~/.ante/projects/<project-id>/memory/` | Per-project auto-memory |
+| `~/.ante/cache/<project-id>/` | Per-project temporary files |
+| `AGENTS.md` | Project instructions injected alongside global instructions |
+| `.ante/` | Project-local configuration (skills, sub-agents) |
+| `.agents/`, `.claude/` | Additional project-local skill/sub-agent directories |
+
+`<project-id>` is a sanitized form of the project's absolute path. The `ANTE_HOME` environment variable overrides `~/.ante`.
+
+## `settings.json`
+
+Stores user preferences. All fields are optional.
+
+```json
+{
+  "model": "claude-sonnet-4-6",
+  "provider": "anthropic",
+  "theme": "default",
+  "permission_mode": "strict",
+  "permissions": {
+    "allow": ["Bash(npm run *)"],
+    "deny": ["Bash(rm *)"]
+  },
+  "channel": "stable",
+  "has_completed_onboarding": true,
+  "status_line": ["model-name", "current-dir"],
+  "model_thinking": {
+    "claude-sonnet-4-6": "Enabled",
+    "gpt-5.4": "Deep"
+  },
+  "mcp_servers": {
+    "filesystem": {
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-filesystem", "/tmp"]
+    }
+  }
+}
+```
+
+See [Preferences](/configuration/preference) for the full field reference and the precedence rules between this file, environment variables, and CLI flags.
+
+## `catalog.json`
+
+Adds or overrides providers and models on top of the built-in catalog. Both top-level keys are optional and keyed by id: a `providers` entry whose key matches a built-in (e.g. `openai`) replaces it, a new key adds a provider, and a `models` entry patches that model's fields wherever it is defined.
+
+```json
+{
+  "providers": {
+    "my-provider": {
+      "id": "my-provider",
+      "display_name": "My Provider",
+      "base_url": "https://api.example.com/v1",
+      "wire_style": "OpenAiCompatible",
+      "auth": { "bearer": { "env_key": "MY_PROVIDER_API_KEY" } }
+    }
+  },
+  "models": {
+    "claude-sonnet-4-6": { "thinking": "Deep", "max_tokens": 64000 }
+  }
+}
+```
+
+Malformed provider or model entries are skipped individually and reported at startup. Valid entries in the same file still load.
+
+See the [Catalog Reference](/reference/catalog-reference#catalogjson-schema) for the full schema, authentication forms, and resolution rules, and [Providers](/configuration/providers#custom-catalog) for customization recipes.
+
+## `AGENTS.md`
+
+Stores persistent instructions for the agent. `~/.ante/AGENTS.md` applies globally, and a project `AGENTS.md` applies to that repository. When both exist, Ante includes both in the first user message of a session.
+
+See [AGENTS.md](/extend/agents-md) for usage guidance and precedence details.
+
+## Layout
+
+### User-level (`~/.ante/`)
+
+```
+~/.ante/
+├── settings.json       # User preferences
+├── catalog.json        # Custom provider/model catalog
+├── AGENTS.md           # Global instructions
+├── skills/             # User-level skills
+├── agents/             # User-level sub-agents
+├── sessions/           # Persisted sessions (for /resume)
+├── projects/           # Per-project state (memory, etc.)
+│   └── <project-id>/
+│       └── memory/
+│           └── MEMORY.md
+└── cache/              # Per-project temporary files
+    └── <project-id>/
+```
+
+### Project-local
+
+```
+AGENTS.md               # Project instructions
+
+.ante/
+├── skills/             # Project-specific skills
+└── agents/             # Project-specific sub-agents
+
+.agents/
+├── skills/             # Project-specific skills
+└── agents/             # Project-specific sub-agents
+
+.claude/
+├── skills/             # Project-specific skills (Claude Code compatibility)
+└── agents/             # Project-specific sub-agents (Claude Code compatibility)
+```
+
+## Related
+
+- [Preferences](/configuration/preference) — full `settings.json` reference and environment variables
+- [Catalog Reference](/reference/catalog-reference) — `catalog.json` schema, built-in providers, and model IDs
+- [Providers](/configuration/providers) — choosing a provider and customization recipes
+- [Skills](/extend/skills) — skill directory layout
+- [Sub-agents](/extend/subagents) — sub-agent directory layout
+- [Memory](/extend/memory) — auto-memory format

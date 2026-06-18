@@ -7,13 +7,22 @@ description: "Course-correct the agent mid-thought to save time and tokens"
 
 Don't wait for the agent to finish a wrong turn. Ante lets you interrupt and redirect at any time.
 
-## Interrupting with Escape
+## Interrupting
 
-Press `Escape` while the agent is generating to stop it immediately. The agent keeps whatever context it had up to that point, so you can course-correct with a follow-up message — no need to start over.
+Press `Ctrl+C` while the agent is generating to stop the turn immediately. `Escape` also interrupts when no popup is open. The agent keeps whatever context it had up to that point, so you can course-correct with a follow-up message — no need to start over.
 
-<img src="/assets/cookbook/interrupt.gif" alt="Interrupting the agent with Escape" style={{width: '100%', borderRadius: '8px', margin: '16px 0'}} />
+<img src="/assets/cookbook/interrupt.gif" alt="Interrupting the agent" style={{width: '100%', borderRadius: '8px', margin: '16px 0'}} />
 
 This saves both time and tokens, especially when you see the agent heading in the wrong direction early on.
+
+## Steering without interrupting
+
+You don't have to stop the turn to redirect it. Type a message while the agent is working and press `Enter` — instead of starting a new turn, it's **queued**. Then:
+
+- Press `Ctrl+S` to **steer**: flush the queued messages into the running turn as live guidance, without interrupting it.
+- Or do nothing — queued messages are submitted automatically once the current turn ends.
+
+Steering keeps the agent's momentum while nudging its direction, which is ideal when it's on the right track but missing a detail ("also update the tests", "use the existing helper").
 
 ## Command history
 

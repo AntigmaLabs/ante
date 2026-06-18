@@ -12,10 +12,19 @@ Ante stores user preferences in `~/.ante/settings.json`:
   "model": "claude-sonnet-4-6",
   "provider": "anthropic",
   "theme": "default",
-  "policy": "default",
+  "permission_mode": "auto",
+  "permissions": {
+    "allow": ["Bash(npm run *)"],
+    "deny": ["Bash(rm *)"]
+  },
   "has_completed_onboarding": true,
   "channel": "stable",
   "status_line": ["model-name", "current-dir"],
+  "status_line_command": {
+    "command": "~/.config/ante/statusline.sh",
+    "padding": 1,
+    "refresh_interval": 5
+  },
   "model_thinking": {
     "claude-sonnet-4-6": "Enabled",
     "gpt-5.4": "Deep"
@@ -34,10 +43,12 @@ Ante stores user preferences in `~/.ante/settings.json`:
 | `model` | Default model name |
 | `provider` | Default API provider |
 | `theme` | TUI color theme |
-| `policy` | Default permission policy (`default` or `yolo`) |
+| `permission_mode` | Default permission mode (`strict`, `auto`, or `yolo`). Unrecognized values are ignored rather than failing the whole file |
+| `permissions` | Persistent tool permission rules, grouped by `allow`, `ask`, and `deny` matchers (see [Permissions](/configuration/permission)) |
 | `has_completed_onboarding` | Whether the onboarding flow has been completed |
-| `channel` | Release channel `ante update` tracks (`stable` or `nightly`). Defaults to `stable`. See [Update & Channels](/start/update). |
+| `channel` | Release channel `ante update` tracks (`stable` or `nightly`). Defaults to `stable`; legacy `latest` values are treated as `stable`. See [Update & Channels](/start/update). |
 | `status_line` | Items to display in the TUI status line footer (see below) |
+| `status_line_command` | Shell command that renders a fully custom status line (see below). Takes precedence over `status_line` while set |
 | `model_thinking` | Per-model thinking level overrides — keys are model names, values are `Disabled` / `Enabled` / `Deep` / `Max` |
 | `mcp_servers` | MCP servers to launch on session start (see [MCP Servers](/extend/mcp)) |
 
@@ -51,8 +62,67 @@ The `status_line` field controls which items appear in the TUI's footer bar. It 
 | `provider` | Current provider |
 | `current-dir` | Current working directory |
 | `git-branch` | Current Git branch (omitted when unavailable) |
+| `thinking-level` | Current thinking level (omitted when disabled) |
+| `pr-link` | GitHub pull request link for the current branch (requires `gh`) |
+| `context-used` | Context-window usage, shown as `N% ctx` of the window remaining (omitted until known) |
 
 Default: `["model-name", "current-dir"]`. Configure via `~/.ante/settings.json` or the `/statusline` command in the TUI.
+
+### Command-based status line
+
+For full control, `status_line_command` runs a shell command of your choice and renders its output as the status line, replacing the item-based one:
+
+```json
+{
+  "status_line_command": {
+    "command": "~/.config/ante/statusline.sh",
+    "padding": 1,
+    "refresh_interval": 5
+  }
+}
+```
+
+A plain string is accepted as shorthand: `"status_line_command": "echo hello"`.
+
+| Field | Description |
+|---|---|
+| `command` | Script path or inline shell command, run via `sh -c` (required) |
+| `padding` | Extra horizontal padding in columns (default: `0`) |
+| `refresh_interval` | Also re-run every N seconds (minimum 1). Useful for clocks or external data. Omit to run only on session events |
+
+**How it works.** Ante pipes a JSON snapshot of the session to your command's stdin and displays whatever it prints to stdout. The command re-runs (debounced at 300ms) after each assistant message and whenever the model, provider, thinking mode, pull request, working directory, or terminal size changes. Runs are capped at 5 seconds, and a newer run cancels the one in flight.
+
+The JSON input is a compatible subset of [Claude Code's statusline input](https://code.claude.com/docs/en/statusline), so existing Claude Code statusline scripts work unchanged:
+
+```json
+{
+  "cwd": "/work/repo",
+  "session_id": "ses_...",
+  "version": "0.1.0",
+  "model": { "id": "claude-sonnet-4-6", "display_name": "claude-sonnet-4-6" },
+  "workspace": { "current_dir": "/work/repo", "project_dir": "/work/repo" },
+  "thinking": { "enabled": true },
+  "pr": { "number": 7, "url": "https://github.com/..." },
+  "context": { "pct_used": 18, "used_tokens": 36000, "limit_tokens": 200000 },
+  "provider": "anthropic"
+}
+```
+
+`pr` is present only when an open pull request is detected for the current branch; `context` is present after the first response when the model's context limit is known. `provider` and `context` are Ante extensions. The command also receives `COLUMNS` and `LINES` (current terminal size) and `ANTE_PROJECT_DIR` (nearest ancestor with `.git`) in its environment.
+
+**Output.** Each line of stdout becomes a footer row (up to 8). ANSI colors and OSC 8 hyperlinks are rendered; color state carries across lines. Blank lines are dropped, and empty output renders a blank status line.
+
+A minimal example script:
+
+```bash
+#!/bin/sh
+input=$(cat)
+model=$(echo "$input" | jq -r '.model.display_name')
+dir=$(basename "$(echo "$input" | jq -r '.workspace.current_dir')")
+printf '\033[36m[%s]\033[0m %s' "$model" "$dir"
+```
+
+Make it executable (`chmod +x`) before pointing `command` at it. If the command fails — not executable, non-zero exit, or timeout — the footer shows a one-line diagnostic such as `status line: sh: …: Permission denied` based on the script's stderr. Script changes are picked up on the next run, but changes to `settings.json` itself require a restart.
 
 Settings can be overridden per-session via CLI flags.
 
@@ -83,8 +153,8 @@ Settings can be overridden per-session via CLI flags.
 | `MODEL_CONTEXT_LIMIT` | Override max context window size (integer) |
 | `ANTE_LOCAL_PROVIDER_PORT` | Override the local provider port (default: 8080) |
 | `ANTE_HOME` | Override the home config directory (default: `~/.ante`) |
-| `ANTE_DISABLE_STREAMING` | Disable streaming responses in TUI mode |
-| `ANTE_OPENAI_TRANSPORT` | OpenAI Responses transport: `http_sse` (default) or `websocket_auto` (see [OpenAI transports](./providers#openai-transports)) |
+| `ANTE_INSTALL_DIR` | Installer-only override for the binary install directory (default: `~/.ante/bin`) |
+| `ANTE_OPENAI_TRANSPORT` | OpenAI Responses transport: `http_sse` (default) or `websocket_auto` (see [OpenAI transports](/reference/catalog-reference#openai-transports)) |
 
 ## Directory structure
 
@@ -94,6 +164,7 @@ Settings can be overridden per-session via CLI flags.
 ~/.ante/
 ├── settings.json      # User preferences
 ├── catalog.json       # Custom provider/model catalog
+├── AGENTS.md          # Global instructions
 ├── sessions/          # Persisted sessions (for /resume)
 ├── skills/            # User-level skills
 └── agents/            # User-level sub-agents
@@ -102,6 +173,8 @@ Settings can be overridden per-session via CLI flags.
 ### Project-level
 
 ```
+AGENTS.md              # Project instructions
+
 .ante/
 ├── skills/            # Project-specific skills
 └── agents/            # Project-specific sub-agents

@@ -24,7 +24,7 @@ pub struct OpMsg {
 #[allow(clippy::large_enum_variant)]
 #[derive(Debug, Clone, Deserialize, Serialize)]
 pub enum Op {
-    StartSession(SessionConfig),
+    StartSession(SessionOverrides),
     UpdateSession(SessionUpdate),
     Interrupt,
     UserInput(String),
@@ -55,7 +55,13 @@ pub enum Evt {
     SessionStart(Box<SessionInitialized>),
     SessionUpdated(Box<SessionInitialized>),
     ExtensionRefreshed(Box<ExtensionRefreshed>),
-    SessionEnd,
+    /// The session span closed. Mirrors `TurnEnd`: carries the span's
+    /// identity, why it ended, and its final usage accounting.
+    SessionEnd {
+        session_id: Id,
+        reason: SessionEndReason,
+        usage: Usage,
+    },
     UserInput(String),
     AgentMessage(String),
     Thinking(String),
@@ -95,12 +101,23 @@ pub enum Evt {
         turn_id: Id,
         reason: TurnPauseReason,
     },
+    /// The turn resumed after a `TurnPause` (e.g. the approval was answered
+    /// or a steer arrived). Closes the pause bracket so clients never have to
+    /// infer resumption from the next tool event.
+    TurnResume {
+        turn_id: Id,
+    },
     TurnEnd {
         turn_id: Id,
         status: TurnEndStatus,
     },
     UsageUpdate {
         usage: Usage,
+        /// Context-window occupancy for the root session, pre-calculated in core.
+        /// `None` before the first response or when the model's context limit is
+        /// unverified (so clients never render a confidently-wrong percentage).
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        context: Option<ContextWindow>,
     },
     Goodbye,
 }
@@ -108,6 +125,14 @@ pub enum Evt {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum TurnPauseReason {
     Approval { tools: Vec<ToolUse>, message: String },
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+pub enum SessionEndReason {
+    /// The session was replaced by a new or resumed session.
+    Replaced,
+    /// The daemon is shutting down.
+    Shutdown,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -118,7 +143,13 @@ pub enum TurnEndStatus {
         reason: Option<String>,
     },
     Error {
-        message: String,
+        /// One-line summary. For a classified LLM failure this is the semantic
+        /// error kind, e.g. "rate limited"; otherwise the top of the error chain.
+        headline: String,
+        /// Expanded cause shown as indented child rows beneath the headline,
+        /// e.g. ["HTTP 400 Bad Request", "<server-provided message>"]. May be
+        /// empty when there is nothing useful to add.
+        details: Vec<String>,
     },
 }
 
@@ -150,6 +181,9 @@ pub enum ReviewDecision {
     Accept,
     Skip,
     AcceptForSession,
+    /// Approve and persist an allow rule to settings.json so the same call is
+    /// auto-approved across future sessions ("always allow").
+    AcceptAlways,
     Abort,
 }
 
@@ -170,7 +204,8 @@ pub struct SubagentMetadata {
 
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]
 pub struct ProviderSpec {
-    pub name: String,
+    #[serde(alias = "name")]
+    pub id: String,
     pub display_name: String,
     pub base_url: String,
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
@@ -183,11 +218,22 @@ pub struct SessionInitialized {
     pub provider: ProviderSpec,
     pub session_id: Id,
     pub cwd: PathBuf,
+    pub permission_mode: PermissionMode,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+/// Partial update to a live session's mutable state. Each field is optional so
+/// a caller patches only what changed; absent fields are left untouched. The
+/// daemon resolves any catalog-dependent fields and dispatches each to the
+/// matching `Session` setter.
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
 pub struct SessionUpdate {
-    pub model: ModelSpec,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub model: Option<ModelSpec>,
+    /// Permission mode change. Applied via the non-aborting `set_permission_mode`
+    /// setter, so it takes effect on the next turn without disturbing an
+    /// in-flight one.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub permission_mode: Option<PermissionMode>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -223,16 +269,30 @@ pub struct McpToolParam {
     pub description: String,
 }
 
+/// A patch of session overrides produced by every caller (CLI, TUI, gateway,
+/// external `serve` clients). `None` means "leave unchanged" for every field —
+/// there is exactly one meaning, regardless of who built the value.
+///
+/// This is the wire payload of [`Op::StartSession`]. The daemon folds it onto a
+/// resolved `SessionConfig` (an internal type in `ante::core::session_config`)
+/// to produce the configuration a session actually runs with.
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]
-pub struct SessionConfig {
-    pub model: String,
-    pub provider: String,
-    pub policy: Option<PermissionMode>,
-    pub streaming: bool,
+pub struct SessionOverrides {
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub model: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub provider: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub permission_mode: Option<PermissionMode>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
     pub system_prompt: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
     pub append_system_prompt: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
     pub allowed_tools: Option<Vec<String>>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
     pub disallowed_tools: Option<Vec<String>>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
     pub cwd: Option<PathBuf>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub thinking: Option<Thinking>,
@@ -280,7 +340,10 @@ fn elide(s: &str, max: usize) -> std::borrow::Cow<'_, str> {
 
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]
 pub struct ModelSpec {
-    pub name: String,
+    #[serde(alias = "name")]
+    pub id: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub display_name: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub description: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -297,6 +360,14 @@ pub struct ModelSpec {
     pub context_limit: Option<u32>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub thinking: Option<Thinking>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub support_vision: Option<bool>,
+}
+
+impl ModelSpec {
+    pub fn support_vision(&self) -> bool {
+        self.support_vision.unwrap_or(true)
+    }
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, Copy, PartialEq, Eq, Hash)]
@@ -307,15 +378,50 @@ pub enum Thinking {
     Max,
 }
 
+/// Token usage for one model response.
+///
+/// Convention, uniform across every provider mapping: `input_tokens` is the
+/// **full, cache-inclusive prompt size**. It always contains `cache_read_tokens`
+/// as a subset (verified live: OpenAI/OpenRouter/DeepSeek report it inside
+/// `prompt_tokens`; the Anthropic mapping adds it back since that API reports
+/// input net of cache). `cache_creation_tokens` is likewise inside `input_tokens`
+/// for providers that report cache writes (Anthropic); the OpenAI-style
+/// providers we use don't report writes at all. So [`Usage::total`]
+/// (`input + output`) is the context-window occupancy.
+///
+/// For **cost**, the cache buckets bill at different rates, so subtract them
+/// from the input rate instead of charging the full rate twice:
+/// `cost = (input - cache_read - cache_creation)·p_in
+///        + cache_read·p_cache_read + cache_creation·p_cache_write
+///        + output·p_out`.
 #[derive(Debug, Clone, Deserialize, Serialize, Default, Copy)]
 #[serde(default)]
 pub struct Usage {
+    /// Full prompt tokens, cache-inclusive (a superset of the two cache fields).
     pub input_tokens: u32,
+    /// Generated output (completion) tokens.
     pub output_tokens: u32,
+    /// Subset of `input_tokens` served from the prompt cache (cheaper rate).
     #[serde(skip_serializing_if = "Option::is_none")]
     pub cache_read_tokens: Option<u32>,
+    /// Subset of `input_tokens` written into the prompt cache (surcharge rate).
     #[serde(skip_serializing_if = "Option::is_none")]
     pub cache_creation_tokens: Option<u32>,
+}
+
+/// Context-window occupancy snapshot for the current (root) session, surfaced in
+/// the statusline. `pct_used` is measured against the auto-compact threshold (not
+/// the raw ceiling), so it reads ~0% on a fresh session and 100% when compaction
+/// is imminent.
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq)]
+pub struct ContextWindow {
+    /// Tokens currently occupying the window (cache-inclusive input + output of
+    /// the most recent response).
+    pub used_tokens: u32,
+    /// Raw model context limit (e.g. 200_000).
+    pub limit_tokens: u32,
+    /// Percent of the usable window consumed (0-100); 100 = at the compaction threshold.
+    pub pct_used: u8,
 }
 
 impl Usage {
@@ -323,6 +429,7 @@ impl Usage {
         Self { input_tokens, output_tokens, cache_read_tokens: None, cache_creation_tokens: None }
     }
 
+    /// Context-window occupancy: the full (cache-inclusive) prompt plus output.
     pub fn total(&self) -> u32 {
         self.input_tokens.saturating_add(self.output_tokens)
     }
@@ -360,8 +467,14 @@ impl std::ops::AddAssign<Usage> for Usage {
 #[derive(Debug, Clone, Copy, Serialize, Deserialize, Default, Eq, PartialEq)]
 #[serde(rename_all = "snake_case")]
 pub enum PermissionMode {
+    /// Honor user rules; an unmatched call asks unless it is provably safe.
     #[default]
-    Default,
+    Strict,
+    /// Honor user rules; an unmatched call runs unless it is provably
+    /// dangerous (a deliberately narrow classifier — see
+    /// `tools::shell::is_dangerous`).
+    Auto,
+    /// Bypass all permission checks, including user deny rules.
     Yolo,
 }
 
@@ -376,14 +489,15 @@ pub enum Scope {
 #[cfg(test)]
 mod tests {
     use super::{
-        Evt, ExtensionRefreshed, Id, ModelSpec, Op, ProviderSpec, SessionInitialized,
-        SessionUpdate, ToolUse, Usage,
+        Evt, ExtensionRefreshed, Id, ModelSpec, Op, PermissionMode, ProviderSpec,
+        SessionInitialized, SessionUpdate, ToolUse, Usage,
     };
     use std::path::PathBuf;
 
     fn model_spec(name: &str) -> ModelSpec {
         ModelSpec {
-            name: name.to_string(),
+            id: name.to_string(),
+            display_name: None,
             description: None,
             temperature: None,
             top_p: None,
@@ -392,12 +506,13 @@ mod tests {
             stop_sequences: None,
             context_limit: None,
             thinking: None,
+            support_vision: None,
         }
     }
 
     fn provider_spec(name: &str) -> ProviderSpec {
         ProviderSpec {
-            name: name.to_string(),
+            id: name.to_string(),
             display_name: name.to_string(),
             base_url: format!("https://api.{name}.test/v1"),
             preferred_models: vec![model_spec("preferred-model")],
@@ -424,6 +539,29 @@ mod tests {
     }
 
     #[test]
+    fn session_end_and_turn_resume_serde_roundtrip() {
+        let session_id = Id::new("ses");
+        let end = Evt::SessionEnd {
+            session_id,
+            reason: super::SessionEndReason::Shutdown,
+            usage: Usage::new(10, 5),
+        };
+        let json = serde_json::to_string(&end).expect("serialize SessionEnd");
+        let decoded = serde_json::from_str::<Evt>(&json).expect("deserialize SessionEnd");
+        assert!(matches!(
+            decoded,
+            Evt::SessionEnd { session_id: id, reason: super::SessionEndReason::Shutdown, usage }
+                if id == session_id && usage.total() == 15
+        ));
+
+        let turn_id = Id::new("op");
+        let resume = Evt::TurnResume { turn_id };
+        let json = serde_json::to_string(&resume).expect("serialize TurnResume");
+        let decoded = serde_json::from_str::<Evt>(&json).expect("deserialize TurnResume");
+        assert!(matches!(decoded, Evt::TurnResume { turn_id: id } if id == turn_id));
+    }
+
+    #[test]
     fn extension_refreshed_serde_roundtrip() {
         let event = Evt::ExtensionRefreshed(Box::new(ExtensionRefreshed {
             session_id: Id::new("ses"),
@@ -445,7 +583,8 @@ mod tests {
     #[test]
     fn session_update_op_serde_roundtrip() {
         let op = Op::UpdateSession(SessionUpdate {
-            model: ModelSpec { temperature: Some(0.2), ..model_spec("gpt-5.4") },
+            model: Some(ModelSpec { temperature: Some(0.2), ..model_spec("gpt-5.4") }),
+            permission_mode: Some(PermissionMode::Yolo),
         });
 
         let json = serde_json::to_string(&op).expect("serialize UpdateSession");
@@ -453,8 +592,11 @@ mod tests {
 
         assert!(matches!(
             decoded,
-            Op::UpdateSession(SessionUpdate { model })
-                if model.name == "gpt-5.4" && model.temperature == Some(0.2)
+            Op::UpdateSession(SessionUpdate {
+                model: Some(model),
+                permission_mode: Some(PermissionMode::Yolo),
+            })
+                if model.id == "gpt-5.4" && model.temperature == Some(0.2)
         ));
     }
 
@@ -466,6 +608,7 @@ mod tests {
             provider: provider_spec("anthropic"),
             session_id,
             cwd: PathBuf::from("/tmp/session-updated"),
+            permission_mode: PermissionMode::default(),
         }));
 
         let json = serde_json::to_string(&event).expect("serialize SessionUpdated");
@@ -474,8 +617,8 @@ mod tests {
         assert!(matches!(
             decoded,
             Evt::SessionUpdated(payload)
-                if payload.model.name == "claude-sonnet-4-6"
-                    && payload.provider.name == "anthropic"
+                if payload.model.id == "claude-sonnet-4-6"
+                    && payload.provider.id == "anthropic"
                     && payload.provider.base_url == "https://api.anthropic.test/v1"
                     && payload.provider.preferred_models.len() == 1
                     && payload.session_id == session_id

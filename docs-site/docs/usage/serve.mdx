@@ -50,7 +50,7 @@ See the [Protocol Reference](/reference/protocol-reference) for the complete mes
 # Start the daemon, sending JSONL to its stdin via a named pipe
 mkfifo /tmp/ante-pipe
 ante serve < /tmp/ante-pipe &
-echo '{"op":{"StartSession":{"model":"claude-sonnet-4-6","provider":"anthropic","streaming":true}},"id":"op_001"}' > /tmp/ante-pipe
+echo '{"op":{"StartSession":{"model":"claude-sonnet-4-6","provider":"anthropic"}},"id":"op_001"}' > /tmp/ante-pipe
 echo '{"op":{"UserInput":"what is 2+2"},"id":"op_002"}' > /tmp/ante-pipe
 ```
 
@@ -74,7 +74,7 @@ ante.stdout.on("data", (chunk) => {
 });
 
 ante.stdin.write(JSON.stringify({
-  op: { StartSession: { model: "claude-sonnet-4-6", provider: "anthropic", streaming: true } },
+  op: { StartSession: { model: "claude-sonnet-4-6", provider: "anthropic" } },
   id: "op_001"
 }) + "\n");
 

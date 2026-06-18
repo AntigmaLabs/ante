@@ -38,7 +38,7 @@ const sidebars: SidebarsConfig = {
     {
       type: 'category',
       label: 'Extensibility',
-      items: ['extend/skills', 'extend/subagents', 'extend/mcp', 'extend/memory'],
+      items: ['extend/skills', 'extend/subagents', 'extend/mcp', 'extend/agents-md', 'extend/memory'],
     },
     {
       type: 'category',
@@ -62,8 +62,11 @@ const sidebars: SidebarsConfig = {
         'reference/cli-reference',
         'reference/protocol-reference',
         'reference/tools-reference',
+        'reference/catalog-reference',
+        'reference/storage-reference',
       ],
     },
+    'changelog',
   ],
   antix: [
     {
@@ -81,6 +84,7 @@ const sidebars: SidebarsConfig = {
         'antix/concepts/organizations',
         'antix/concepts/virtual-keys',
         'antix/concepts/endpoints',
+        'antix/concepts/models',
         'antix/concepts/error-handling',
         'antix/concepts/security',
       ],
