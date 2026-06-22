@@ -427,9 +427,8 @@ pub struct Usage {
 }
 
 /// Context-window occupancy snapshot for the current (root) session, surfaced in
-/// the statusline. `pct_used` is measured against the auto-compact threshold (not
-/// the raw ceiling), so it reads ~0% on a fresh session and 100% when compaction
-/// is imminent.
+/// the statusline. Raw measurements only — any percentage is a presentation
+/// concern derived at the edges, with no policy (e.g. auto-compaction) baked in.
 #[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq)]
 pub struct ContextWindow {
     /// Tokens currently occupying the window (cache-inclusive input + output of
@@ -437,8 +436,20 @@ pub struct ContextWindow {
     pub used_tokens: u32,
     /// Raw model context limit (e.g. 200_000).
     pub limit_tokens: u32,
-    /// Percent of the usable window consumed (0-100); 100 = at the compaction threshold.
-    pub pct_used: u8,
+}
+
+impl ContextWindow {
+    /// Percent of the raw window consumed (0-100). A presentation convenience for
+    /// renderers; measured against the raw limit, not any compaction threshold.
+    #[allow(clippy::cast_possible_truncation, clippy::cast_sign_loss, clippy::cast_precision_loss)]
+    pub fn used_percentage(&self) -> u8 {
+        if self.limit_tokens == 0 {
+            return 100;
+        }
+        ((f64::from(self.used_tokens) / f64::from(self.limit_tokens)) * 100.0)
+            .round()
+            .clamp(0.0, 100.0) as u8
+    }
 }
 
 impl Usage {
