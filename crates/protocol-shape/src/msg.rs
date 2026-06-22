@@ -28,6 +28,7 @@ pub enum Op {
     UpdateSession(SessionUpdate),
     Interrupt,
     UserInput(String),
+    ShellInput(String),
     Steer(String),
     ApprovalResponse {
         turn_id: Id,
@@ -63,6 +64,12 @@ pub enum Evt {
         usage: Usage,
     },
     UserInput(String),
+    ShellOutput {
+        command: String,
+        stdout: String,
+        stderr: String,
+        exit_code: Option<i32>,
+    },
     AgentMessage(String),
     Thinking(String),
     MessageDelta(String),
@@ -168,12 +175,20 @@ pub enum ToolEndStatus {
     Failed,
 }
 
+impl ToolEndStatus {
+    /// Whether this terminal status represents an error result. Mirrors the
+    /// LLM-facing `ToolResult::is_error`: anything but a clean completion
+    /// (failure, denial, cancellation) is an error.
+    pub fn is_error(self) -> bool {
+        !matches!(self, ToolEndStatus::Completed)
+    }
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ToolEnd {
     pub tool_use_id: String,
     pub status: ToolEndStatus,
     pub result_json: serde_json::Value,
-    pub is_error: bool,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -296,6 +311,8 @@ pub struct SessionOverrides {
     pub cwd: Option<PathBuf>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub thinking: Option<Thinking>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub enable_auto_memory: Option<bool>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
