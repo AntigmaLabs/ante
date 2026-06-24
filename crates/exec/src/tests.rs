@@ -270,6 +270,8 @@ async fn run_with_timeout_tracks_stdout_and_stderr_truncation_independently() ->
     assert_eq!(result.stderr, b"klmrst".to_vec());
     assert_eq!(result.stdout_omitted_bytes, 4);
     assert_eq!(result.stderr_omitted_bytes, 4);
+    assert_eq!(result.stdout_head_bytes, 3);
+    assert_eq!(result.stderr_head_bytes, 3);
     Ok(())
 }
 

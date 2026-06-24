@@ -171,6 +171,12 @@ impl HeadTailBuffer {
         self.omitted_bytes
     }
 
+    /// Length in bytes of the retained head (the split point: `to_bytes()` is
+    /// the head followed by the tail, with `omitted_bytes` dropped between).
+    pub fn head_bytes(&self) -> usize {
+        self.head_bytes
+    }
+
     fn trim_tail_for(&mut self, incoming_bytes: usize, tail_budget: usize) {
         while self.tail_bytes + incoming_bytes > tail_budget {
             let overflow = self.tail_bytes + incoming_bytes - tail_budget;
