@@ -379,6 +379,8 @@ pub struct ModelSpec {
     pub thinking: Option<Thinking>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub support_vision: Option<bool>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub weight_class: Option<WeightClass>,
 }
 
 impl ModelSpec {
@@ -393,6 +395,23 @@ pub enum Thinking {
     Enabled,
     Deep,
     Max,
+}
+
+/// Innate size/cost class of a model, set once per model in the catalog.
+///
+/// Orthogonal to the per-request [`Thinking`] effort and to `context_limit`:
+/// a model's weight class reflects roughly how large and costly it is to run,
+/// not how hard it is asked to think on a given turn. Variants are declared in
+/// ascending order so the derived `Ord` sorts `Feather < Middle < Heavy`.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize)]
+#[serde(rename_all = "lowercase")]
+pub enum WeightClass {
+    /// Small, fast, cheap (Haiku- / GPT-nano-class).
+    Feather,
+    /// Mid workhorse (Sonnet- / GPT-mini- / Gemini-Flash-class).
+    Middle,
+    /// Largest, most capable, costliest (Opus- / GPT-5.x- / Gemini-Pro-class).
+    Heavy,
 }
 
 /// Token usage for one model response.
@@ -518,7 +537,7 @@ pub enum Scope {
 mod tests {
     use super::{
         Evt, ExtensionRefreshed, Id, ModelSpec, Op, PermissionMode, ProviderSpec,
-        SessionInitialized, SessionUpdate, ToolUse, Usage,
+        SessionInitialized, SessionUpdate, ToolUse, Usage, WeightClass,
     };
     use std::path::PathBuf;
 
@@ -535,7 +554,32 @@ mod tests {
             context_limit: None,
             thinking: None,
             support_vision: None,
+            weight_class: None,
         }
+    }
+
+    #[test]
+    fn weight_class_serializes_lowercase_and_is_omitted_when_none() {
+        let mut spec = model_spec("m");
+        spec.weight_class = Some(WeightClass::Heavy);
+        let json = serde_json::to_value(&spec).unwrap();
+        assert_eq!(json["weight_class"], "heavy");
+
+        // None is skipped, not emitted as null.
+        let json_none = serde_json::to_value(model_spec("m")).unwrap();
+        assert!(json_none.get("weight_class").is_none());
+
+        // Round-trips from the lowercase wire form.
+        let parsed: ModelSpec =
+            serde_json::from_value(serde_json::json!({"id": "m", "weight_class": "feather"}))
+                .unwrap();
+        assert_eq!(parsed.weight_class, Some(WeightClass::Feather));
+    }
+
+    #[test]
+    fn weight_class_orders_feather_lightest_to_heavy_heaviest() {
+        assert!(WeightClass::Feather < WeightClass::Middle);
+        assert!(WeightClass::Middle < WeightClass::Heavy);
     }
 
     fn provider_spec(name: &str) -> ProviderSpec {
