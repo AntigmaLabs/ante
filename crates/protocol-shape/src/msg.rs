@@ -385,8 +385,37 @@ pub struct ModelSpec {
 
 impl ModelSpec {
     pub fn support_vision(&self) -> bool {
-        self.support_vision.unwrap_or(true)
+        self.support_vision.unwrap_or_else(|| is_known_vision_capable(&self.id))
     }
+}
+
+fn is_known_vision_capable(id: &str) -> bool {
+    let id = id.to_ascii_lowercase();
+    contains_any(
+        &id,
+        &[
+            "claude-haiku-4",
+            "claude-opus-4",
+            "claude-sonnet-4",
+            "gemini",
+            "gpt-5.4",
+            "gpt-5.5",
+            "gpt-5-mini",
+            "gpt-5-nano",
+            "kimi-k2.7",
+            "minimax-m3",
+            "multimodal",
+            "omni",
+            "pixtral",
+            "qwen3-vl",
+            "qwen3.7-plus",
+            "vision",
+        ],
+    )
+}
+
+fn contains_any(haystack: &str, needles: &[&str]) -> bool {
+    needles.iter().any(|needle| haystack.contains(needle))
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, Copy, PartialEq, Eq, Hash)]
@@ -580,6 +609,46 @@ mod tests {
     fn weight_class_orders_feather_lightest_to_heavy_heaviest() {
         assert!(WeightClass::Feather < WeightClass::Middle);
         assert!(WeightClass::Middle < WeightClass::Heavy);
+    }
+
+    #[test]
+    fn support_vision_explicit_override_wins() {
+        let mut spec = model_spec("xiaomi/mimo-v2.5-pro");
+        spec.support_vision = Some(true);
+        assert!(spec.support_vision());
+
+        let mut spec = model_spec("gemini-3.5-flash");
+        spec.support_vision = Some(false);
+        assert!(!spec.support_vision());
+    }
+
+    #[test]
+    fn support_vision_defaults_false_without_known_vision_marker() {
+        for id in [
+            "deepseek/deepseek-v4-pro",
+            "z-ai/glm-5.2",
+            "openai/gpt-5.3-codex",
+            "qwen/qwen3-coder-plus",
+            "xiaomi/mimo-v2.5-pro",
+            "xiaomi/mimo-v2.5",
+            "unknown-model",
+        ] {
+            assert!(!model_spec(id).support_vision(), "{id} should default to no vision");
+        }
+    }
+
+    #[test]
+    fn support_vision_infers_vision_capable_models() {
+        for id in [
+            "anthropic/claude-sonnet-4-6",
+            "google/gemini-3.5-flash",
+            "openai/gpt-5.5",
+            "openai/gpt-5-mini",
+            "qwen/qwen3-vl-plus",
+            "qwen/qwen3.7-plus",
+        ] {
+            assert!(model_spec(id).support_vision(), "{id} should support vision");
+        }
     }
 
     fn provider_spec(name: &str) -> ProviderSpec {
