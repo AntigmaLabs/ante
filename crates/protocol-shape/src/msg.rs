@@ -48,7 +48,35 @@ pub enum Op {
     RestoreLocalProvider,
     /// Manually trigger conversation compaction on the active session.
     Compact,
+    /// Request an ad-hoc "thinking phrase" prediction for the in-progress
+    /// draft. Runs off the conversation critical path on a cheap model and
+    /// answers with `Evt::Ambient`. `req_id` lets the client discard stale
+    /// results when a newer request supersedes this one.
+    AmbientPhrase {
+        draft: String,
+        req_id: u64,
+    },
+    /// Request an ad-hoc next-prompt suggestion from the last exchange, shown as
+    /// input ghost text. Like [`Op::AmbientPhrase`] it runs off the critical
+    /// path on a cheap model and answers with `Evt::Ambient`. The client carries
+    /// the context (so this stays a client-only feature — headless never fires
+    /// it) and a monotonic `req_id` to drop stale results.
+    AmbientSuggestion {
+        recent_user: String,
+        recent_agent: String,
+        req_id: u64,
+    },
     Shutdown,
+}
+
+/// Which ambient feature produced an [`Evt::Ambient`]. Both run off the main
+/// conversation on a cheap model; they differ in trigger, prompt, and sink.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
+pub enum AmbientKind {
+    /// Predicted phrase for the in-progress draft, shown in the status spinner.
+    ThinkingPhrase,
+    /// Suggested next prompt from the conversation so far, shown as input ghost text.
+    PromptSuggestion,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -125,6 +153,15 @@ pub enum Evt {
         /// unverified (so clients never render a confidently-wrong percentage).
         #[serde(default, skip_serializing_if = "Option::is_none")]
         context: Option<ContextWindow>,
+    },
+    /// An ephemeral ambient hint produced off the main conversation (a predicted
+    /// "thinking phrase" for the draft, or a suggested next prompt — see
+    /// [`AmbientKind`]). Never persisted to the event log. `req_id` lets clients
+    /// drop superseded results.
+    Ambient {
+        kind: AmbientKind,
+        req_id: u64,
+        text: String,
     },
     Goodbye,
 }
@@ -304,9 +341,9 @@ pub struct SessionOverrides {
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub append_system_prompt: Option<String>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub allowed_tools: Option<Vec<String>>,
+    pub include_tools: Option<Vec<String>>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub disallowed_tools: Option<Vec<String>>,
+    pub exclude_tools: Option<Vec<String>>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub cwd: Option<PathBuf>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
