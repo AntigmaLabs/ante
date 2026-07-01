@@ -20,7 +20,7 @@ This page is the exhaustive reference. For how to pick a provider day to day and
 | Vertex AI Gemini | `vertex-gemini` | `Gemini` | `VERTEX_GEMINI_API_KEY` |
 | Open Router | `openrouter` | `OpenAiCompatible` | `OPENROUTER_API_KEY` |
 | Grok (xAI) | `xai` | `OpenAiResponse` | `XAI_API_KEY` |
-| Zai | `zai` | `OpenAiCompatible` | `Z_AI_API_KEY` |
+| Zai | `zai` | `OpenAiCompatible` | `ZAI_API_KEY` |
 | DeepSeek | `deepseek` | `OpenAiCompatible` | `DEEPSEEK_API_KEY` |
 | Ali Coding Plan | `ali-coding-plan` | `AnthropicMessage` | `ALI_CODING_PLAN_API_KEY` |
 | Antix | `antix` | `AnthropicMessage` | OAuth |
@@ -39,12 +39,13 @@ Each provider ships a set of `preferred_models` — the ids that appear in the m
 
 | Model | Description | Context |
 |---|---|---|
-| `claude-haiku-4-5` | Fast and capable | 200K |
+| `claude-haiku-4-5` | Fastest model with near-frontier intelligence | 200K |
+| `claude-sonnet-5` | Best combination of speed and intelligence | 1M |
 | `claude-sonnet-4-6` | Fast and capable | 1M |
-| `claude-opus-4-8` | Most capable, slower | 1M |
+| `claude-opus-4-8` | Most capable Opus-tier model | 1M |
 
 ```bash
-ante --provider anthropic --model claude-sonnet-4-6
+ante --provider anthropic --model claude-sonnet-5
 ```
 
 ### OpenAI
