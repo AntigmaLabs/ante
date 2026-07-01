@@ -325,9 +325,8 @@ pub struct McpToolParam {
 /// external `serve` clients). `None` means "leave unchanged" for every field —
 /// there is exactly one meaning, regardless of who built the value.
 ///
-/// This is the wire payload of [`Op::StartSession`]. The daemon folds it onto a
-/// resolved `SessionConfig` (an internal type in `ante::core::session_config`)
-/// to produce the configuration a session actually runs with.
+/// This is the wire payload of [`Op::StartSession`]: the requested session
+/// configuration. Unset fields fall back to the daemon's defaults.
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]
 pub struct SessionOverrides {
     #[serde(default, skip_serializing_if = "Option::is_none")]
@@ -431,8 +430,11 @@ fn is_known_vision_capable(id: &str) -> bool {
     contains_any(
         &id,
         &[
+            "claude-fable-5",
             "claude-haiku-4",
+            "claude-mythos-5",
             "claude-opus-4",
+            "claude-sonnet-5",
             "claude-sonnet-4",
             "gemini",
             "gpt-5.4",
@@ -677,7 +679,9 @@ mod tests {
     #[test]
     fn support_vision_infers_vision_capable_models() {
         for id in [
+            "anthropic/claude-fable-5",
             "anthropic/claude-sonnet-4-6",
+            "anthropic/claude-sonnet-5",
             "google/gemini-3.5-flash",
             "openai/gpt-5.5",
             "openai/gpt-5-mini",
