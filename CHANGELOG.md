@@ -1,5 +1,14 @@
 # Changelog
 
+## v0.preview.48 - 2026-07-01
+
+- Add an orange grid style for the composer and sent user messages
+- Automatically reconnect on transient mid-stream errors, with consolidated provider error parsing
+- Rework the session into a self-driving actor with a fan-in mailbox, and fix follow-up turn-lifecycle regressions so exactly one end-of-turn event fires per turn
+- Improve offline CUDA detection and local-server diagnostics
+- Read the Zai provider API key from `ZAI_API_KEY`
+- Fix a UTF-8 truncation bug in the ambient prompt
+
 ## v0.preview.46 - 2026-06-28
 
 - Predict a short, task-specific spinner phrase while you type a longer prompt and show it as the spinner label for that turn (best-effort, runs on the cheapest model, off the critical path)
