@@ -1,5 +1,10 @@
 # Changelog
 
+## v0.preview.51 - 2026-07-01
+
+- Add Claude Fable 5 routes to the model catalog
+- Remove simple agent mode and its dedicated prompt/config path
+
 ## v0.preview.48 - 2026-07-01
 
 - Add an orange grid style for the composer and sent user messages
@@ -439,4 +444,3 @@
 - Fix OAuth callback server cancellation and bind errors
 - Adjust OpenAI reasoning effort mapping
 - Dependency updates
-
