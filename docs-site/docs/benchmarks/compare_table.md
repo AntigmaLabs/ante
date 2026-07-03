@@ -1,4 +1,17 @@
-# Docker Resource Usage Comparison — 20 Parallel Tasks Aggregate
+---
+title: "Resource Footprint"
+description: "Docker-measured resource usage across 20 parallel tasks — Ante vs Claude Code vs Opencode"
+---
+
+# Resource Footprint
+
+Mass parallelism only pays off if a single agent is cheap enough to multiply. To measure that, we ran the same 20 tasks in parallel through Ante, Claude Code, and Opencode, each inside Docker with identical constraints, and recorded CPU, memory, and disk usage throughout the run.
+
+Headline result: Ante uses **~7× less peak memory**, **~9× less average CPU**, and **~5× less disk I/O** than Claude Code on the same workload.
+
+![Resource usage comparison across 20 parallel tasks](./compare_animated.gif)
+
+The full measurements are below.
 
 ## Overview
 

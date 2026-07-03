@@ -4,6 +4,7 @@
 </p>
 
 <p align="center">
+  <a href="https://antigma.ai/eval"><img src="https://img.shields.io/badge/Terminal--Bench_2.1-live_results-2ea44f?logo=speedtest&logoColor=white" /></a>
   <a href="https://discord.gg/CbAsUR434B"><img src="https://img.shields.io/badge/Discord-Join%20Us-5865F2?logo=discord&logoColor=white" /></a>
   <a href="https://docs.antigma.ai"><img src="https://img.shields.io/badge/Docs-docs.antigma.ai-orange?logo=safari&logoColor=white" /></a>
   <a href="https://twitter.com/antigma_labs"><img src="https://img.shields.io/badge/X-@antigma__labs-black?logo=x&logoColor=white" /></a>
@@ -15,41 +16,52 @@
 > **⚠️ Alpha Preview**
 > Ante is currently in alpha and provided as a research preview. Expect breaking changes and incomplete functionality. macOS and Linux only.
 
-Ante is an **AI-native, cloud-native, local-first agent runtime** built by [Antigma Labs](https://antigma.ai) — a single ~15MB Rust binary with zero runtime dependencies.
+**A ghost in your shell.** Ante is a self-contained coding agent that lives in your terminal and self-organizes. One ~15MB Rust binary from [Antigma Labs](https://antigma.ai), zero runtime dependencies, built to get the most out of any model.
 
-Today it's the lightest, fastest terminal agent you can run: bring your own key, switch between 12+ providers freely, or go fully offline with local models — no account required. That same tiny core is the point. It's light enough to run by the *thousands* — the substrate we're building for self-organizing intelligence.
+It works like Claude Code or Codex, with none of their dependencies or model constraints. It can also be the optimized core for building your own harness and high-performing assistants.
 
 > **We care about the harness, not the model or the prompts.**
 >
 > **Documentation is the new source code.**
 
-Most agents ship a Node or Python runtime and a tree of dependencies — fine for a single chat, ruinous when you want a hundred running at once. Ante is hand-written Rust with the heavy parts — `Grep`, `git`, and local inference — embedded in the same binary and run in the same process. The result: **~7× less memory** than Claude Code across 20 parallel tasks and a deliberate resistance to AI-generated slop.
+Every agent claims to be good. Here are numbers you can check:
 
-## Key Features
+### 🥇 Proven in public, on the builds we ship
 
-- **Rock-solid optimized agent core** — A meticulously engineered core — runtime, scheduler, and built-in toolset — in ~15MB of native Rust with zero dependencies. Built for minimal overhead and maximum throughput.
-- **Native local models** — Built-in local inference. No API keys, no internet, no data leaving your device.
-- **Zero vendor lock-in** — Bring your own API key or local model. Switch between 12+ providers freely. No account required.
-- **Client-daemon architecture** — Run as an interactive TUI, headless CLI, or long-lived server (`ante serve`).
-- **Channel integrations** — Run Ante as a Slack or Discord bot with `ante gateway`.
-- **Multi-agent orchestration** — Spawn sub-agents and coordinate complex tasks across independent, decentralized, and centralized architectures. [See the patterns →](https://docs.antigma.ai/experimental/agent-org)
-- **Extensible** — Custom skills, sub-agents, and persistent memory across sessions.
+Ante runs [Terminal-Bench 2.1](https://antigma.ai/eval) continuously under official leaderboard constraints. For every model we run, Ante is the **#1 same-model agent**. Each result pins the exact build you can download and links the raw Harbor run for independent audit. With open-weight **GLM 5.2, Ante scores 74.6%**: a top-7 slot on the public verified leaderboard.
 
-> [!NOTE]
-> **Benchmark proven.** Public, [reproducible evals](https://docs.antigma.ai/benchmarks/eval) on user-facing builds.
-> - 🥇 Topped **Terminal Bench 2.0** (verified agent)
-> - 🥇 Topped **Terminal Bench 1.0**
-> - More to come
+**[Live results →](https://antigma.ai/eval)** · [Methodology →](https://docs.antigma.ai/benchmarks/eval)
 
-## Performance
+### 🪶 A fraction of the footprint
 
-Mass parallelism only pays off if a single agent is cheap enough to multiply. Ante's ~15MB Rust core uses a fraction of the memory, CPU, and disk I/O of comparable agents — making it practical without specialized infrastructure.
-
-Docker resource usage across 20 parallel tasks (Ante vs Claude Code vs Opencode):
+Ante is hand-written Rust with the heavy parts (`Grep`, `git`, local inference) embedded in one binary, one process. Across the same 20 parallel tasks in Docker, Ante uses **~7× less peak memory**, **~9× less average CPU**, and **~5× less disk I/O** than Claude Code.
 
 ![Resource Usage Comparison](docs-site/docs/benchmarks/compare_animated.gif)
 
-Across 20 parallel tasks, Ante uses **~7× less peak memory**, **~9× less average CPU**, and generates **~5× less total disk I/O** than Claude Code — while completing the same workload. See the [comparison table](docs-site/docs/benchmarks/compare_table.md) and the [benchmark details](docs-site/docs/benchmarks/eval.mdx) for the evaluation methodology and results.
+**[Raw numbers →](docs-site/docs/benchmarks/compare_table.md)** · [Benchmark details →](docs-site/docs/benchmarks/eval.mdx)
+
+### 🔌 Natively offline
+
+Ante ships its own inference engine. Point it at a GGUF file and the whole loop runs on your machine: no API key, no account, no internet.
+
+```sh
+ante --offline-model ~/.ante/models/Qwen3.5-9B-Q4_K_M.gguf \
+  -p "add error handling to src/main.rs"
+```
+
+**[Offline mode →](https://docs.antigma.ai/experimental/offline)**
+
+---
+
+The three are one design decision. An agent you can **verify**, **afford**, and **run anywhere** is light enough to run by the *thousands*: the substrate for self-organizing intelligence.
+
+## Beyond the headline numbers
+
+- **Zero vendor lock-in** — Bring your own API key, subscription, or local model. Switch between 12+ providers freely. No account required — not even ours.
+- **Client-daemon architecture** — Run as an interactive TUI, headless CLI, or long-lived server (`ante serve`).
+- **Channel integrations** — Run Ante as a Slack or Discord bot with `ante gateway`.
+- **Multi-agent orchestration** — Spawn sub-agents and coordinate complex tasks across independent, decentralized, and centralized architectures. [See the patterns →](https://docs.antigma.ai/experimental/agent-org)
+- **Extensible** — Custom skills, sub-agents, MCP, and persistent memory across sessions.
 
 ## Quick Start
 
@@ -203,6 +215,10 @@ Ante works with 12+ providers out of the box:
 
 Configure providers via environment variables (`ANTHROPIC_API_KEY`, `OPENAI_API_KEY`, etc.) or OAuth. Add custom providers in `~/.ante/catalog.json`.
 
+## The bigger picture
+
+Ante is designed for **cellular-native** agents: like cells in an organism, tiny, expendable, massively replicated. That thesis is why the three headline claims exist. A cell-scale agent must be *verified* (reliability compounds at scale), *tiny* (every byte is multiplied by thousands), and *self-contained* (no runtime to install, no service to phone home to). Read more in our [philosophy](https://docs.antigma.ai/start/philosophy) and [agent organization patterns](https://docs.antigma.ai/experimental/agent-org).
+
 ## FAQ
 
 ### Why <span style="color: #f59e0b;">An</span>other <span style="color: #f59e0b;">Te</span>rminal agent?
@@ -211,16 +227,18 @@ The name is the answer: **An**other **Te**rminal agent — and *ante*, the stake
 
 <details>
 <summary><b>How is Ante different than other agents</b></summary>
-On the high level, it has most of your favorite features (Multi-agents, skills, etc.) of your favorite agents (like Claude Code, Codex, etc.) 
+On the high level, it has most of your favorite features (Multi-agents, skills, etc.) of your favorite agents (like Claude Code, Codex, etc.)
 
-- Ante is built from scratch in native Rust. We're obsessed with being self-contained — only essential libraries, no framework or runtime dependencies. 
+- Ante is built from scratch in native Rust. We're obsessed with being self-contained — only essential libraries, no framework or runtime dependencies.
 
-- You only need an LLM provider configured to run it. And if you have the hardware, you don't even need one — Ante natively supports a private inference engine. 
+- You only need an LLM provider configured to run it. And if you have the hardware, you don't even need one — Ante natively supports a private inference engine.
 
 - This resulted in ~15MB self-contained binary and multi-agent orchestration designed to run hundreds of replicas in parallel at scale.
 See the [benchmark details](docs-site/docs/benchmarks/eval.mdx) across 20 parallel tasks for concrete numbers.
 
-- No vendor lock-in, not even to ourselves. You don't need an account and can reuse your favorite API credentials. 
+- Every claim above is backed by public, reproducible benchmarks of the exact builds we ship: see [antigma.ai/eval](https://antigma.ai/eval).
+
+- No vendor lock-in, not even to ourselves. You don't need an account and can reuse your favorite API credentials.
 
 </details>
 

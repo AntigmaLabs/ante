@@ -10,8 +10,14 @@ const sidebars: SidebarsConfig = {
     },
     {
       type: 'category',
+      label: 'Benchmarks',
+      collapsed: false,
+      items: ['benchmarks/eval', 'benchmarks/compare_table'],
+    },
+    {
+      type: 'category',
       label: 'Using Ante',
-      items: ['usage/tui', 'usage/headless', 'usage/serve', 'usage/gateway'],
+      items: ['usage/tui', 'usage/headless', 'usage/serve', 'usage/gateway', 'experimental/offline'],
     },
     {
       type: 'category',
@@ -43,17 +49,12 @@ const sidebars: SidebarsConfig = {
     {
       type: 'category',
       label: 'Experimental',
-      items: ['experimental/offline', 'experimental/agent-org'],
+      items: ['experimental/agent-org'],
     },
     {
       type: 'category',
       label: 'Concepts',
       items: ['concepts/core-concepts', 'concepts/architecture'],
-    },
-    {
-      type: 'category',
-      label: 'Benchmarks',
-      items: ['benchmarks/eval'],
     },
     {
       type: 'category',

@@ -8,7 +8,7 @@ const socialLinkHtml = (label: string, icon: string) =>
 
 const config: Config = {
   title: 'Ante',
-  tagline: 'ai-native, cloud-native, local-first agent runtime',
+  tagline: 'a ghost in your shell: self-contained, self-organizing, benchmarked in public',
   favicon: 'assets/ante2.png',
   url: 'https://ante.run',
   baseUrl: '/',
@@ -62,6 +62,11 @@ const config: Config = {
           label: 'Antix',
         },
         {
+          href: 'https://antigma.ai/eval',
+          position: 'left',
+          label: 'Live Eval',
+        },
+        {
           href: 'https://antigma.ai',
           html: socialLinkHtml('Home', websiteIcon),
           position: 'right',
@@ -93,6 +98,8 @@ const config: Config = {
           items: [
             { label: 'Overview', to: '/' },
             { label: 'Quickstart', to: '/start/quickstart' },
+            { label: 'Benchmarks', to: '/benchmarks/eval' },
+            { label: 'Offline Mode', to: '/experimental/offline' },
             { label: 'Configuration', to: '/configuration/providers' },
           ],
         },
@@ -107,6 +114,7 @@ const config: Config = {
           title: 'Company',
           items: [
             { label: 'Home', href: 'https://antigma.ai' },
+            { label: 'Live Eval', href: 'https://antigma.ai/eval' },
           ],
         },
       ],

@@ -1,35 +1,37 @@
 ---
 title: Overview
-description: "Ante — ai-native, cloud-native, local-first agent runtime"
+description: "Ante — a ghost in your shell: self-contained, self-organizing, benchmarked in public"
 slug: /
 ---
 
 # Ante
 
-An **ai-native, cloud-native, local-first** agent runtime, built by [Antigma Labs](https://antigma.ai). Today it's the lightest, fastest terminal agent you can run — offline if you want. That same tiny core is what lets you run a thousand of them: a precursor to our mission of building substrate for self-organizing intelligence.
+**A ghost in your shell.** Ante is a self-contained coding agent that lives in your terminal and self-organizes. One ~15MB Rust binary from [Antigma Labs](https://antigma.ai), zero runtime dependencies, built to get the most out of any model.
 
-Built from the ground up in native Rust — a single self-contained binary with no external dependencies.
+It works like Claude Code or Codex, with none of their dependencies or model constraints. It can also be the optimized core for building your own harness and high-performing assistants.
 
-### Key features
+Every agent claims to be good. Here are numbers you can check:
 
 <CardGroup cols={3}>
-  <Card title="Lightweight agent core" icon="feather">
-    A single ~15MB binary with zero runtime dependencies. Built for minimal overhead and maximum throughput — the ideal runtime for orchestrating agents at cellular scale.
+  <Card title="Proven in public" icon="chart-line" href="https://antigma.ai/eval">
+    #1 same-model agent on Terminal-Bench 2.1: for every model we run, no other harness scores higher with that model. Every result pins the exact downloadable build and links the raw Harbor run. Live at antigma.ai/eval.
   </Card>
-  <Card title="Native local models" icon="microchip">
-    Run models entirely on your machine with built-in llama.cpp integration. No API keys, no internet, no data leaving your device. Ante handles engine installation, model discovery, and memory management automatically.
+  <Card title="A fraction of the footprint" icon="feather" href="/benchmarks/compare_table">
+    Across the same 20 parallel tasks, Ante uses ~7× less peak memory, ~9× less average CPU, and ~5× less disk I/O than Claude Code.
   </Card>
-  <Card title="Zero vendor lock-in" icon="lock-open">
-    Bring your own API key, subscription, or local model. Switch between 12+ providers freely — Anthropic, OpenAI, Gemini, Grok, Open Router, and more. No account required, no telemetry gate, no walled garden. Not even ours.
+  <Card title="Natively offline" icon="wifi-slash" href="/experimental/offline">
+    A built-in inference engine runs GGUF models locally. No API key, no account, no internet, no data leaving your machine.
   </Card>
 </CardGroup>
 
-### Why Ante?
+The three are one design decision. An agent you can verify, afford, and run anywhere is light enough to run by the *thousands*: the substrate for self-organizing intelligence. See [Philosophy](/start/philosophy).
 
-- **Obsessed with simplicity and quality.** In a world of abundance, maintaining quality and a high level of trust is more valuable than ever.
-- **Self-contained with [offline mode](/experimental/offline).** Your data stays on your machine. No phone-home, no telemetry gate.
+### Beyond the headline numbers
+
+- **Zero vendor lock-in.** Bring your own API key, subscription, or local model. Switch between 12+ providers freely — Anthropic, OpenAI, Gemini, Grok, Open Router, and more. No account required, no telemetry gate, no walled garden. Not even ours.
 - **[Multi-agent orchestration](/experimental/agent-org).** Coordinate multiple agents that self-organize around complex tasks.
-- **Benchmark proven.** Public, reproducible evals with downloadable builds. See [Benchmarks](/benchmarks/eval).
+- **Extensible.** Custom [skills](/extend/skills), [sub-agents](/extend/subagents), [MCP](/extend/mcp), and persistent [memory](/extend/memory) across sessions.
+- **Obsessed with simplicity and quality.** In a world of abundance, maintaining quality and a high level of trust is more valuable than ever.
 
 ### How it works
 
@@ -49,11 +51,17 @@ Ante is currently in **preview** and under active development. Expect breaking c
   <Card title="Quickstart" icon="bolt" href="/start/quickstart">
     Install Ante and run your first prompt in under a minute.
   </Card>
+  <Card title="Benchmarks" icon="chart-line" href="/benchmarks/eval">
+    How we benchmark what we ship — and the live Terminal-Bench results.
+  </Card>
   <Card title="Philosophy" icon="book" href="/start/philosophy">
     The product and engineering principles we optimize for.
   </Card>
   <Card title="Interactive TUI" icon="terminal" href="/usage/tui">
     Learn to use the rich terminal interface.
+  </Card>
+  <Card title="Offline Mode" icon="wifi-slash" href="/experimental/offline">
+    Run Ante fully offline with local models.
   </Card>
   <Card title="Server Mode" icon="server" href="/usage/serve">
     Drive Ante programmatically over stdio or WebSocket.
@@ -70,14 +78,8 @@ Ante is currently in **preview** and under active development. Expect breaking c
   <Card title="Core Concepts" icon="shapes" href="/concepts/core-concepts">
     Understand sessions, tasks, turns, and the protocol.
   </Card>
-  <Card title="Offline Mode" icon="wifi-slash" href="/experimental/offline">
-    Run Ante fully offline with local models.
-  </Card>
   <Card title="Agent Organization" icon="sitemap" href="/experimental/agent-org">
     How Ante self-organizes agents for complex tasks.
-  </Card>
-  <Card title="Benchmarks" icon="chart-line" href="/benchmarks/eval">
-    See how Ante performs on Terminal Bench.
   </Card>
   <Card title="Antix Enterprise" icon="server" href="/antix/introduction">
     Scale your AI with Antigma's enterprise LLM Proxy and Identity Provider.

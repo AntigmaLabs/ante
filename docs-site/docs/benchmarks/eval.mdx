@@ -1,17 +1,44 @@
 ---
 title: "Benchmarks"
-description: "Ante's benchmark results and evaluation methodology"
+sidebar_label: "Terminal-Bench"
+description: "Public, reproducible benchmarks of the exact builds we ship — live results at antigma.ai/eval"
 ---
 
 # Benchmarks
 
-## Signal over noise
+## We benchmark what we ship
 
-Benchmarks are the primary way to get real data before getting users. We care about **signal**, not noise — fewer high-quality metrics that actually reflect agent quality beat comprehensive but misleading suites.
+Our benchmarks are designed to be checked:
 
-Our evals are **public and reproducible**. The builds we evaluate are publicly downloadable so anyone can verify results independently. The evaluated codebase is available at [AntigmaLabs/ante-preview](https://github.com/AntigmaLabs/ante-preview) for independent verification.
+- **The build is the product.** Every eval runs against a pinned, publicly downloadable Ante release, the same binary `ante update` installs (e.g. `0.preview.43`). No eval-only branches, no benchmark-specific prompts.
+- **The runs are auditable.** Every result links its raw [Harbor](https://github.com/laude-institute/harbor) run, so anyone can inspect the trials behind the number.
+- **The constraints are official.** All trials use the same parameters as the official Terminal-Bench leaderboard: 89 tasks, 5 trials per task, strict timeouts and hardware limits.
+- **The results are live.** We publish continuously at [antigma.ai/eval](https://antigma.ai/eval).
 
-## Terminal Bench results
+## Terminal-Bench 2.1: one harness, any model
+
+We evaluate the **agent harness**, not the model. So instead of one hero number, we publish Ante's score across many models. For **every model we run, Ante is the #1 same-model agent**: no other harness posts a higher score with that model.
+
+Highlights from the [live dashboard](https://antigma.ai/eval) (as of June 2026):
+
+| Model | Accuracy | Same-model rank |
+|---|---|---|
+| GLM 5.2 | **74.6%** ±2.06 | #1 |
+| MiMo V2.5 | 65.8% ±2.30 | #1 |
+| DeepSeek V4 Pro | 65.8% ±2.25 | #1 |
+| DeepSeek V4 Flash | 62.7% ±2.29 | #1 |
+| MiniMax M3 | 62.1% ±2.33 | #1 |
+
+Two things worth noticing:
+
+- **Ante + GLM 5.2 at 74.6%** would place in the top 7 of the public verified leaderboard, with an open-weight model.
+- **Ante + DeepSeek V4 Pro reaches 65.8%**: comparable accuracy to frontier closed-model harness combinations on the public leaderboard, for about $36 of inference across the full 445-trial run.
+
+A good harness moves the frontier down-market: it makes open-weight models do work you'd otherwise pay frontier prices for.
+
+**[Explore the live results →](https://antigma.ai/eval)**
+
+## Track record
 
 - #1 on the Terminal Bench 1.0 leaderboard (2025)
 - #1 on the Terminal Bench 2.0 leaderboard among verified agents — and best in class among Gemini-based agents (February 2026)
@@ -43,6 +70,10 @@ We use [Terminal Bench](https://github.com/laude-institute/terminal-bench) and [
 Why Terminal Bench:
 - **Rigorous.** Unambiguous task specs, deterministic grading where possible, and isolated execution environments.
 - **Focused on core capability.** Can the agent accomplish real tasks in a real shell? Reading context, reasoning, acting, verifying — the exact loop we are building Ante around.
+
+## Resource footprint
+
+Capability is half the story; cost to run is the other half. See [Resource Footprint](/benchmarks/compare_table) for Docker-measured CPU, memory, and disk usage across 20 parallel tasks — Ante vs Claude Code vs Opencode.
 
 ## Evaluation principles
 
