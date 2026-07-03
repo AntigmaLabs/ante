@@ -1,5 +1,13 @@
 # Changelog
 
+## v0.preview.52 - 2026-07-02
+
+- Fix skill slash command injection
+- Warn when deprecated tool filter aliases are used
+- Broadly shrink and streamline default prompts and tool descriptions across the agent, skills, OAuth, and TodoWrite flows as model capabilities improve
+- Polish TUI styling for composer input, status line, agent bullets, and sent-message bars
+- Dependency updates
+
 ## v0.preview.51 - 2026-07-01
 
 - Add Claude Fable 5 routes to the model catalog
