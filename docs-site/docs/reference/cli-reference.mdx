@@ -39,14 +39,13 @@ Without `--prompt`, Ante starts the interactive TUI. With `--prompt`, Ante runs 
 | `--append-system-prompt <TEXT>` | Append content to the default system prompt. |
 | `--enable-auto-memory` | Enable auto-memory for this run. Conflicts with `--disable-auto-memory`. |
 | `--disable-auto-memory` | Disable auto-memory for this run. Conflicts with `--enable-auto-memory`. |
-| `--include-tools <TOOLS>...` | Only allow these tools. Values are space-separated. (`--allowed-tools` and `--tools` are accepted as aliases.) |
-| `--exclude-tools <TOOLS>...` | Remove these tools from the session. Values are space-separated. (`--disallowed-tools` is accepted as an alias.) |
+| `--include-tools <TOOLS>...` | Only allow these tools. Values are space-separated. `--tools` is a short alias; `--allowed-tools` is a deprecated alias that still works but prints a warning. |
+| `--exclude-tools <TOOLS>...` | Remove these tools from the session. Values are space-separated. `--disallowed-tools` is a deprecated alias that still works but prints a warning. |
 | `--output-format <FORMAT>` | Headless output format: `json`, `human`, or `minimal`. Defaults to `minimal`. |
 | `-p`, `--prompt <PROMPT>` | Prompt to run in headless mode. Also supports stdin when piped. |
 | `--check` | Run a verification pass after the headless task completes. |
 | `-r`, `--resume <SESSION_ID>` | Resume a previous session by ID. |
 | `--offline-model <PATH>` | Path to a local GGUF model file for offline inference. |
-| `--simple-agent` | Use the built-in simple agent prompt with `PTY`, `ViewImage`, and `WebSearch` tools. |
 | `-h`, `--help` | Print command help. |
 | `-V`, `--version` | Print the Ante version. |
 

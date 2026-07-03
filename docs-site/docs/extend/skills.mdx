@@ -40,20 +40,13 @@ review/
 ---
 name: review
 description: Review code changes for bugs, security issues, and style.
-allowed-tools:
-  - Read
-  - Glob
-  - Grep
+argument-hint: <path>
 ---
 
 Review the code at $ARGUMENTS for bugs, security vulnerabilities, style issues, and missing error handling.
 
 See [checklist](references/checklist.md) for the full review checklist.
 ```
-
-:::note
-The `allowed-tools` field also accepts a comma-separated string (`"Read, Glob, Grep"`) or a space-separated string (`"Read Glob Grep"`) in addition to the YAML array format.
-:::
 
 Frontmatter parsing is lenient for common scalar mistakes: unquoted values that
 contain `: `, begin with flow-like characters such as `[` or `{`, or include
@@ -79,8 +72,9 @@ Malformed nested YAML still fails so broken metadata does not load silently.
 | `argument-hint` | No | — | Hint text for expected arguments (e.g. `<path>`) |
 | `user-invocable` | No | `true` | Whether the skill can be invoked via slash command |
 | `disable-model-invocation` | No | `false` | Prevents the model from invoking this skill automatically |
-| `allowed-tools` | No | — | Pre-approved tools the skill can use |
 | `metadata` | No | — | Arbitrary key-value pairs |
+
+Unrecognized fields from other agent products (such as `allowed-tools`) are tolerated but ignored, so existing skills load without modification.
 
 ## Optional directories
 
@@ -110,7 +104,15 @@ Skills are discovered in precedence order (later overrides earlier by skill name
 /review src/core/session.rs
 ```
 
-The `$ARGUMENTS` placeholder in the skill instructions is replaced with whatever you pass after the skill name.
+Anything you type after the skill name is passed to the skill as arguments. How they land in the instructions depends on which placeholders the skill uses:
+
+| Placeholder | Replaced with |
+|---|---|
+| `$ARGUMENTS` | The full argument string, verbatim |
+| `${1}`, `${2}`, … | The first, second, … whitespace-separated argument (quoted values stay grouped) |
+| `${1:default}` | The positional argument, or `default` when it is missing |
+
+If a skill's instructions contain no placeholders, the arguments are appended in an `<arguments>` block so the agent still sees them.
 
 ## Learn more
 

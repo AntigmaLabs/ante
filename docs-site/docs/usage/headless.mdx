@@ -51,11 +51,10 @@ ante [OPTIONS] [--prompt <PROMPT>]
 | `--output-format <FORMAT>` | Output format: `json`, `human`, `minimal` (default: `minimal`) |
 | `--system-prompt <PROMPT>` | Replace the default system prompt entirely |
 | `--append-system-prompt <TEXT>` | Append text to the system prompt |
-| `--include-tools <TOOLS>...` | Only allow these tools (space-separated). Alias: `--allowed-tools` |
-| `--exclude-tools <TOOLS>...` | Disallow these tools (space-separated). Alias: `--disallowed-tools` |
+| `--include-tools <TOOLS>...` | Only allow these tools (space-separated). Deprecated alias: `--allowed-tools` (still works, prints a warning) |
+| `--exclude-tools <TOOLS>...` | Disallow these tools (space-separated). Deprecated alias: `--disallowed-tools` (still works, prints a warning) |
 | `-r`, `--resume <SESSION_ID>` | Resume a previously saved session by its ID |
 | `--check` | Run a verification pass after the main task completes |
-| `--simple-agent` | Simple agent mode — uses a minimal system prompt with `PTY`, `ViewImage`, and `WebSearch` tools |
 | `--offline-model <PATH>` | Path to a local GGUF file. Boots a local llama-server, points the session at the `local` provider, and tears it down on exit |
 
 ## Output formats
@@ -96,16 +95,6 @@ The verification pass will:
 1. Review what was accomplished against the original request
 2. Complete anything missing or incomplete
 3. Optimize where possible without affecting correctness
-
-## Simple agent mode
-
-The `--simple-agent` flag starts Ante with a minimal system prompt and a reduced tool set (`PTY`, `ViewImage`, `WebSearch`). This is useful for lightweight automation where you don't need the full coding agent:
-
-```bash
-ante --simple-agent -p "take a screenshot and describe what you see"
-```
-
-If you also pass `--system-prompt` or `--include-tools`, those take precedence over the simple-agent defaults.
 
 ## Context enrichment
 
