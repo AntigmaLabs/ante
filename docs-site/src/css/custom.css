@@ -74,6 +74,30 @@
   font-size: 0.875rem;
 }
 
+/* Top-level categories render as non-clickable section headers (collapsible: false).
+   Style them as muted, uppercase labels so they read as group headers, not pages. */
+.theme-doc-sidebar-item-category-level-1 {
+  margin-top: 1.4rem;
+}
+
+.theme-doc-sidebar-item-category-level-1:first-child {
+  margin-top: 0.25rem;
+}
+
+.theme-doc-sidebar-item-category-level-1 > .menu__list-item-collapsible > .menu__link,
+.theme-doc-sidebar-item-category-level-1 > .menu__list-item-collapsible > .menu__link:hover,
+.theme-doc-sidebar-item-category-level-1 > .menu__list-item-collapsible > .menu__link--active {
+  text-transform: uppercase;
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.09em;
+  color: var(--ifm-color-emphasis-600);
+  background: transparent;
+  cursor: default;
+  padding-top: 0.3rem;
+  padding-bottom: 0.3rem;
+}
+
 /* Code block improvements */
 .prism-code {
   font-size: 0.875rem;
