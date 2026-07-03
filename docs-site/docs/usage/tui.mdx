@@ -49,20 +49,23 @@ The TUI supports built-in slash commands for common actions:
 | Command | Description |
 |---|---|
 | `/clear` | Clear conversation history |
-| `/init` | Initialize codebase analysis |
-| `/exit` | Exit (aliases: `exit`, `quit`) |
+| `/init` | Analyze the project and create an `AGENTS.md` file |
+| `/exit` | Exit Ante |
+| `/compact` | Summarize conversation history to free up the context window |
 | `/theme` | Open theme selection dialog |
 | `/diff` | Show git diff (including untracked files) |
-| `/connect` | Connect to a provider (OAuth) |
-| `/model` | Open model selector |
-| `/offline-mode` | Open offline model selector |
-| `/welcome` | Show onboarding/welcome dialog |
+| `/connect` | Sign in with OAuth (API keys are detected automatically) |
+| `/model` | Select a model and connected provider |
+| `/providers` | Select an available provider for the current session |
+| `/offline-mode` | Run a local model with the built-in inference engine |
+| `/pty` | Toggle the embedded terminal panel (`Ctrl+P` to switch focus) |
+| `/welcome` | Show the welcome/onboarding dialog |
 | `/resume` | Resume a previous session in this directory |
 | `/statusline` | Configure the status line |
 | `/mcp` | Inspect and manage configured [MCP servers](/extend/mcp) |
 
 :::note
-Some commands are "visible" (appear in conversation history) and others are "silent" (execute without adding to history). `/clear`, `/init`, and `/exit` are visible; the rest are silent.
+Some commands are "visible" (appear in conversation history) and others are "silent" (execute without adding to history). `/clear`, `/init`, `/exit`, and `/compact` are visible; the rest are silent.
 :::
 
 Skills also appear as slash commands with scope indicators: `[p]` for project-level, `[u]` for user-level, and `[s]` for system-level skills.
@@ -101,7 +104,7 @@ You can also resume from the CLI with `ante --resume <SESSION_ID>` (or `-r`) in 
 | `Tab` | Complete a command or file path; on empty input, accept the [next-prompt suggestion](#next-prompt-suggestion) |
 | `Shift+Tab` | Cycle permission mode: `strict` → `auto` → `yolo`. Takes effect immediately, including on a turn already running |
 | `Ctrl+R` | Start reverse-i-search through prompt history |
-| `Ctrl+C` | Interrupt the active turn; press twice in a row to exit (or use `/exit`, `exit`, `quit`) |
+| `Ctrl+C` | Interrupt the active turn; press twice in a row to exit (or use `/exit`) |
 | `Ctrl+S` | Steer queued messages into the running turn |
 | `Ctrl+V` | Paste text or an image from the clipboard |
 | `Escape` | Close a popup, or interrupt the active turn when none is open |
@@ -130,6 +133,7 @@ The composer supports readline-style editing with multi-step undo/redo:
 | Key | Action |
 |---|---|
 | `Ctrl+T` | Open theme dialog |
+| `Ctrl+P` | Toggle focus between the chat input and the embedded terminal panel (opens it if closed; use `/pty` to close) |
 | `Ctrl+E` | Stop running llama server (offline mode) |
 | `Ctrl+O` | Toggle local inference log panel |
 | `Ctrl+K` / `Ctrl+J` | Scroll inference log up/down |
