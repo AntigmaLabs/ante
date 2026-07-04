@@ -22,8 +22,8 @@ Endpoints are created from the **Endpoints** tab of the [Antix Portal](https://p
 
 When creating an endpoint, you choose its scope:
 
-- **Personal** — visible only to you. Useful for local development or experimentation. Capped at **10 personal endpoints per organization** (see [Organizations](/antix/concepts/organizations) for org-level limits).
-- **Org-shared** — visible to all members of the organization. Only **organization Admins** can create Org-shared endpoints.
+- **Personal** — visible only to you. Useful for local development or experimentation. Capped at **10 personal endpoints per user, per organization**.
+- **Org-shared** — visible to all members of the organization. Only **organization Admins** can create Org-shared endpoints. Org-shared endpoints share a separate, larger cap (50 by default) configured per organization.
 
 ### Steps
 
@@ -59,6 +59,9 @@ In the portal, find the row matching your SDK, click **Copy**, and paste it into
   - The SDK appends `/v1/messages` automatically.
 - **Gemini (Google AI Studio)**
   - Base URL: `https://antix.antigma.ai/v1/<endpoint_uuid>/gemini`
+- **xAI, Alibaba (Qwen), DeepSeek, Zai**
+  - Base URL: `https://antix.antigma.ai/v1/<endpoint_uuid>/<xai|alibaba|deepseek|zai>`
+  - Append the provider's own native path, or use the equivalent OpenAI-compatible SDK against these providers.
 - **Universal / multi-provider**
   - Base URL: `https://antix.antigma.ai/v1/<endpoint_uuid>/multi`
   - With `/multi`, Antix routes the request based on the model name and headers rather than a fixed provider. See [Routing & BYOK](/antix/concepts/routing) for the routing rules and accepted `X-Antix-Provider` values.
@@ -89,7 +92,7 @@ A log explorer for recent requests:
 - **Observation drawer** — click a row to slide open the full JSON request and response with syntax highlighting, exact TTFT, and per-call cost.
 
 :::note
-Some sensitive fields may appear as `<redacted>` based on gateway policy. See [Error Handling](/antix/concepts/error-handling) for the redaction rules.
+Some sensitive fields (e.g., request headers, auth tokens) are omitted from the trace body entirely rather than shown, based on gateway policy.
 :::
 
 ### Activity (Agent Sessions)
@@ -112,7 +115,7 @@ Manage the endpoint's lifecycle and metadata:
 
 The endpoint URL routes traffic; you still authenticate the request via the `Authorization` header.
 
-- **Virtual Keys (recommended)** — an Antix-issued key (`sk-vk-…` or `sk-antix-…`). The request is billed to your Antix organization under the limits set on that key. See [Virtual Keys](/antix/concepts/virtual-keys).
+- **Virtual Keys (recommended)** — an Antix-issued key (`sk-antix-…`). The request is billed to your Antix organization under the limits set on that key. See [Virtual Keys](/antix/concepts/virtual-keys).
 - **Bring Your Own Key (BYOK)** — send your raw provider key (e.g., `sk-ant-…`). Antix passes the request to the provider unchanged and does not bill you for it; the portal labels the cost with an *(est.)* badge.
 
 Endpoints work with either auth mode — the choice is per-request, not per-endpoint.

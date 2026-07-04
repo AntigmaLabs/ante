@@ -45,8 +45,9 @@ The model **id** returned here is the value you pass as the `model` field to the
 
 | If the request includes…                         | You get the…           |
 | ------------------------------------------------- | ---------------------- |
-| `anthropic-version` **or** `x-api-key` header     | **Anthropic** shape    |
-| neither (e.g. only `Authorization: Bearer …`, or no auth header) | **OpenAI** shape |
+| `anthropic-version` header (regardless of other headers) | **Anthropic** shape    |
+| `x-api-key` **and no** `Authorization` header     | **Anthropic** shape    |
+| neither of the above (e.g. only `Authorization: Bearer …`, `x-api-key` alongside `Authorization`, or no auth header) | **OpenAI** shape |
 
 This mirrors how the official SDKs send requests, so:
 
@@ -88,7 +89,7 @@ List the models the gateway can serve.
 | Header | Required | Notes |
 | --- | --- | --- |
 | `anthropic-version` | no | Presence selects the **Anthropic** response shape. Conventional value: `2023-06-01`. |
-| `x-api-key` | no | Also selects the Anthropic shape (presence only). |
+| `x-api-key` | no | Also selects the Anthropic shape, but only when `Authorization` is **not** also present on the request — if both are sent, the OpenAI shape wins. |
 
 **Query parameters**
 

@@ -6,7 +6,7 @@ sidebar_position: 1
 
 # Routing & BYOK
 
-Antix is a multi-protocol gateway. It accepts requests in OpenAI, Anthropic, and Gemini shapes and normalizes streaming across upstream providers including Anthropic, Google Gemini, Alibaba Qwen, xAI, and OpenAI.
+Antix is a multi-protocol gateway. It accepts requests in OpenAI, Anthropic, and Gemini shapes and normalizes streaming across upstream providers including Anthropic, Google Gemini, Alibaba Qwen, DeepSeek, Zai (GLM), xAI, and OpenAI.
 
 ## Supported endpoints
 
@@ -71,18 +71,22 @@ curl -X POST https://antix.antigma.ai/v1/chat/completions \
 
 BYOK traffic is not re-billed by Antix. It is still tracked for observability.
 
-### Accepted `X-Antix-Provider` values
+### Supported providers
 
-| Provider | Accepted values |
-|---|---|
-| OpenAI | `openai` |
-| Anthropic | `anthropic` |
-| Google Gemini | `google`, `gemini`, `google_ai_studio_gemini` |
-| xAI | `xai`, `x-ai` |
-| Alibaba / DashScope | `alibaba`, `qwen`, `dashscope` |
+Antix normalizes requests across these upstream providers. Route to any of them by model name (Antix infers the provider) or explicitly via `X-Antix-Provider`:
+
+| Provider | Notable models | Accepted `X-Antix-Provider` values | Notes |
+|---|---|---|---|
+| **Anthropic** | Claude Sonnet, Opus, Haiku | `anthropic` | Native `/v1/messages` support. |
+| **OpenAI** | GPT-5.x | `openai` | Native `/v1/chat/completions` and `/v1/responses` support. |
+| **Google Gemini** | Gemini 3.x | `google`, `gemini`, `google_ai_studio_gemini` | Native Gemini protocol at `/v1/models/{action}` and `/v1beta`. |
+| **xAI** | Grok | `xai`, `x-ai` | OpenAI-compatible upstream. |
+| **Alibaba Qwen** | `qwen3-max`, `qwen3-coder-plus`, `qwen3-coder-flash`, `qwq-plus`, `qwen-plus`, `qwen-max`, and more | `alibaba`, `qwen`, `dashscope` | Routed via DashScope. No distinctive key prefix — you **must** set `X-Antix-Provider` on BYOK calls. |
+| **DeepSeek** | `deepseek-chat` (V3), `deepseek-reasoner` (R1), `deepseek-v4-pro`, `deepseek-v4-flash` | `deepseek` | OpenAI-compatible upstream API. `deepseek-reasoner` returns a `reasoning_content` field alongside the final answer. |
+| **Zai (GLM)** | `glm-5.2`, `glm-5.1`, `glm-4.7` | `zai` | Zhipu AI's GLM model family, OpenAI-compatible upstream. No distinctive key prefix — you **must** set `X-Antix-Provider` on BYOK calls. |
 
 :::note Provider inference
-When the header is omitted, Antix infers the provider from the key prefix (e.g., `sk-ant-…` → Anthropic, `sk-…` → OpenAI). Some keys (like Alibaba/DashScope or ZAI) may have no distinctive prefix — you **must** set `X-Antix-Provider` for those requests, otherwise they will fail upstream with `401 Unauthorized`.
+When the header is omitted, Antix infers the provider from the key prefix (e.g., `sk-ant-…` → Anthropic, `sk-…` → OpenAI). Some keys (like Alibaba/DashScope or Zai) may have no distinctive prefix — you **must** set `X-Antix-Provider` for those requests, otherwise they will fail upstream with `401 Unauthorized`.
 :::
-Unauthorized`.
-:::
+
+See [Models API](/antix/concepts/models) to list exactly which models your gateway currently serves.

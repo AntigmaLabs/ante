@@ -17,7 +17,7 @@ While [Ante](/) delivers autonomous AI capabilities to your local terminal, Anti
     Speaks OpenAI Chat Completions, OpenAI Responses, Anthropic Messages, and Gemini native on the same base URL. Point any existing SDK at Antix with one line of config.
   </Card>
   <Card title="Hard-budget virtual keys" icon="shield-halved">
-    Issue scoped `sk-antix-…` keys with atomic `max_budget` caps per day, month, or lifetime. Strict enforcement blocks overruns before upstream is called.
+    Issue scoped `sk-antix-…` keys with an atomic `max_budget` cap. Strict enforcement blocks overruns before upstream is called.
   </Card>
   <Card title="Ante control plane" icon="plug">
     Governance for local coding agents. Start `ante`, type `/connect`, and select Antix to securely authenticate your local agent, attributing every prompt.
@@ -44,7 +44,7 @@ While [Ante](/) delivers autonomous AI capabilities to your local terminal, Anti
     Endpoints, SDK compatibility, and provider overrides.
   </Card>
   <Card title="Virtual keys & budgets" icon="shield-halved" href="/antix/concepts/virtual-keys">
-    Provision scoped keys with hard spend and rate limits.
+    Provision scoped keys with a hard spend cap.
   </Card>
   <Card title="Organizations & RBAC" icon="users" href="/antix/concepts/organizations">
     Manage members, assign roles, and scope access across your organization.
