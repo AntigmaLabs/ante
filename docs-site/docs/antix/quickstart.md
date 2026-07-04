@@ -15,7 +15,7 @@ Antix speaks four wire protocols — OpenAI Chat Completions, OpenAI Responses, 
 
 ## Getting a key
 
-Sign in at the Antix portal at [https://antix.antigma.ai/portal](https://antix.antigma.ai/portal) and create a Virtual Key from your dashboard. Portal-issued keys start with **`sk-antix-…`**.
+Sign in at the Antix portal at [https://portal.antigma.ai](https://portal.antigma.ai) and create a Virtual Key from your dashboard. Portal-issued keys start with **`sk-antix-…`**.
 
 Keys are stored securely; you see the plaintext exactly once at creation.
 

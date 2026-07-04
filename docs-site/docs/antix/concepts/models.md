@@ -67,7 +67,7 @@ The price list is read live (with a short cache, ~5 minutes), so when pricing is
 
 **Ordering.** Models are returned sorted **alphabetically by `id`**.
 
-**`owned_by` / providers.** Depending on which provider keys are loaded, the provider (the `owned_by` field in the OpenAI shape) is one of: `anthropic`, `openai`, `google`, `alibaba`, `deepseek`, `xai`.
+**`owned_by` / providers.** Depending on which provider keys are loaded, the provider (the `owned_by` field in the OpenAI shape) is one of: `anthropic`, `openai`, `google`, `alibaba`, `deepseek`, `zai`, `xai`.
 
 **Pagination.** The full supported catalog is returned in a **single page**. There is no cursor pagination — the Anthropic-shape `has_more` is always `false`, and `limit` / `before_id` / `after_id` query parameters are not used. (The Anthropic list envelope is still returned in full so the Anthropic SDK's auto-paginator works correctly over the one page.)
 

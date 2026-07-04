@@ -82,5 +82,7 @@ BYOK traffic is not re-billed by Antix. It is still tracked for observability.
 | Alibaba / DashScope | `alibaba`, `qwen`, `dashscope` |
 
 :::note Provider inference
-When the header is omitted, Antix infers the provider from the key prefix (e.g., `sk-ant-…` → Anthropic, `sk-…` → OpenAI). Alibaba/DashScope keys have no distinctive prefix — you **must** set `X-Antix-Provider` for those requests, otherwise they will fail upstream with `401 Unauthorized`.
+When the header is omitted, Antix infers the provider from the key prefix (e.g., `sk-ant-…` → Anthropic, `sk-…` → OpenAI). Some keys (like Alibaba/DashScope or ZAI) may have no distinctive prefix — you **must** set `X-Antix-Provider` for those requests, otherwise they will fail upstream with `401 Unauthorized`.
+:::
+Unauthorized`.
 :::

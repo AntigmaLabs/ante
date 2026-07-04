@@ -16,7 +16,7 @@ Endpoints are independent of authentication: they decide *where* a request lands
 
 ## Creating an endpoint
 
-Endpoints are created from the **Endpoints** tab of the [Antix Portal](https://antix.antigma.ai/portal).
+Endpoints are created from the **Endpoints** tab of the [Antix Portal](https://portal.antigma.ai).
 
 ### Scope: Personal vs. Organization
 

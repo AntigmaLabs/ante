@@ -10,7 +10,7 @@ Never distribute raw provider keys. Antix issues **Virtual Keys** that act as mi
 
 ## Creating a key
 
-Keys can be generated directly from the Antix portal dashboard at [https://antix.antigma.ai/portal](https://antix.antigma.ai/portal). 
+Keys can be generated directly from the Antix portal dashboard at [https://portal.antigma.ai](https://portal.antigma.ai). 
 
 When creating a key, you can configure:
 - **Models:** Restrict which models the key can access.
