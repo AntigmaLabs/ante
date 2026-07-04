@@ -22,7 +22,6 @@ target
 .DS_Store
 **/_site/
 **/.jekyll-cache/
-local/
 
 # Obsidian vault config
 .obsidian/

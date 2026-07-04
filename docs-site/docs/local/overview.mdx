@@ -1,0 +1,42 @@
+---
+title: "Self-Contained by Design"
+sidebar_label: "Why Local"
+description: "Local models in Ante: one binary, your hardware, and any point between fully hosted and fully local"
+---
+
+# Self-Contained by Design
+
+Ante is a single ~15MB binary that manages its own inference engine. Add a GGUF file and you have a complete coding agent on your own hardware: no API key, no account, and model calls that never leave your machine.
+
+Local is a first-class way to run Ante. Hosted and local providers live in the same catalog, run the same full prompt and tool stack, and go through the same [public benchmarks](/benchmarks/eval). You choose per session which one a task deserves.
+
+## Pick your topology
+
+| Topology | What it looks like | Reach for it when |
+|---|---|---|
+| **All frontier** | Hosted providers only | You want peak capability and have connectivity and budget |
+| **Mixed** | Local and hosted side by side, switched per session or mid-conversation | Some work is privacy-sensitive or high-volume, some needs a frontier model |
+| **All local** | The built-in engine serves everything | Air-gapped machines, hard privacy requirements, zero marginal cost |
+
+## How Ante treats local models
+
+**A provider like any other.** Any local server with an OpenAI-compatible endpoint (Ollama, vLLM, LM Studio, your own) registers through the same `catalog.json` mechanism as a hosted provider. No special casing, and nothing to migrate away from later. See [Providers](/usage/providers#add-a-local-provider-with-no-auth) and the [Catalog Reference](/reference/catalog-reference).
+
+**Native integration.** Ante goes further than tolerating a base URL. [Offline mode](/local/offline) manages llama.cpp itself: pinned, checksum-verified builds matched to your hardware (Metal on Apple silicon, CUDA or Vulkan or CPU on Linux), GGUF discovery across your disk, memory estimation before a model loads, live load progress, and server lifecycle handled in the TUI. A [curated model list](/local/verified-models) tells you what runs well before you download 17 GB. Prefer your own build or launch flags? [Custom engines](/local/custom-engines) covers that.
+
+**Agent-native inference, in progress.** The endgame is an inference engine inside the agent process, tuned for how agents actually call models. Local models become a preferred substrate for many workloads, with benchmark numbers to back that up. See the [experimental preview](/experimental/agent-native-inference).
+
+## Mixing local and frontier
+
+When offline mode loads a model, Ante registers it as the `local` provider: an ordinary OpenAI-compatible entry in the catalog, next to Anthropic or OpenAI. From there, mixing is normal provider mechanics:
+
+- **Switch mid-session.** `/model` in the TUI switches provider and model without a restart. Draft against a frontier model, flip to local for a sensitive repo, flip back.
+- **Pick per invocation.** `ante --provider local` runs a script or headless job against the loaded model while other sessions use hosted providers.
+- **Share one model across clients.** `ante serve --offline-model <path>` loads the model once for every connecting client, and any session can attach to a llama server already running on your machine (ports 8080–8089 are scanned automatically).
+- **Lighter models for subagents.** A [subagent](/extend/subagents) can pin its own model id via `model:` frontmatter, so exploration or search agents can run on a smaller model than the main loop.
+
+One boundary to know: a session talks to one provider at a time. Switching is instant, but a subagent runs on its parent session's provider, so you cannot yet route the main loop to a frontier provider and a subagent to `local` within the same session.
+
+## Numbers you can check
+
+We benchmark local models with the same rigor as frontier ones: same harness, same pinned public builds, same auditable Harbor runs. Qwen3.6 27B, a 17 GB download, scores **56.2%** on Terminal-Bench 2.1 across 445 trials — live at [antigma.ai/eval](https://antigma.ai/eval), with the full curated list on [Verified Models](/local/verified-models).

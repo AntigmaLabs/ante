@@ -580,7 +580,7 @@ User input recorded for session replay. This variant is written to the persisted
 
 Local-model management (engine installation, model discovery, llama-server lifecycle) is **client-side**. It is driven through the in-process `OfflineSubsystem` API, not through the daemon protocol. The only daemon-facing surface for offline mode is `RegisterLocalProvider` / `RestoreLocalProvider` — the client starts a llama-server itself, then registers its port (and an optional `ModelSpec`) with the daemon.
 
-See the [Offline Mode](/usage/offline) page for the user-facing flows and the `--offline-model` CLI flag.
+See the [Offline Mode](/local/offline) page for the user-facing flows and the `--offline-model` CLI flag.
 
 ## Transport
 

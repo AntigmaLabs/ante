@@ -1,0 +1,81 @@
+---
+title: Custom Engines
+description: "Use your own llama.cpp build, tune the launch command, or attach Ante to a server you already run"
+---
+
+[Offline mode](/local/offline) works out of the box with the engine Ante installs and supervises. Every layer of that is replaceable: the binary, the launch flags, or the server itself.
+
+## Use your own llama.cpp build
+
+Ante resolves the engine binary in this order:
+
+1. The managed install at `~/.ante/llama.cpp/current`
+2. Binary paths pinned in `offline-config.json` (below)
+3. `llama-server` on your `PATH`
+
+So if you already have llama.cpp installed (say via `brew install llama.cpp`) and skip the managed install, Ante picks it up from `PATH`. To pin specific binaries explicitly, set both paths under `llama_cpp.binaries` in `~/.ante/offline-config.json`:
+
+```json
+{
+  "llama_cpp": {
+    "binaries": {
+      "server": "/opt/llama.cpp/build/bin/llama-server",
+      "cli": "/opt/llama.cpp/build/bin/llama-cli"
+    }
+  }
+}
+```
+
+Both files must exist for the override to take effect. The server binary must accept standard `llama-server` flags: Ante launches it with its own arguments (`--host 127.0.0.1 --port <port> -c <context> --jinja -ngl <gpu-layers>`, plus per-model flags such as `--temp` and `--mmproj`).
+
+:::note
+Ante normally writes these fields itself during installation. If you point them at a custom build, the version check may offer an "upgrade" back to the pinned build — decline it to keep yours.
+:::
+
+## Tune the launch command
+
+Two knobs shape the command Ante runs:
+
+**Per-model extra flags.** Set `extra_args` in a model's [preferences](/local/offline#model-preferences) to append any `llama-server` flags. The string is parsed shell-style (quoting works) and appended after Ante's own flags, so on conflict your value wins:
+
+```json
+{
+  "model_preferences": {
+    "Qwen3.6-27B-Q4_K_M.gguf": {
+      "model_id": "Qwen3.6-27B-Q4_K_M.gguf",
+      "extra_args": "--threads 12 --no-mmap --cache-type-k q8_0"
+    }
+  }
+}
+```
+
+**GPU offload.** `llama_cpp.server_defaults.gpu_layers` controls the `-ngl` value. The default `-1` offloads all layers to the GPU; lower it if your VRAM is tight:
+
+```json
+{
+  "llama_cpp": {
+    "server_defaults": { "gpu_layers": 24 }
+  }
+}
+```
+
+## Attach to a running server
+
+You can run `llama-server` entirely yourself — any build, any flags — and let Ante connect to it as a client. Ante scans local ports **8080–8089** for llama servers (via `/health`, reading the model name from `/v1/models`) and lists what it finds under **Running servers** in the offline mode selector. Servers you started are never stopped by Ante.
+
+```bash
+# Your server, your flags
+llama-server -m ~/models/my-model.gguf --port 8085 -c 65536 --flash-attn
+
+# In the Ante TUI: /offline-mode → Running servers → select it
+```
+
+For scripted use, point the `local` provider at the port directly:
+
+```bash
+ANTE_LOCAL_PROVIDER_PORT=8085 ante --provider local "your prompt"
+```
+
+## A different engine entirely
+
+Anything with an OpenAI-compatible endpoint — Ollama, vLLM, LM Studio, a GPU box on your LAN — can serve Ante as a regular catalog provider. That route gives you provider mechanics only (model picker, wire protocol); the lifecycle management, memory estimation, and load progress on this page are specific to the managed llama.cpp path. See [add a local provider](/usage/providers#add-a-local-provider-with-no-auth).

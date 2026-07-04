@@ -34,7 +34,18 @@ const sidebars: SidebarsConfig = {
         'usage/steering',
         'usage/approvals',
         'usage/web-browsing',
-        'usage/offline',
+      ],
+    },
+    {
+      type: 'category',
+      label: 'Local Models',
+      className: 'sidebar-section sidebar-section--local',
+      collapsed: true,
+      items: [
+        'local/overview',
+        'local/offline',
+        'local/custom-engines',
+        'local/verified-models',
       ],
     },
     {
@@ -82,7 +93,7 @@ const sidebars: SidebarsConfig = {
       label: 'Experimental',
       className: 'sidebar-section sidebar-section--exp',
       collapsed: true,
-      items: ['experimental/agent-org'],
+      items: ['experimental/agent-org', 'experimental/agent-native-inference'],
     },
     'changelog',
   ],

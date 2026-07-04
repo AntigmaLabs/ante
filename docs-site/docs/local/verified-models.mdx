@@ -1,0 +1,60 @@
+---
+title: Verified Models
+description: "Curated local models tested with Ante, and the eval numbers behind them"
+---
+
+The **Verified models** list in the [offline mode](/local/offline) selector is curated: GGUF builds we have tested with Ante's agent loop, downloaded from Hugging Face with memory requirements known up front. Each model carries one of two statuses:
+
+- **Evaled** — ran the full public benchmark: same Terminal-Bench 2.1 harness, pinned builds, and auditable Harbor runs as our [frontier-model results](/benchmarks/eval). Numbers live at [antigma.ai/eval](https://antigma.ai/eval).
+- **Verified** — tested for compatibility: the model loads, the chat template resolves, and tool calling works in Ante's agent loop. Not yet through the full eval.
+
+Models graduate from Verified to Evaled as benchmark runs complete.
+
+## Current list
+
+| Model | Quant | Download | Max context | Status |
+|---|---|---|---|---|
+| Qwen3.6 27B | Q4_K_M | 17 GB | 256K | **Evaled** — [56.2% on Terminal-Bench 2.1](https://antigma.ai/eval) |
+| MiniMax-M2.7 | Q3_K_XL | 102 GB | 192K | Verified |
+| Qwen3.5 122B-A10B | Q2_K | 45 GB | 256K | Verified |
+| Qwen3.6 35B-A3B | Q4_K_M | 22 GB | 256K | Verified |
+| GLM-4.7-Flash | Q4_K_M | 18 GB | 198K | Verified |
+| Qwen3.5 27B | Q4_K_M | 17 GB | 256K | Verified |
+| Gemma 4 26B-A4B-it | Q4_K_M | 16 GB | 256K | Verified |
+| Devstral-Small-2 24B | Q4_K_M | 14 GB | 384K | Verified |
+| Qwen3.5 9B | Q4_K_M | 5.7 GB | 256K | Verified |
+| Gemma 4 E4B-it | Q4_K_M | 4.7 GB | 128K | Verified |
+
+"Max context" is what the model supports; Ante caps the default context window at 32K to keep memory predictable, and you can raise it per model in [preferences](/local/offline#model-preferences) or with `ANTE_OFFLINE_CONTEXT`.
+
+The one eval so far: Qwen3.6 27B reached **56.2%** accuracy across 89 Terminal-Bench 2.1 tasks with 445 trials — a 17 GB download holding its own on the same benchmark we use for frontier models.
+
+## Add your own
+
+Ante merges `~/.ante/verified_models.json` on top of the built-in list at startup. Entries with a `filename` matching a built-in override it; new filenames are appended.
+
+```json
+{
+  "models": [
+    {
+      "name": "My Custom Model",
+      "repo": "username/repo-name",
+      "filename": "model-Q4_K_M.gguf",
+      "context_window": 32768,
+      "file_size_mb": 5000,
+      "kv_cache_bytes_per_token": 131072,
+      "support_vision": false
+    }
+  ]
+}
+```
+
+| Field | Description |
+|---|---|
+| `name` | Display name in the model selector |
+| `repo` | Hugging Face repo the file downloads from |
+| `filename` | GGUF filename within the repo (also the merge key) |
+| `context_window` | Maximum context the model supports (tokens) |
+| `file_size_mb` | Download size, used for memory estimation |
+| `kv_cache_bytes_per_token` | KV cache growth per context token, used for memory estimation |
+| `support_vision` | Whether the model accepts image input (optional) |

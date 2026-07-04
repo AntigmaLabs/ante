@@ -1,9 +1,9 @@
 ---
 title: Offline Mode
-description: "Run Ante with local models - no API keys or internet required"
+description: "Run local GGUF models through Ante's natively managed llama.cpp engine"
 ---
 
-Ante can run entirely offline using local GGUF models via [llama.cpp](https://github.com/ggerganov/llama.cpp). This means no API keys, no internet, and no data leaving your machine. Ante manages the inference engine natively.
+Ante runs local GGUF models through a natively managed [llama.cpp](https://github.com/ggerganov/llama.cpp) engine. No API key, no account: point Ante at a model file and the full agent loop runs on your hardware. Once a model is on disk, inference needs no network connection at all.
 
 :::info
 Offline mode is under active development. Expect rough edges and rapid iteration.
@@ -11,13 +11,15 @@ Offline mode is under active development. Expect rough edges and rapid iteration
 
 ## How it works
 
-Ante includes an integrated inference engine powered by llama.cpp. When you select offline mode, Ante:
+When you select offline mode, Ante:
 
-1. Checks for llama.cpp installation (and offers to install/upgrade if needed)
+1. Checks for llama.cpp and offers to install or upgrade it: a pinned, checksum-verified official build matched to your hardware (Metal on Apple silicon; CUDA, Vulkan, or CPU on Linux)
 2. Discovers GGUF models on your system
-3. Detects running llama servers on local ports
-4. Estimates memory requirements based on model size and context window
-5. Runs inference locally through the engine
+3. Detects llama servers already running on local ports
+4. Estimates memory requirements from model size and context window
+5. Boots and supervises the inference server for you
+
+Prefer your own llama.cpp build, extra server flags, or a server you started yourself? See [Custom Engines](/local/custom-engines).
 
 ## Setting up
 
@@ -29,18 +31,20 @@ Ante includes an integrated inference engine powered by llama.cpp. When you sele
    /offline-mode
    ```
 
-2. **Install llama.cpp** — If not installed, Ante will prompt you to install it automatically to `~/.ante/llama.cpp`. When a newer version is available, Ante will offer an upgrade option.
+2. **Install llama.cpp** — If not installed, Ante will prompt you to install it automatically to `~/.ante/llama.cpp`. When the pinned version changes in a new Ante release, Ante offers an upgrade.
 
 3. **Select a model** — Choose from:
-   - **Verified models** — curated models tested for compatibility (downloaded from Hugging Face)
+   - **Verified models** — [curated models](/local/verified-models) downloaded from Hugging Face
    - **Local models** — GGUF files already on your system (auto-discovered)
-   - **Running servers** — attach to an already-running llama server on a local port
+   - **Running servers** — [attach](/local/custom-engines#attach-to-a-running-server) to a llama server already running on a local port
 
 4. **Or pass a model path directly** — skip the TUI and load a GGUF file in one step:
    ```bash
    ante --offline-model /path/to/model.gguf "your prompt here"
    ```
    Ante boots the llama-server, waits for it to be ready, then runs the session. Useful in scripts or CI.
+
+Once a model is loaded, it is registered as the `local` provider in the catalog, so you can also switch to it from any session with `/model` or target it with `--provider local`. See [mixing local and frontier](/local/overview#mixing-local-and-frontier).
 
 ## Scripted and server usage
 
@@ -92,11 +96,18 @@ Ante automatically scans the following directories for GGUF model files:
 
 ## Model preferences
 
+Per-model settings, saved automatically in the offline config:
+
 | Setting | Description |
 |---|---|
 | `context_window` | Context window size (minimum 32K tokens) |
 | `thinking` | Enable/disable chain-of-thought |
-| `temperature` | Sampling temperature |
+| `temperature` | Sampling temperature (unset means the model default) |
+| `extra_args` | Extra llama-server flags, appended to the launch command — see [Custom Engines](/local/custom-engines#tune-the-launch-command) |
+
+## Vision models
+
+If a multimodal projector file (`mmproj-*.gguf`) sits next to the model file, Ante attaches it automatically at launch, and the model accepts images in chat.
 
 ## Memory considerations
 
@@ -118,25 +129,6 @@ When exiting Ante with a server running, you'll be prompted:
 - **`k`** — Keep the server running and exit (prints PID)
 - **`Esc`** — Cancel and stay in Ante
 
-## Verified models
-
-Ante includes a curated list of verified models. To add custom verified models, create `~/.ante/verified_models.json`:
-
-```json
-{
-  "models": [
-    {
-      "name": "My Custom Model",
-      "repo": "username/repo-name",
-      "filename": "model-Q4_K_M.gguf",
-      "context_window": 32768,
-      "file_size_mb": 5000,
-      "kv_cache_bytes_per_token": 131072
-    }
-  ]
-}
-```
-
 ## Configuration reference
 
 All offline mode configuration is stored in `~/.ante/offline-config.json`:
@@ -152,7 +144,8 @@ All offline mode configuration is stored in `~/.ante/offline-config.json`:
       "model_id": "model-id",
       "context_window": 32768,
       "thinking_enabled": true,
-      "temperature": 0.7
+      "temperature": 0.7,
+      "extra_args": "--threads 12"
     }
   }
 }
@@ -163,10 +156,12 @@ All offline mode configuration is stored in `~/.ante/offline-config.json`:
 | `model_directory` | Where to look for local GGUF models | `~/.ante/models` |
 | `port` | Starting port for the llama server | `8080` |
 | `last_model` | Last used model (auto-saved) | — |
-| `model_preferences` | Per-model settings | — |
+| `model_preferences` | Per-model settings (see above) | — |
+| `llama_cpp` | Engine install details, binary paths, and server defaults — see [Custom Engines](/local/custom-engines) | managed by Ante |
 
 ### Environment variables
 
 | Variable | Description |
 |---|---|
 | `ANTE_OFFLINE_CONTEXT` | Override the default context window cap (tokens). Useful when you need a larger context than the 32K default, and your hardware has enough RAM. Example: `ANTE_OFFLINE_CONTEXT=65536 ante --offline-model ...` |
+| `ANTE_LOCAL_PROVIDER_PORT` | Port the `local` provider connects to when you use `--provider local` directly (default `8080`) |

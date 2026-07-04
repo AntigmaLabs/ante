@@ -1,0 +1,35 @@
+---
+title: "Agent-Native Inference (Experimental)"
+sidebar_label: "Agent-Native Inference"
+description: "The direction for local models in Ante: an inference engine that lives inside the agent runtime"
+---
+
+Today, [offline mode](/local/offline) manages an external llama.cpp server: Ante installs it, boots it, monitors it, and shuts it down. That works, and it is the supported path for local inference right now. The next step is an engine that runs *inside* the agent process.
+
+:::warning
+This page describes a direction, not a shipped feature. Nothing here is part of a released Ante build yet.
+:::
+
+## Why in-process
+
+An external inference server sees one HTTP request at a time. An engine embedded in the agent runtime sees the whole agent loop, which opens optimizations no generic server can make:
+
+- **Prefix reuse across the loop.** Agent turns share long, stable prefixes: system prompt, tool definitions, conversation history. An engine that knows the turn lifecycle can keep those prefixes resident instead of re-processing them per request.
+- **Constrained decoding for tool calls.** Tool call arguments must parse against a known schema. Decoding under that grammar rules out malformed calls instead of retrying them.
+- **Subagent batching.** Parallel subagents on the same model can batch through one engine rather than queueing on one server port.
+
+The result we are working toward: local models as a preferred substrate for agent work, chosen on merit rather than tolerated for cost and privacy. As with everything else, that claim will ship with [numbers you can check](/benchmarks/eval).
+
+## A working sketch: nanochat-rs
+
+[nanochat-rs](https://github.com/AntigmaLabs/nanochat-rs) is our public, experimental preview of the substrate: a tiny GPT-style inference core in pure Rust, built on [candle](https://github.com/huggingface/candle), with Hugging Face integration and a deliberately minimal surface. It is a toy by design — a Rust reimplementation of [karpathy/nanochat](https://github.com/karpathy/nanochat) focused on clarity over performance — but it shows the shape: native inference living in the same process as the code that calls it, with no external server binary.
+
+```bash
+git clone https://github.com/AntigmaLabs/nanochat-rs
+cd nanochat-rs
+cargo run --release --features metal -- -p "write 100 words"
+```
+
+## Status
+
+The supported way to run local models today is [offline mode](/local/offline) with the managed llama.cpp engine, or [your own engine](/local/custom-engines). Progress on the in-process engine will land in the [changelog](/changelog) and on [Discord](https://discord.gg/pqhj3DNGz2).

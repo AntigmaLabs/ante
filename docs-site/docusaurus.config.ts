@@ -47,29 +47,29 @@ const config: Config = {
     ],
   ],
 
-  // Redirects are intentionally OFF. The @docusaurus/plugin-client-redirects
-  // dependency is installed for future use only — do not remove it as "unused".
-  // To soft-land the pre-restructure URLs, uncomment this block:
-  //
-  // plugins: [
-  //   [
-  //     '@docusaurus/plugin-client-redirects',
-  //     {
-  //       redirects: [
-  //         { from: '/configuration/providers', to: '/usage/providers' },
-  //         { from: '/experimental/offline', to: '/usage/offline' },
-  //         { from: '/concepts/core-concepts', to: '/reference/core-concepts' },
-  //         { from: '/concepts/architecture', to: '/reference/architecture' },
-  //         { from: '/cookbook/login', to: '/usage/login' },
-  //         { from: '/cookbook/providing-context', to: '/usage/providing-context' },
-  //         { from: '/cookbook/models-and-thinking', to: '/usage/models-and-thinking' },
-  //         { from: '/cookbook/steering', to: '/usage/steering' },
-  //         { from: '/cookbook/approvals', to: '/usage/approvals' },
-  //         { from: '/cookbook/web-browsing', to: '/usage/web-browsing' },
-  //       ],
-  //     },
-  //   ],
-  // ],
+  // Soft-lands pre-restructure URLs. Old paths accumulate here; do not prune
+  // entries just because the source page has moved again — chain them to the
+  // current destination instead.
+  plugins: [
+    [
+      '@docusaurus/plugin-client-redirects',
+      {
+        redirects: [
+          { from: '/usage/offline', to: '/local/offline' },
+          { from: '/experimental/offline', to: '/local/offline' },
+          { from: '/configuration/providers', to: '/usage/providers' },
+          { from: '/concepts/core-concepts', to: '/reference/core-concepts' },
+          { from: '/concepts/architecture', to: '/reference/architecture' },
+          { from: '/cookbook/login', to: '/usage/login' },
+          { from: '/cookbook/providing-context', to: '/usage/providing-context' },
+          { from: '/cookbook/models-and-thinking', to: '/usage/models-and-thinking' },
+          { from: '/cookbook/steering', to: '/usage/steering' },
+          { from: '/cookbook/approvals', to: '/usage/approvals' },
+          { from: '/cookbook/web-browsing', to: '/usage/web-browsing' },
+        ],
+      },
+    ],
+  ],
 
   themeConfig: {
     navbar: {
@@ -123,7 +123,7 @@ const config: Config = {
             { label: 'Overview', to: '/' },
             { label: 'Quickstart', to: '/start/quickstart' },
             { label: 'Benchmarks', to: '/benchmarks/eval' },
-            { label: 'Offline Mode', to: '/usage/offline' },
+            { label: 'Local Models', to: '/local/overview' },
             { label: 'Providers', to: '/usage/providers' },
           ],
         },
