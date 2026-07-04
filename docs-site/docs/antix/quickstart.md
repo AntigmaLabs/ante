@@ -13,9 +13,13 @@ Antix speaks four wire protocols — OpenAI Chat Completions, OpenAI Responses, 
 - **Production:** `https://antix.antigma.ai/v1`
 - **Local development:** `http://127.0.0.1:8080/v1`
 
+## Signing in
+
+The Antix portal at [https://portal.antigma.ai](https://portal.antigma.ai) is passwordless by default. Enter your email and click **Send link** — the portal emails you a magic link, and clicking it signs you in (no password or code to type). Google and GitHub OAuth are also available as one-click alternatives on the same login page.
+
 ## Getting a key
 
-Sign in at the Antix portal at [https://antix.antigma.ai/portal](https://antix.antigma.ai/portal) and create a Virtual Key from your dashboard. Portal-issued keys start with **`sk-antix-…`**.
+Once signed in, create a Virtual Key from your dashboard. Portal-issued keys start with **`sk-antix-…`**.
 
 Keys are stored securely; you see the plaintext exactly once at creation.
 
@@ -117,5 +121,5 @@ See [Endpoints](/antix/concepts/endpoints) for creation, scopes, and the analyti
 
 - [Endpoints](/antix/concepts/endpoints) — per-application URLs with traces, spend, and agent sessions.
 - [Routing & BYOK](/antix/concepts/routing) — provider selection and OpenAI-compatible semantics.
-- [Virtual keys](/antix/concepts/virtual-keys) — provision keys with hard budgets and rate limits.
+- [Virtual keys](/antix/concepts/virtual-keys) — provision keys with hard spend budgets.
 - [Error handling](/antix/concepts/error-handling) — standardized codes across providers.

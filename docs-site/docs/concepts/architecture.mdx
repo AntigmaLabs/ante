@@ -83,7 +83,7 @@ Ante is provider-agnostic. Each provider implements a common interface for sendi
 | Open Router | OpenAI-compatible | Multiple providers |
 | DeepSeek | OpenAI-compatible | DeepSeek V4 family |
 | Ali Coding Plan | Messages API | Qwen, Kimi, GLM, MiniMax via DashScope |
-| Antix | Anthropic Messages | Claude, GPT, Gemini, Qwen via Antigma |
+| Antix | Anthropic Messages | Claude, GPT, Gemini, Qwen, DeepSeek via Antigma |
 | Local | OpenAI-compatible | GGUF models via llama.cpp |
 
 Providers are resolved from a catalog at session init time. The user can override via CLI flags (`--provider`, `--model`) or persistent settings.
