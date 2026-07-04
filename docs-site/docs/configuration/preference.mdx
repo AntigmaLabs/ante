@@ -21,6 +21,7 @@ Ante stores user preferences in `~/.ante/settings.json`:
   "ambient_prompt_suggestion": true,
   "ambient_thinking_phrase": true,
   "channel": "stable",
+  "resize_reflow": "conservative",
   "status_line": ["model-name", "current-dir"],
   "status_line_command": {
     "command": "~/.config/ante/statusline.sh",
@@ -51,6 +52,7 @@ Ante stores user preferences in `~/.ante/settings.json`:
 | `ambient_prompt_suggestion` | Whether the TUI shows a [next-prompt suggestion](/usage/tui#next-prompt-suggestion) as ghost text after a turn. On unless set to `false` |
 | `ambient_thinking_phrase` | Whether the TUI predicts a [task-specific spinner phrase](/usage/tui#spinner-thinking-phrase) while you type. On unless set to `false` |
 | `channel` | Release channel `ante update` tracks (`stable` or `nightly`). Defaults to `stable`; legacy `latest` values are treated as `stable`. See [Update & Channels](/start/update). |
+| `resize_reflow` | Scrollback strategy on terminal resize: `conservative` (default) or `purge` (see below) |
 | `status_line` | Items to display in the TUI status line footer (see below) |
 | `status_line_command` | Shell command that renders a fully custom status line (see below). Takes precedence over `status_line` while set |
 | `model_thinking` | Per-model thinking level overrides — keys are model names, values are `Disabled` / `Enabled` / `Deep` / `Max` |
@@ -132,6 +134,31 @@ printf '\033[36m[%s]\033[0m %s' "$model" "$dir"
 ```
 
 Make it executable (`chmod +x`) before pointing `command` at it. If the command fails — not executable, non-zero exit, or timeout — the footer shows a one-line diagnostic such as `status line: sh: …: Permission denied` based on the script's stderr. Script changes are picked up on the next run, but changes to `settings.json` itself require a restart.
+
+### Resize reflow
+
+When the terminal window is resized, ante rebuilds its display at the new size. The `resize_reflow` field selects what happens to the scrollback history above the visible screen:
+
+| Value | Behavior |
+|---|---|
+| `conservative` (default) | Never rewrites scrollback that has already been printed. Safe on every terminal; after aggressive drag-resizes, a few lines near the resize point may keep their old wrapping. |
+| `purge` | Clears the terminal's scrollback and replays the recent transcript at the new width — after a resize the session looks as if it had started at the final size. |
+
+```json
+{ "resize_reflow": "purge" }
+```
+
+`purge` is opt-in rather than automatic because it requires a terminal that honors the erase-scrollback escape sequence (`CSI 3 J`, the terminfo `E3` capability) — and there is no way for ante to detect that support: an ignored `3 J` fails silently, and enabling `purge` on such a terminal duplicates scrollback instead. Most terminals honor it, but iTerm2 has an advanced setting — "Prevent CSI 3 J from clearing scrollback history" — that blocks it. To check your terminal, run:
+
+```bash
+seq 1 200; printf '\033[2J\033[3J\033[H'
+```
+
+then scroll up — if the numbers are gone, your terminal honors `3 J` and `purge` is safe to enable.
+
+In iTerm2, the capability is toggled under **Settings → Advanced**: search for "3 J" and set **"Prevent CSI 3 J from clearing scrollback history"** to **No** to allow it (required for `purge`), or **Yes** to block it. The change applies immediately — re-run the check above to confirm.
+
+Trade-offs of `purge`: the first resize clears everything in that tab's scrollback, including shell output from before ante started, and only the most recent 2,000 transcript lines are replayed across a resize. Inside tmux or zellij ante always uses the purge strategy regardless of this setting, since both reliably support `3 J`.
 
 Settings can be overridden per-session via CLI flags.
 
