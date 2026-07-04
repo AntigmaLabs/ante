@@ -5,7 +5,7 @@ description: "Built-in providers, models, and the catalog.json schema"
 
 Ante resolves every provider and model from a **catalog**: the built-in presets documented here, with your [`~/.ante/catalog.json`](#catalogjson-schema) merged on top at startup. The catalog is read once per process — restart Ante to pick up edits.
 
-This page is the exhaustive reference. For how to pick a provider day to day and copy-paste customization recipes, see [Providers](/configuration/providers).
+This page is the exhaustive reference. For how to pick a provider day to day and copy-paste customization recipes, see [Providers](/usage/providers).
 
 ## Built-in providers
 
@@ -230,7 +230,7 @@ ante --provider antix-api-key --model claude-sonnet-4-6 # ANTIX_API_KEY
 
 ### Local
 
-Run GGUF models locally via the built-in llama.cpp engine — no API key or internet required. `local` is a wildcard provider; the available model depends on what the offline server has loaded. See [Offline Mode](/experimental/offline) for setup.
+Run GGUF models locally via the built-in llama.cpp engine — no API key or internet required. `local` is a wildcard provider; the available model depends on what the offline server has loaded. See [Offline Mode](/usage/offline) for setup.
 
 ```bash
 ante --provider local
@@ -404,6 +404,6 @@ Only a file that isn't a JSON object at all is rejected outright. A missing `cat
 
 ## Related
 
-- [Providers](/configuration/providers) — choosing a provider and customization recipes
+- [Providers](/usage/providers) — choosing a provider and customization recipes
 - [Storage Reference](/reference/storage-reference) — where `catalog.json` lives on disk
-- [Offline Mode](/experimental/offline) — running local GGUF models
+- [Offline Mode](/usage/offline) — running local GGUF models

@@ -99,8 +99,8 @@ const config: Config = {
             { label: 'Overview', to: '/' },
             { label: 'Quickstart', to: '/start/quickstart' },
             { label: 'Benchmarks', to: '/benchmarks/eval' },
-            { label: 'Offline Mode', to: '/experimental/offline' },
-            { label: 'Configuration', to: '/configuration/providers' },
+            { label: 'Offline Mode', to: '/usage/offline' },
+            { label: 'Providers', to: '/usage/providers' },
           ],
         },
         {
