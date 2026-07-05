@@ -48,6 +48,11 @@ pub enum Op {
     RestoreLocalProvider,
     /// Manually trigger conversation compaction on the active session.
     Compact,
+    /// Set, clear, or report a goal-driven execution loop on the active
+    /// session. A set goal keeps the session working — re-running turns and
+    /// judging the condition after each one — until it is met, judged
+    /// unreachable, or cleared.
+    Goal(GoalCommand),
     /// Request an ad-hoc "thinking phrase" prediction for the in-progress
     /// draft. Runs off the conversation critical path on a cheap model and
     /// answers with `Evt::Ambient`. `req_id` lets the client discard stale
@@ -67,6 +72,17 @@ pub enum Op {
         req_id: u64,
     },
     Shutdown,
+}
+
+/// A `/goal` sub-command carried by [`Op::Goal`].
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+pub enum GoalCommand {
+    /// Set (or replace) the active goal condition.
+    Set(String),
+    /// Clear the active goal, stopping the loop.
+    Clear,
+    /// Report the current goal status.
+    Status,
 }
 
 /// Which ambient feature produced an [`Evt::Ambient`]. Both run off the main
