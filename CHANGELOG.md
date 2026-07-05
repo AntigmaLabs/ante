@@ -1,5 +1,13 @@
 # Changelog
 
+## v0.preview.53 - 2026-07-04
+
+- Add `/goal` for goal-driven sessions that keep working until a condition is met, cleared, interrupted, or judged unreachable
+- Improve TUI resize handling to prevent scrollback duplication and content loss, with an opt-in `resize_reflow = "purge"` setting for terminals that can safely purge and replay
+- Install official pinned `llama.cpp` prebuilts with SHA-256 verification, atomic versioned installs, GPU-tier selection, and mirror fallback for offline engine setup
+- Improve installer feedback and reliability
+- Refine default prompts for task-contract validation and split Ante product guidance from working defaults
+
 ## v0.preview.52 - 2026-07-02
 
 - Fix skill slash command injection
