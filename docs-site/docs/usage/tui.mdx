@@ -63,12 +63,25 @@ The TUI supports built-in slash commands for common actions:
 | `/resume` | Resume a previous session in this directory |
 | `/statusline` | Configure the status line |
 | `/mcp` | Inspect and manage configured [MCP servers](/extend/mcp) |
+| `/goal [<condition> \| clear]` | Keep working until a condition is met, clear the active goal, or show goal status |
 
 :::note
 Some commands are "visible" (appear in conversation history) and others are "silent" (execute without adding to history). `/clear`, `/init`, `/exit`, and `/compact` are visible; the rest are silent.
 :::
 
 Skills also appear as slash commands with scope indicators: `[p]` for project-level, `[u]` for user-level, and `[s]` for system-level skills.
+
+## Goal-driven sessions
+
+Use `/goal <condition>` when you want Ante to keep driving the session until a concrete success condition is satisfied:
+
+```text
+/goal all tests pass and the docs build succeeds
+```
+
+Ante starts or continues work toward that condition, then evaluates the conversation after each turn. If the goal is not met, it sends a continuation turn with the evaluator feedback. The loop stops when the goal is met, judged unreachable, cleared, interrupted, or reaches its built-in iteration cap.
+
+Run `/goal` with no arguments to show the current status, or `/goal clear` to stop the goal loop.
 
 ## Session resume
 
