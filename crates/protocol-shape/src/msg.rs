@@ -1,4 +1,3 @@
-use std::fmt;
 use std::path::PathBuf;
 
 use chrono::{DateTime, Utc};
@@ -376,37 +375,6 @@ pub struct ToolUse {
     pub signature: Option<String>,
 }
 
-impl fmt::Display for ToolUse {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        f.write_str(&self.name)?;
-        if let serde_json::Value::Object(obj) = &self.args {
-            let mut first = true;
-            for (k, v) in obj {
-                if v.is_null() {
-                    continue;
-                }
-                f.write_str(if first { "(" } else { ", " })?;
-                first = false;
-                let rendered = v.to_string();
-                write!(f, "{k}={}", elide(&rendered, 16))?;
-            }
-            if !first {
-                f.write_str(")")?;
-            }
-        }
-        Ok(())
-    }
-}
-
-fn elide(s: &str, max: usize) -> std::borrow::Cow<'_, str> {
-    if s.chars().count() <= max {
-        return std::borrow::Cow::Borrowed(s);
-    }
-    let mut out: String = s.chars().take(max.saturating_sub(1)).collect();
-    out.push('…');
-    std::borrow::Cow::Owned(out)
-}
-
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]
 pub struct ModelSpec {
     #[serde(alias = "name")]
@@ -433,44 +401,6 @@ pub struct ModelSpec {
     pub support_vision: Option<bool>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub weight_class: Option<WeightClass>,
-}
-
-impl ModelSpec {
-    pub fn support_vision(&self) -> bool {
-        self.support_vision.unwrap_or_else(|| is_known_vision_capable(&self.id))
-    }
-}
-
-fn is_known_vision_capable(id: &str) -> bool {
-    let id = id.to_ascii_lowercase();
-    contains_any(
-        &id,
-        &[
-            "claude-fable-5",
-            "claude-haiku-4",
-            "claude-mythos-5",
-            "claude-opus-4",
-            "claude-sonnet-5",
-            "claude-sonnet-4",
-            "gemini",
-            "gpt-5.4",
-            "gpt-5.5",
-            "gpt-5-mini",
-            "gpt-5-nano",
-            "kimi-k2.7",
-            "minimax-m3",
-            "multimodal",
-            "omni",
-            "pixtral",
-            "qwen3-vl",
-            "qwen3.7-plus",
-            "vision",
-        ],
-    )
-}
-
-fn contains_any(haystack: &str, needles: &[&str]) -> bool {
-    needles.iter().any(|needle| haystack.contains(needle))
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, Copy, PartialEq, Eq, Hash)]
@@ -541,20 +471,6 @@ pub struct ContextWindow {
     pub limit_tokens: u32,
 }
 
-impl ContextWindow {
-    /// Percent of the raw window consumed (0-100). A presentation convenience for
-    /// renderers; measured against the raw limit, not any compaction threshold.
-    #[allow(clippy::cast_possible_truncation, clippy::cast_sign_loss, clippy::cast_precision_loss)]
-    pub fn used_percentage(&self) -> u8 {
-        if self.limit_tokens == 0 {
-            return 100;
-        }
-        ((f64::from(self.used_tokens) / f64::from(self.limit_tokens)) * 100.0)
-            .round()
-            .clamp(0.0, 100.0) as u8
-    }
-}
-
 impl Usage {
     pub fn new(input_tokens: u32, output_tokens: u32) -> Self {
         Self { input_tokens, output_tokens, cache_read_tokens: None, cache_creation_tokens: None }
@@ -621,7 +537,7 @@ pub enum Scope {
 mod tests {
     use super::{
         Evt, ExtensionRefreshed, Id, ModelSpec, Op, PermissionMode, ProviderSpec,
-        SessionInitialized, SessionUpdate, ToolUse, Usage, WeightClass,
+        SessionInitialized, SessionUpdate, Usage, WeightClass,
     };
     use std::path::PathBuf;
 
@@ -664,48 +580,6 @@ mod tests {
     fn weight_class_orders_feather_lightest_to_heavy_heaviest() {
         assert!(WeightClass::Feather < WeightClass::Middle);
         assert!(WeightClass::Middle < WeightClass::Heavy);
-    }
-
-    #[test]
-    fn support_vision_explicit_override_wins() {
-        let mut spec = model_spec("xiaomi/mimo-v2.5-pro");
-        spec.support_vision = Some(true);
-        assert!(spec.support_vision());
-
-        let mut spec = model_spec("gemini-3.5-flash");
-        spec.support_vision = Some(false);
-        assert!(!spec.support_vision());
-    }
-
-    #[test]
-    fn support_vision_defaults_false_without_known_vision_marker() {
-        for id in [
-            "deepseek/deepseek-v4-pro",
-            "z-ai/glm-5.2",
-            "openai/gpt-5.3-codex",
-            "qwen/qwen3-coder-plus",
-            "xiaomi/mimo-v2.5-pro",
-            "xiaomi/mimo-v2.5",
-            "unknown-model",
-        ] {
-            assert!(!model_spec(id).support_vision(), "{id} should default to no vision");
-        }
-    }
-
-    #[test]
-    fn support_vision_infers_vision_capable_models() {
-        for id in [
-            "anthropic/claude-fable-5",
-            "anthropic/claude-sonnet-4-6",
-            "anthropic/claude-sonnet-5",
-            "google/gemini-3.5-flash",
-            "openai/gpt-5.5",
-            "openai/gpt-5-mini",
-            "qwen/qwen3-vl-plus",
-            "qwen/qwen3.7-plus",
-        ] {
-            assert!(model_spec(id).support_vision(), "{id} should support vision");
-        }
     }
 
     fn provider_spec(name: &str) -> ProviderSpec {
@@ -822,38 +696,6 @@ mod tests {
                     && payload.session_id == session_id
                     && payload.cwd == std::path::Path::new("/tmp/session-updated")
         ));
-    }
-
-    #[test]
-    fn tool_use_display_examples() {
-        let tu = |name: &str, args: serde_json::Value| ToolUse {
-            id: "1".into(),
-            name: name.into(),
-            args,
-            signature: None,
-        };
-
-        // Typical: null fields are skipped.
-        assert_eq!(
-            tu(
-                "Bash",
-                serde_json::json!({
-                    "command": "ls -la",
-                    "timeout": null,
-                    "run_in_background": false,
-                }),
-            )
-            .to_string(),
-            r#"Bash(command="ls -la", run_in_background=false)"#,
-        );
-
-        // All-null and empty objects render as the bare name.
-        assert_eq!(tu("Noop", serde_json::json!({ "x": null })).to_string(), "Noop");
-        assert_eq!(tu("Noop", serde_json::json!({})).to_string(), "Noop");
-
-        // Long values get elided.
-        let long = tu("Run", serde_json::json!({ "command": "x".repeat(200) })).to_string();
-        assert!(long.ends_with("…)"), "expected elision, got {long:?}");
     }
 
     #[test]
