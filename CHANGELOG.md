@@ -1,5 +1,15 @@
 # Changelog
 
+## v0.preview.54 - 2026-07-06
+
+- Add OpenRouter web search request support and forward `top_k` in OpenAI-compatible requests
+- Update built-in model catalogs
+- Fix multibyte truncation in approval previews
+- Improve settings and credential storage reliability with race-safe ownership and centralized atomic writes
+- Scope permission grants at the permission layer for clearer approval behavior
+- Polish TUI sent-message and composer cursor rendering
+- Clean up the external protocol shape by removing non-wire behavior and decoupling internal storage/logging details
+
 ## v0.preview.53 - 2026-07-04
 
 - Add `/goal` for goal-driven sessions that keep working until a condition is met, cleared, interrupted, or judged unreachable
