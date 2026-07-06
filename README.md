@@ -38,7 +38,7 @@ Ante is hand-written Rust with the heavy parts (`Grep`, `git`, local inference) 
 
 ![Resource Usage Comparison](docs-site/docs/benchmarks/compare_animated.gif)
 
-**[Raw numbers →](docs-site/docs/benchmarks/compare_table.md)** · [Benchmark details →](docs-site/docs/benchmarks/eval.mdx)
+**[Raw numbers →](https://docs.antigma.ai/benchmarks/compare_table)** · [Benchmark details →](https://docs.antigma.ai/benchmarks/eval)
 
 ### 🔌 Natively offline
 
@@ -49,7 +49,7 @@ ante --offline-model ~/.ante/models/Qwen3.5-9B-Q4_K_M.gguf \
   -p "add error handling to src/main.rs"
 ```
 
-**[Offline mode →](https://docs.antigma.ai/experimental/offline)**
+**[Offline mode →](https://docs.antigma.ai/usage/offline)**
 
 ---
 
@@ -135,14 +135,14 @@ ante update --version v0.preview.33
 <tr>
 <td width="50%">
 
-**[Providing Context: Files & Folders](https://docs.antigma.ai/cookbook/providing-context)**
+**[Providing Context: Files & Folders](https://docs.antigma.ai/usage/providing-context)**
 
 ![Adding file context with @ mentions](docs-site/static/assets/cookbook/files.gif)
 
 </td>
 <td width="50%">
 
-**[Interrupting & Steering](https://docs.antigma.ai/cookbook/steering)**
+**[Interrupting & Steering](https://docs.antigma.ai/usage/steering)**
 
 ![Interrupting the agent with Escape](docs-site/static/assets/cookbook/interrupt.gif)
 
@@ -151,14 +151,14 @@ ante update --version v0.preview.33
 <tr>
 <td width="50%">
 
-**[Models, Providers & Thinking](https://docs.antigma.ai/cookbook/models-and-thinking)**
+**[Models, Providers & Thinking](https://docs.antigma.ai/usage/models-and-thinking)**
 
 ![Selecting a model and provider](docs-site/static/assets/cookbook/model.gif)
 
 </td>
 <td width="50%">
 
-**[Subscription Login](https://docs.antigma.ai/cookbook/login)**
+**[Subscription Login](https://docs.antigma.ai/usage/login)**
 
 ![Connecting to a provider via /connect](docs-site/static/assets/cookbook/connect.gif)
 
@@ -166,7 +166,7 @@ ante update --version v0.preview.33
 </tr>
 </table>
 
-[See all cookbook guides](https://docs.antigma.ai/cookbook/login)
+[See all cookbook guides](https://docs.antigma.ai/usage/providers)
 
 ## Architecture
 
@@ -234,7 +234,7 @@ On the high level, it has most of your favorite features (Multi-agents, skills, 
 - You only need an LLM provider configured to run it. And if you have the hardware, you don't even need one — Ante natively supports a private inference engine.
 
 - This resulted in ~15MB self-contained binary and multi-agent orchestration designed to run hundreds of replicas in parallel at scale.
-See the [benchmark details](docs-site/docs/benchmarks/eval.mdx) across 20 parallel tasks for concrete numbers.
+See the [benchmark details](https://docs.antigma.ai/benchmarks/eval) across 20 parallel tasks for concrete numbers.
 
 - Every claim above is backed by public, reproducible benchmarks of the exact builds we ship: see [antigma.ai/eval](https://antigma.ai/eval).
 
