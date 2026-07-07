@@ -61,20 +61,12 @@ Two knobs shape the command Ante runs:
 
 ## Attach to a running server
 
-You can run `llama-server` entirely yourself — any build, any flags — and let Ante connect to it as a client. Ante scans local ports **8080–8089** for llama servers (via `/health`, reading the model name from `/v1/models`) and lists what it finds under **Running servers** in the offline mode selector. Servers you started are never stopped by Ante.
+You can run `llama-server` entirely yourself — any build, any flags — and let
+Ante connect to it as a client. Ante scans local ports **8080-8179** and also
+supports manual `host:port` attach from `/offline-mode` with `Ctrl+A`.
 
-```bash
-# Your server, your flags
-llama-server -m ~/models/my-model.gguf --port 8085 -c 65536 --flash-attn
-
-# In the Ante TUI: /offline-mode → Running servers → select it
-```
-
-For scripted use, point the `local` provider at the port directly:
-
-```bash
-ANTE_LOCAL_PROVIDER_PORT=8085 ante --provider local "your prompt"
-```
+See [Existing Servers](/local/existing-servers) for endpoint input, Docker
+examples, detach behavior, and the remote-host data-flow caveat.
 
 ## A different engine entirely
 

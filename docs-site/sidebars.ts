@@ -45,6 +45,7 @@ const sidebars: SidebarsConfig = {
         'local/overview',
         'local/offline',
         'local/custom-engines',
+        'local/existing-servers',
         'local/verified-models',
       ],
     },

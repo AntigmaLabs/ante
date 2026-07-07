@@ -1,0 +1,98 @@
+---
+title: Existing Servers
+description: "Attach Ante offline mode to a llama.cpp server you already run"
+---
+
+Use an existing server when you already run `llama-server` yourself: Docker,
+a custom llama.cpp build, another machine on your LAN, or a fork with flags that
+Ante does not manage directly.
+
+Ante still treats the endpoint as the `local` provider, so the normal agent
+loop, model switching, and provider behavior work as they do with a managed
+offline model. Ante does not own externally attached servers and never stops
+them for you.
+
+## Auto-detect localhost servers
+
+Open the TUI and run:
+
+```bash
+/offline-mode
+```
+
+Ante scans localhost ports **8080-8179** for llama.cpp-compatible servers. It
+checks `/health`, reads the model name from `/v1/models`, and lists detected
+servers above local and verified models.
+
+This scan runs even when Ante's pinned llama.cpp engine is not installed. If a
+running server is detected, select it and press `Enter` to attach.
+
+## Attach manually
+
+From `/offline-mode`, press `Ctrl+A` and enter an endpoint:
+
+```text
+127.0.0.1:8080
+```
+
+A bare port means `127.0.0.1`:
+
+```text
+8080
+```
+
+Hostnames are accepted:
+
+```text
+llama-box.local:8080
+```
+
+Bracketed IPv6 endpoint input is not supported in this dialog. Attach failures
+are shown in the offline-mode dialog after Ante probes `/health` and
+`/v1/models`.
+
+## Docker example
+
+This starts the official llama.cpp server image and exposes it to Ante on port
+`8080`:
+
+```bash
+docker run --rm \
+  -p 8080:8080 \
+  -v "$PWD/models:/models" \
+  ghcr.io/ggml-org/llama.cpp:server \
+  --model /models/model.gguf \
+  --host 0.0.0.0 \
+  --port 8080 \
+  --ctx-size 32768 \
+  --jinja
+```
+
+For CUDA builds, use the matching llama.cpp image, such as
+`ghcr.io/ggml-org/llama.cpp:server-cuda`, and add the Docker GPU runtime flags
+for your machine.
+
+## Detach behavior
+
+When Ante starts `llama-server`, it owns that process and can stop it. When Ante
+attaches to an external server, stopping offline mode only detaches Ante from
+the endpoint and restores the static `local` provider entry. The external server
+keeps running.
+
+Attaching to a non-loopback host sends your conversation data to that host. Only
+attach remote endpoints that you intentionally operate or trust.
+
+## Related environment variables
+
+`ANTE_LOCAL_PROVIDER_PORT` changes the static `local` provider preset port used
+outside an active offline-mode server session:
+
+```bash
+ANTE_LOCAL_PROVIDER_PORT=8081 ante --provider local "your prompt"
+```
+
+Manual attach and auto-detected running servers override that static provider
+while attached.
+
+`ANTE_OFFLINE_CONTEXT` changes the default context-window cap when Ante starts a
+managed offline model. It does not change a server you started externally.
