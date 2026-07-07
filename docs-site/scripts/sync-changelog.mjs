@@ -46,7 +46,8 @@ const enIntro =
 const zhHansIntro =
   `Ante 的所有重要变更，按最新版本优先排列。每个版本都会发布为 ` +
   `[GitHub release](${REPO_URL}/releases)，也可以通过 ` +
-  '`ante update --version <V>` 安装指定版本。'
+  '`ante update --version <V>` 安装指定版本。' +
+  `\n\n:::note\n为避免改写发布语义，以下版本条目暂时保留英文原文。\n:::`
 
 const renderChangelog = ({ frontmatter, intro, title, months, latestLabel, releaseLabel }) => {
   const out = []

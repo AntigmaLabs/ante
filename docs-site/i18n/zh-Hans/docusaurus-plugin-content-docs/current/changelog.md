@@ -9,6 +9,10 @@ toc_max_heading_level: 2
 
 Ante 的所有重要变更，按最新版本优先排列。每个版本都会发布为 [GitHub release](https://github.com/AntigmaLabs/ante-preview/releases)，也可以通过 `ante update --version <V>` 安装指定版本。
 
+:::note
+为避免改写发布语义，以下版本条目暂时保留英文原文。
+:::
+
 ## v0.preview.54 {#v0-preview-54}
 
 <p className="changelog-release-meta"><span className="changelog-badge">最新</span><time dateTime="2026-07-06">2026年7月6日</time><a href="https://github.com/AntigmaLabs/ante-preview/releases/tag/v0.preview.54">GitHub 发布</a></p>
