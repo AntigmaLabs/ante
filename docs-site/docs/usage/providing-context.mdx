@@ -1,12 +1,12 @@
 ---
-title: "Providing Context: Files & Folders"
+title: "Providing Context: Files, Folders & the Web"
 sidebar_label: "Context"
-description: "Use @ mentions to add files and directories to the agent's context"
+description: "Add files with @ mentions and let Ante pull in content from the web"
 ---
 
-# Providing Context: Files & Folders
+# Providing Context: Files, Folders & the Web
 
-Give the agent exactly the context it needs by referencing files and directories directly in your prompt.
+Give the agent exactly the context it needs: reference local files and directories directly in your prompt, or let Ante fetch what it needs from the web.
 
 ## Using @ mentions
 
@@ -21,4 +21,26 @@ This ensures the agent sees exactly the code you're asking about, without guessi
 
 :::tip
 If you paste multiple file paths, Ante auto-prefixes them with `@` for convenience. You can reference as many files as you need in a single prompt.
+:::
+
+## Pulling in web content
+
+Ante can search the web and fetch content from URLs, letting you pull in documentation, look up APIs, or research topics without leaving the terminal. Just ask naturally and Ante will use its web browsing tools to find what you need:
+
+<img src="/assets/cookbook/webbrowse.gif" alt="Ante performing a web search" style={{width: '100%', borderRadius: '8px', margin: '16px 0'}} />
+
+The agent can:
+
+- **Search the web** for documentation, examples, and answers
+- **Fetch a URL** to read its contents directly (e.g., API docs, release notes, blog posts)
+- **Summarize** the results and integrate them into the conversation
+
+This is particularly useful when you're working with an unfamiliar library or need to check the latest documentation for a tool or API.
+
+:::note
+Fetching a URL (`WebFetch`) is on by default. Full web **search** (`WebSearch`) runs through the provider's native search, so it is available only on a provider that supports it (Anthropic, OpenAI, Gemini, Grok, OpenRouter, Antix, or Ali Coding Plan). On those providers it is enabled automatically — no flag needed; on others it is not offered. See the [Tool Reference](/reference/tools-reference#websearch).
+:::
+
+:::tip
+You can also pipe web content into Ante from the command line: `curl https://example.com/docs | ante -p "summarize this"`.
 :::

@@ -1,0 +1,40 @@
+---
+title: Slash Commands
+description: "Built-in commands for common actions in the interactive TUI"
+---
+
+# Slash Commands
+
+Type `/` in the [interactive TUI](/usage/tui) to run built-in commands for common actions:
+
+| Command | Description |
+|---|---|
+| `/clear` | Clear conversation history |
+| `/init` | Analyze the project and create an `AGENTS.md` file |
+| `/exit` | Exit Ante |
+| `/compact` | Summarize conversation history to free up the context window |
+| `/theme` | Open theme selection dialog |
+| `/diff` | Show git diff (including untracked files) |
+| `/connect` | Sign in with OAuth (API keys are detected automatically) |
+| `/model` | Select a model and connected provider |
+| `/providers` | Select an available provider for the current session |
+| `/offline-mode` | Run a local model with the built-in inference engine |
+| `/pty` | Toggle the embedded terminal panel (`Ctrl+P` to switch focus) |
+| `/welcome` | Show the welcome/onboarding dialog |
+| `/resume` | Resume a previous session in this directory |
+| `/statusline` | Configure the status line |
+| `/mcp` | Inspect and manage configured [MCP servers](/extend/mcp) |
+| `/goal [<condition> \| clear]` | Keep working until a condition is met, clear the active goal, or show goal status |
+
+:::note
+Some commands are "visible" (appear in conversation history) and others are "silent" (execute without adding to history). `/clear`, `/init`, `/exit`, and `/compact` are visible; the rest are silent.
+:::
+
+## Skills as slash commands
+
+[Skills](/extend/skills) also appear as slash commands, with scope indicators: `[p]` for project-level, `[u]` for user-level, and `[s]` for system-level skills.
+
+## Related
+
+- `/goal` powers [goal-driven sessions](/usage/goal-sessions): keep working until a success condition is met.
+- `/resume` picks up a previous conversation; see [session resume](/usage/tui#session-resume).

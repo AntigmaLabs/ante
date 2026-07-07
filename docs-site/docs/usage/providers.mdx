@@ -1,6 +1,6 @@
 ---
 title: Providers
-description: "Pick and configure your model provider"
+description: "Pick your provider, sign in, and customize the catalog"
 ---
 
 Ante is provider-agnostic. Each provider implements a common interface for sending prompts and receiving streaming responses, and providers and models are resolved from a catalog at session start.
@@ -19,15 +19,22 @@ Every provider id you can pass to `--provider` is listed in the [Catalog Referen
 
 ## Authentication
 
-Most providers read an API key from an environment variable; Anthropic, OpenAI, and Antix can also sign in interactively via OAuth in the TUI.
+Most providers read an API key from an environment variable:
 
 ```bash
-# API key
 export ANTHROPIC_API_KEY="sk-ant-..."
 ante --provider anthropic --model claude-sonnet-4-6
 ```
 
 Each provider's exact auth method (env var name or OAuth) is in the [Catalog Reference](/reference/catalog-reference#built-in-providers).
+
+### Subscription login (OAuth)
+
+Providers with subscription plans (Anthropic, OpenAI, Antix, etc.) can sign in via OAuth instead, so you use your existing subscription without managing API keys. Type `/connect` in the TUI to open the provider login flow. Ante launches your default browser for authentication, then links your session automatically.
+
+<img src="/assets/cookbook/connect.gif" alt="Connecting to a provider via /connect" style={{width: '100%', borderRadius: '8px', margin: '16px 0'}} />
+
+Once connected, Ante remembers your credentials for future sessions, so there is no need to re-authenticate each time.
 
 :::tip
 When using third-party providers, make sure the model supports tool use (function calling) — Ante relies on it for agent capabilities. If results are poor, try a larger or more capable model.

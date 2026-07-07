@@ -1,0 +1,55 @@
+---
+title: Goal-Driven Sessions
+sidebar_label: "Goal Sessions"
+description: "Keep Ante working until a concrete success condition is met"
+---
+
+# Goal-Driven Sessions
+
+Use `/goal` when the work is bigger than one prompt. Set a success condition and Ante keeps driving the session until the condition is satisfied:
+
+```text
+/goal all tests pass and the docs build succeeds
+```
+
+## How the loop works
+
+Ante starts or continues work toward the condition, then evaluates the conversation after each turn. If the goal is not met, it sends a continuation turn carrying the evaluator's feedback, and the agent keeps working.
+
+The loop stops when the goal is:
+
+- **Met** — the evaluator judges the condition satisfied
+- **Unreachable** — the evaluator judges it cannot be satisfied
+- **Cleared** — you run `/goal clear`
+- **Interrupted** — you stop the agent mid-turn
+
+A built-in iteration cap also ends the loop, as a backstop against runaway sessions.
+
+## Managing the goal
+
+| Command | Effect |
+|---|---|
+| `/goal <condition>` | Set (or replace) the active goal |
+| `/goal` | Show the current goal status |
+| `/goal clear` | Clear the goal and stop the loop |
+
+## Writing good conditions
+
+The evaluator is only as sharp as the condition you give it. Make it concrete and checkable:
+
+- `all tests pass and cargo clippy reports no warnings` beats `improve the code`
+- `the docs build succeeds with no broken links` beats `fix the docs`
+- `the benchmark script reports p95 latency under 200ms` beats `make it faster`
+
+Vague conditions force the evaluator to guess, which means the loop may stop early or churn without converging.
+
+## Running unattended
+
+Goal sessions shine when you step away. Two things to set up first:
+
+- [Approvals](/usage/approvals) — pre-approve the commands the agent will need, or the loop stalls waiting for you at the first prompt.
+- [Session resume](/usage/tui#session-resume) — every session persists to disk, so `/resume` picks the work back up if you close the terminal.
+
+## Programmatic use
+
+Goal loops are part of Ante's wire protocol: `Op::Goal` carries set, clear, and status commands, so [server-mode](/usage/serve) clients can drive them the same way the TUI does.

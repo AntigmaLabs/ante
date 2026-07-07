@@ -28,19 +28,24 @@ const sidebars: SidebarsConfig = {
       items: [
         'usage/providers',
         'usage/tui',
-        'usage/login',
-        'usage/providing-context',
+        'usage/slash-commands',
+        {
+          type: 'category',
+          label: 'Input',
+          collapsible: false,
+          items: ['usage/providing-context', 'usage/steering'],
+        },
         'usage/models-and-thinking',
-        'usage/steering',
+        'usage/goal-sessions',
         'usage/approvals',
-        'usage/web-browsing',
+        { type: 'doc', id: 'extend/memory', label: 'Auto Memory' },
       ],
     },
     {
       type: 'category',
       label: 'Local Models',
       className: 'sidebar-section sidebar-section--local',
-      collapsed: true,
+      collapsible: false,
       items: [
         'local/overview',
         'local/offline',
@@ -65,7 +70,7 @@ const sidebars: SidebarsConfig = {
       label: 'Customization',
       className: 'sidebar-section sidebar-section--custom',
       collapsed: true,
-      items: ['extend/skills', 'extend/subagents', 'extend/mcp', 'extend/agents-md', 'extend/memory'],
+      items: ['extend/skills', 'extend/subagents', 'extend/mcp', 'extend/agents-md'],
     },
     {
       type: 'category',
