@@ -580,7 +580,7 @@ Agent 思维过程的流式块。将所有增量连接起来以构建完整的�
 
 本地模型的管理（引擎安装、模型发现、llama-server 生命周期）是 **客户端侧** 的。它是通过进程内的 `OfflineSubsystem` API 驱动的，而不是通过守护进程协议。离线模式唯一面向守护进程的协议层面是 `RegisterLocalProvider` / `RestoreLocalProvider` —— 客户端自己启动 llama-server，然后向守护进程注册其端口（以及可选的 `ModelSpec`）。
 
-请参阅 [离线模式](/experimental/offline) 页面了解面向用户的流程及 `--offline-model` CLI 标志。
+请参阅 [离线模式](/zh-Hans/experimental/offline) 页面了解面向用户的流程及 `--offline-model` CLI 标志。
 
 ## 传输协议 (Transport)
 

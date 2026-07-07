@@ -5,7 +5,7 @@ description: "内置提供商、模型以及 catalog.json 模式"
 
 Ante 从一个 **catalog**（目录）解析每个提供商和模型：此处记录的内置预设，在启动时与您的 [`~/.ante/catalog.json`](#catalogjson-schema) 合并。Catalog 在每个进程中只读取一次 —— 重启 Ante 以使修改生效。
 
-此页面是详尽的参考。关于如何在日常中选择提供商以及复制粘贴自定义配置配方，请参阅 [Providers](/configuration/providers)。
+此页面是详尽的参考。关于如何在日常中选择提供商以及复制粘贴自定义配置配方，请参阅 [Providers](/zh-Hans/configuration/providers)。
 
 ## 内置提供商 {#built-in-providers}
 
@@ -230,7 +230,7 @@ ante --provider antix-api-key --model claude-sonnet-4-6 # ANTIX_API_KEY
 
 ### Local
 
-通过内置的 llama.cpp 引擎在本地运行 GGUF 模型 —— 无需 API 密钥或互联网。`local` 是一个通配符提供商；可用的模型取决于离线服务器加载的内容。有关设置，请参阅 [离线模式](/experimental/offline)。
+通过内置的 llama.cpp 引擎在本地运行 GGUF 模型 —— 无需 API 密钥或互联网。`local` 是一个通配符提供商；可用的模型取决于离线服务器加载的内容。有关设置，请参阅 [离线模式](/zh-Hans/experimental/offline)。
 
 ```bash
 ante --provider local
@@ -402,6 +402,6 @@ Skipped 1 entry in ~/.ante/catalog.json:
 
 ## 相关参考
 
-- [Providers](/configuration/providers) —— 选择提供商与自定义配置配方
+- [Providers](/zh-Hans/configuration/providers) —— 选择提供商与自定义配置配方
 - [Storage 参考](/reference/storage-reference) —— `catalog.json` 在磁盘上的位置
-- [离线模式](/experimental/offline) —— 运行本地 GGUF 模型
+- [离线模式](/zh-Hans/experimental/offline) —— 运行本地 GGUF 模型
