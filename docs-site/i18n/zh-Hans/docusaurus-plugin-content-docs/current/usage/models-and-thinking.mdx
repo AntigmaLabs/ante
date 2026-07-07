@@ -1,0 +1,26 @@
+---
+title: "模型、提供商与思考过程"
+sidebar_label: "模型与思考过程"
+description: "在运行中切换模型、切换提供商并调整思考深度"
+---
+
+# 模型、提供商与思考过程 {#models-providers--thinking}
+
+Ante 允许您在会话中途在模型、提供商和推理级别之间进行切换 —— 无需重新启动。
+
+## 选择模型 {#selecting-a-model}
+
+在 TUI 中输入 `/model` 以打开模型选择器。您将看到按提供商分组的可用模型。使用方向键导航，按 Enter 键确认。
+
+<img src="/assets/cookbook/model.gif" alt="Selecting a model and provider with /model" style={{width: '100%', borderRadius: '8px', margin: '16px 0'}} />
+
+在同一个界面上，您可以：
+
+- **切换提供商** —— 按 `Tab` 键在 Anthropic、OpenAI、Gemini、Grok 等之间切换
+- **调整思考预算** —— 对于支持扩展思考过程（extended thinking）的模型（如具有思考能力的 Claude），配置模型在响应之前应该进行多少推理
+
+:::tip
+您也可以通过 CLI 标志设置您的默认模型和提供商：`ante --provider openai --model gpt-5.5`，或者在您的[首选项](/configuration/preference)中配置默认值。
+:::
+
+如果您选择了提供商但没有指定模型，Ante 会为您启动该提供商最强大的模型，并在后台悄悄地使用一个更轻量、更便宜的模型来处理诸如总结获取的网页之类的任务 —— 参见[量级（weight classes）](/reference/catalog-reference#weight-classes)。支持视觉的模型会被自动检测出来，因此您可以将图像直接拖放到聊天中。

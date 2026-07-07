@@ -1,0 +1,167 @@
+---
+title: 离线模式
+description: "通过 Ante 原生管理的 llama.cpp 引擎运行本地 GGUF 模型"
+---
+
+Ante 通过原生管理的 [llama.cpp](https://github.com/ggerganov/llama.cpp) 引擎运行本地 GGUF 模型。无需 API 密钥，也无需账户：只需将 Ante 指向模型文件，完整的智能体循环即可在您的硬件上运行。一旦模型存在于磁盘上，推理过程完全不需要网络连接。
+
+:::info
+离线模式正处于活跃开发阶段。预期可能存在一些不完善之处并会有快速迭代。
+:::
+
+## 工作原理 {#how-it-works}
+
+当您选择离线模式时，Ante 会：
+
+1. 检查 llama.cpp，并提供安装或升级服务：这是一个固定版本、经过校验和验证且与您硬件匹配的官方构建（在 Apple 芯片上为 Metal；在 Linux 上为 CUDA、Vulkan 或 CPU）
+2. 在您的系统上发现 GGUF 模型
+3. 检测已在本地端口运行的 llama 服务器
+4. 根据模型大小和上下文窗口估算内存需求
+5. 为您启动并监控推理服务器
+
+如果您倾向于使用自己的 llama.cpp 构建、额外的服务器标志（flags），或是您自行启动的服务器？请参阅[自定义引擎](/local/custom-engines)。
+
+## 设置 {#setting-up}
+
+1. **启动 Ante 并打开离线模式** — 正常启动 Ante 并在 TUI 中使用离线模式选择器：
+   ```bash
+   ante
+
+   # 在 TUI 中
+   /offline-mode
+   ```
+
+2. **安装 llama.cpp** — 如果尚未安装，Ante 会提示您自动将其安装到 `~/.ante/llama.cpp`。当新的 Ante 版本中固定（pinned）的 llama.cpp 版本发生变化时，Ante 会提供升级选项。
+
+3. **选择模型** — 从以下选项中选择：
+   - **已验证模型 (Verified models)** — 从 Hugging Face 下载的[精选模型](/local/verified-models)
+   - **本地模型 (Local models)** — 您系统上已有的 GGUF 文件（自动发现）
+   - **运行中的服务器 (Running servers)** — [附加](/local/existing-servers)到已经在本地端口或可达端点上运行的 llama 服务器
+
+4. **或直接传递模型路径** — 跳过 TUI 并一步加载 GGUF 文件：
+   ```bash
+   ante --offline-model /path/to/model.gguf "您的提示词（prompt）放在这里"
+   ```
+   Ante 启动 llama-server，等待其就绪，然后运行会话。这在脚本或 CI（持续集成）中非常有用。
+
+一旦模型加载完毕，它会被注册为目录（catalog）中的 `local` 提供商（provider），因此您也可以在任何会话中通过 `/model` 切换到该模型，或使用 `--provider local` 指定它为目标提供商。请参阅[混合使用本地和前沿模型](/local/overview#mixing-local-and-frontier)。
+
+## 脚本化和服务器使用 {#scripted-and-server-usage}
+
+### 无头模式（单次会话） {#headless-single-session}
+
+通过传递 `--offline-model` 即可针对本地 GGUF 文件运行一次性（one-shot）提示，不需要 TUI：
+
+```bash
+ante --offline-model ~/.ante/models/Qwen3.5-9B-Q4_K_M.gguf "解释这段代码"
+```
+
+<img src="/assets/offline-headless.gif" alt="Headless offline mode running a one-shot prompt against a local GGUF model" style={{width: '100%', borderRadius: '8px', margin: '16px 0'}} />
+
+Ante 会启动 llama-server，等待其就绪，运行会话，然后自动关闭服务器。
+
+### 服务模式（WebSocket 服务器） {#serve-mode-websocket-server}
+
+当运行 `ante serve` 时，您可以加载一次模型并在所有连接的客户端之间共享：
+
+```bash
+ante serve --ws 127.0.0.1:9000 --offline-model ~/.ante/models/Qwen3.5-9B-Q4_K_M.gguf
+```
+
+<img src="/assets/offline-serve.gif" alt="Serve mode with a shared offline model across WebSocket clients" style={{width: '100%', borderRadius: '8px', margin: '16px 0'}} />
+
+llama-server 在接受连接前启动，并且每个 WebSocket 客户端都使用同一个正在运行的服务器。该服务器在接收到 `Ctrl+C` 或 `SIGTERM` 信号时会干净地关闭。
+
+## 加载进度 {#loading-progress}
+
+当模型正在下载或被加载到内存时，Ante 会在 TUI 中显示实时进度条以及状态信息：
+
+- **下载阶段 (Download phase)** — 进度根据接收到的字节数与总文件大小进行跟踪
+- **元数据 (Metadata)** — 正在从 GGUF 文件读取模型元数据
+- **张量加载 (Tensor loading)** — 权重正在被加载到 RAM/VRAM 中
+- **GPU 卸载 (GPU offload)** — 网络层（layers）正在传输到 GPU（如果可用）
+
+相同的进度也会在无头模式（headless mode）下通过日志输出进行报告。
+
+## 模型发现 {#model-discovery}
+
+Ante 会自动扫描以下目录以寻找 GGUF 模型文件：
+
+| 目录 | 描述 |
+|---|---|
+| `~/.ante/models` | 默认模型目录（可配置） |
+| `~/.cache/llama.cpp` | llama.cpp 缓存 |
+| `~/.cache/huggingface/hub` | Hugging Face 缓存 |
+| `~/.llama/models` | 常见的 llama 模型目录 |
+
+## 模型偏好设置 {#model-preferences}
+
+各个模型的单独设置，自动保存在离线配置（offline config）中：
+
+| 设置项 | 描述 |
+|---|---|
+| `context_window` | 上下文窗口大小（最小 32K token） |
+| `thinking` | 启用/禁用思维链（chain-of-thought） |
+| `temperature` | 采样温度（未设置时表示使用模型默认值） |
+| `extra_args` | 附加的 llama-server 标志，追加到启动命令后面 — 见[自定义引擎](/local/custom-engines#tune-the-launch-command) |
+
+## 视觉模型 {#vision-models}
+
+如果与模型文件位于同级目录下有一个多模态投影器（multimodal projector）文件（`mmproj-*.gguf`），Ante 会在启动时自动附加它，使得模型可以在聊天中接受图像输入。
+
+## 内存注意事项 {#memory-considerations}
+
+Ante 基于模型文件大小、KV 缓存（随上下文窗口大小扩展）以及分片（shard）数来估算内存使用情况。
+
+:::tip
+对于大型模型，减少上下文窗口大小以降低内存使用。最小值为 32K token。
+:::
+
+## 服务器管理 {#server-management}
+
+| 快捷键 | 操作 |
+|---|---|
+| `Ctrl+E` | 停止当前连接的服务器 |
+| `Ctrl+O` | 查看服务器日志 |
+
+当在有服务器正在运行的情况下退出 Ante 时，您将收到提示：
+- **`s`** — 停止服务器并退出
+- **`k`** — 保持服务器运行并退出（打印 PID）
+- **`Esc`** — 取消退出并停留在 Ante 中
+
+## 配置参考 {#configuration-reference}
+
+所有离线模式的配置均存储在 `~/.ante/offline-config.json` 中：
+
+```json
+{
+  "version": "1.0.0",
+  "model_directory": "~/.ante/models",
+  "port": 8080,
+  "last_model": "model-name",
+  "model_preferences": {
+    "model-id": {
+      "model_id": "model-id",
+      "context_window": 32768,
+      "thinking_enabled": true,
+      "temperature": 0.7,
+      "extra_args": "--threads 12"
+    }
+  }
+}
+```
+
+| 字段 | 描述 | 默认值 |
+|---|---|---|
+| `model_directory` | 查找本地 GGUF 模型的路径 | `~/.ante/models` |
+| `port` | llama 服务器的起始端口 | `8080` |
+| `last_model` | 最后使用的模型（自动保存） | — |
+| `model_preferences` | 各模型的单独设置（见上文） | — |
+| `llama_cpp` | 引擎安装详情、二进制文件路径及服务器默认值 — 见[自定义引擎](/local/custom-engines) | 由 Ante 管理 |
+
+### 环境变量 {#environment-variables}
+
+| 变量 | 描述 |
+|---|---|
+| `ANTE_OFFLINE_CONTEXT` | 覆盖默认的上下文窗口上限（token数）。当您需要比 32K 默认值更大的上下文，且您的硬件拥有足够的 RAM 时非常有用。示例：`ANTE_OFFLINE_CONTEXT=65536 ante --offline-model ...` |
+| `ANTE_LOCAL_PROVIDER_PORT` | 当您直接使用 `--provider local` 时，`local` 提供商连接的端口（默认值为 `8080`） |

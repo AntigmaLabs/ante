@@ -1,0 +1,70 @@
+---
+title: 自定义引擎
+description: "使用您自己的 llama.cpp 构建版本，调整启动命令，或将 Ante 附加到您已运行的服务器上"
+---
+
+[离线模式](/local/offline)开箱即用，自带 Ante 安装并监管的引擎。该流程中的每一层都可以被替换：二进制文件、启动标志位（flags）或者是服务器本身。
+
+## 使用您自己的 llama.cpp 构建 {#use-your-own-llamacpp-build}
+
+Ante 会按照以下顺序解析引擎二进制文件：
+
+1. 位于 `~/.ante/llama.cpp/current` 的托管安装版本
+2. `offline-config.json` 中固定的二进制文件路径（如下所示）
+3. 您 `PATH` 路径下的 `llama-server`
+
+因此，如果您已经安装了 llama.cpp（比如通过 `brew install llama.cpp` 安装）并跳过了托管安装，Ante 会自动从 `PATH` 中找到它。若要明确固定特定的二进制文件，可在 `~/.ante/offline-config.json` 中的 `llama_cpp.binaries` 下设置这两条路径：
+
+```json
+{
+  "llama_cpp": {
+    "binaries": {
+      "server": "/opt/llama.cpp/build/bin/llama-server",
+      "cli": "/opt/llama.cpp/build/bin/llama-cli"
+    }
+  }
+}
+```
+
+仅当这两个文件都存在时，覆盖设置才会生效。服务器二进制文件必须接受标准的 `llama-server` 标志：Ante 会使用自己的参数（`--host 127.0.0.1 --port <port> -c <context> --jinja -ngl <gpu-layers>`，外加按模型设置的参数，如 `--temp` 和 `--mmproj`）来启动它。
+
+:::note
+通常，Ante 会在安装过程中自行写入这些字段。如果您将其指向自定义的构建，版本检查可能会建议您“升级”回到其固定的版本 — 选择拒绝即可保留您自己的构建版本。
+:::
+
+## 调整启动命令 {#tune-the-launch-command}
+
+有两个旋钮可以塑造 Ante 运行的命令：
+
+**各模型附加标志 (Per-model extra flags)。** 在模型的[首选项](/local/offline#model-preferences)中设置 `extra_args` 即可追加任意 `llama-server` 标志。该字符串按 shell 风格解析（引号生效），并会追加在 Ante 自有标志之后，因此在发生冲突时您的设置将优先：
+
+```json
+{
+  "model_preferences": {
+    "Qwen3.6-27B-Q4_K_M.gguf": {
+      "model_id": "Qwen3.6-27B-Q4_K_M.gguf",
+      "extra_args": "--threads 12 --no-mmap --cache-type-k q8_0"
+    }
+  }
+}
+```
+
+**GPU 卸载 (GPU offload)。** `llama_cpp.server_defaults.gpu_layers` 控制着 `-ngl` 值。默认值 `-1` 会将所有的网络层卸载到 GPU 上；如果您的显存（VRAM）紧张，请调低此数值：
+
+```json
+{
+  "llama_cpp": {
+    "server_defaults": { "gpu_layers": 24 }
+  }
+}
+```
+
+## 附加到运行中的服务器 {#attach-to-a-running-server}
+
+您可以完全自行运行 `llama-server` — 任何版本、任何标志位 — 然后让 Ante 作为一个客户端连接到它。Ante 扫描本地的 **8080-8179** 端口，也支持从 `/offline-mode` 使用 `Ctrl+A` 手动进行 `host:port` 附加连接。
+
+关于端点输入、Docker 示例、脱离（detach）行为以及远程主机数据流的注意事项，请参阅[已有服务器](/local/existing-servers)。
+
+## 完全不同的引擎 {#a-different-engine-entirely}
+
+任何拥有兼容 OpenAI 接口的服务 — Ollama、vLLM、LM Studio 或位于局域网的 GPU 主机 — 都可以作为普通的目录提供商为 Ante 提供服务。这种方式仅提供提供商机制（模型选择器、网络协议）；本页面提到的生命周期管理、内存估算以及加载进度等功能，只针对内置的托管版 llama.cpp。请参阅[添加一个无认证信息的本地提供商](/usage/providers#add-a-local-provider-with-no-auth)。

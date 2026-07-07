@@ -1,0 +1,97 @@
+---
+title: "工具参考"
+description: "Ante 会话中可用工具的参考指南"
+---
+
+工具是在会话期间智能体可用的各项能力。有些工具在后台静默运行；而有些则需要在您审批同意后方可执行，除非相应的权限规则中另有规定。
+
+## 文件 I/O {#file-io}
+
+### Read {#read}
+
+读取文本文件、图像以及 PDF。当当前启用的模型不支持视觉功能时，读取图像将会返回它的元数据（文件类型和尺寸）而不是图像本身，这样智能体就仍能知道该文件的存在并可以通过程序化的方式来检查它。
+
+### Write {#write}
+
+创建或覆盖一个文件。该操作需要审批。
+
+### Edit {#edit}
+
+对文件进行精确的字符串替换操作。该操作需要审批。
+
+### Glob {#glob}
+
+根据 glob 模式查找文件。
+
+### Grep {#grep}
+
+使用正则表达式搜索文件内容。
+
+## Shell {#shell}
+
+### Bash {#bash}
+
+执行 shell 命令。每次调用都在一个全新的非交互式进程中运行 — shell 的状态不会在不同的调用之间保留。长期运行的命令（如服务器、监视器、耗时的构建任务等）可以通过后台启动；智能体将获取可用于读取状态与输出的路径，并能够通过其 pid 终止该进程。如果后台命令的末尾带有一个 `&` 是多余的，系统会自动将其剥离。该操作需要审批。
+
+## 内置工具 (Builtin) {#builtin}
+
+### Agent {#agent}
+
+派生（spawn）一个子智能体（sub-agent）来负责自主处理任务。主智能体会根据任务情况自动选择委派给哪个子智能体。
+
+### TodoWrite {#todowrite}
+
+通过一个任务列表来跟进多步骤工作的执行进度。
+
+### WebFetch {#webfetch}
+
+抓取 URL，将其转换为 markdown 格式，并利用一个小模型提取出相关的重要内容。该操作需要审批。
+
+### WebSearch {#websearch}
+
+进行网络搜索并返回带有引用来源的结果。该操作需要审批。它使用的是提供商自带的原生网页搜索功能，因此该工具仅在那些声明了 `supports_web_search` 支持的提供商（如 Anthropic, OpenAI, Gemini, Grok, OpenRouter, Antix 以及 Ali Coding Plan）上可用。在这些提供商上，它会被自动加入到工具集中；而在其他提供商上，则不提供该工具。
+
+## 需要手动开启的工具 (Opt-in tools) {#opt-in-tools}
+
+以下工具默认不启用。可通过 `--include-tools` 来开启它们。
+
+### ViewImage {#viewimage}
+
+结合自然语言指令阅读和分析图像。
+
+### PTY {#pty}
+
+驱动一个持久化共享的 tmux 会话 — 对于那些需要在多次调用间保留状态的交互式程序以及全屏 TUI 应用非常有用。运行此工具需要系统已安装 `tmux`。
+
+### Browser {#browser}
+
+驱动一个 Chromium 浏览器来实现页面导航、内容提取及自动化操作。通常，智能体会对页面进行快照以寻找可交互的元素，然后在上面执行点击或键盘输入操作。该操作需要审批，且仅当 Ante 是采用带有 `browser` cargo 特性（feature）构建的版本时才可用。
+
+## MCP 工具 {#mcp-tools}
+
+由配置的 [MCP 服务器](/extend/mcp)提供的工具会以 `mcp__<server>__<tool>` 的形式暴露给智能体。它们会与内置工具并列展示，从智能体的角度看，其行为方式是完全一致的。MCP 工具也会和内置工具一样受 `--include-tools`/`--exclude-tools` 过滤规则的约束，所以，如果设置了一个严苛的未将其点名的包含列表（include list），它们就会被剥离移除；如需在服务器层面进行过滤，请改用 `enabled_tools` 参数。
+
+## 默认工具集 {#default-tool-set}
+
+默认情况下，Ante 会启用 `Read`、`Bash`、`Grep`、`Glob`、`TodoWrite`、`WebFetch`、`Edit`、`Write` 和 `Agent`。如果 Ante 是使用 `browser` 特性构建的，那么 `Browser` 工具也会被包括在内。当会话所使用的提供商支持原生网页搜索时，`WebSearch` 会被自动添加进来。
+
+`ViewImage` 和 `PTY` 工具需要手动开启。
+
+## 工具过滤 {#tool-filtering}
+
+可以控制在一个会话中有哪些工具是可用的：
+
+```bash
+# 只允许这些工具
+ante --include-tools Read Glob Grep "analyze the code"
+
+# 移除这些工具
+ante --exclude-tools Bash Write "read-only analysis"
+```
+
+为了实现精细化控制，支持使用 ToolMatcher 语法：
+
+```bash
+# 允许使用 Bash，但只能执行特定的匹配模式
+ante --include-tools "Read" "Bash(cargo test)" "Bash(cargo clippy)"
+```

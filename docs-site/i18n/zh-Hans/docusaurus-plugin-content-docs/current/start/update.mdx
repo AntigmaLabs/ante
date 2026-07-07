@@ -1,0 +1,87 @@
+---
+title: "更新与通道"
+sidebar_label: "更新"
+description: "保持 Ante 最新，并选择适合您对变更接受程度的发布通道"
+---
+
+Ante 作为一个单一的二进制文件发布，并支持就地更新 —— `ante update` 会针对此二进制文件追踪的通道，重新运行执行首次安装的那个 `install.sh` 脚本。
+
+## 更新 {#update}
+
+检查当前通道上是否有更新的 Ante 发布版本，如果有可用更新，则安装它：
+
+```bash
+ante update
+```
+
+如果存在更新的版本，Ante 会为同一个通道运行安装程序，并在安装到位后打印新版本。重新启动 Ante 即可开始使用。
+
+如果您已经使用的是最新版本，Ante 会打印确认信息并退出，而不会修改二进制文件。
+
+## 固定版本或回退 {#pin-or-roll-back}
+
+使用 `--version` 安装确切的发布版本：
+
+```bash
+ante update --version v0.preview.33
+ante update --version 0.preview.33
+```
+
+这会绕过通道的“比当前更新”的检查，因此它可以执行升级、重新安装当前版本或回退到较早的已发布版本。在回退时，Ante 会记住您离开的版本，因此下一个后台更新提示不会立即要求重新安装它。
+
+## 通道 {#channels}
+
+发布通道是构建版本的命名轨道。Ante 发布了两个：
+
+| 通道 | 描述 |
+|---|---|
+| `stable` | 推荐日常使用。从发布工作流中发布的带标签版本。 |
+| `nightly` | 从开发分支构建。新功能和错误修复首先登陆这里。 |
+
+默认通道是 `stable`。二进制文件追踪的通道存储在 `~/.ante/settings.json` 的 `channel` 字段中 —— `ante update` 在每次运行时都会读取此信息，且应用内更新提示也使用相同的设置。
+
+```json
+{
+  "channel": "nightly"
+}
+```
+
+将 `channel` 设置为空字符串或省略它会回退到 `stable`。
+
+`latest` 是一个已退役的通道名称。现有的设置或仍然使用 `latest` 的命令将被视为 `stable`。
+
+## 切换通道 {#switching-channels}
+
+将通道作为位置参数或通过 `--channel` 传递：
+
+```bash
+# 位置参数形式
+ante update nightly
+
+# 标志形式
+ante update --channel nightly
+```
+
+这两种形式都会获取请求通道的清单文件，并针对它运行安装程序。此覆盖仅适用于那次单次更新 —— 若要使切换持久化以便未来的 `ante update` 运行遵循新通道，请编辑 `~/.ante/settings.json` 并设置 `"channel": "nightly"`。
+
+通道名称只能包含 ASCII 字母、数字、`.`、`_` 或 `-`。
+
+## 初始安装 {#initial-install}
+
+安装程序接受相同的通道名称。要在一台新机器上安装非默认通道：
+
+```bash
+curl -fsSL https://ante.run/install.sh | bash -s -- nightly
+```
+
+如果没有参数，安装程序将使用 `stable`。
+
+默认情况下，安装程序将二进制文件写入 `~/.ante/bin`。设置 `ANTE_INSTALL_DIR` 以安装到您的 `PATH` 中已经存在的目录：
+
+```bash
+curl -fsSL https://ante.run/install.sh | ANTE_INSTALL_DIR=/usr/local/bin bash
+```
+
+## 更新检查如何工作 {#how-update-checks-work}
+
+在启动时，Ante 会在后台针对通道清单运行检查，最多每六小时一次，并将结果缓存在 `~/.ante/versions.json` 中。当有更新版本可用时，TUI 会显示带有发行说明的更新提示；忽略某个版本会跳过它，直到下一个更新的版本登陆。`ante update` 会忽略缓存并始终获取最新的清单。

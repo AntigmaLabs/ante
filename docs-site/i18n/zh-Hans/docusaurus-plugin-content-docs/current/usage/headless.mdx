@@ -1,0 +1,147 @@
+---
+title: "无头模式"
+description: "将 Ante 作为一个非交互式的 CLI 运行，用于脚本和 CI 管道"
+---
+
+无头模式（Headless mode）在没有 TUI 的情况下运行 Ante —— 它处理提示词，执行任务，然后退出。这非常适合脚本编写、CI/CD 管道和自动化工作流。
+
+## 基本用法 {#basic-usage}
+
+使用 `-p` / `--prompt` 标志来传递提示词：
+
+```bash
+ante -p "explain what this project does"
+```
+
+或者使用长格式：
+
+```bash
+ante --prompt "add tests for the auth module"
+```
+
+## 标准输入（Stdin） {#stdin-input}
+
+通过管道从 stdin 传递内容：
+
+```bash
+cat src/main.rs | ante -p "review this code for bugs"
+```
+
+结合 stdin 和提示词：
+
+```bash
+echo "function add(a, b) { return a + b }" | ante -p "add TypeScript types"
+```
+
+当同时提供了 stdin 和提示词参数时，它们将被拼接在一起（先是 stdin，然后是提示词）。
+
+## CLI 参考 {#cli-reference}
+
+```
+ante [OPTIONS] [--prompt <PROMPT>]
+```
+
+| 标志 | 描述 |
+|---|---|
+| `-p`, `--prompt <PROMPT>` | 要运行的提示词 |
+| `-m`, `--model <MODEL>` | 覆盖模型名称 |
+| `--provider <PROVIDER>` | 覆盖 API 提供商（例如 `anthropic`、`openai`、`gemini`、`xai`、`openrouter`、`local`） |
+| `--yolo` | 跳过所有的工具审批提示 |
+| `--permission-mode <MODE>` | 覆盖权限模式：`strict`、`auto` 或 `yolo` |
+| `--output-format <FORMAT>` | 输出格式：`json`、`human`、`minimal`（默认：`minimal`） |
+| `--system-prompt <PROMPT>` | 完全替换默认的系统提示词 |
+| `--append-system-prompt <TEXT>` | 将文本附加到系统提示词的末尾 |
+| `--include-tools <TOOLS>...` | 仅允许使用这些工具（以空格分隔）。已废弃的别名：`--allowed-tools`（仍有效，但会打印警告） |
+| `--exclude-tools <TOOLS>...` | 不允许使用这些工具（以空格分隔）。已废弃的别名：`--disallowed-tools`（仍有效，但会打印警告） |
+| `-r`, `--resume <SESSION_ID>` | 通过 ID 恢复之前保存的会话 |
+| `--check` | 在主任务完成后运行一个验证通道 |
+| `--offline-model <PATH>` | 本地 GGUF 文件的路径。启动本地的 llama-server，将此会话指向 `local` 提供商，并在退出时将其销毁 |
+
+## 输出格式 {#output-formats}
+
+### Minimal（极简模式，默认） {#minimal-default}
+
+仅显示智能体消息、信息和错误：
+
+```bash
+ante -p "what does this project do"
+```
+
+### Human（人类可读模式） {#human}
+
+以人类可读的格式和 ANSI 颜色显示所有事件：
+
+```bash
+ante --output-format human -p "fix the type error in main.rs"
+```
+
+### JSON {#json}
+
+将每个事件输出为一个 JSON 对象（每行一个），适合机器解析消费：
+
+```bash
+ante --output-format json -p "list all TODO comments" | jq '.event'
+```
+
+## 验证检查 {#verification-check}
+
+`--check` 标志在主任务之后运行第二遍过程，要求智能体检查其自己的工作：
+
+```bash
+ante --check -p "refactor the auth module to use async/await"
+```
+
+验证过程将：
+1. 根据原始请求审查已完成的内容
+2. 完成任何遗漏或不完整的部分
+3. 在不影响正确性的前提下尽可能优化
+
+## 上下文丰富 {#context-enrichment}
+
+在无头模式下，Ante 会自动将当前目录的文件夹结构附加到您的提示词中。这使智能体能够了解项目布局，而无需您去描述。
+
+## 无头模式行为说明 {#headless-behavior-notes}
+
+- **原始的流式传输增量（deltas）被抑制** —— 输出显示完整的消息，而不是增量的分块，因此日志保持干净
+- **隐含了 Yolo 策略** —— 无论 `--permission-mode` 是什么，所有的工具调用都将被自动批准（没有交互式提示）
+- **渴望的身份验证检查** —— 如果提供商未进行身份验证，Ante 会立即退出并报错
+- **如果守护进程死亡则快速失败** —— 如果智能体进程在完成任务之前退出，Ante 会报告一个错误而不是成功的退出码
+
+## 恢复会话 {#resuming-a-session}
+
+传递 `--resume <SESSION_ID>` 以继续之前保存的会话。Ante 会重放持久化的历史记录，然后应用新的提示词作为下一个轮次：
+
+```bash
+ante --resume ses_01ARZ3NDEKTSV4RRFFQ69G5FAV -p "now add tests"
+```
+
+会话 ID 在 TUI 会话退出时打印（`Resume this session with: ante --resume ses_...`）。
+
+## 示例 {#examples}
+
+### CI：lint 并修复 {#ci-lint-and-fix}
+
+```bash
+ante --yolo -p "run cargo clippy and fix all warnings"
+```
+
+### 代码生成 {#code-generation}
+
+```bash
+ante --model claude-sonnet-4-6 --check \
+  -p "add comprehensive unit tests for src/core/session.rs"
+```
+
+### 受限工具 {#restricted-tools}
+
+```bash
+# 只读分析 —— 没有文件写入或 shell 访问权限
+ante --include-tools Read Glob Grep \
+  -p "analyze the codebase architecture and summarize it"
+```
+
+### 通过管道传递差异以供审查 {#pipe-a-diff-for-review}
+
+```bash
+git diff HEAD~1 | ante -p "review this diff for bugs and security issues"
+```

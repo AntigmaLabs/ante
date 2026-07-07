@@ -1,0 +1,115 @@
+---
+title: 技能
+description: "通过智能体技能赋予 Ante 新的能力 — 开放的便携式智能体专业知识格式"
+---
+
+技能是包含指令、脚本和资源的文件夹，用于扩展 Ante 的能力。它们遵循开放的 [Agent Skills](https://agentskills.io) 格式，使其能够在兼容的智能体产品之间移植。
+
+## 创建技能 {#creating-a-skill}
+
+一个技能就是一个包含 `SKILL.md` 文件的目录：
+
+```
+commit/
+└── SKILL.md
+```
+
+`SKILL.md` 使用 YAML 前言，随后是 Markdown 指令：
+
+```markdown
+---
+name: commit
+description: 创建一个带有描述性消息的 git commit，遵循约定式提交格式。
+---
+
+查看当前的 git diff，并使用清晰的、遵循约定式提交格式的描述性消息创建一个提交。
+首先使用 `git add` 暂存相关文件。
+```
+
+### 示例：带有工具和参考资料的审查技能 {#example-review-skill-with-tools-and-references}
+
+```
+review/
+├── SKILL.md
+└── references/
+    └── checklist.md
+```
+
+```markdown
+---
+name: review
+description: 审查代码更改中的错误、安全问题和风格。
+argument-hint: <path>
+---
+
+审查 $ARGUMENTS 处的代码，寻找错误、安全漏洞、风格问题和缺失的错误处理。
+
+请参阅 [checklist](references/checklist.md) 获取完整的审查清单。
+```
+
+前言解析对常见的标量错误较为宽容：包含 `: `、以流状字符（如 `[` 或 `{`）开头或包含内联注释的未引用值，如果能被明确解释，就会被修复。格式错误的嵌套 YAML 仍然会失败，因此损坏的元数据不会默默加载。
+
+## 技能目录 {#skill-directories}
+
+| 目录 | 作用域 |
+|---|---|
+| `~/.agents/skills/` | 用户级别（兼容性 — 在 `~/.ante/skills/` 之前加载） |
+| `~/.ante/skills/` | 用户级别（在所有项目中可用） |
+| `.agents/skills/` | 项目级别 |
+| `.ante/skills/` | 项目级别 |
+| `.claude/skills/` | 项目级别（Claude Code 兼容性） |
+
+## SKILL.md 前言 {#skillmd-frontmatter}
+
+| 字段 | 是否必需 | 默认值 | 描述 |
+|---|---|---|---|
+| `name` | 否 | 目录名称 | 技能的标识符 |
+| `description` | 否 | 第一段内容 | 该技能的作用以及何时使用它 |
+| `argument-hint` | 否 | — | 预期参数的提示文本（例如 `<path>`） |
+| `user-invocable` | 否 | `true` | 是否可以通过斜杠命令调用该技能 |
+| `disable-model-invocation` | 否 | `false` | 阻止模型自动调用该技能 |
+| `metadata` | 否 | — | 任意键值对 |
+
+来自其他智能体产品的无法识别的字段（如 `allowed-tools`）会被容忍但被忽略，因此现有的技能加载无需修改。
+
+## 可选目录 {#optional-directories}
+
+```
+my-skill/
+├── SKILL.md           # 必需 — 指令
+├── scripts/           # 智能体可以运行的可执行代码
+├── references/        # 按需加载的附加文档
+└── assets/            # 模板、模式、数据文件
+```
+
+## 技能是如何被发现的 {#how-skills-are-discovered}
+
+技能的发现按优先级顺序进行（后面的技能会根据技能名称覆盖前面的技能）：
+
+1. 系统级别（内置技能）
+2. `~/.agents/skills/`（用户级别，兼容性）
+3. `~/.ante/skills/`（用户级别）
+4. `.claude/skills/`（项目级别，Claude Code 兼容性）
+5. `.agents/skills/`（项目级别）
+6. `.ante/skills/`（项目级别）
+
+## 使用技能 {#using-skills}
+
+```
+/commit
+/review src/core/session.rs
+```
+
+您在技能名称之后输入的任何内容都会作为参数传递给该技能。它们如何进入指令取决于技能使用了哪些占位符：
+
+| 占位符 | 替换为 |
+|---|---|
+| `$ARGUMENTS` | 完整的参数字符串，原样保留 |
+| `${1}`, `${2}`, … | 第一个、第二个……由空白分隔的参数（带引号的值将作为一个整体） |
+| `${1:default}` | 位置参数，如果缺失则使用 `default` |
+
+如果技能的指令中不包含占位符，那么参数将被附加在一个 `<arguments>` 块中，以便智能体仍然能看到它们。
+
+## 了解更多 {#learn-more}
+
+有关命名约定、渐进式披露和验证的详细信息，请参阅[完整规范](https://agentskills.io/specification)。

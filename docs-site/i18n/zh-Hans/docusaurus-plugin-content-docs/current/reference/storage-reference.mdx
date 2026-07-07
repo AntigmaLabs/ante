@@ -1,0 +1,134 @@
+---
+title: "存储参考"
+description: "Ante 存储配置与状态的文件系统路径位置"
+---
+
+Ante 会在本地文件系统上持久化存储配置与状态信息。本页面记录了所有 Ante 读取或写入的路径位置。
+
+## 路径位置 {#locations}
+
+| 路径位置 | 用途 |
+|---|---|
+| `~/.ante/settings.json` | 用户首选项（模型、提供商、主题、MCP 服务器） |
+| `~/.ante/catalog.json` | 自定义提供商/模型目录（catalog） |
+| `~/.ante/AGENTS.md` | 注入到每个项目会话中的全局指令 |
+| `~/.ante/skills/` | 用户级别的技能（skills） |
+| `~/.ante/agents/` | 用户级别的子智能体（sub-agents） |
+| `~/.ante/sessions/<session-id>/` | 持久化的会话（用于 `/resume` 和 `--resume`） |
+| `~/.ante/projects/<project-id>/memory/` | 各项目的自动记忆（auto-memory） |
+| `~/.ante/cache/<project-id>/` | 各项目的临时文件 |
+| `AGENTS.md` | 项目本地指令，会与全局指令一起被注入 |
+| `.ante/` | 项目本地配置（技能、子智能体） |
+| `.agents/`, `.claude/` | 额外的项目本地技能/子智能体目录 |
+
+`<project-id>` 是项目绝对路径经过清理规范后的形式。环境变量 `ANTE_HOME` 可以覆盖 `~/.ante` 路径。
+
+## `settings.json` {#settingsjson}
+
+存储用户首选项。所有字段均为可选。
+
+```json
+{
+  "model": "claude-sonnet-4-6",
+  "provider": "anthropic",
+  "theme": "default",
+  "permission_mode": "strict",
+  "permissions": {
+    "allow": ["Bash(npm run *)"],
+    "deny": ["Bash(rm *)"]
+  },
+  "channel": "stable",
+  "has_completed_onboarding": true,
+  "status_line": ["model-name", "current-dir"],
+  "model_thinking": {
+    "claude-sonnet-4-6": "Enabled",
+    "gpt-5.4": "Deep"
+  },
+  "mcp_servers": {
+    "filesystem": {
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-filesystem", "/tmp"]
+    }
+  }
+}
+```
+
+有关完整字段参考，以及此文件、环境变量与 CLI 标志（flags）之间的优先级规则，请参阅[首选项](/configuration/preference)。
+
+## `catalog.json` {#catalogjson}
+
+在内置目录的基础上添加或覆盖提供商与模型配置。它包含两个可选的基于 ID 键的顶级结构：一个 `providers` 条目的键如果与内置 ID（如 `openai`）匹配，则会将其覆盖替换；如果是一个新键，则会添加一个新的提供商；一个 `models` 条目则可以覆盖定义该模型的相关字段。
+
+```json
+{
+  "providers": {
+    "my-provider": {
+      "id": "my-provider",
+      "display_name": "My Provider",
+      "base_url": "https://api.example.com/v1",
+      "wire_style": "OpenAiCompatible",
+      "auth": { "bearer": { "env_key": "MY_PROVIDER_API_KEY" } }
+    }
+  },
+  "models": {
+    "claude-sonnet-4-6": { "thinking": "Deep", "max_tokens": 64000 }
+  }
+}
+```
+
+格式不正确的提供商或模型条目将被单独跳过并在启动时报告。同一文件中的其他有效条目仍会正常加载。
+
+有关完整的数据结构、认证形式和解析规则请参阅[目录参考](/reference/catalog-reference#catalogjson-schema)，有关定制的示例请参阅[提供商](/usage/providers#custom-catalog)。
+
+## `AGENTS.md` {#agentsmd}
+
+存储智能体的持久化指令。`~/.ante/AGENTS.md` 适用于全局，而项目本地的 `AGENTS.md` 则适用于对应的仓库。当两者都存在时，Ante 会在会话的第一个用户消息中将两者同时包含进去。
+
+有关使用指南和优先级细节，请参阅 [AGENTS.md](/extend/agents-md)。
+
+## 布局 {#layout}
+
+### 用户级别 (`~/.ante/`) {#user-level-ante}
+
+```
+~/.ante/
+├── settings.json       # 用户首选项
+├── catalog.json        # 自定义提供商/模型目录
+├── AGENTS.md           # 全局指令
+├── skills/             # 用户级技能
+├── agents/             # 用户级子智能体
+├── sessions/           # 持久化的会话（用于 /resume）
+├── projects/           # 各项目的状态（如记忆等）
+│   └── <project-id>/
+│       └── memory/
+│           └── MEMORY.md
+└── cache/              # 各项目的临时文件
+    └── <project-id>/
+```
+
+### 项目本地 {#project-local}
+
+```
+AGENTS.md               # 项目级指令
+
+.ante/
+├── skills/             # 项目专属技能
+└── agents/             # 项目专属子智能体
+
+.agents/
+├── skills/             # 项目专属技能
+└── agents/             # 项目专属子智能体
+
+.claude/
+├── skills/             # 项目专属技能 (兼容 Claude Code)
+└── agents/             # 项目专属子智能体 (兼容 Claude Code)
+```
+
+## 关联阅读 {#related}
+
+- [首选项](/configuration/preference) — `settings.json` 的完整参考与环境变量
+- [目录参考](/reference/catalog-reference) — `catalog.json` 架构、内置提供商及模型 ID
+- [提供商](/usage/providers) — 选择提供商以及自定义配置示例
+- [技能 (Skills)](/extend/skills) — 技能目录的布局结构
+- [子智能体 (Sub-agents)](/extend/subagents) — 子智能体目录的布局结构
+- [记忆 (Memory)](/extend/memory) — 自动记忆（auto-memory）格式

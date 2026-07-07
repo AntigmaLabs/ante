@@ -1,0 +1,144 @@
+---
+title: "架构"
+description: "Ante 的客户端-守护进程架构、提供商体系以及工具框架"
+---
+
+## 概览 {#overview}
+
+Ante 采用客户端-守护进程（Client-Daemon）架构，遵循清晰的关注点分离原则。UI 界面和核心逻辑通过消息传递实现解耦，使得在不更改底层引擎的情况下切换前端（TUI 或无头模式）成为可能。
+
+<img src="/assets/architecture.png" alt="Architecture diagram" />
+
+## 客户端-守护进程的分离 {#client-daemon-split}
+
+```
+┌────────────────┐          ┌─────────────────────────────┐
+│    Client      │    Op    │           Daemon            │
+│                │ ───────▶ │                             │
+│ TUI / Headless │          │  Session ─▶ Turn ─▶ Step    │
+│ 或 Serve        │ ◀─────── │                             │
+│                │    Evt   │  Tools    Providers   Store │
+└────────────────┘          └─────────────────────────────┘
+```
+
+- **Client（客户端）** — 面向用户的层。包括基于 ratatui 的 TUI、无头 CLI 运行器，或者是通过 `ante serve` 连接的外部进程。发送 `Op`（操作）并渲染 `Evt`（事件）。
+- **Daemon（守护进程）** — 核心引擎。接收操作、管理会话（sessions）、调度分发到 LLM 提供商、安排工具执行，并分发事件。
+- **Transport（传输层）** — 对于同进程（in-process）客户端（TUI、无头模式）使用基于 Tokio 的有界异步通道（bounded async channels），对于外部客户端（`ante serve --stdio`）在 stdin/stdout 上使用 JSONL，或对于网络客户端（`ante serve --ws`）使用 WebSocket。消息 ID（Message IDs）实现了跨边界的追踪。
+
+## 架构演进方向：从以会话为中心到以智能体为中心 {#architecture-direction-session-centric-to-agent-centric}
+
+Ante 最初采用的是以会话为中心（session-centric）的运行时，其中 `Session`（会话）是主要的执行所有者。我们正在向以智能体为中心（agent-centric）的运行时迈进，在新的架构下，长生命周期的 `Agent`（智能体）实例将掌控执行过程，并通过消息进行通信。
+
+```mermaid
+flowchart LR
+  subgraph Today["今日：以会话为中心"]
+    C1[Client]
+    S1[Session]
+    TS1[Turn/Step]
+    C1 -->|Op| S1 --> TS1
+  end
+
+  subgraph Target["目标方向：以智能体为中心"]
+    C2[Client]
+    S2[Session<br/>历史记录 + 协调层]
+    A0[根智能体 (Root Agent)]
+    A1[工作智能体 A (Worker Agent A)]
+    A2[工作智能体 B (Worker Agent B)]
+    C2 -->|Op| S2 --> A0
+    A0 <--> A1
+    A0 <--> A2
+  end
+```
+
+这类似于基于 Actor 的模型：
+
+- **智能体作为 Actor** — 每个智能体都拥有隔离的状态、一个信箱（mailbox），以及单一的逻辑执行循环。
+- **消息驱动的协调机制** — 智能体之间通过类型化的消息/事件来协调，而不是共享可变的状态。
+- **层级化监督** — 父智能体可以派生（spawn）子智能体，监控其运行结果，并决定重试或逐级上报策略。
+
+为什么做出这种转变：
+
+- 能够在并发任务和子智能体之间实现更好的隔离
+- 为每个智能体提供对记忆、权限及工具调用预算的清晰归属与掌控
+- 随着工作流变成多智能体协作形式，提供更具可预测性的扩展能力
+
+在这一方向下，`Session` 依然很重要，但它将作为用户交互历史、持久化保存以及协议层协调的容器，而不再是唯一的执行单元。
+
+
+## LLM 提供商 {#llm-providers}
+
+Ante 与具体提供商解耦。每个提供商都实现了统一的接口，用于发送提示词（prompts）并接收流式响应。
+
+| 提供商 | 数据协议 (Wire Format) | 模型 |
+|---|---|---|
+| Anthropic | Messages API | Claude 系列 (haiku-4-5, sonnet-4-5, sonnet-4-6, opus-4-6) |
+| Anthropic Subscription | Messages API | Claude 系列 (OAuth) |
+| OpenAI | Responses API | GPT-5 系列 |
+| OpenAI Compatible | Chat Completions | 自定义模型 |
+| OpenAI Subscription | Responses API | GPT-5 系列 (通过 Codex 的 OAuth) |
+| Gemini | Gemini API | Gemini 3.1 系列 |
+| Vertex AI Gemini | Gemini API | Gemini 3.1 系列 |
+| Grok (xAI) | Responses API | Grok 4 |
+| Zai | 兼容 OpenAI | GLM-5.1 |
+| Open Router | 兼容 OpenAI | 多家提供商 |
+| DeepSeek | 兼容 OpenAI | DeepSeek V4 系列 |
+| Ali Coding Plan | Messages API | Qwen, Kimi, GLM, MiniMax (通过 DashScope) |
+| Antix | Anthropic Messages | Claude, GPT, Gemini, Qwen, DeepSeek (通过 Antigma) |
+| 本地模型 (Local) | 兼容 OpenAI | GGUF 模型 (通过 llama.cpp) |
+
+提供商是在会话初始化时从目录（catalog）中解析得出的。用户可以通过 CLI 标志（`--provider`, `--model`）或持久化设置来覆盖默认选项。
+
+### 认证方式 {#authentication}
+
+- **API 密钥** — 通过环境变量设置（`ANTHROPIC_API_KEY`, `OPENAI_API_KEY`, `GEMINI_API_KEY`, `XAI_API_KEY`, `OPENROUTER_API_KEY`, `OPENAI_COMPATIBLE_API_KEY`, `ZAI_API_KEY`, `DEEPSEEK_API_KEY`, `ALI_CODING_PLAN_API_KEY`, `VERTEX_GEMINI_API_KEY`, `ANTIX_API_KEY`）
+- **OAuth** — 支持 Anthropic、OpenAI 和 Antix 的交互式 OAuth 流程，通过 TUI 处理
+
+## 工具体系 {#tool-system}
+
+工具是智能体的双手。每个工具都需要实现 `Tool` trait：
+
+```rust
+#[async_trait]
+pub trait Tool: Send + Sync {
+    fn metadata(&self) -> &ToolMetadata;
+    async fn call(&self, input: ToolCallInput) -> Result<ToolCallOutput>;
+}
+```
+
+### 内置工具 {#built-in-tools}
+
+| 工具 | 类别 | 是否需审批 | 描述 |
+|---|---|---|---|
+| `Read` | 文件 I/O | 否 | 读取文本、图片或 PDF 文件内容 |
+| `Write` | 文件 I/O | 是 | 创建或覆盖文件 |
+| `Edit` | 文件 I/O | 是 | 在文件中进行精确的字符串替换 |
+| `Glob` | 文件 I/O | 否 | 根据 glob 模式查找文件 |
+| `Grep` | 文件 I/O | 否 | 使用正则表达式搜索文件内容 |
+| `Bash` | Shell | 是 | 执行 shell 命令；支持用 `run_in_background` 运行长期进程 |
+| `PTY` | Shell | 否 | 驱动一个持久化的 tmux 会话，用于交互式程序（需手动开启） |
+| `Agent` | 内置 | 否 | 派生（spawn）子智能体来处理复杂任务 |
+| `TodoWrite` | 内置 | 否 | 管理任务列表 |
+| `WebFetch` | 内置 | 是 | 抓取网页并处理内容 |
+| `WebSearch` | 内置 | 是 | 进行网页搜索（在支持 web search 的提供商上自动启用） |
+| `ViewImage` | 内置 | 否 | 阅读和分析图像（需手动开启） |
+| `Browser` | 网页 | 是 | 通过 CDP 驱动 Chromium（需使用 `browser` cargo 特性编译） |
+
+### 工具过滤 {#tool-filtering}
+
+可以在会话级别对工具进行过滤：
+
+- **包含列表** (`--include-tools`) — 只允许使用这些工具
+- **排除列表** (`--exclude-tools`) — 移除这些工具
+- 支持 ToolMatcher 语法：`Bash(ls -la)`, `Agent(explore)`
+- 工具名称的匹配不区分大小写
+- 同样的过滤规则也适用于动态注册的工具（MCP 服务器），因此它们无法绕过过滤器
+
+## 会话生命周期 {#session-lifecycle}
+
+1. 客户端发送包含模型、提供商和策略的 `Op::StartSession`
+2. 守护进程解析提供商、进行认证，并发现技能（skills）与子智能体
+3. 守护进程创建一个 `Session` 并发出 `Evt::SessionStart`
+4. 用户发送 `Op::UserInput` 以启动任务
+5. 会话生成一个 `Turn`（轮次），负责与 LLM 通信
+6. 轮次执行工具、请求审批，并最终完成
+7. 当上下文预算接近上限时，自动压缩机制会对历史记录进行总结概括

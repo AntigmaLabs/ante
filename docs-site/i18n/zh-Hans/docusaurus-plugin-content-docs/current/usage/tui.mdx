@@ -1,0 +1,197 @@
+---
+title: "交互式 TUI"
+description: "使用 Ante 丰富的终端用户界面"
+---
+
+在不带提示词的情况下启动 Ante，进入交互式 TUI：
+
+```bash
+ante
+```
+
+## 概览 {#overview}
+
+TUI 使用 [ratatui](https://ratatui.rs/) 构建，在您的终端中直接提供丰富的聊天界面。它以大约 100fps 的去抖动渲染速度在内联显示（最多 24 行），以实现流畅的输出。
+
+## 主要特性 {#key-features}
+
+### 聊天界面 {#chat-interface}
+
+主视图显示您和智能体之间的对话。在输入区键入您的提示词，然后按 Enter 发送。智能体的回复会以 Markdown 渲染的形式实时流式传输。
+
+### 工具审批 {#tool-approval}
+
+当智能体想要执行需要审批的工具（如 `Bash` 或 `Write`）时，您会看到一个审批提示。使用数字键或方向键 + Enter 选择一个选项：
+
+- **Yes** —— 允许这一次调用
+- **Yes, allow … for this session** —— 在本次运行的剩余时间内授予它权限（[有作用域的](/configuration/permission#session-grants)，并非无条件的一揽子许可）
+- **Yes, always allow … (save to settings)** —— 同时也持久化一个允许规则到 `settings.json` 中
+- **No** —— 拒绝它；智能体会调整其方法
+
+按 `Tab` 键可在决定之前预览提议的差异（diff）或请求详细信息。
+
+### 差异视图 {#diff-view}
+
+当智能体提议编辑文件时，Ante 会切换到备用屏幕上的全屏差异视图。您可以在批准前审查确切的更改。
+
+### 模型和提供商选择 {#model-and-provider-selection}
+
+使用内置选择器在会话期间切换模型或提供商，而无需重新启动。
+
+### 主题选择 {#theme-selection}
+
+Ante 包含一个主题系统以保持一致的样式。通过主题对话框选择一个主题。
+
+## 斜杠命令 {#slash-commands}
+
+键入 `/` 以运行内置命令，如 `/model`、`/resume` 和 `/compact`。完整列表请参见[斜杠命令](/usage/slash-commands)。
+
+## 目标驱动的会话 {#goal-driven-sessions}
+
+使用 `/goal <condition>` 保持 Ante 持续工作，直到满足一个具体的成功条件。参见[目标驱动的会话](/usage/goal-sessions)。
+
+## 会话恢复 {#session-resume}
+
+Ante 会将每个会话持久化到磁盘。使用 `/resume` 重新拾起之前中断的对话。
+
+### 工作原理 {#how-it-works}
+
+1. 键入 `/resume` 打开会话选择器
+2. 浏览作用域在当前工作目录的会话 —— 每个条目显示第一条消息、模型、消息数量和相对时间
+3. 按 **Enter** 选择，或按 **Esc** 取消
+
+恢复时，Ante：
+- 恢复完整的对话历史记录
+- 重新发现项目目录中的智能体和技能
+- 刷新系统提示词和工具定义（以便可以使用新特性）
+- 重放最多 200 个近期事件，以便 TUI 重建对话视图
+
+会话存储在 `~/.ante/sessions/{session_id}/` 中，并采用原子写入以保证崩溃安全。
+
+:::tip
+您也可以在 TUI 或无头模式下通过 CLI 使用 `ante --resume <SESSION_ID>`（或 `-r`）进行恢复。会话 ID 会在 TUI 会话退出时打印出来。
+:::
+
+## 键盘快捷键 {#keyboard-shortcuts}
+
+### 聊天输入 {#chat-input}
+
+| 键位 | 操作 |
+|---|---|
+| `Enter` | 发送消息（如果该行以 `!` 开头，则在[bash 模式](#bash-mode)下作为 shell 命令运行） |
+| `Ctrl+Enter` / `Alt+Enter` / `Shift+Enter` | 插入换行符 |
+| `Up` / `Down` | 移动光标，然后导航历史记录 |
+| `Tab` | 补全命令或文件路径；在空输入时，接受[下一个提示词建议](#next-prompt-suggestion) |
+| `Shift+Tab` | 循环切换权限模式：`strict` → `auto` → `yolo`。立即生效，即使正在运行轮次也是如此 |
+| `Ctrl+R` | 启动在提示词历史中的反向增量搜索 |
+| `Ctrl+C` | 中断当前轮次；连续按两次退出（或使用 `/exit`） |
+| `Ctrl+S` | 将排队的消息引导至正在运行的轮次中 |
+| `Ctrl+V` | 粘贴剪贴板中的文本或图像 |
+| `Escape` | 关闭弹出窗口，或者在没有打开窗口时中断当前轮次 |
+
+### 行编辑 {#line-editing}
+
+输入框支持类似 readline 的编辑功能，并带有撤销/重做多步操作：
+
+| 键位 | 操作 |
+|---|---|
+| `Ctrl+A` / `Home` | 跳转到行首 |
+| `Ctrl+E` / `End` | 跳转到行尾 |
+| `Alt+B` / `Ctrl+←` | 移至上一个词 |
+| `Alt+F` / `Ctrl+→` | 移至下一个词 |
+| `Ctrl+W` / `Alt+Backspace` | 删除上一个词 |
+| `Alt+D` | 删除下一个词 |
+| `Ctrl+D` | 删除光标下的字符 |
+| `Ctrl+K` | 剪切（Kill）从光标到行尾的内容 |
+| `Ctrl+U` | 剪切（Kill）从行首到光标的内容 |
+| `Ctrl+Y` | 粘贴（Yank）最近被剪切的文本 |
+| `Ctrl+Z` | 撤销上一次编辑 |
+| `Alt+Z` | 重做 |
+
+### 全局快捷键 {#global-shortcuts}
+
+| 键位 | 操作 |
+|---|---|
+| `Ctrl+T` | 打开主题对话框 |
+| `Ctrl+P` | 在聊天输入和嵌入式终端面板之间切换焦点（如果关闭则打开它；使用 `/pty` 关闭） |
+| `Ctrl+E` | 停止运行的 llama server（离线模式） |
+| `Ctrl+O` | 切换本地推理日志面板 |
+| `Ctrl+K` / `Ctrl+J` | 向上/向下滚动推理日志 |
+
+### 差异视图（全屏） {#diff-view-fullscreen}
+
+| 键位 | 操作 |
+|---|---|
+| `j` / `Down` | 向下滚动 |
+| `k` / `Up` | 向上滚动 |
+| `Page Down` / `Page Up` | 翻页滚动 |
+| `Home` / `End` | 跳转到顶部/底部 |
+| `q` / `Escape` | 关闭差异视图 |
+
+### 工具审批 {#tool-approval-1}
+
+| 键位 | 操作 |
+|---|---|
+| `↑` / `↓`（或 `k` / `j`） | 在选项之间移动 |
+| `1` / `2` / `3` / `4` | 直接选择 Yes / 本次会话 / 始终允许 / No |
+| `y` / `Enter` | 确认突出显示的选项 |
+| `Esc` | 拒绝工具调用 |
+| `Tab` | 预览差异（diff）或请求详情 |
+
+### 反向搜索（Ctrl+R 模式） {#reverse-search-ctrlr-mode}
+
+| 键位 | 操作 |
+|---|---|
+| `Ctrl+R` | 下一个匹配项 |
+| `Ctrl+S` | 上一个匹配项 |
+| `Enter` | 接受匹配项 |
+| `Escape` / `Ctrl+G` | 取消搜索 |
+
+## @ 提及 {#mentions}
+
+在输入框中键入 `@` 以引用文件或目录。当您键入时，会出现一个文件搜索下拉列表：
+
+- `@path/to/file.rs` —— 将文件内容嵌入您的消息中
+- `@path/to/dir/` —— 嵌入目录树列表
+
+:::tip
+如果您粘贴了多个文件路径，Ante 会为了方便自动在它们前面加上 `@` 前缀。
+:::
+
+## Bash 模式 {#bash-mode}
+
+在任何输入前加上 `!` 以直接作为 shell 命令运行它，而不是发送给智能体：
+
+```
+!git status
+!cargo build
+```
+
+命令将在当前工作目录的您自己的登录 shell（`$SHELL -lc`，回退到 `/bin/sh`）中运行，超时时间为 120 秒。其输出会显示在对话中，并作为智能体下一轮上下文的输入，因此您可以自己运行命令，然后要求智能体对打印的内容采取行动。
+
+:::note
+Bash 模式在本地运行，并且永远不受权限系统限制 —— 键入 `!` 即为授权。这与智能体自己的 `Bash` 工具不同，后者仍然需要通过工具审批。如果 `!` 之后没有任何内容，则作为普通消息发送。交互式程序（如编辑器、分页器）无法工作，因为 bash 模式没有终端输入。
+:::
+
+## 下一个提示词建议 {#next-prompt-suggestion}
+
+当一个轮次结束且输入框为空时，Ante 会预测一个可能的后续操作，并将其显示为暗色的幽灵文本。按 `Tab` 键接受它 —— 建议会填满输入框，以便您可以在发送前进行编辑。任何非 `Tab` 键的按键都会忽略它。
+
+该预测是在关键路径之外使用最便宜的可用模型生成的，因此它永远不会减慢您的轮次，如果无法及时生成，它会静默不执行。它默认是开启的；可以在 `~/.ante/settings.json` 中设置 `"ambient_prompt_suggestion": false` 以将其关闭。
+
+## 加载转圈时的思考短语 {#spinner-thinking-phrase}
+
+当您键入较长的提示词时，Ante 会预测一个简短的、针对任务的短语，并使用它作为该轮次的加载转圈标签，而不是通用的循环消息。就像下一个提示词建议一样，它尽力在关键路径之外使用最便宜的模型运行，并且令人不安或破坏性的词汇会被从短语中过滤掉。默认开启；在 `~/.ante/settings.json` 中设置 `"ambient_thinking_phrase": false` 以禁用。
+
+## TUI 模式的 CLI 标志 {#cli-flags-for-tui-mode}
+
+```bash
+ante --model claude-sonnet-4-6
+ante --provider openai
+ante --system-prompt "You are a Python expert"
+ante --append-system-prompt "Always use type hints"
+ante --include-tools Read Grep Glob
+ante --exclude-tools Bash Write
+ante --yolo                       # 跳过所有工具审批
+ante --resume ses_01ARZ3NDEK...   # 恢复之前的会话
+```

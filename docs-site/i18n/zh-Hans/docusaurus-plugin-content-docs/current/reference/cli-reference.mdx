@@ -1,0 +1,226 @@
+---
+title: "CLI 参考"
+description: "Ante 命令行界面 (CLI) 的命令与标志 (Flags) 参考"
+---
+
+Ante 能够作为交互式 TUI、一次性无头 (headless) 命令、长驻的协议服务器，或者是频道网关 (channel gateway) 运行。
+
+```bash
+ante [OPTIONS] [COMMAND]
+```
+
+## 命令 {#commands}
+
+| 命令 | 描述 |
+|---|---|
+| `ante` | 启动交互式 TUI。如果提供了 `-p` / `--prompt`，则以无头模式运行。 |
+| `ante serve` | 运行长驻的 JSONL 或 WebSocket 协议服务器。 |
+| `ante gateway` | 运行 Slack / Discord 频道网关。 |
+| `ante update` | 检查最新版本的 Ante 并在有更新时自动安装。 |
+| `ante rage` | 收集经过脱敏处理的错误报告包（包括日志与环境信息），用于与 Ante 团队分享排查问题。 |
+| `ante catalog` | 以 JSON 格式打印已加载的提供商/模型目录。 |
+| `ante doctor` | 运行启动时的自检，并报告启动各阶段的耗时。 |
+
+## `ante` {#ante}
+
+```bash
+ante [OPTIONS]
+```
+
+在不带 `--prompt` 时，Ante 会启动交互式 TUI。当带有 `--prompt` 时，Ante 将执行一个无头任务并在完成后退出。
+
+| 标志 (Flag) | 描述 |
+|---|---|
+| `-m`, `--model <MODEL>` | 覆盖默认的模型名称。 |
+| `--provider <PROVIDER>` | 覆盖使用的 API 提供商（使用目录中的提供商名称）。 |
+| `--yolo` | 对本次会话跳过所有工具调用审批提示。 |
+| `--permission-mode <MODE>` | 覆盖本次运行的权限模式：`strict`（严格）、`auto`（自动）或 `yolo`。与 `--yolo` 标志冲突。 |
+| `--system-prompt <PROMPT>` | 完全替换默认的系统提示词。 |
+| `--append-system-prompt <TEXT>` | 将内容追加到默认系统提示词之后。 |
+| `--enable-auto-memory` | 为本次运行启用自动记忆。与 `--disable-auto-memory` 冲突。 |
+| `--disable-auto-memory` | 为本次运行禁用自动记忆。与 `--enable-auto-memory` 冲突。 |
+| `--include-tools <TOOLS>...` | 仅允许使用这些工具。各值以空格分隔。`--tools` 是它的简短别名；`--allowed-tools` 是一个已被废弃但仍有效（会打印警告）的别名。 |
+| `--exclude-tools <TOOLS>...` | 在本次会话中移除这些工具。各值以空格分隔。`--disallowed-tools` 是一个已被废弃但仍有效（会打印警告）的别名。 |
+| `--output-format <FORMAT>` | 无头模式下的输出格式：`json`、`human` 或 `minimal`。默认值为 `minimal`。 |
+| `-p`, `--prompt <PROMPT>` | 在无头模式下运行的提示词。也支持通过管道 (pipe) 从 stdin 传入。 |
+| `--check` | 在无头任务完成后运行一个验证通道（verification pass）。 |
+| `-r`, `--resume <SESSION_ID>` | 根据 ID 恢复之前的会话。 |
+| `--offline-model <PATH>` | 离线推理使用的本地 GGUF 模型文件路径。 |
+| `-h`, `--help` | 打印命令帮助信息。 |
+| `-V`, `--version` | 打印 Ante 版本号。 |
+
+### 示例 {#examples}
+
+```bash
+ante
+ante -p "explain what this project does"
+git diff | ante -p "review this diff for bugs"
+ante --provider openai --model gpt-5.5 -p "refactor the database module"
+ante --resume ses_01ARZ3NDEKTSV4RRFFQ69G5FAV -p "now add tests"
+ante -p "summarize this repo" --enable-auto-memory
+```
+
+## `ante serve` {#ante-serve}
+
+```bash
+ante serve [OPTIONS]
+```
+
+服务器模式默认通过 stdin/stdout 暴露 Ante 协议，如果提供了 `--ws`，则通过 WebSocket 提供服务。
+
+| 标志 (Flag) | 描述 |
+|---|---|
+| `--stdio` | 通过 stdin/stdout 提供 JSONL 协议服务。这是默认的传输方式。 |
+| `--ws <ADDR>` | 在给定的套接字地址（socket address）上通过 WebSocket 提供协议服务。与 `--stdio` 冲突。 |
+| `--offline-model <PATH>` | 启动时加载本地 GGUF 模型以供离线模式使用。 |
+| `-h`, `--help` | 打印命令帮助信息。 |
+
+:::note
+`serve` 是与会话无关的（session-agnostic），因此它不接受会话标志（如 `--model`、`--provider`、`--yolo`、`--system-prompt`、`--include-tools` 等）。连接的客户端会通过协议为每次会话自行配置这些选项。
+:::
+
+### 示例 {#examples-1}
+
+```bash
+ante serve
+ante serve --ws 127.0.0.1:8080
+```
+
+## `ante gateway` {#ante-gateway}
+
+```bash
+ante gateway [OPTIONS]
+```
+
+网关模式会根据频道配置文件将 Ante 连接到 Slack、Discord 或两者。
+
+| 标志 (Flag) | 默认值 | 描述 |
+|---|---|---|
+| `--config <PATH>` | `~/.ante/channels.json` | 频道配置文件路径。 |
+| `--model <MODEL>` | `local` | 智能体会话使用的模型。 |
+| `--provider <PROVIDER>` | `local` | 智能体会话使用的提供商。 |
+| `--output-format <FORMAT>` | `minimal` | 网关 stdout 的输出格式：`json`、`human` 或 `minimal`。 |
+| `--offline-model <PATH>` | - | 为所有网关对话加载本地 GGUF 模型。 |
+| `-h`, `--help` | - | 打印命令帮助信息。 |
+
+### 示例 {#examples-2}
+
+```bash
+ante gateway
+ante gateway --provider anthropic --model claude-sonnet-4-6
+ante gateway --config ./channels.json --output-format human
+```
+
+## `ante update` {#ante-update}
+
+```bash
+ante update [OPTIONS] [CHANNEL]
+```
+
+更新命令会检查是否有更新的 Ante 发布版本，如果有则进行安装。不带参数时，它会遵循 `~/.ante/settings.json` 中保存的频道（默认为 `stable`）。通过位置参数或使用 `--channel` 传递一个频道将仅在本次运行中覆盖所跟踪的频道。请参阅[更新与频道](/start/update)获取完整的频道列表。
+
+| 参数 | 描述 |
+|---|---|
+| `[CHANNEL]` | 用于更新的发布频道（`stable` 或 `nightly`）。`latest` 可作为 `stable` 的旧版别名。与 `--channel` 和 `--version` 冲突。 |
+
+| 标志 (Flag) | 描述 |
+|---|---|
+| `--channel <CHANNEL>` | 用于更新的发布频道。等同于位置参数形式。 |
+| `--version <VERSION>` | 安装一个特定的精确版本，而不是对应频道的最新版本。接受带或不带前导 `v` 的值，如 `v0.preview.33` 或 `0.preview.33`。与频道参数冲突。 |
+| `-h`, `--help` | 打印命令帮助信息。 |
+
+### 示例 {#examples-3}
+
+```bash
+ante update
+ante update nightly
+ante update --channel stable
+ante update --version v0.preview.33
+```
+
+## `ante rage` {#ante-rage}
+
+```bash
+ante rage [OPTIONS]
+```
+
+当发生问题时，`ante rage` 会收集 Ante 团队在排查问题时需要的上下文信息，并将其打包成一个可分享的压缩包，以便您可以将其附加在 GitHub Issue 中。默认情况下，它会生成 `./ante-rage-<timestamp>.tar.gz` 并在终端打印简短摘要。所有数据都不会被自动上传 — 除非您主动分享，这个打包文件仅保留在您的本地。
+
+在写入任何内容之前，机密信息（secrets）会被自动脱敏处理。API 密钥和 OAuth token 只会报告为存在/缺失状态（绝不包含其具体值），嵌入在 URL 中的凭证以及已知形式的 token 都会被掩码处理。此外，对话的转录记录和系统提示词不会被包含，且 `~/.ante/auth/*.json` 和 `channels.json` 绝不会被打包进去。
+
+压缩包包含：
+
+| 文件 | 内容 |
+|---|---|
+| `report.md` | Ante 版本号、OS/架构、Shell、git 分支、解析出的模型/提供商、一份提供商认证状态表格（存在/缺失）以及脱敏处理声明。 |
+| `env.txt` | 与 Ante 相关的环境变量。安全的值会被原样显示；已知的机密信息仅显示为 `<SET>` / `<UNSET>`。 |
+| `settings.redacted.json` | 移除了机密信息的 `~/.ante/settings.json`（MCP 服务器配置里的凭证同样会被剥离）。 |
+| `catalog.redacted.json` | 移除了机密信息的 `~/.ante/catalog.json`（仅在存在自定义目录文件时包含）。 |
+| `logs/` | 最近的应用程序和崩溃日志，经过过滤和清理。`DEBUG`/`TRACE` 级别的日志行会被剔除，因此请求体内容绝对不会进入该压缩包。 |
+
+默认情况下将收集最新的日志，上限为 10 个文件或 10 MB（崩溃日志总是被优先收集）。可使用 `--since` 收集某个时间窗口内的所有日志，而不再受数量或大小限制。
+
+| 标志 (Flag) | 描述 |
+|---|---|
+| `--output <PATH>` | 将压缩包写入到该路径，而不是默认的 `./ante-rage-<timestamp>.tar.gz`。 |
+| `--no-compress` | 保留未压缩的暂存文件夹，而不是生成 `.tar.gz` 文件。 |
+| `--verbose-logs` | 包含 `DEBUG`/`TRACE` 级别的日志行。对话的转录记录和系统提示词仍将被排除。 |
+| `--since <DURATION>` | 收集在该时间窗口内修改的所有日志文件，忽略文件数量与大小限制。支持使用 `<n>d`、`<n>h`、`<n>m` 或者只包含数字（表示天数，例如 `7d`、`48h`、`90m`、`2`）。 |
+| `-h`, `--help` | 打印命令帮助信息。 |
+
+### 示例 {#examples-4}
+
+```bash
+ante rage
+ante rage --output ./ante-bug.tar.gz
+ante rage --since 7d
+ante rage --no-compress
+```
+
+## `ante catalog` {#ante-catalog}
+
+```bash
+ante catalog
+```
+
+将合并后的提供商/模型目录（内置预设加 `~/.ante/catalog.json`）以 JSON 格式打印到 stdout。JSON 结构与目录配置文件的架构一致。关于跳过错误目录项的警告会被输出至 stderr，所以 stdout 仍然是一个纯净的 JSON 文档，可以直接通过管道传递给 `jq` 处理。请参阅[目录参考](/reference/catalog-reference)了解架构。
+
+### 示例 {#examples-5}
+
+```bash
+ante catalog
+ante catalog | jq '.providers | keys'
+```
+
+## `ante doctor` {#ante-doctor}
+
+```bash
+ante doctor
+```
+
+启动与真实运行相同的基础运行时 — 加载合并的目录、启动一个守护会话（daemon session）并渲染第一个 TUI 帧 — 然后打印一份包含各阶段耗时的就绪报告。它可用于确认 Ante 是否已正确安装与配置，也可作为 CI 冒烟测试（“Ante 能不能正常启动，能不能渲染首帧”）。
+
+它不需要 TTY 也不需要 API 密钥：会跳过 MCP 预热，直接从目录中读取信息达到会话就绪状态。报告会列出三个检查项 — `catalog`（提供商/模型数量）、`session`（解析到的 `provider/model`）和 `first frame`（无头模式渲染） — 并在结尾附上总耗时。如果出现警告（例如没有已认证的提供商、某个目录项被跳过、或 `settings.json` 解析提示），它们将列在表格下方，而不会导致检查失败。如果有任何硬性检查（hard check）失败，`doctor` 将以非零状态退出，因此非常适合在脚本中使用。
+
+### 示例 {#examples-6}
+
+```bash
+ante doctor
+ante doctor || echo "ante is not healthy"
+```
+
+## 输出格式 {#output-formats}
+
+| 格式 | 描述 |
+|---|---|
+| `minimal` | 仅打印智能体消息、普通信息和错误信息。 |
+| `human` | 以人类可读的格式打印所有事件。 |
+| `json` | 以 JSON lines 格式打印事件，便于机器处理。 |
+
+## 关联页面 {#related-pages}
+
+- [TUI 模式](/usage/tui)
+- [无头模式 (Headless Mode)](/usage/headless)
+- [服务器模式 (Server Mode)](/usage/serve)
+- [网关模式 (Gateway Mode)](/usage/gateway)
+- [工具参考 (Tools Reference)](/reference/tools-reference)

@@ -1,0 +1,102 @@
+---
+title: "快速开始"
+description: "在不到一分钟内安装 Ante 并开始使用它"
+---
+
+## 前置要求 {#prerequisites}
+
+- 来自至少一家大模型提供商（Anthropic、OpenAI 等）的 API 密钥或订阅 —— 或者使用无需 API 密钥的[离线模式](/local/offline)
+
+## 安装 {#installation}
+
+Ante 作为一个没有任何外部依赖的单一且自包含的二进制文件进行分发 —— 只需下载并运行即可。
+
+```sh
+curl -fsSL https://ante.run/install.sh | bash
+```
+
+默认情况下，这会安装到 `~/.ante/bin`。要安装到其他地方，请设置 `ANTE_INSTALL_DIR`：
+
+```sh
+curl -fsSL https://ante.run/install.sh | ANTE_INSTALL_DIR=/usr/local/bin bash
+```
+
+## 快速示例 {#quick-examples}
+
+### 交互式会话 {#interactive-session}
+
+```bash
+# 启动 TUI —— 与智能体聊天、批准工具调用、查看差异（diffs）
+ante
+```
+
+### 无头模式单次执行 {#headless-one-shot}
+
+```bash
+# 运行一个任务并退出
+ante -p "add error handling to src/main.rs"
+```
+
+### 通过 stdin 管道输入 {#pipe-input-from-stdin}
+
+```bash
+# 通过管道传入文件内容以进行分析
+cat src/lib.rs | ante -p "review this code for bugs"
+```
+
+### 使用不同的提供商 {#use-a-different-provider}
+
+```bash
+# 覆盖模型和提供商
+ante --provider openai --model gpt-5.5 -p "refactor this function"
+```
+
+### 跳过工具审批 {#skip-tool-approvals}
+
+```bash
+# YOLO 模式 —— 自动批准所有工具调用
+ante --yolo -p "fix all clippy warnings"
+```
+
+### 作为服务器运行 {#run-as-a-server}
+
+```bash
+# 启动一个长生命周期的守护进程用于编程式集成
+ante serve
+```
+
+### 更新到最新版本 {#update-to-the-latest-version}
+
+```bash
+# 检查并安装新版本
+ante update
+
+# 在一次更新中尝试使用开发（nightly）通道
+ante update nightly
+
+# 回退或固定到一个精确的发布版本
+ante update --version v0.preview.33
+```
+
+## 下一步是什么？ {#whats-next}
+
+<CardGroup cols={2}>
+  <Card title="日常用例" icon="book-marked" href="/usage/providing-context">
+    针对常见 TUI 工作流的任务驱动指南 —— 模型、文件、审批等等。
+  </Card>
+  <Card title="TUI 指南" icon="terminal" href="/usage/tui">
+    精通交互式终端界面。
+  </Card>
+  <Card title="无头模式" icon="code" href="/usage/headless">
+    所有的 CLI 标志和输出格式。
+  </Card>
+  <Card title="本地模型" icon="wifi-slash" href="/local/overview">
+    在您自己的硬件上运行模型。
+  </Card>
+  <Card title="服务器模式" icon="server" href="/usage/serve">
+    通过 JSONL 编程式地驱动 Ante。
+  </Card>
+  <Card title="技能" icon="scroll" href="/extend/skills">
+    使用可移植的智能体技能扩展 Ante。
+  </Card>
+</CardGroup>

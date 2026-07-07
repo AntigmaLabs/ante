@@ -1,0 +1,161 @@
+---
+title: "提供商"
+description: "选择您的提供商、登录并自定义目录"
+---
+
+Ante 是与提供商无关的（provider-agnostic）。每个提供商都实现了一个通用的接口，用于发送提示词和接收流式响应，而提供商和模型会在会话开始时从目录中解析出来。
+
+本页涵盖日常任务：选择提供商、身份验证以及自定义目录。有关内置提供商的完整列表、它们提供的每个模型，以及完整的 `catalog.json` 架构，请参阅[目录参考](/reference/catalog-reference)。
+
+## 选择提供商 {#selecting-a-provider}
+
+您可以通过三种方式设置您的提供商，按优先级从高到低：
+
+1. **CLI 标志** —— `ante --provider anthropic --model claude-sonnet-4-6`
+2. **设置文件** —— 在 `~/.ante/settings.json` 中设置 `provider` 和 `model`
+3. **自动检测** —— 如果您两者都没有指定，Ante 会使用您拥有凭据的第一个提供商（如果没有凭据，则使用 `local`）。
+
+您可以传递给 `--provider` 的每一个提供商 ID 都在[目录参考](/reference/catalog-reference#built-in-providers)中列出。
+
+## 身份验证 {#authentication}
+
+大多数提供商从环境变量读取 API 密钥：
+
+```bash
+export ANTHROPIC_API_KEY="sk-ant-..."
+ante --provider anthropic --model claude-sonnet-4-6
+```
+
+每个提供商的具体验证方法（环境变量名或 OAuth）都在[目录参考](/reference/catalog-reference#built-in-providers)中说明。
+
+### 订阅登录 (OAuth) {#subscription-login-oauth}
+
+提供订阅计划的提供商（Anthropic、OpenAI、Antix 等）可以改为通过 OAuth 登录，这样您就可以使用现有的订阅而无需管理 API 密钥。在 TUI 中输入 `/connect` 以打开提供商登录流程。Ante 会启动您的默认浏览器进行身份验证，然后自动链接您的会话。
+
+<img src="/assets/cookbook/connect.gif" alt="Connecting to a provider via /connect" style={{width: '100%', borderRadius: '8px', margin: '16px 0'}} />
+
+连接后，Ante 会在未来的会话中记住您的凭据，因此无需每次都重新进行身份验证。
+
+:::tip
+使用第三方提供商时，请确保模型支持工具调用（function calling）—— Ante 依赖它来实现智能体能力。如果结果不佳，请尝试使用更大或更强大的模型。
+:::
+
+## 自定义目录 {#custom-catalog}
+
+创建 `~/.ante/catalog.json` 以添加 Ante 未自带的提供商、修补内置的提供商，或微调模型的默认设置。它会在启动时合并到内置预设之上，因此您只需指定您想要添加或更改的内容。以下示例是常见情况；有关完整的架构、身份验证形式和解析规则，请参阅[目录参考](/reference/catalog-reference#catalogjson-schema)。
+
+### 添加托管提供商 {#add-a-hosted-provider}
+
+大多数托管端点都兼容 OpenAI。通过 `wire_style: "OpenAiCompatible"` 注册一个提供商，将 `base_url` 指向它，并列出您希望在选择器中出现的模型：
+
+```json
+{
+  "providers": {
+    "together": {
+      "id": "together",
+      "display_name": "Together AI",
+      "base_url": "https://api.together.xyz/v1",
+      "wire_style": "OpenAiCompatible",
+      "auth": { "bearer": { "env_key": "TOGETHER_API_KEY" } },
+      "preferred_models": [
+        {
+          "id": "moonshotai/Kimi-K2-Instruct",
+          "description": "Kimi K2 on Together",
+          "max_tokens": 16384,
+          "context_limit": 128000,
+          "thinking": "Enabled"
+        }
+      ]
+    }
+  }
+}
+```
+
+```bash
+export TOGETHER_API_KEY="..."
+ante --provider together --model moonshotai/Kimi-K2-Instruct
+```
+
+### 添加无身份验证的本地提供商 {#add-a-local-provider-with-no-auth}
+
+对于不需要密钥的提供商，省略 `auth`，并且当提供商没有稳定的选择器/默认模型列表时，省略 `preferred_models` —— 这对于像 Ollama 这样的本地服务器很方便，因为在提取时可用的模型会发生变化。您仍然可以通过 `--provider` 和 `--model` 显式传递任何模型 ID：
+
+```json
+{
+  "providers": {
+    "ollama": {
+      "id": "ollama",
+      "display_name": "Ollama",
+      "base_url": "http://localhost:11434/v1",
+      "wire_style": "OpenAiCompatible"
+    }
+  }
+}
+```
+
+```bash
+ante --provider ollama --model qwen2.5-coder:7b
+```
+
+### 修补内置提供商 {#patch-a-built-in-provider}
+
+当键与内置提供商匹配时，只有您设置的字段会被更改。
+将可选字段（如 `auth` 或 `http_headers`）设置为 `null` 以清除预设值：
+
+```json
+{
+  "providers": {
+    "openai": {
+      "base_url": "http://localhost:8080/v1",
+      "auth": null
+    }
+  }
+}
+```
+
+### 覆盖模型默认值 {#override-model-defaults}
+
+`models` 部分通过 ID 修补模型而无需重新定义它。您设置的每个字段都会替换内置默认值；其他所有内容保持不变：
+
+```json
+{
+  "models": {
+    "claude-opus-4-8": { "thinking": "Max" },
+    "claude-sonnet-4-6": { "thinking": "Deep", "max_tokens": 64000 },
+    "gpt-5.5": { "temperature": 0.2 }
+  }
+}
+```
+
+## 第三方提供商 {#third-party-providers}
+
+### 使用 Open Router {#using-open-router}
+
+1. 在 [openrouter.ai](https://openrouter.ai/) 注册并生成 API 密钥。
+2. 设置您的 API 密钥：
+   ```bash
+   export OPENROUTER_API_KEY="sk-or-..."
+   ```
+3. 使用来自 [Open Router 模型列表](https://openrouter.ai/models) 的任何模型：
+   ```bash
+   ante --provider openrouter --model deepseek/deepseek-reasoner
+   ```
+
+### 兼容 OpenAI 的提供商 {#openai-compatible-providers}
+
+许多大模型提供商提供兼容 OpenAI 的 API（例如，Together AI、Fireworks、Groq Cloud、Perplexity）。对于一次性使用，您可以通过环境变量重用内置的 `openai-compatible` 提供商（无需编辑目录）：
+
+1. 设置基础 URL —— 特定于提供商的变量优先于 `MODEL_BASE_URL`：
+   ```bash
+   export OPENAI_COMPATIBLE_BASE_URL="https://api.together.xyz/v1"
+   ```
+2. 设置您的 API 密钥：
+   ```bash
+   export OPENAI_COMPATIBLE_API_KEY="your-provider-api-key"
+   ```
+3. 使用 OpenAI Compatible 提供商运行：
+   ```bash
+   ante --provider openai-compatible --model meta-llama/Llama-3-70b-chat-hf
+   ```
+
+对于您会反复使用的东西，请将其作为一个命名提供商添加到您的[自定义目录](#custom-catalog)中，以便它出现在选择器里。
