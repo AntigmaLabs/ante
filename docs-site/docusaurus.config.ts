@@ -13,6 +13,21 @@ const config: Config = {
   url: 'https://ante.run',
   baseUrl: '/',
 
+  i18n: {
+    defaultLocale: 'en',
+    locales: ['en', 'zh-Hans'],
+    localeConfigs: {
+      en: {
+        label: 'English',
+        htmlLang: 'en-US',
+      },
+      'zh-Hans': {
+        label: '简体中文',
+        htmlLang: 'zh-CN',
+      },
+    },
+  },
+
   markdown: {
     mermaid: true,
   },
@@ -24,7 +39,7 @@ const config: Config = {
         hashed: true,
         indexDocs: true,
         docsRouteBasePath: '/',
-        language: ['en'],
+        language: ['en', 'zh'],
         highlightSearchTermsOnTargetPage: true,
         explicitSearchResultPath: true,
       },
@@ -81,6 +96,11 @@ const config: Config = {
         src: 'assets/ante.png',
       },
       items: [
+        {
+          type: 'localeDropdown',
+          position: 'right',
+          className: 'navbar-locale-switcher',
+        },
         {
           type: 'docSidebar',
           sidebarId: 'antix',

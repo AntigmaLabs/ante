@@ -1,0 +1,20 @@
+---
+title: 订阅登录
+description: "通过 OAuth 连接到 Anthropic、OpenAI 或其他提供商"
+---
+
+# 订阅登录
+
+Ante 支持为提供订阅计划的提供商（Anthropic、OpenAI、Antix 等）使用基于 OAuth 的登录。这允许您使用现有的订阅，而无需手动管理 API 密钥。
+
+## 如何连接
+
+在 TUI（终端用户界面）中输入 `/connect` 以打开提供商登录流程。Ante 将启动您的默认浏览器进行身份验证，然后自动链接您的会话。
+
+<img src="/assets/cookbook/connect.gif" alt="Connecting to a provider via /connect" style={{width: '100%', borderRadius: '8px', margin: '16px 0'}} />
+
+连接后，Ante 会记住您的凭据以供将来的会话使用 — 无需每次都重新进行身份验证。
+
+:::tip
+您也可以直接通过环境变量（例如 `ANTHROPIC_API_KEY`）或在[提供商配置](/configuration/providers)中设置 API 密钥。OAuth 登录是支持该功能的提供商的替代方案。
+:::

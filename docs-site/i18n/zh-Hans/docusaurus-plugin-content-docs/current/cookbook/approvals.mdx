@@ -1,0 +1,33 @@
+---
+title: 审查与批准命令
+description: "了解 Ante 的批准流程以及如何接受、拒绝或预览工具调用"
+---
+
+# 审查与批准命令
+
+未经您的明确批准，Ante 绝不会运行破坏性命令。当智能体（agent）想要执行可能修改系统的工具（例如运行 shell 命令或写入文件）时，您将看到一个批准提示。
+
+## 批准流程
+
+每个工具调用都会显示智能体想要执行的操作。使用方向键选择您的响应并按 Enter 键，或直接按相应的数字键：
+
+<img src="/assets/cookbook/approval.gif" alt="Reviewing and approving a tool call" style={{width: '100%', borderRadius: '8px', margin: '16px 0'}} />
+
+| 键 | 操作 |
+|-----|--------|
+| `↑` / `↓` | 在选项之间导航 |
+| `1` / `2` / `3` / `4` | 直接选择一个选项 |
+| `y` / `Enter` | 确认突出显示的选项 |
+| `Esc` | 拒绝工具调用 |
+| `Tab` | 预览提议的差异或请求详情 |
+
+- **Yes** — 批准这一次调用
+- **Yes, allow … for this session** — 在本会话剩余时间内允许该操作。此授权具有[作用域限制](/configuration/permission#session-grants) — Bash 命令会泛化为安全的前缀（批准 `cargo test -p foo` 将涵盖 `cargo test *`），因此同类调用不会再次提示
+- **Yes, always allow … (save to settings)** — 同时将允许规则保存到 `settings.json` 中，以便在未来的会话中生效
+- **No** — 拒绝工具调用；智能体将调整其方法
+
+按 `Tab` 键可打开差异（diff）视图，在提交之前逐行检查确切的更改。
+
+:::tip
+如果您在某项特定任务上信任智能体，请使用 `ante --yolo` 跳过所有批准提示。您还可以在[权限配置](/configuration/permission)中微调哪些工具需要批准。
+:::

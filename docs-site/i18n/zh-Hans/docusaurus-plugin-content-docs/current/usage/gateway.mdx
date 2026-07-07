@@ -1,0 +1,139 @@
+---
+title: "网关模式"
+description: "在 Slack 或 Discord 中作为机器人运行 Ante"
+---
+
+网关模式（Gateway mode）将 Ante 作为长期运行的机器人运行，可以从 Slack、Discord 或两者同时访问。每个对话——频道主题或直接消息（DM）——都会获得自己独立的智能体（agent）会话，因此多个用户和团队可以并行与 Ante 对话而不会互相干扰状态。
+
+## 基本用法
+
+```bash
+ante gateway
+```
+
+这会读取 `~/.ante/channels.json`，连接到你已启用的每个平台，并开始监听消息。
+
+## 配置
+
+创建 `~/.ante/channels.json`。你可以只启用 Slack、只启用 Discord，或同时启用两者。
+
+```json
+{
+  "slack": {
+    "enabled": true,
+    "bot_token": "env:SLACK_BOT_TOKEN",
+    "app_token": "env:SLACK_APP_TOKEN",
+    "allow_from": "open"
+  },
+  "discord": {
+    "enabled": true,
+    "bot_token": "env:DISCORD_BOT_TOKEN",
+    "allow_from": ["123456789012345678"]
+  }
+}
+```
+
+以 `env:` 开头的值会在启动时从环境变量中读取，因此令牌（tokens）不会保存在文件中。
+
+### 访问控制
+
+`allow_from` 字段决定机器人将回应谁：
+
+| 值 | 谁可以与机器人对话 |
+| --- | --- |
+| `"open"` | 工作区 / 服务器上的任何人 |
+| `["U123", "U456"]` | 仅限列出的用户 ID |
+| *(省略)* | 拒绝所有（安全的默认值） |
+
+## 设置 Slack
+
+1. 在 [api.slack.com/apps](https://api.slack.com/apps) 创建一个应用 → 选择 **From scratch（从头开始）**。
+2. **Settings → Socket Mode（设置 → Socket 模式）**：启用它并创建一个具有 `connections:write` 权限的 App 级令牌。复制 `xapp-…` 令牌——这就是你的 `app_token`。
+3. **Features → OAuth & Permissions → Bot Token Scopes（功能 → OAuth 和权限 → 机器人令牌作用域）**：添加 `chat:write`, `app_mentions:read`, `channels:history`, `im:history`, `im:write`。
+4. **Features → Event Subscriptions（功能 → 事件订阅）**：启用事件并订阅 `message.channels` 和 `message.im`。
+5. **Features → App Home（功能 → 应用主页）**：启用消息标签页（Messages Tab）并允许用户在那里发送消息。
+6. **Settings → OAuth & Permissions → Install to Workspace（设置 → OAuth 和权限 → 安装到工作区）**。复制 `xoxb-…` Bot User OAuth Token——这就是你的 `bot_token`。
+7. 在你希望机器人加入的每个频道中执行：`/invite @你的机器人名称`。
+
+```bash
+export SLACK_BOT_TOKEN="xoxb-..."
+export SLACK_APP_TOKEN="xapp-..."
+```
+
+**在 Slack 中使用机器人：** 在频道中 `@提及` 它，或者直接给它发私信（DM）。回复总是以主题帖（thread）的形式出现。
+
+:::note
+无论何时更改作用域或事件订阅，你都必须重新 **安装到工作区（Reinstall to Workspace）** 才能生效。
+:::
+
+## 设置 Discord
+
+1. 在 [discord.com/developers/applications](https://discord.com/developers/applications) 创建一个应用 → 选择 **New Application（新应用）**。
+2. **Bot（机器人）**：复制令牌——这就是你的 `bot_token`。在 **Privileged Gateway Intents（特权网关意图）** 下，启用 **Message Content Intent（消息内容意图）**（必填）。
+3. **OAuth2 → URL Generator（URL 生成器）**：在 **Scopes（作用域）** 下勾选 `bot`；在 **Bot Permissions（机器人权限）** 下勾选 `Send Messages`、`Read Message History`、`View Channels`。打开生成的 URL 将机器人邀请到你的服务器。
+
+```bash
+export DISCORD_BOT_TOKEN="..."
+```
+
+**在 Discord 中使用机器人：** 在服务器频道中 `@提及` 它，或者直接发私信（DM）。机器人会将你的消息作为引用进行回复——回复机器人的消息即可继续对话。
+
+## 与机器人对话
+
+一旦机器人进入了你的工作区或服务器并且网关正在运行，你就可以像与其他任何机器人一样与它聊天。以下几个回复具有特殊含义。
+
+你可以随时通过发送以下内容来中断机器人：
+
+| 命令 | 效果 |
+| --- | --- |
+| `stop` | 取消当前任务（类似于 TUI 中的 Ctrl+C） |
+
+当机器人请求运行工具的权限时，请使用以下选项之一进行回复：
+
+| 回复 | 效果 |
+| --- | --- |
+| `yes` (或 `y`) | 批准此次工具调用 |
+| `no` (或 `n`) | 跳过此次工具调用 |
+| `always` | 批准并允许在此会话的剩余时间内使用该工具 |
+
+有关工具审批流程的更多信息，请参阅[审批](/cookbook/approvals)。
+
+## CLI 参考
+
+```bash
+ante gateway [--config PATH] [--model MODEL] [--provider PROVIDER] [--output-format FORMAT] [--offline-model PATH]
+```
+
+| 标志 | 默认值 | 描述 |
+| --- | --- | --- |
+| `--config` | `~/.ante/channels.json` | 频道配置文件的路径 |
+| `--model` | `local` | 用于每个会话的 LLM 模型 |
+| `--provider` | `local` | 所选模型的提供商 |
+| `--output-format` | `minimal` | 网关标准输出格式：`minimal`、`human` 或 `json` |
+| `--offline-model` | — | 本地 GGUF 文件的路径。在接受消息之前启动一个共享的 llama-server，并将每个对话路由通过它（强制使用 `--provider local --model local`） |
+
+:::tip
+默认情况假定使用本地 llama-server。要使用托管提供商，请显式传递 `--provider` 和 `--model`（例如 `ante gateway --provider anthropic --model claude-sonnet-4-6`）。
+:::
+
+### 输出格式
+
+| 格式 | 显示内容 |
+| --- | --- |
+| `minimal` | 仅显示智能体消息、信息和错误 |
+| `human` | 带有颜色格式的所有事件（有助于调试） |
+| `json` | 以 JSON 行格式显示所有事件（有助于通过管道传输到其他工具） |
+
+## 故障排除
+
+**Slack: "Sending messages to this app has been turned off"（已关闭向此应用发送消息）**
+在 **App Home（应用主页）** 下启用 Messages Tab（消息标签页），并允许用户从中发送消息，然后重新安装到工作区。
+
+**Slack：机器人对频道中的 `@提及` 没有反应**
+确保机器人已被邀请到该频道（`/invite @bot-name`），并且 `message.channels` 已在你的事件订阅（Event Subscriptions）中。更改事件或作用域后请重新安装。
+
+**Discord：机器人没有反应**
+确认机器人已启用 **Message Content Intent（消息内容意图）**，并且在频道中具有 `Send Messages（发送消息）` 和 `Read Message History（读取消息历史）` 权限。
+
+**收到消息后网关未显示任何输出**
+使用 `--output-format human` 运行以查看每个事件，并检查 `~/.ante/logs/` 获取错误详情。

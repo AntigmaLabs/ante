@@ -1,0 +1,48 @@
+---
+title: "AGENTS.md"
+description: "加载到每个 Ante 会话中的项目和全局指令"
+---
+
+`AGENTS.md` 文件为 Ante 提供了独立于自动记忆（auto-memory）的持久化指令。请将其用于代理在每次处理项目时应当遵循的稳定规则。
+
+## 位置
+
+在会话中提交第一条用户消息时，Ante 会读取两个指令文件：
+
+| 位置 | 作用域 |
+|---|---|
+| `~/.ante/AGENTS.md` | 适用于所有项目的全局指令 |
+| `<project>/AGENTS.md` | 检入代码库的项目指令 |
+
+全局路径遵循 `ANTE_HOME` 环境变量，因此如果您设置了 `ANTE_HOME=/path/to/ante-home`，全局文件即为 `/path/to/ante-home/AGENTS.md`。
+
+## Ante 如何应用指令
+
+如果两个文件都存在，Ante 会将它们包含在一个提醒块（reminder block）中，其中全局文件在前，项目文件在后。空文件将被忽略。如果全局路径和项目路径解析为同一个文件，Ante 只会包含它一次。
+
+项目指令旨在用于特定于代码库的规则，例如构建命令、编码约定和架构约束。全局指令更适合应用于各处的个人偏好，例如响应格式或语言风格。
+
+## 示例
+
+```markdown title="~/.ante/AGENTS.md"
+# 全局偏好
+
+- 保持回复简洁。
+- 倾向于提供可操作的解释，而不是背景信息。
+```
+
+```markdown title="AGENTS.md"
+# 项目规则
+
+- 在修改 Rust 代码之前运行 `cargo test --workspace`。
+- 保持公共协议更改向后兼容。
+- 当 CLI 标志或配置文件发生变化时更新文档。
+```
+
+## AGENTS.md vs MEMORY.md
+
+`AGENTS.md` 是由人工编写的指南。Ante 将其作为关于如何行为的指令来读取。
+
+`MEMORY.md` 是生成的项目记忆。Ante 使用它在不同会话之间传递学习到的上下文。
+
+请使用 `AGENTS.md` 来设定您希望强制执行的规则。使用记忆（memory）来记录随着代理学习代码库而可能发生变化的观察结果。

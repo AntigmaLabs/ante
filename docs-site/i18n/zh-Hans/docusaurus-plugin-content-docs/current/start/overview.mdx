@@ -1,0 +1,87 @@
+---
+title: 概览
+description: "Ante — a ghost in your shell: 自给自足、自我组织、公开基准测试"
+slug: /
+---
+
+# Ante
+
+**A ghost in your shell.** Ante 是一款位于你的终端内、能够自我组织的独立代码智能体。它是一个由 [Antigma Labs](https://antigma.ai) 开发的约 15MB 的 Rust 二进制文件，零运行时依赖，旨在充分发挥任何模型的性能。
+
+它的工作方式类似于 Claude Code 或 Codex，但没有任何它们的依赖限制或模型绑定。它也可以作为优化后的核心，用于[构建你自己的脚手架](/usage/serve)和高性能助手。
+
+每个智能体都会声称自己很好。这里是我们可供你验证的数据：
+
+<CardGroup cols={3}>
+  <Card title="公开验证" icon="chart-line" href="https://antigma.ai/eval">
+    Terminal-Bench 2.1 排名第一（同模型下）：对于我们运行的每个模型，没有任何其他工具在使用相同模型时得分比我们更高。每个结果都固定了确切的可下载版本，并链接到了原始的 Harbor 运行记录。在 antigma.ai/eval 实时更新。
+  </Card>
+  <Card title="极小的资源占用" icon="feather" href="/benchmarks/compare_table">
+    在相同的 20 个并发任务中，Ante 的峰值内存占用少了约 7 倍，平均 CPU 占用少了约 9 倍，磁盘 I/O 少了约 5 倍（与 Claude Code 相比）。
+  </Card>
+  <Card title="原生支持离线" icon="wifi-slash" href="/experimental/offline">
+    内置推理引擎，支持在本地运行 GGUF 模型。无需 API 密钥、无需账号、无需联网，没有任何数据会离开你的机器。
+  </Card>
+</CardGroup>
+
+这三点同属于一个设计决策。一个你可以验证、负担得起且能随处运行的智能体，轻量到足以以**成千上万**的数量运行：这是自我组织智能的基础。参见[设计哲学](/start/philosophy)。
+
+### 不仅仅是亮眼的数据
+
+- **零供应商锁定。** 你可以自带 API 密钥、订阅或本地模型。可以在 12+ 个提供商之间自由切换 — Anthropic、OpenAI、Gemini、Grok、Open Router 等等。无需账号，没有遥测门槛，没有封闭花园，甚至我们自己也没有。
+- **[多智能体编排](/experimental/agent-org)。** 协调多个智能体自我组织完成复杂任务。
+- **高可扩展性。** 支持自定义[技能（Skills）](/extend/skills)、[子智能体（Sub-agents）](/extend/subagents)、[MCP](/extend/mcp) 以及跨会话持久化的[记忆（Memory）](/extend/memory)。
+- **痴迷于简单和质量。** 在一个充满丰富选择的世界里，保持高质量和高信任度比以往任何时候都更有价值。
+
+### 工作原理
+
+Ante 采用客户端-守护进程架构运行。守护进程管理结构化的轮次生命周期 — 提示、工具调用、确认、执行 — 通过一个安全、可预测的循环将模型的能力发挥出来。客户端可以是交互式的 TUI（终端用户界面）、无头的 CLI、外部进程，或者是通过 `ante gateway` 连接的频道机器人。
+
+在架构上，Ante 正朝着以智能体为中心的运行时发展，长时间运行的智能体通过消息传递进行协调 — 这是一种具有层级监督、隔离状态和为每个智能体明确分配资源所有权的 Actor 模型。
+
+Ante 也可以作为长时间运行的服务 (`ante serve`)，外部客户端通过结构化的 JSONL 协议驱动它 — 这非常适合用来构建编辑器插件、Web UI 和自定义集成。
+
+:::warning
+Ante 目前处于**预览版**阶段并且正在积极开发中。预计会出现破坏性更改、实验性功能以及不完整的功能。目前仅支持 **macOS** 和 **Linux**。
+:::
+
+## 下一步
+
+<CardGroup cols={2}>
+  <Card title="快速开始" icon="bolt" href="/start/quickstart">
+    在一分钟内安装 Ante 并运行你的第一个提示。
+  </Card>
+  <Card title="基准测试" icon="chart-line" href="/benchmarks/eval">
+    我们如何对发布的产品进行基准测试 — 以及实时的 Terminal-Bench 结果。
+  </Card>
+  <Card title="设计哲学" icon="book" href="/start/philosophy">
+    我们致力于优化的产品和工程原则。
+  </Card>
+  <Card title="交互式 TUI" icon="terminal" href="/usage/tui">
+    学习使用丰富的终端界面。
+  </Card>
+  <Card title="离线模式" icon="wifi-slash" href="/experimental/offline">
+    完全离线使用本地模型运行 Ante。
+  </Card>
+  <Card title="服务模式" icon="server" href="/usage/serve">
+    通过标准输入/输出 (stdio) 或 WebSocket 编程方式驱动 Ante。
+  </Card>
+  <Card title="网关模式" icon="message-square" href="/usage/gateway">
+    将 Ante 作为 Slack 或 Discord 机器人运行。
+  </Card>
+  <Card title="TUI 实战指南" icon="book-marked" href="/cookbook/login">
+    针对常见 TUI 工作流的直观分步指南。
+  </Card>
+  <Card title="模型提供商" icon="plug" href="/configuration/providers">
+    选择并配置你的模型提供商。
+  </Card>
+  <Card title="核心概念" icon="shapes" href="/concepts/core-concepts">
+    理解会话（sessions）、任务（tasks）、轮次（turns）以及协议。
+  </Card>
+  <Card title="智能体组织" icon="sitemap" href="/experimental/agent-org">
+    Ante 如何自我组织智能体以处理复杂任务。
+  </Card>
+  <Card title="Antix 企业版" icon="server" href="/antix/introduction">
+    借助 Antigma 企业级 LLM 代理和身份提供商扩展你的 AI 能力。
+  </Card>
+</CardGroup>

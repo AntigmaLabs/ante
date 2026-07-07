@@ -1,0 +1,175 @@
+---
+title: 权限
+description: "Ante 如何通过模式、规则和匹配器控制工具的执行"
+---
+
+Ante 拥有一个权限系统，可控制工具调用是自动批准、需要用户确认还是被完全拒绝。
+
+## 权限模式
+
+| 模式 | 行为 |
+|---|---|
+| `strict` | 优先遵循规则。如果没有规则匹配，则允许执行已知安全的只读 Bash 命令，其余所有操作都会提示确认。这是默认模式。 |
+| `auto` | 优先遵循规则。如果没有规则匹配，则允许工具调用，除非 Bash 检测到危险命令（这会提示确认）。 |
+| `yolo` | 所有工具调用均被自动批准 —— 没有提示，不进行规则评估，包括 `deny`（拒绝）规则也会被忽略。 |
+
+在 `~/.ante/settings.json` 中设置模式：
+
+```json
+{
+  "permission_mode": "auto",
+  "permissions": {
+    "allow": ["Bash(npm run *)"],
+    "ask": ["Write"],
+    "deny": ["Bash(rm *)"]
+  }
+}
+```
+
+或者针对每个会话覆盖：
+
+```bash
+ante --yolo "运行 cargo clippy 并修复所有警告"
+ante --permission-mode auto "更新文档并运行测试"
+```
+
+在 TUI 中，按 **Shift+Tab** 实时循环切换模式：`strict` → `auto` → `yolo` → `strict`。更改适用于下一轮次，不会干扰正在进行的轮次。
+
+:::warning
+在无头模式（headless mode）下，隐含使用 `yolo` 模式 —— 由于没有交互式提示，所有工具都会被自动批准。
+:::
+
+## 决策
+
+| 决策 | 效果 |
+|---|---|
+| **Allow（允许）** | 工具立即执行，没有提示 |
+| **Ask（询问）** | 提示用户批准或拒绝 |
+| **Deny（拒绝）** | 工具调用被阻止 |
+
+## 规则
+
+权限规则将**决策**与**工具匹配器**配对。持久化规则存在于 `~/.ante/settings.json` 下的 `permissions.allow`、`permissions.ask` 和 `permissions.deny` 中。
+
+优先级是固定的：**拒绝 > 会话授权 > 询问 > 允许 > 工具默认值**。在每个类别中，匹配器是无序集合。会话授权是当您“仅针对本次会话”批准调用时添加的临时允许规则（参见 [会话授权](#session-grants)）。
+
+```
+规则：deny=[Bash(rm *)], ask=[Bash], allow=[Write]
+                ↓
+工具调用：Bash({ "command": "ls" })
+                ↓
+匹配：Ask(Bash)
+                ↓
+结果：Ask（提示用户）
+```
+
+如果没有匹配的规则，模式将决定后备方案：`strict` 模式除了已知安全的只读 Bash 命令外均会询问；`auto` 模式除了危险的 Bash 命令外均允许；`yolo` 模式立即允许。
+
+### 默认规则
+
+| 工具 | 默认决策 |
+|---|---|
+| `Bash` | Ask |
+| `Write` | Ask |
+| `Edit` | Ask |
+| `Read` | Allow |
+| `Glob` | Allow |
+| `Grep` | Allow |
+| `Agent` | Allow |
+| `TodoWrite` | Allow |
+| `WebFetch` | Ask |
+| `WebSearch` | Ask |
+| `Browser` | Ask |
+| `PTY` | Allow |
+| `ViewImage` | Allow |
+
+在 `strict` 模式下，检查显式规则后，作为最终后备方案，只读 Shell 命令也可以自动批准。这涵盖了经过审查的只读程序 —— 以及仅由它们构建的管道或 `&&` / `||` / `;` 序列；任何带有重定向、命令替换或无法识别命令的操作仍然会提示。
+
+在 `auto` 模式下，对于未匹配的调用，举证责任发生反转：非 Bash 工具会运行，Bash 也会运行，除非危险命令分类器标记它需要批准。
+
+### 会话授权 {#session-grants}
+
+在批准提示处，您可以通过三种方式批准调用：
+
+- **Yes（是）** — 批准这一次调用。
+- **Yes, allow … for this session（是，本次会话允许…）** — 在本次运行的剩余时间内添加临时授权。它优先于 `ask`/`allow` 规则和工具默认值，但永远不能超越 `deny` 规则，并在会话结束时消失。
+- **Yes, always allow … (save to settings)（是，始终允许…并保存到设置中）** — 同时将该匹配器追加到 `~/.ante/settings.json` 中的 `permissions.allow` 里，使其在未来会话中生效。
+
+授权是有作用域的，而不是一揽子的。一个被批准的 Bash 命令概括为一个**双标记前缀**，以便下一个类似的调用不会重新提示 —— 批准 `cargo test -p foo` 将授权 `Bash(cargo test *)`。危险分类器标记的命令（如 `rm -rf build`）、第二个标记是标志的命令（`ls -la`）以及多阶段序列（`git add -A && git commit -m wip`）停留在**精确命令**的作用域，而不是放宽范围。`Agent`、`Read` 和 `Edit` 将作用域限定为其主要参数（子代理类型或文件路径）；没有已知主要参数的工具按名称授权。
+
+授权具有包含感知能力：被更广泛的授权涵盖的较窄授权会被丢弃，而批准更广泛的授权会吸收冗余的较窄授权 —— 因此重复批准 `cargo test …` 调用将合并为单个 `Bash(cargo test *)` 规则，而不是堆积。
+
+## 工具匹配器
+
+### 简单匹配器
+
+按名称匹配该工具的**任何**调用：
+
+```
+Bash
+Write
+Agent
+```
+
+### 指定匹配器
+
+**仅当**其主要参数匹配 Glob 模式时才匹配该工具：
+
+```
+Bash(cargo test *)
+Bash(npm run *)
+Agent(explore)
+Read(src/**)
+Edit(src/**)
+```
+
+只有具有已知主要参数的工具才支持限定作用域的匹配器；任何其他工具仅按名称匹配。
+
+| 工具 | 主要参数 |
+|---|---|
+| `Bash` | `command` |
+| `Agent` | `subagent_type` |
+| `Read` | `file_path` (或 `path`) |
+| `Edit` | `file_path` |
+
+### Glob 语法
+
+| 模式 | 匹配内容 |
+|---|---|
+| `cargo test *` | `cargo test --all`, `cargo test my_mod` |
+| `npm run *` | `npm run build`, `npm run test` |
+| `safe-cmd:*` | `safe-cmd:foo`, `safe-cmd:bar` |
+| `exp*` | `explore`, `experiment` |
+
+:::note
+Glob `safe-cmd:*` **不匹配** `safe-cmd --flag`。使用 `safe-cmd *`（带空格）来匹配空格分隔的参数。
+:::
+
+:::warning
+单命令通配符**不能**为多阶段命令提供担保。`Bash(npm run *)` 匹配 `npm run build`，但**不匹配** `npm run build && rm -rf /` 或 `npm run build | sh` —— `&&` / `||` / `;` / 管道序列的每个阶段都必须单独匹配规则，所以允许的前缀不能携带未经批准的阶段蒙混过关。
+:::
+
+格式错误的权限规则会带有警告并被单独跳过。有效的同级规则和其他设置仍将加载。
+
+## 工具过滤
+
+```bash
+# 仅允许这些工具（白名单）
+ante --include-tools Read Glob Grep "分析代码"
+
+# 移除这些工具（黑名单）
+ante --exclude-tools Bash Write "只读分析"
+
+# 细粒度控制：仅为特定命令允许使用 Bash
+ante --include-tools Read "Bash(cargo test *)" "Bash(cargo clippy *)" "分析并测试"
+```
+
+:::tip
+工具过滤和权限是相互独立的。过滤控制会话中**存在**哪些工具；权限控制已存在的工具是否**需要批准**。
+:::
+
+## 针对不同模式的行为
+
+在 **TUI 模式**中，需要批准的工具会显示交互式提示。您可以批准或拒绝每个调用，针对本次会话授权，或保存为“始终允许”规则（参见 [会话授权](#session-grants)）。
+
+在 **无头模式**中，隐含使用 `yolo` 模式。使用 `--include-tools` 或 `--exclude-tools` 来限制代理可以执行的操作。

@@ -1,0 +1,221 @@
+---
+title: "首选项"
+description: "设置文件、环境变量与目录结构"
+---
+
+## 设置文件
+
+Ante 将用户首选项存储在 `~/.ante/settings.json` 中：
+
+```json
+{
+  "model": "claude-sonnet-4-6",
+  "provider": "anthropic",
+  "theme": "default",
+  "permission_mode": "auto",
+  "permissions": {
+    "allow": ["Bash(npm run *)"],
+    "deny": ["Bash(rm *)"]
+  },
+  "has_completed_onboarding": true,
+  "ambient_prompt_suggestion": true,
+  "ambient_thinking_phrase": true,
+  "channel": "stable",
+  "status_line": ["model-name", "current-dir"],
+  "status_line_command": {
+    "command": "~/.config/ante/statusline.sh",
+    "padding": 1,
+    "refresh_interval": 5
+  },
+  "model_thinking": {
+    "claude-sonnet-4-6": "Enabled",
+    "gpt-5.4": "Deep"
+  },
+  "mcp_servers": {
+    "filesystem": {
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-filesystem", "/tmp"]
+    }
+  }
+}
+```
+
+| 字段 | 描述 |
+|---|---|
+| `model` | 默认模型名称 |
+| `provider` | 默认 API 提供商 |
+| `theme` | TUI 颜色主题 |
+| `permission_mode` | 默认权限模式（`strict`、`auto` 或 `yolo`）。无法识别的值会被忽略，而不会导致整个文件解析失败 |
+| `permissions` | 持久化工具权限规则，按 `allow`、`ask` 和 `deny` 匹配器分组（参见 [权限](/configuration/permission)） |
+| `has_completed_onboarding` | 是否已完成引导流程 |
+| `ambient_prompt_suggestion` | TUI 是否在回合结束后以幽灵文本的形式显示 [下一个提示建议](/usage/tui#next-prompt-suggestion)。默认开启，除非设置为 `false` |
+| `ambient_thinking_phrase` | 当您键入时，TUI 是否预测 [特定任务的加载短语](/usage/tui#spinner-thinking-phrase)。默认开启，除非设置为 `false` |
+| `channel` | `ante update` 跟踪的发布通道（`stable` 或 `nightly`）。默认为 `stable`；传统的 `latest` 值将被视为 `stable`。参见 [更新与通道](/start/update)。 |
+| `status_line` | TUI 状态栏底部显示的项目（见下文） |
+| `status_line_command` | 渲染完全自定义状态栏的 Shell 命令（见下文）。设置后优先级高于 `status_line` |
+| `model_thinking` | 每个模型的思考级别覆盖 — 键为模型名称，值为 `Disabled` / `Enabled` / `Deep` / `Max` |
+| `mcp_servers` | 会话启动时要启动的 MCP 服务器（参见 [MCP 服务器](/extend/mcp)） |
+
+### 状态栏
+
+`status_line` 字段控制在 TUI 底部栏中显示哪些项目。它接受一个项目标识符数组：
+
+| 项目 | 描述 |
+|---|---|
+| `model-name` | 当前模型名称 |
+| `provider` | 当前提供商 |
+| `current-dir` | 当前工作目录 |
+| `git-branch` | 当前 Git 分支（不可用时省略） |
+| `thinking-level` | 当前思考级别（禁用时省略） |
+| `pr-link` | 当前分支的 GitHub 拉取请求链接（需要 `gh`） |
+| `context-used` | 上下文窗口使用情况，显示为剩余窗口的 `N% ctx`（未知前省略） |
+
+默认值：`["model-name", "current-dir"]`。可通过 `~/.ante/settings.json` 或 TUI 中的 `/statusline` 命令进行配置。
+
+### 基于命令的状态栏
+
+为了实现完全控制，`status_line_command` 运行您选择的 Shell 命令，并将其输出渲染为状态栏，替换基于项目的默认状态栏：
+
+```json
+{
+  "status_line_command": {
+    "command": "~/.config/ante/statusline.sh",
+    "padding": 1,
+    "refresh_interval": 5
+  }
+}
+```
+
+接受普通字符串作为简写形式：`"status_line_command": "echo hello"`。
+
+| 字段 | 描述 |
+|---|---|
+| `command` | 脚本路径或内联 Shell 命令，通过 `sh -c` 运行（必填） |
+| `padding` | 额外的水平边距（以列为单位）（默认值：`0`） |
+| `refresh_interval` | 每隔 N 秒重新运行一次（最小值为 1）。适用于时钟或外部数据。省略时仅在会话事件时运行 |
+
+**工作原理。** Ante 将会话的 JSON 快照通过管道传输到您的命令的标准输入 (stdin)，并显示它打印到标准输出 (stdout) 的任何内容。该命令在每个助手消息之后（以 300 毫秒的防抖时间）以及当模型、提供商、思考模式、拉取请求、工作目录或终端大小发生变化时重新运行。运行时间上限为 5 秒，较新的运行会取消正在进行的运行。
+
+JSON 输入是 [Claude Code 状态栏输入](https://code.claude.com/docs/en/statusline) 的兼容子集，因此现有的 Claude Code 状态栏脚本无需修改即可工作：
+
+```json
+{
+  "cwd": "/work/repo",
+  "session_id": "ses_...",
+  "version": "0.1.0",
+  "model": { "id": "claude-sonnet-4-6", "display_name": "claude-sonnet-4-6" },
+  "workspace": { "current_dir": "/work/repo", "project_dir": "/work/repo" },
+  "thinking": { "enabled": true },
+  "pr": { "number": 7, "url": "https://github.com/..." },
+  "provider": "anthropic",
+  "context_window": {
+    "context_window_size": 200000,
+    "total_input_tokens": 36000,
+    "used_percentage": 18,
+    "remaining_percentage": 82
+  }
+}
+```
+
+仅当检测到当前分支有打开的拉取请求时才存在 `pr`；当模型的上下文限制已知时，在第一次响应后出现 `context_window`，并使用 Claude Code 的字段名称报告原始窗口大小以及已使用/剩余百分比。`provider` 是 Ante 的扩展字段。该命令还会在其环境中接收 `COLUMNS` 和 `LINES`（当前终端大小）以及 `ANTE_PROJECT_DIR`（包含 `.git` 的最近祖先目录）。
+
+**输出。** 每行标准输出将成为底部行（最多 8 行）。ANSI 颜色和 OSC 8 超链接将被渲染；颜色状态在行之间保持。空行被丢弃，空输出将渲染为空白状态栏。
+
+一个最小示例脚本：
+
+```bash
+#!/bin/sh
+input=$(cat)
+model=$(echo "$input" | jq -r '.model.display_name')
+dir=$(basename "$(echo "$input" | jq -r '.workspace.current_dir')")
+printf '\033[36m[%s]\033[0m %s' "$model" "$dir"
+```
+
+在将 `command` 指向它之前，请使其可执行（`chmod +x`）。如果命令失败——不可执行、非零退出状态或超时——底部栏将根据脚本的 stderr 显示单行诊断信息，例如 `status line: sh: …: Permission denied`。脚本的更改将在下次运行时被读取，但对 `settings.json` 本身的更改需要重启才能生效。
+
+设置可以通过 CLI 标志在每个会话被覆盖。
+
+## 环境变量
+
+| 变量 | 描述 |
+|---|---|
+| `ANTHROPIC_API_KEY` | Anthropic (Claude) 的 API 密钥 |
+| `OPENAI_API_KEY` | OpenAI 的 API 密钥 |
+| `OPENAI_COMPATIBLE_API_KEY` | 兼容 OpenAI 提供商的 API 密钥 |
+| `GEMINI_API_KEY` | Google Gemini 的 API 密钥 |
+| `VERTEX_GEMINI_API_KEY` | Vertex AI Gemini 的 API 密钥 |
+| `XAI_API_KEY` | Grok (xAI) 的 API 密钥 |
+| `OPENROUTER_API_KEY` | Open Router 的 API 密钥 |
+| `ZAI_API_KEY` | Zai 的 API 密钥 |
+| `DEEPSEEK_API_KEY` | DeepSeek 的 API 密钥 |
+| `ALI_CODING_PLAN_API_KEY` | 阿里编程套餐的 API 密钥 |
+| `ANTIX_API_KEY` | Antix 的 API 密钥 |
+| `MODEL_BASE_URL` | 全局后备基础 URL（可被下方的每个提供商变量覆盖） |
+| `ANTHROPIC_BASE_URL` | 覆盖 Anthropic 的基础 URL |
+| `OPENAI_BASE_URL` | 覆盖 OpenAI 的基础 URL |
+| `OPENAI_COMPATIBLE_BASE_URL` | 覆盖 OpenAI 兼容提供商的基础 URL |
+| `DEEPSEEK_BASE_URL` | 覆盖 DeepSeek 的基础 URL |
+| `MODEL_TEMPERATURE` | 覆盖模型温度 (float) |
+| `MODEL_TOP_P` | 覆盖模型 top_p 采样参数 (float) |
+| `MODEL_THINKING` | 覆盖思考模式 (`none`、`enabled`、`deep`、`max`)。这些分别映射到协议级别的值 `Disabled`、`Enabled`、`Deep`、`Max` |
+| `MODEL_MAX_TOKENS` | 覆盖最大输出 tokens 数 (integer) |
+| `MODEL_CONTEXT_LIMIT` | 覆盖最大上下文窗口大小 (integer) |
+| `ANTE_LOCAL_PROVIDER_PORT` | 覆盖本地提供商端口（默认值：8080） |
+| `ANTE_HOME` | 覆盖 home 配置目录（默认值：`~/.ante`） |
+| `ANTE_INSTALL_DIR` | 仅安装程序覆盖，用于二进制安装目录（默认值：`~/.ante/bin`） |
+| `ANTE_OPENAI_TRANSPORT` | OpenAI 响应传输：`http_sse`（默认）或 `websocket_auto`（参见 [OpenAI 传输](/reference/catalog-reference#openai-transports)） |
+
+## 目录结构
+
+### 用户级别 (`~/.ante/`)
+
+```
+~/.ante/
+├── settings.json      # 用户首选项
+├── catalog.json       # 自定义提供商/模型目录
+├── AGENTS.md          # 全局指令
+├── sessions/          # 持久化会话（用于 /resume）
+├── skills/            # 用户级技能
+└── agents/            # 用户级子代理
+```
+
+### 项目级别
+
+```
+AGENTS.md              # 项目指令
+
+.ante/
+├── skills/            # 项目专属技能
+└── agents/            # 项目专属子代理
+
+.agents/
+├── skills/            # 项目专属技能
+└── agents/            # 项目专属子代理
+
+.claude/
+├── skills/            # 项目专属技能（兼容 Claude Code）
+└── agents/            # 项目专属子代理（兼容 Claude Code）
+```
+
+### 项目记忆 (`~/.ante/projects/`)
+
+项目范围的状态 — 记忆、持久化会话、事件日志 — 存放在 `~/.ante/projects/<project-id>/` 下，其中 `<project-id>` 是项目绝对路径的清理形式。
+
+```
+~/.ante/projects/
+└── <project-id>/
+    └── memory/
+        └── MEMORY.md      # 该项目的自动记忆
+```
+
+### 临时文件
+
+每个项目的临时文件存放在 `~/.ante/cache/<project-id>/` 下。
+
+## 优先级
+
+配置按以下顺序解析（后面的覆盖前面的）：
+
+1. 内置默认值
+2. `~/.ante/settings.json`
+3. CLI 标志（`--model`、`--provider` 等）
