@@ -89,4 +89,4 @@ Antix 在以下上游提供商中规范化请求。您可以按模型名称路�
 当省略该请求头时，Antix 会从密钥前缀中推断提供商（例如，`sk-ant-…` → Anthropic，`sk-…` → OpenAI）。某些密钥（如 Alibaba/DashScope 或 Zai）可能没有独特的前缀——您**必须**为这些请求设置 `X-Antix-Provider`，否则它们在上游将以 `401 Unauthorized` 失败。
 :::
 
-参见 [模型 API](/antix/concepts/models) 以确切列出您的网关当前提供的模型。
+参见 [模型 API](/zh-Hans/antix/concepts/models) 以确切列出您的网关当前提供的模型。

@@ -11,7 +11,7 @@ sidebar_position: 4
 - `GET /v1/models` — 列出可用模型
 - `GET /v1/models/{model_id}` — 检索单个模型
 
-这里返回的 `id` 与调用推理端点（`/v1/messages`, `/v1/chat/completions`）时作为 `model` 字段传递的字符串完全一致。有关支持的端点的完整列表，请参见 [路由和自带密钥 (BYOK)](/antix/concepts/routing)。
+这里返回的 `id` 与调用推理端点（`/v1/messages`, `/v1/chat/completions`）时作为 `model` 字段传递的字符串完全一致。有关支持的端点的完整列表，请参见 [路由和自带密钥 (BYOK)](/zh-Hans/antix/concepts/routing)。
 
 ## 快速开始
 
@@ -27,16 +27,16 @@ curl -s "https://antix.antigma.ai/v1/models/claude-sonnet-4-6" -H "anthropic-ver
 ```
 
 :::note 关于 URL 和版本请求头
-- **基础 URL** — 目录位于网关的根路径（`https://antix.antigma.ai`），因此与推理流量不同，它**不**需要 [端点 URL](/antix/concepts/endpoints) UUID 和 [虚拟密钥](/antix/concepts/virtual-keys)。本页面上的示例故意使用了裸主机名；对于实际的 `/v1/messages` 或 `/v1/chat/completions` 调用，请将您的 SDK 指向您的端点 URL。
+- **基础 URL** — 目录位于网关的根路径（`https://antix.antigma.ai`），因此与推理流量不同，它**不**需要 [端点 URL](/zh-Hans/antix/concepts/endpoints) UUID 和 [虚拟密钥](/zh-Hans/antix/concepts/virtual-keys)。本页面上的示例故意使用了裸主机名；对于实际的 `/v1/messages` 或 `/v1/chat/completions` 调用，请将您的 SDK 指向您的端点 URL。
 - **`anthropic-version`** — `2023-06-01` 是当前的稳定 Anthropic API 版本，官方 SDK 会默认发送此版本。这些公共端点仅检查该请求头是否*存在*，而不检查其值，因此任何版本字符串（或 `x-api-key`）都能同样地选择 Anthropic 结构形式。
 :::
 
 ## 身份验证
 
-这些端点是**公开的**——调用它们不需要 API 密钥或 [端点 URL](/antix/concepts/endpoints)。它们只返回网关可提供的模型名称目录；它们绝不会暴露凭据、定价或内部路由信息。
+这些端点是**公开的**——调用它们不需要 API 密钥或 [端点 URL](/zh-Hans/antix/concepts/endpoints)。它们只返回网关可提供的模型名称目录；它们绝不会暴露凭据、定价或内部路由信息。
 
 :::note
-这里返回的模型 **id** 就是您作为 `model` 字段传递给推理端点（`/v1/messages`, `/v1/chat/completions`）的值，而推理端点**确实**需要 [虚拟密钥](/antix/concepts/virtual-keys) 或 BYOK 凭据。
+这里返回的模型 **id** 就是您作为 `model` 字段传递给推理端点（`/v1/messages`, `/v1/chat/completions`）的值，而推理端点**确实**需要 [虚拟密钥](/zh-Hans/antix/concepts/virtual-keys) 或 BYOK 凭据。
 :::
 
 ## 响应格式与内容协商
@@ -328,7 +328,7 @@ print(model.id, model.owned_by)
 | `200 OK` | 列表请求（始终），或检索可提供的模型 | 列表包裹层 / 单个模型对象 |
 | `404 Not Found` | 检索未提供的模型 | 经过内容协商的错误包裹层（见上文） |
 
-列表端点始终返回 `200`；如果没有可提供的模型，`data` 数组将为空（Anthropic 结构形式中的 `has_more: false`，`first_id`/`last_id` 为 `null`）。有关跨所有端点的完整错误代码参考，请参见 [错误处理](/antix/concepts/error-handling)。
+列表端点始终返回 `200`；如果没有可提供的模型，`data` 数组将为空（Anthropic 结构形式中的 `has_more: false`，`first_id`/`last_id` 为 `null`）。有关跨所有端点的完整错误代码参考，请参见 [错误处理](/zh-Hans/antix/concepts/error-handling)。
 
 ## 备注与常见问题 (FAQ)
 

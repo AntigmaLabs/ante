@@ -103,7 +103,7 @@ export ANTHROPIC_BASE_URL="https://antix.antigma.ai"
 ## 身份验证模式
 
 - **虚拟密钥（Virtual Key）** — 代理路由上的 `Authorization: Bearer sk-antix-…`。
-- **自带密钥（BYOK）** — 在 `Authorization` 中发送您自己的提供商密钥，并设置 `X-Antix-Provider`。参见 [路由](/antix/concepts/routing)。
+- **自带密钥（BYOK）** — 在 `Authorization` 中发送您自己的提供商密钥，并设置 `X-Antix-Provider`。参见 [路由](/zh-Hans/antix/concepts/routing)。
 
 ## 使用端点标记流量
 
@@ -115,11 +115,11 @@ https://antix.antigma.ai/v1/<endpoint_uuid>/<provider>
 
 每个通过该 URL 发送的请求都会自动标记为该端点的 ID，因此门户网站可以按端点细分成本、延迟和追踪。身份验证仍然使用您的虚拟密钥（或 BYOK）——端点决定了*流量的去向*，而不是*谁来买单*。
 
-参见 [端点](/antix/concepts/endpoints) 了解创建方法、作用域以及分析选项卡。
+参见 [端点](/zh-Hans/antix/concepts/endpoints) 了解创建方法、作用域以及分析选项卡。
 
 ## 下一步
 
-- [端点](/antix/concepts/endpoints) — 包含追踪、花费和智能体回话的每个应用程序级 URL。
-- [路由和自带密钥（BYOK）](/antix/concepts/routing) — 提供商选择和 OpenAI 兼容语义。
-- [虚拟密钥](/antix/concepts/virtual-keys) — 签发具有硬性支出预算的密钥。
-- [错误处理](/antix/concepts/error-handling) — 跨提供商的标准化错误代码。
+- [端点](/zh-Hans/antix/concepts/endpoints) — 包含追踪、花费和智能体回话的每个应用程序级 URL。
+- [路由和自带密钥（BYOK）](/zh-Hans/antix/concepts/routing) — 提供商选择和 OpenAI 兼容语义。
+- [虚拟密钥](/zh-Hans/antix/concepts/virtual-keys) — 签发具有硬性支出预算的密钥。
+- [错误处理](/zh-Hans/antix/concepts/error-handling) — 跨提供商的标准化错误代码。

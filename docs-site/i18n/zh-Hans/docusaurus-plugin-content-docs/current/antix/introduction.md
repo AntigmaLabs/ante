@@ -32,24 +32,24 @@ sidebar_position: 1
 - **默认故障关闭。** 如果计费后端不可达，Antix 会拒绝处理流量。
 - **高性能热路径。** 流水线规范化了跨提供商的 SSE，并在并发负载下保证原子级预算执行。
 - **从第一天起就支持多租户。** 组织、基于角色的访问控制 (RBAC) (`admin` / `member`) 和具有作用域的虚拟密钥——这并非事后添加的功能。
-- **关于留存的坦诚。** Antix 会持久化请求和响应的正文，以用于成本归因和管理员分析——参见 [隐私、安全与数据留存](/antix/concepts/security)。
+- **关于留存的坦诚。** Antix 会持久化请求和响应的正文，以用于成本归因和管理员分析——参见 [隐私、安全与数据留存](/zh-Hans/antix/concepts/security)。
 
 ### 下一步
 
 <CardGroup cols={2}>
-  <Card title="快速入门" icon="rocket" href="/antix/quickstart">
+  <Card title="快速入门" icon="rocket" href="/zh-Hans/antix/quickstart">
     在5分钟内向 Antix 代理发起您的第一个请求。
   </Card>
-  <Card title="路由和自带密钥 (BYOK)" icon="route" href="/antix/concepts/routing">
+  <Card title="路由和自带密钥 (BYOK)" icon="route" href="/zh-Hans/antix/concepts/routing">
     端点、SDK 兼容性以及提供商覆盖。
   </Card>
-  <Card title="虚拟密钥和预算" icon="shield-halved" href="/antix/concepts/virtual-keys">
+  <Card title="虚拟密钥和预算" icon="shield-halved" href="/zh-Hans/antix/concepts/virtual-keys">
     签发具有硬性支出上限的、有作用域的密钥。
   </Card>
-  <Card title="组织和 RBAC" icon="users" href="/antix/concepts/organizations">
+  <Card title="组织和 RBAC" icon="users" href="/zh-Hans/antix/concepts/organizations">
     管理成员、分配角色并在您的组织内划定访问范围。
   </Card>
-  <Card title="错误处理" icon="circle-exclamation" href="/antix/concepts/error-handling">
+  <Card title="错误处理" icon="circle-exclamation" href="/zh-Hans/antix/concepts/error-handling">
     跨提供商的标准化错误代码。
   </Card>
 </CardGroup>

@@ -19,7 +19,7 @@ sidebar_position: 3
 密钥被安全地存储——明文只在创建时返回**一次**。门户网站签发的密钥以 **`sk-antix-…`** 开头。
 
 :::note
-针对每个密钥的模型允许列表（allow-lists）和针对每个密钥的速率限制（rpm/tpm）目前尚未在门户网站的密钥创建流程中提供。请参阅 [错误处理](/antix/concepts/error-handling) 以了解网关当前的（全局，非每密钥）速率限制。
+针对每个密钥的模型允许列表（allow-lists）和针对每个密钥的速率限制（rpm/tpm）目前尚未在门户网站的密钥创建流程中提供。请参阅 [错误处理](/zh-Hans/antix/concepts/error-handling) 以了解网关当前的（全局，非每密钥）速率限制。
 :::
 
 ## 可靠的计费

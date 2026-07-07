@@ -12,7 +12,7 @@ sidebar_position: 4
 - **请求追踪（Request traces）** — 完整的请求/响应生命周期，包括延迟和每次调用的成本。
 - **智能体回话（Agent sessions）** — 将多轮请求分组为连贯的会话，以便于调试。
 
-端点独立于身份验证：它们决定请求*发送到哪里*以及*如何标记*，而 [虚拟密钥](/antix/concepts/virtual-keys)（或 BYOK）决定*谁来买单*以及*适用哪些限制*。
+端点独立于身份验证：它们决定请求*发送到哪里*以及*如何标记*，而 [虚拟密钥](/zh-Hans/antix/concepts/virtual-keys)（或 BYOK）决定*谁来买单*以及*适用哪些限制*。
 
 ## 创建端点
 
@@ -64,7 +64,7 @@ https://antix.antigma.ai/v1/<endpoint_uuid>/<provider>/<native_path>
   - 附加提供商自己的原生路径，或针对这些提供商使用兼容 OpenAI 的同等 SDK。
 - **通用（Universal）/ 多提供商（multi-provider）**
   - 基础 URL：`https://antix.antigma.ai/v1/<endpoint_uuid>/multi`
-  - 使用 `/multi` 时，Antix 会根据模型名称和请求头而不是固定的提供商来路由请求。参见 [路由和自带密钥 (BYOK)](/antix/concepts/routing) 了解路由规则和支持的 `X-Antix-Provider` 值。
+  - 使用 `/multi` 时，Antix 会根据模型名称和请求头而不是固定的提供商来路由请求。参见 [路由和自带密钥 (BYOK)](/zh-Hans/antix/concepts/routing) 了解路由规则和支持的 `X-Antix-Provider` 值。
 
 :::warning
 请将端点 URL 视为**机密**。它们能够识别您的流量，并且很容易通过提交的配置文件泄露。请勿将它们推送到公共仓库中。
@@ -109,13 +109,13 @@ https://antix.antigma.ai/v1/<endpoint_uuid>/<provider>/<native_path>
 
 - **编辑名称（Edit name）** — 更新显示名称。
 - **复制为组织端点（Duplicate as Org Endpoint）** *（仅限个人端点）* — 组织管理员可以将个人端点提升为拥有*新* URL 的全新组织共享端点。原始个人端点保持活动状态，直到您将其归档。
-- **归档（Archive）** — 软删除该端点。任何仍指向已归档 URL 的客户端都会立即收到 `410 Gone`（参见 [错误处理](/antix/concepts/error-handling)）。历史追踪和支出数据在门户网站中仍然可见。**归档操作无法撤销。**
+- **归档（Archive）** — 软删除该端点。任何仍指向已归档 URL 的客户端都会立即收到 `410 Gone`（参见 [错误处理](/zh-Hans/antix/concepts/error-handling)）。历史追踪和支出数据在门户网站中仍然可见。**归档操作无法撤销。**
 
 ## 身份验证
 
 端点 URL 负责路由流量；您仍然需要通过 `Authorization` 请求头对请求进行身份验证。
 
-- **虚拟密钥（Virtual Keys，推荐）** — Antix 签发的密钥（`sk-antix-…`）。请求将根据该密钥设置的限制向您的 Antix 组织计费。参见 [虚拟密钥](/antix/concepts/virtual-keys)。
+- **虚拟密钥（Virtual Keys，推荐）** — Antix 签发的密钥（`sk-antix-…`）。请求将根据该密钥设置的限制向您的 Antix 组织计费。参见 [虚拟密钥](/zh-Hans/antix/concepts/virtual-keys)。
 - **自带密钥 (BYOK)** — 发送您的原始提供商密钥（例如 `sk-ant-…`）。Antix 会将请求原封不动地传递给提供商，并且不会为此向您计费；门户网站会为该成本打上 *(est.)*（预估）标签。
 
 端点适用于任何一种身份验证模式——这是在每个请求级别做出的选择，而不是在端点级别。
