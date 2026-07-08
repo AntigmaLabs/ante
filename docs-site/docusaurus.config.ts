@@ -115,7 +115,7 @@ const config: Config = {
       logo: {
         alt: 'Ante',
         src: 'assets/ante.png',
-        href: isZhHansBuild ? '/antix/introduction' : '/',
+        href: '/',
       },
       items: [
         {
