@@ -1,0 +1,50 @@
+{
+  "version.label": {
+    "message": "Next",
+    "description": "The label for version current"
+  },
+  "sidebar.docs.category.Getting Started": {
+    "message": "Getting Started",
+    "description": "The label for category 'Getting Started' in sidebar 'docs'"
+  },
+  "sidebar.docs.category.Benchmarks": {
+    "message": "Benchmarks",
+    "description": "The label for category 'Benchmarks' in sidebar 'docs'"
+  },
+  "sidebar.docs.category.Using Ante": {
+    "message": "Using Ante",
+    "description": "The label for category 'Using Ante' in sidebar 'docs'"
+  },
+  "sidebar.docs.category.Configuration": {
+    "message": "Configuration",
+    "description": "The label for category 'Configuration' in sidebar 'docs'"
+  },
+  "sidebar.docs.category.Customization": {
+    "message": "Customization",
+    "description": "The label for category 'Customization' in sidebar 'docs'"
+  },
+  "sidebar.docs.category.Programmatic Usage": {
+    "message": "Programmatic Usage",
+    "description": "The label for category 'Programmatic Usage' in sidebar 'docs'"
+  },
+  "sidebar.docs.category.Reference": {
+    "message": "Reference",
+    "description": "The label for category 'Reference' in sidebar 'docs'"
+  },
+  "sidebar.docs.category.Experimental": {
+    "message": "Experimental",
+    "description": "The label for category 'Experimental' in sidebar 'docs'"
+  },
+  "sidebar.antix.category.Getting Started": {
+    "message": "开始使用",
+    "description": "The label for category 'Getting Started' in sidebar 'antix'"
+  },
+  "sidebar.antix.category.Core Concepts": {
+    "message": "核心概念",
+    "description": "The label for category 'Core Concepts' in sidebar 'antix'"
+  },
+  "sidebar.antix.category.Identity & Agents": {
+    "message": "身份与智能体",
+    "description": "The label for category 'Identity & Agents' in sidebar 'antix'"
+  }
+}

@@ -1,5 +1,36 @@
 import type { SidebarsConfig } from '@docusaurus/plugin-content-docs'
 
+const antixSidebar: SidebarsConfig[string] = [
+  {
+    type: 'category',
+    label: 'Getting Started',
+    collapsed: false,
+    items: ['antix/introduction', 'antix/quickstart'],
+  },
+  {
+    type: 'category',
+    label: 'Core Concepts',
+    collapsed: false,
+    items: [
+      'antix/concepts/routing',
+      'antix/concepts/organizations',
+      'antix/concepts/virtual-keys',
+      'antix/concepts/endpoints',
+      'antix/concepts/models',
+      'antix/concepts/error-handling',
+      'antix/concepts/security',
+    ],
+  },
+  {
+    type: 'category',
+    label: 'Identity & Agents',
+    collapsed: false,
+    items: [
+      'antix/concepts/ante-integration',
+    ],
+  },
+]
+
 const sidebars: SidebarsConfig = {
   docs: [
     {
@@ -103,36 +134,9 @@ const sidebars: SidebarsConfig = {
     },
     'changelog',
   ],
-  antix: [
-    {
-      type: 'category',
-      label: 'Getting Started',
-      collapsed: false,
-      items: ['antix/introduction', 'antix/quickstart'],
-    },
-    {
-      type: 'category',
-      label: 'Core Concepts',
-      collapsed: false,
-      items: [
-        'antix/concepts/routing',
-        'antix/concepts/organizations',
-        'antix/concepts/virtual-keys',
-        'antix/concepts/endpoints',
-        'antix/concepts/models',
-        'antix/concepts/error-handling',
-        'antix/concepts/security',
-      ],
-    },
-    {
-      type: 'category',
-      label: 'Identity & Agents',
-      collapsed: false,
-      items: [
-        'antix/concepts/ante-integration',
-      ],
-    },
-  ],
+  antix: antixSidebar,
 }
 
-export default sidebars
+export default process.env.DOCUSAURUS_CURRENT_LOCALE === 'zh-Hans'
+  ? { antix: antixSidebar }
+  : sidebars

@@ -1,9 +1,11 @@
 import React from 'react'
+import Link from '@docusaurus/Link'
 import {
   Feather, Cpu, LockOpen, Zap, Terminal, Plug,
   Shapes, WifiOff, Network, TrendingUp, Code,
   Server, ScrollText, Globe, BookOpen, FlaskConical,
   Key, FileText, Compass, ShieldCheck, Eye, BookMarked,
+  Rocket, Route, Shield, Users, CircleAlert, MessageSquare,
   type LucideIcon,
 } from 'lucide-react'
 
@@ -30,6 +32,12 @@ const iconMap: Record<string, LucideIcon> = {
   'shield-check': ShieldCheck,
   'eye':          Eye,
   'book-marked':  BookMarked,
+  'rocket':       Rocket,
+  'route':        Route,
+  'shield-halved': Shield,
+  'users':        Users,
+  'circle-exclamation': CircleAlert,
+  'message-square': MessageSquare,
 }
 
 interface CardProps {
@@ -84,8 +92,8 @@ export function Card({ title, icon, href, children }: CardProps) {
 
   if (href) {
     return (
-      <a
-        href={href}
+      <Link
+        to={href}
         style={{ textDecoration: 'none', color: 'inherit', display: 'block', height: '100%' }}
         onMouseEnter={(e) => {
           const div = e.currentTarget.firstChild as HTMLElement
@@ -97,7 +105,7 @@ export function Card({ title, icon, href, children }: CardProps) {
         }}
       >
         {inner}
-      </a>
+      </Link>
     )
   }
 
