@@ -119,7 +119,7 @@ const config: Config = {
       },
       items: [
         {
-          type: 'localeDropdown',
+          type: 'custom-conditionalLocaleDropdown',
           position: 'right',
           className: 'navbar-locale-switcher',
         },
