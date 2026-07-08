@@ -6,6 +6,40 @@ import { websiteIcon, discordIcon, githubIcon } from './src/components/icons'
 const socialLinkHtml = (label: string, icon: string) =>
   `<span class="navbar-social-link"><span class="navbar-social-link__icon">${icon}</span><span>${label}</span></span>`
 
+const isZhHansBuild = process.env.DOCUSAURUS_CURRENT_LOCALE === 'zh-Hans'
+
+const docsFooterItems = isZhHansBuild
+  ? [
+      { label: 'Antix 简介', to: '/antix/introduction' },
+      { label: '快速入门', to: '/antix/quickstart' },
+      { label: '路由与 BYOK', to: '/antix/concepts/routing' },
+      { label: '虚拟密钥与预算', to: '/antix/concepts/virtual-keys' },
+      { label: '隐私与安全', to: '/antix/concepts/security' },
+    ]
+  : [
+      { label: 'Overview', to: '/' },
+      { label: 'Quickstart', to: '/start/quickstart' },
+      { label: 'Benchmarks', to: '/benchmarks/eval' },
+      { label: 'Local Models', to: '/local/overview' },
+      { label: 'Providers', to: '/usage/providers' },
+    ]
+
+const legacyAnteRedirects = [
+  { from: '/usage/offline', to: '/local/offline' },
+  { from: '/experimental/offline', to: '/local/offline' },
+  { from: '/configuration/providers', to: '/usage/providers' },
+  { from: '/concepts/core-concepts', to: '/reference/core-concepts' },
+  { from: '/concepts/architecture', to: '/reference/architecture' },
+  { from: '/cookbook/login', to: '/usage/providers' },
+  { from: '/usage/login', to: '/usage/providers' },
+  { from: '/cookbook/providing-context', to: '/usage/providing-context' },
+  { from: '/cookbook/models-and-thinking', to: '/usage/models-and-thinking' },
+  { from: '/cookbook/steering', to: '/usage/steering' },
+  { from: '/cookbook/approvals', to: '/usage/approvals' },
+  { from: '/cookbook/web-browsing', to: '/usage/providing-context' },
+  { from: '/usage/web-browsing', to: '/usage/providing-context' },
+]
+
 const config: Config = {
   title: 'Ante',
   tagline: 'a ghost in your shell: self-contained, self-organizing, benchmarked in public',
@@ -53,6 +87,7 @@ const config: Config = {
         docs: {
           routeBasePath: '/',
           sidebarPath: './sidebars.ts',
+          include: isZhHansBuild ? ['antix/**/*.{md,mdx}'] : ['**/*.{md,mdx}'],
         },
         blog: false,
         theme: {
@@ -69,21 +104,7 @@ const config: Config = {
     [
       '@docusaurus/plugin-client-redirects',
       {
-        redirects: [
-          { from: '/usage/offline', to: '/local/offline' },
-          { from: '/experimental/offline', to: '/local/offline' },
-          { from: '/configuration/providers', to: '/usage/providers' },
-          { from: '/concepts/core-concepts', to: '/reference/core-concepts' },
-          { from: '/concepts/architecture', to: '/reference/architecture' },
-          { from: '/cookbook/login', to: '/usage/providers' },
-          { from: '/usage/login', to: '/usage/providers' },
-          { from: '/cookbook/providing-context', to: '/usage/providing-context' },
-          { from: '/cookbook/models-and-thinking', to: '/usage/models-and-thinking' },
-          { from: '/cookbook/steering', to: '/usage/steering' },
-          { from: '/cookbook/approvals', to: '/usage/approvals' },
-          { from: '/cookbook/web-browsing', to: '/usage/providing-context' },
-          { from: '/usage/web-browsing', to: '/usage/providing-context' },
-        ],
+        redirects: isZhHansBuild ? [] : legacyAnteRedirects,
       },
     ],
   ],
@@ -94,6 +115,7 @@ const config: Config = {
       logo: {
         alt: 'Ante',
         src: 'assets/ante.png',
+        href: isZhHansBuild ? '/antix/introduction' : '/',
       },
       items: [
         {
@@ -141,13 +163,7 @@ const config: Config = {
       links: [
         {
           title: 'Docs',
-          items: [
-            { label: 'Overview', to: '/' },
-            { label: 'Quickstart', to: '/start/quickstart' },
-            { label: 'Benchmarks', to: '/benchmarks/eval' },
-            { label: 'Local Models', to: '/local/overview' },
-            { label: 'Providers', to: '/usage/providers' },
-          ],
+          items: docsFooterItems,
         },
         {
           title: 'Community',
