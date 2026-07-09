@@ -301,6 +301,11 @@ pub struct SessionUpdate {
     /// in-flight one.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub permission_mode: Option<PermissionMode>,
+    /// Effort change for the session's model. Applied after any `model` change
+    /// in the same update, and non-aborting like `permission_mode`: it takes
+    /// effect on the next turn.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub effort: Option<Effort>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -361,7 +366,7 @@ pub struct SessionOverrides {
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub cwd: Option<PathBuf>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub thinking: Option<Thinking>,
+    pub effort: Option<Effort>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub enable_auto_memory: Option<bool>,
 }
@@ -396,19 +401,63 @@ pub struct ModelSpec {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub context_limit: Option<u32>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub thinking: Option<Thinking>,
+    pub effort: Option<Effort>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub support_vision: Option<bool>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub weight_class: Option<WeightClass>,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize, Copy, PartialEq, Eq, Hash)]
-pub enum Thinking {
-    Disabled,
-    Enabled,
-    Deep,
+/// Requested output/reasoning effort for model turns, on an ordinal scale.
+///
+/// `min` is the lowest effort the model supports — thinking is disabled where
+/// the model allows that; models with always-on reasoning clamp to their
+/// lowest level. Providers that expose fewer levels round a requested effort
+/// down to the nearest supported one. Variants are declared in ascending
+/// order so the derived `Ord` sorts `Min < Low < ... < Max`.
+#[derive(Debug, Clone, Serialize, Deserialize, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[serde(rename_all = "lowercase")]
+pub enum Effort {
+    Min,
+    Low,
+    Medium,
+    High,
+    XHigh,
     Max,
+}
+
+impl Effort {
+    /// All levels in ascending order.
+    pub const ALL: [Effort; 6] =
+        [Effort::Min, Effort::Low, Effort::Medium, Effort::High, Effort::XHigh, Effort::Max];
+
+    /// The wire token for this level (`"min"`, `"low"`, ..., `"max"`).
+    pub fn as_str(self) -> &'static str {
+        match self {
+            Effort::Min => "min",
+            Effort::Low => "low",
+            Effort::Medium => "medium",
+            Effort::High => "high",
+            Effort::XHigh => "xhigh",
+            Effort::Max => "max",
+        }
+    }
+}
+
+impl std::fmt::Display for Effort {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.write_str(self.as_str())
+    }
+}
+
+impl std::str::FromStr for Effort {
+    type Err = String;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        Effort::ALL.into_iter().find(|e| e.as_str() == s).ok_or_else(|| {
+            format!("unknown effort `{s}` (expected min, low, medium, high, xhigh, max)")
+        })
+    }
 }
 
 /// Innate size/cost class of a model, set once per model in the catalog.
@@ -552,10 +601,50 @@ mod tests {
             max_tokens: None,
             stop_sequences: None,
             context_limit: None,
-            thinking: None,
+            effort: None,
             support_vision: None,
             weight_class: None,
         }
+    }
+
+    #[test]
+    fn effort_serializes_as_lowercase_tokens() {
+        let mut spec = model_spec("m");
+        spec.effort = Some(super::Effort::XHigh);
+        let json = serde_json::to_value(&spec).unwrap();
+        assert_eq!(json["effort"], "xhigh");
+
+        // None is skipped, not emitted as null.
+        let json_none = serde_json::to_value(model_spec("m")).unwrap();
+        assert!(json_none.get("effort").is_none());
+
+        // Every level round-trips through its wire token.
+        for level in super::Effort::ALL {
+            let parsed: ModelSpec =
+                serde_json::from_value(serde_json::json!({"id": "m", "effort": level.as_str()}))
+                    .unwrap();
+            assert_eq!(parsed.effort, Some(level), "round-trip {level}");
+        }
+    }
+
+    #[test]
+    fn effort_orders_min_lowest_to_max_highest() {
+        let mut sorted = super::Effort::ALL;
+        sorted.sort();
+        assert_eq!(sorted, super::Effort::ALL);
+        assert!(super::Effort::Min < super::Effort::Low);
+        assert!(super::Effort::XHigh < super::Effort::Max);
+    }
+
+    #[test]
+    fn session_overrides_effort_round_trips() {
+        let parsed: super::SessionOverrides =
+            serde_json::from_value(serde_json::json!({"effort": "max"})).unwrap();
+        assert_eq!(parsed.effort, Some(super::Effort::Max));
+
+        let parsed: super::SessionOverrides =
+            serde_json::from_value(serde_json::json!({})).unwrap();
+        assert_eq!(parsed.effort, None);
     }
 
     #[test]
@@ -657,6 +746,7 @@ mod tests {
         let op = Op::UpdateSession(SessionUpdate {
             model: Some(ModelSpec { temperature: Some(0.2), ..model_spec("gpt-5.4") }),
             permission_mode: Some(PermissionMode::Yolo),
+            effort: Some(super::Effort::High),
         });
 
         let json = serde_json::to_string(&op).expect("serialize UpdateSession");
@@ -667,6 +757,7 @@ mod tests {
             Op::UpdateSession(SessionUpdate {
                 model: Some(model),
                 permission_mode: Some(PermissionMode::Yolo),
+                effort: Some(super::Effort::High),
             })
                 if model.id == "gpt-5.4" && model.temperature == Some(0.2)
         ));
