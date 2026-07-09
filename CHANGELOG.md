@@ -1,5 +1,16 @@
 # Changelog
 
+## v0.preview.55 - 2026-07-09
+
+- Add offline-mode attachment to existing local llama-compatible servers, with broader localhost detection, `/v1/models` validation, retryable attach errors, UTF-8-safe input, and corrected external-server state handling
+- Add Antix Claude Fable 5 support
+- Add Grok 4.5 to the xAI and OpenRouter model catalogs
+- Fix OAuth provider login started from `/providers` so the hidden picker no longer captures input or makes the TUI appear frozen
+- Fix Kimi thinking request compatibility by omitting unsupported `thinking.type = "enabled"` while preserving explicit disabled requests
+- Improve chat composer wrapping so English words wrap at boundaries while long tokens, CJK text, cursor movement, and resizes stay aligned
+- Normalize ambient thinking phrases to sentence case instead of shouting in all caps
+- Compact sessions before the next turn starts to reduce turn-lifecycle and context-management edge cases
+
 ## v0.preview.54 - 2026-07-06
 
 - Add OpenRouter web search request support and forward `top_k` in OpenAI-compatible requests
