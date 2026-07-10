@@ -135,25 +135,25 @@ ante update --version v0.preview.33
 <tr>
 <td width="50%">
 
-**[Providing Context: Files & Folders](https://docs.antigma.ai/usage/providing-context)**
+**[Models, Providers & Thinking](https://docs.antigma.ai/usage/models-and-thinking)**
 
-![Adding file context with @ mentions](docs-site/static/assets/cookbook/files.gif)
+![Switching provider, model, and effort with /providers](docs-site/static/assets/cookbook/providers.gif)
 
 </td>
 <td width="50%">
 
-**[Interrupting & Steering](https://docs.antigma.ai/usage/steering)**
+**[Providing Context: Files & Folders](https://docs.antigma.ai/usage/providing-context)**
 
-![Interrupting the agent with Escape](docs-site/static/assets/cookbook/interrupt.gif)
+![Adding file context with @ mentions](docs-site/static/assets/cookbook/files.gif)
 
 </td>
 </tr>
 <tr>
 <td width="50%">
 
-**[Models, Providers & Thinking](https://docs.antigma.ai/usage/models-and-thinking)**
+**[Interrupting & Steering](https://docs.antigma.ai/usage/steering)**
 
-![Selecting a model and provider](docs-site/static/assets/cookbook/model.gif)
+![Interrupting the agent with Escape](docs-site/static/assets/cookbook/interrupt.gif)
 
 </td>
 <td width="50%">
