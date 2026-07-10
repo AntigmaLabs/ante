@@ -19,6 +19,8 @@ This page is the exhaustive reference. For how to pick a provider day to day and
 | Gemini | `gemini` | `Gemini` | `GEMINI_API_KEY` |
 | Vertex AI Gemini | `vertex-gemini` | `Gemini` | `VERTEX_GEMINI_API_KEY` |
 | Open Router | `openrouter` | `OpenAiCompatible` | `OPENROUTER_API_KEY` |
+| Open Router Responses | `openrouter-responses` | `OpenAiResponse` | `OPENROUTER_API_KEY` |
+| Open Router Anthropic | `openrouter-anthropic` | `AnthropicMessage` | `OPENROUTER_API_KEY` |
 | Grok (xAI) | `xai` | `OpenAiResponse` | `XAI_API_KEY` |
 | Zai | `zai` | `OpenAiCompatible` | `ZAI_API_KEY` |
 | DeepSeek | `deepseek` | `OpenAiCompatible` | `DEEPSEEK_API_KEY` |
@@ -51,20 +53,22 @@ ante --provider anthropic --model claude-sonnet-5
 
 ### OpenAI
 
-| Model | Description |
-|---|---|
-| `gpt-5.5` | Latest flagship GPT model |
-| `gpt-5.5-pro` | Highest reliability on complex problems |
-| `gpt-5.4` | GPT-5.4 model |
-| `gpt-5.3-codex` | Frontier coding model |
-| `gpt-5-mini` | Faster, cheaper GPT-5 model |
-| `gpt-5-nano` | Smallest GPT-5 model |
+| Model | Description | Context |
+|---|---|---|
+| `gpt-5.6-sol` | GPT-5.6 flagship for complex reasoning and coding | 1.05M |
+| `gpt-5.6-terra` | GPT-5.6 balance of intelligence and cost | 1.05M |
+| `gpt-5.6-luna` | GPT-5.6 model for efficient, high-volume workloads | 1.05M |
+| `gpt-5.5-pro` | Highest reliability on complex problems | 400K |
+| `gpt-5.4-pro` | Highest reliability in the GPT-5.4 family | 400K |
+| `gpt-5.3-codex` | Frontier coding model | 400K |
+| `gpt-5.4-mini` | Faster, cheaper GPT-5.4 model | 400K |
+| `gpt-5.4-nano` | Smallest GPT-5.4 model | 400K |
 
 ```bash
-ante --provider openai --model gpt-5.5
+ante --provider openai --model gpt-5.6-sol
 ```
 
-The `openai-subscription` provider (ChatGPT/Codex OAuth) serves a smaller set — `gpt-5.5`, `gpt-5.4`, and `gpt-5.4-mini` — since the other GPT-5 ids aren't available on ChatGPT accounts.
+The `openai-subscription` provider (ChatGPT/Codex OAuth) serves a smaller set — `gpt-5.5`, `gpt-5.4`, and `gpt-5.4-mini` — since the other GPT ids aren't available on ChatGPT accounts.
 
 #### OpenAI transports
 
@@ -80,7 +84,7 @@ WebSocket mode keeps one connection open per session and continues each turn wit
 Opt in via the process-scoped env var (default is `http_sse`):
 
 ```bash
-ANTE_OPENAI_TRANSPORT=websocket_auto ante --provider openai --model gpt-5-mini
+ANTE_OPENAI_TRANSPORT=websocket_auto ante --provider openai --model gpt-5.4-mini
 ```
 
 Accepted values: `http_sse`, `websocket_auto`. Unknown values warn and fall back to `http_sse`.
@@ -104,6 +108,8 @@ Notes:
 |---|---|---|
 | `gemini-3.5-flash` | Gemini 3.5 Flash, agentic workflows | 1M |
 | `gemini-3.1-pro-preview` | Gemini 3.1 Pro with deep thinking | 1M |
+| `gemini-3.1-pro-preview-customtools` | Gemini 3.1 Pro optimized for custom tool usage | 1M |
+| `gemini-3.1-flash-lite` | Low-latency, cost-effective Gemini 3.1 model | 1M |
 
 ```bash
 ante --provider gemini --model gemini-3.1-pro-preview
@@ -111,12 +117,13 @@ ante --provider gemini --model gemini-3.1-pro-preview
 
 ### Grok (xAI)
 
-| Model | Description |
-|---|---|
-| `grok-4-latest` | Grok 4 |
+| Model | Description | Context |
+|---|---|---|
+| `grok-4.5` | Grok 4.5 with vision | 500K |
+| `grok-4-latest` | Grok 4 | 256K |
 
 ```bash
-ante --provider xai --model grok-4-latest
+ante --provider xai --model grok-4.5
 ```
 
 ### Zai
@@ -132,9 +139,14 @@ ante --provider zai --model glm-5.2
 
 ### Open Router
 
+Open Router ships as three providers sharing one API key, split by wire style: `openrouter` (OpenAI-compatible chat), `openrouter-responses` (OpenAI Responses), and `openrouter-anthropic` (Anthropic Messages).
+
+`openrouter`:
+
 | Model | Description | Context |
 |---|---|---|
 | `deepseek/deepseek-v4-flash` | DeepSeek V4 Flash | 1M |
+| `x-ai/grok-4.5` | Grok 4.5 via OpenRouter | 500K |
 | `qwen/qwen3.7-max` | Qwen3.7 Max | 1M |
 | `qwen/qwen3.7-plus` | Qwen3.7 Plus with vision | 1M |
 | `xiaomi/mimo-v2.5-pro` | MiMo-V2.5-Pro flagship agentic model | 1.05M |
@@ -145,10 +157,16 @@ ante --provider zai --model glm-5.2
 | `minimax/minimax-m3` | MiniMax M3 multimodal model | 512K |
 | `deepseek/deepseek-v4-pro` | DeepSeek V4 Pro | 1M |
 
-Open Router also accepts any model from its [full model list](https://openrouter.ai/models) by id.
+`openrouter-responses` serves the GPT family over the Responses API: `openai/gpt-5.6-sol`, `openai/gpt-5.6-terra`, `openai/gpt-5.6-luna` (1.05M context), plus `openai/gpt-5.5-pro`, `openai/gpt-5.4-pro`, `openai/gpt-5.3-codex`, `openai/gpt-5.4-mini`, and `openai/gpt-5.4-nano` (400K).
+
+`openrouter-anthropic` serves the Claude family over Anthropic Messages: `anthropic/claude-haiku-4.5` (200K context), plus `anthropic/claude-sonnet-5`, `anthropic/claude-sonnet-4.6`, `anthropic/claude-opus-4.8`, `anthropic/claude-opus-4.8-fast`, and `anthropic/claude-fable-5` (1M).
+
+Each provider also accepts any model from Open Router's [full model list](https://openrouter.ai/models) by id, as long as it speaks that provider's wire style.
 
 ```bash
 ante --provider openrouter --model deepseek/deepseek-v4-pro
+ante --provider openrouter-responses --model openai/gpt-5.6-sol
+ante --provider openrouter-anthropic --model anthropic/claude-fable-5
 ```
 
 ### DeepSeek
@@ -170,7 +188,6 @@ Set `DEEPSEEK_API_KEY`, and optionally `DEEPSEEK_BASE_URL`.
 |---|---|---|
 | `qwen3.5-plus` | Qwen 3.5 Plus with vision | 1M |
 | `qwen3.6-plus` | Latest Qwen 3.6 Plus with vision | 1M |
-| `kimi-k2.5` | Kimi K2.5 reasoning model with vision | 262K |
 | `glm-5.1` | GLM-5.1 model | 200K |
 | `MiniMax-M2.5` | MiniMax M2.5 model | 205K |
 | `qwen3-max-2026-01-23` | Qwen 3 Max snapshot | 1M |
@@ -215,12 +232,15 @@ Requires a [Coding Plan subscription](https://help.aliyun.com/zh/model-studio/co
 | `claude-haiku-4-5` | Fast and capable | 200K |
 | `claude-sonnet-4-6` | Fast and capable | 200K |
 | `claude-opus-4-8` | Most capable, slower | 200K |
+| `claude-fable-5` | Most capable Claude model | 1M |
 | `gpt-5.5` | Latest flagship GPT model | — |
 | `gpt-5.5-pro` | Highest reliability on complex problems | — |
 | `gpt-5.4` | Latest model powering Codex and Codex CLI | — |
+| `gpt-5.4-pro` | Highest reliability in the GPT-5.4 family | — |
 | `gpt-5.3-codex` | Coding-optimized Codex model | — |
 | `deepseek-v4-flash` | Fast DeepSeek V4 Flash | 1M |
 | `deepseek-v4-pro` | DeepSeek V4 Pro with deep thinking | 1M |
+| `glm-5.2` | Latest GLM-5.2 model | 1M |
 
 ```bash
 ante --provider antix --model claude-sonnet-4-6        # OAuth
@@ -281,7 +301,7 @@ A `providers` entry whose key matches a built-in (e.g. `openai`) patches that pr
           "description": "My fine-tuned model",
           "max_tokens": 32000,
           "context_limit": 200000,
-          "thinking": "Enabled"
+          "effort": "medium"
         }
       ]
     }
@@ -338,7 +358,7 @@ The same fields describe a model fully inside a provider's `preferred_models` (w
 | `max_tokens` | Maximum output tokens per turn. |
 | `stop_sequences` | List of strings that end generation. |
 | `context_limit` | Context window size, in tokens. |
-| `thinking` | Reasoning effort — `Disabled`, `Enabled`, `Deep`, or `Max`. |
+| `effort` | Default [effort level](/usage/models-and-thinking#effort) — `min`, `low`, `medium`, `high`, `xhigh`, or `max`. Omit for models with no reasoning knob (Ante then sends no effort parameter and hides the effort slider). |
 | `weight_class` | Size/cost tier — `Feather`, `Middle`, or `Heavy`. Drives automatic default and auxiliary model selection (see [Weight classes](#weight-classes)). |
 | `support_vision` | Whether the model accepts image input. When omitted, Ante infers it from the model id; an image read against a model with no vision support returns the image's metadata instead of its pixels. |
 
@@ -347,7 +367,7 @@ The `models` section patches a model by id wherever it is defined, layering on t
 ```json
 {
   "models": {
-    "claude-sonnet-4-6": { "thinking": "Deep", "max_tokens": 64000 }
+    "claude-sonnet-4-6": { "effort": "high", "max_tokens": 64000 }
   }
 }
 ```
@@ -386,9 +406,10 @@ These process env vars override catalog values for the session without editing t
 | `MODEL_TOP_P` | `top_p` |
 | `MODEL_MAX_TOKENS` | `max_tokens` |
 | `MODEL_CONTEXT_LIMIT` | `context_limit` |
-| `MODEL_THINKING` | `thinking` — accepts `none`, `enabled`, `deep`, or `max` |
 
-Several presets also honor a dedicated base-URL env var that takes precedence over `MODEL_BASE_URL`: `ANTHROPIC_BASE_URL`, `OPENAI_BASE_URL`, `OPENAI_COMPATIBLE_BASE_URL`, `DEEPSEEK_BASE_URL`.
+Effort has no env override — set it per run with the [`--effort` CLI flag](/reference/cli-reference#ante) or per model via the `effort` field.
+
+Several presets also honor a dedicated base-URL env var that takes precedence over `MODEL_BASE_URL`: `ANTHROPIC_BASE_URL`, `OPENAI_BASE_URL`, `OPENAI_COMPATIBLE_BASE_URL`, `OPENROUTER_BASE_URL`, `DEEPSEEK_BASE_URL`.
 
 ## Error handling
 

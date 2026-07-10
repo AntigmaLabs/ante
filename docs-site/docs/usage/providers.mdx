@@ -17,6 +17,8 @@ You can set your provider three ways, in order of precedence:
 
 Every provider id you can pass to `--provider` is listed in the [Catalog Reference](/reference/catalog-reference#built-in-providers).
 
+Mid-session, type `/providers` in the TUI: pick a connected provider, then confirm a model (and effort) from its scoped picker. Ante remembers the last model you used on each provider. See [Models, Providers & Effort](/usage/models-and-thinking#switching-providers).
+
 ## Authentication
 
 Most providers read an API key from an environment variable:
@@ -63,7 +65,7 @@ Most hosted endpoints are OpenAI-compatible. Register one with `wire_style: "Ope
           "description": "Kimi K2 on Together",
           "max_tokens": 16384,
           "context_limit": 128000,
-          "thinking": "Enabled"
+          "effort": "medium"
         }
       ]
     }
@@ -121,8 +123,8 @@ The `models` section patches a model by id without redefining it. Each field you
 ```json
 {
   "models": {
-    "claude-opus-4-8": { "thinking": "Max" },
-    "claude-sonnet-4-6": { "thinking": "Deep", "max_tokens": 64000 },
+    "claude-opus-4-8": { "effort": "max" },
+    "claude-sonnet-4-6": { "effort": "high", "max_tokens": 64000 },
     "gpt-5.5": { "temperature": 0.2 }
   }
 }

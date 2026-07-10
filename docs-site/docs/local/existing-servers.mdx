@@ -51,6 +51,16 @@ Bracketed IPv6 endpoint input is not supported in this dialog. Attach failures
 are shown in the offline-mode dialog after Ante probes `/health` and
 `/v1/models`.
 
+## Attaching while the model loads
+
+`llama-server` answers `503` from `/health` for the whole time its model is
+loading — seconds for a small model, minutes for a large one. Attaching during
+that window is fine: Ante recognizes the loading state, waits, and completes
+the attach automatically once the server turns ready. If the server dies
+mid-load Ante reports that instead, and the wait gives up after 10 minutes.
+This matters especially for Docker containers, whose "healthy" status can
+appear before the model has finished loading.
+
 ## Docker example
 
 This starts the official llama.cpp server image and exposes it to Ante on port

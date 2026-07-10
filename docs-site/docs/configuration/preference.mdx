@@ -28,9 +28,13 @@ Ante stores user preferences in `~/.ante/settings.json`:
     "padding": 1,
     "refresh_interval": 5
   },
-  "model_thinking": {
-    "claude-sonnet-4-6": "Enabled",
-    "gpt-5.4": "Deep"
+  "model_effort": {
+    "claude-sonnet-4-6": "medium",
+    "gpt-5.4": "high"
+  },
+  "provider_model": {
+    "anthropic": "claude-sonnet-4-6",
+    "openai": "gpt-5.6-sol"
   },
   "mcp_servers": {
     "filesystem": {
@@ -55,7 +59,8 @@ Ante stores user preferences in `~/.ante/settings.json`:
 | `resize_reflow` | Scrollback strategy on terminal resize: `conservative` (default) or `purge` (see below) |
 | `status_line` | Items to display in the TUI status line footer (see below) |
 | `status_line_command` | Shell command that renders a fully custom status line (see below). Takes precedence over `status_line` while set |
-| `model_thinking` | Per-model thinking level overrides — keys are model names, values are `Disabled` / `Enabled` / `Deep` / `Max` |
+| `model_effort` | Per-model [effort](/usage/models-and-thinking#effort) overrides — keys are model names, values are `min` / `low` / `medium` / `high` / `xhigh` / `max`. Written automatically when you move the effort slider in `/models` |
+| `provider_model` | Last model used per provider — a provider switch adopts this before falling back to the provider's default model. Written automatically on every model/provider selection |
 | `mcp_servers` | MCP servers to launch on session start (see [MCP Servers](/extend/mcp)) |
 
 ### Status line
@@ -68,11 +73,11 @@ The `status_line` field controls which items appear in the TUI's footer bar. It 
 | `provider` | Current provider |
 | `current-dir` | Current working directory |
 | `git-branch` | Current Git branch (omitted when unavailable) |
-| `thinking-level` | Current thinking level (omitted when disabled) |
+| `effort` | Current [effort level](/usage/models-and-thinking#effort) (omitted when thinking is disabled) |
 | `pr-link` | GitHub pull request link for the current branch (requires `gh`) |
 | `context-used` | Context-window usage, shown as `N% ctx` of the window remaining (omitted until known) |
 
-Default: `["model-name", "current-dir"]`. Configure via `~/.ante/settings.json` or the `/statusline` command in the TUI.
+Default: all items, in the order above. Configure via `~/.ante/settings.json` or the `/statusline` command in the TUI.
 
 ### Command-based status line
 
@@ -96,7 +101,7 @@ A plain string is accepted as shorthand: `"status_line_command": "echo hello"`.
 | `padding` | Extra horizontal padding in columns (default: `0`) |
 | `refresh_interval` | Also re-run every N seconds (minimum 1). Useful for clocks or external data. Omit to run only on session events |
 
-**How it works.** Ante pipes a JSON snapshot of the session to your command's stdin and displays whatever it prints to stdout. The command re-runs (debounced at 300ms) after each assistant message and whenever the model, provider, thinking mode, pull request, working directory, or terminal size changes. Runs are capped at 5 seconds, and a newer run cancels the one in flight.
+**How it works.** Ante pipes a JSON snapshot of the session to your command's stdin and displays whatever it prints to stdout. The command re-runs (debounced at 300ms) after each assistant message and whenever the model, provider, effort, pull request, working directory, or terminal size changes. Runs are capped at 5 seconds, and a newer run cancels the one in flight.
 
 The JSON input is a compatible subset of [Claude Code's statusline input](https://code.claude.com/docs/en/statusline), so existing Claude Code statusline scripts work unchanged:
 
@@ -119,7 +124,7 @@ The JSON input is a compatible subset of [Claude Code's statusline input](https:
 }
 ```
 
-`pr` is present only when an open pull request is detected for the current branch; `context_window` is present after the first response when the model's context limit is known, and reports the raw window size alongside used/remaining percentages using Claude Code's field names. `provider` is an Ante extension. The command also receives `COLUMNS` and `LINES` (current terminal size) and `ANTE_PROJECT_DIR` (nearest ancestor with `.git`) in its environment.
+`pr` is present only when an open pull request is detected for the current branch; `context_window` is present after the first response when the model's context limit is known, and reports the raw window size alongside used/remaining percentages using Claude Code's field names. `provider` is an Ante extension. The `thinking` key keeps Claude Code's schema even though Ante's knob is [effort](/usage/models-and-thinking#effort): `enabled` is `true` whenever the session's effort is above `min`. The command also receives `COLUMNS` and `LINES` (current terminal size) and `ANTE_PROJECT_DIR` (nearest ancestor with `.git`) in its environment.
 
 **Output.** Each line of stdout becomes a footer row (up to 8). ANSI colors and OSC 8 hyperlinks are rendered; color state carries across lines. Blank lines are dropped, and empty output renders a blank status line.
 
@@ -181,10 +186,10 @@ Settings can be overridden per-session via CLI flags.
 | `ANTHROPIC_BASE_URL` | Override the Anthropic base URL |
 | `OPENAI_BASE_URL` | Override the OpenAI base URL |
 | `OPENAI_COMPATIBLE_BASE_URL` | Override the base URL for the OpenAI Compatible provider |
+| `OPENROUTER_BASE_URL` | Override the Open Router base URL |
 | `DEEPSEEK_BASE_URL` | Override the DeepSeek base URL |
 | `MODEL_TEMPERATURE` | Override model temperature (float) |
 | `MODEL_TOP_P` | Override model top_p sampling parameter (float) |
-| `MODEL_THINKING` | Override thinking mode (`none`, `enabled`, `deep`, `max`). These map to the protocol-level values `Disabled`, `Enabled`, `Deep`, `Max` respectively |
 | `MODEL_MAX_TOKENS` | Override max output tokens (integer) |
 | `MODEL_CONTEXT_LIMIT` | Override max context window size (integer) |
 | `ANTE_LOCAL_PROVIDER_PORT` | Override the local provider port (default: 8080) |

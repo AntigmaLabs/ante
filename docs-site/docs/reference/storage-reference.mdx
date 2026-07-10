@@ -40,9 +40,12 @@ Stores user preferences. All fields are optional.
   "channel": "stable",
   "has_completed_onboarding": true,
   "status_line": ["model-name", "current-dir"],
-  "model_thinking": {
-    "claude-sonnet-4-6": "Enabled",
-    "gpt-5.4": "Deep"
+  "model_effort": {
+    "claude-sonnet-4-6": "medium",
+    "gpt-5.4": "high"
+  },
+  "provider_model": {
+    "anthropic": "claude-sonnet-4-6"
   },
   "mcp_servers": {
     "filesystem": {
@@ -71,7 +74,7 @@ Adds or overrides providers and models on top of the built-in catalog. Both top-
     }
   },
   "models": {
-    "claude-sonnet-4-6": { "thinking": "Deep", "max_tokens": 64000 }
+    "claude-sonnet-4-6": { "effort": "high", "max_tokens": 64000 }
   }
 }
 ```

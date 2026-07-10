@@ -33,6 +33,7 @@ Without `--prompt`, Ante starts the interactive TUI. With `--prompt`, Ante runs 
 |---|---|
 | `-m`, `--model <MODEL>` | Override the default model name. |
 | `--provider <PROVIDER>` | Override the API provider by catalog provider name. |
+| `--effort <LEVEL>` | Override the model's [effort level](/usage/models-and-thinking#effort) for this run: `min`, `low`, `medium`, `high`, `xhigh`, or `max`. |
 | `--yolo` | Skip tool approval prompts for the session. |
 | `--permission-mode <MODE>` | Override the permission mode for this run: `strict`, `auto`, or `yolo`. Conflicts with `--yolo`. |
 | `--system-prompt <PROMPT>` | Replace the default system prompt entirely. |
@@ -55,7 +56,8 @@ Without `--prompt`, Ante starts the interactive TUI. With `--prompt`, Ante runs 
 ante
 ante -p "explain what this project does"
 git diff | ante -p "review this diff for bugs"
-ante --provider openai --model gpt-5.5 -p "refactor the database module"
+ante --provider openai --model gpt-5.6-sol -p "refactor the database module"
+ante --effort max -p "find the race condition in the scheduler"
 ante --resume ses_01ARZ3NDEKTSV4RRFFQ69G5FAV -p "now add tests"
 ante -p "summarize this repo" --enable-auto-memory
 ```

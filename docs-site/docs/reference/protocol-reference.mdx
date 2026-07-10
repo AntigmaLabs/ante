@@ -69,7 +69,7 @@ Initialize a new session with model, provider, and configuration.
       "include_tools": null,
       "exclude_tools": null,
       "cwd": null,
-      "thinking": null,
+      "effort": null,
       "enable_auto_memory": null
     }
   },
@@ -89,7 +89,7 @@ Initialize a new session with model, provider, and configuration.
 | `include_tools` | `string[]?` | Whitelist — only these tools are available. Also gates dynamically registered (MCP) tools |
 | `exclude_tools` | `string[]?` | Blacklist — these tools are removed |
 | `cwd` | `string?` | Working directory. Defaults to daemon's process directory |
-| `thinking` | `Thinking?` | Thinking level override: `"Disabled"`, `"Enabled"`, `"Deep"`, or `"Max"` |
+| `effort` | `Effort?` | [Effort](/usage/models-and-thinking#effort) override: `"min"`, `"low"`, `"medium"`, `"high"`, `"xhigh"`, or `"max"`. `null` resolves from the catalog |
 | `enable_auto_memory` | `bool?` | Whether the agent records and recalls [auto-memory](/extend/memory). `null` leaves the daemon default (on for interactive sessions) |
 
 ### UpdateSession
@@ -100,7 +100,7 @@ Update the active session without restarting it (e.g. switch models or permissio
 {
   "op": {
     "UpdateSession": {
-      "model": { "name": "gpt-5.4", "temperature": 0.2 },
+      "model": { "id": "gpt-5.4", "temperature": 0.2, "effort": "high" },
       "permission_mode": "auto"
     }
   },
@@ -112,7 +112,7 @@ Update the active session without restarting it (e.g. switch models or permissio
 
 | Field | Type | Description |
 |---|---|---|
-| `model` | `ModelSpec?` | New model specification to use |
+| `model` | `ModelSpec?` | New model specification to use. Carries the whole request, `effort` included: a set `effort` overrides the catalog default; unset fields resolve from the catalog |
 | `permission_mode` | `PermissionMode?` | New permission mode (`"strict"`, `"auto"`, or `"yolo"`) |
 
 ### ResumeSession
@@ -239,7 +239,7 @@ Emitted when a session is initialized. Contains metadata about the active model,
 {
   "event": {
     "SessionStart": {
-      "model": { "name": "claude-sonnet-4-6", "max_tokens": 8192 },
+      "model": { "id": "claude-sonnet-4-6", "max_tokens": 8192 },
       "provider": "anthropic",
       "session_id": "ses_01ARZ...",
       "cwd": "/home/user/project",
@@ -267,7 +267,7 @@ Emitted when the active session is updated in place (e.g. model changed via `Upd
 {
   "event": {
     "SessionUpdated": {
-      "model": { "name": "gpt-5.4" },
+      "model": { "id": "gpt-5.4" },
       "provider": "openai",
       "session_id": "ses_01ARZ...",
       "cwd": "/home/user/project"

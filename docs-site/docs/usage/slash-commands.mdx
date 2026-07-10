@@ -16,7 +16,7 @@ Type `/` in the [interactive TUI](/usage/tui) to run built-in commands for commo
 | `/theme` | Open theme selection dialog |
 | `/diff` | Show git diff (including untracked files) |
 | `/connect` | Sign in with OAuth (API keys are detected automatically) |
-| `/model` | Select a model and connected provider |
+| `/models` | Select a model and effort level for the current provider |
 | `/providers` | Select an available provider for the current session |
 | `/offline-mode` | Run a local model with the built-in inference engine |
 | `/pty` | Toggle the embedded terminal panel (`Ctrl+P` to switch focus) |
@@ -36,5 +36,6 @@ Some commands are "visible" (appear in conversation history) and others are "sil
 
 ## Related
 
+- `/models` and `/providers` are two halves of one flow; see [Models, Providers & Effort](/usage/models-and-thinking).
 - `/goal` powers [goal-driven sessions](/usage/goal-sessions): keep working until a success condition is met.
 - `/resume` picks up a previous conversation; see [session resume](/usage/tui#session-resume).

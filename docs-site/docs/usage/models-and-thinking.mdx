@@ -1,26 +1,47 @@
 ---
-title: Models, Providers & Thinking
-sidebar_label: "Models & Thinking"
-description: "Switch models, toggle providers, and adjust thinking levels on the fly"
+title: Models, Providers & Effort
+sidebar_label: "Models & Effort"
+description: "Switch models, toggle providers, and adjust effort on the fly"
 ---
 
-# Models, Providers & Thinking
+# Models, Providers & Effort
 
-Ante lets you switch between models, providers, and reasoning levels mid-session — no restart needed.
+Ante lets you switch between models, providers, and effort levels mid-session — no restart needed. Two dialogs split the job: `/models` refines the model and effort within your current provider, and `/providers` switches providers.
 
 ## Selecting a model
 
-Type `/model` in the TUI to open the model selector. You'll see available models grouped by provider. Use the arrow keys to navigate and Enter to confirm.
+Type `/models` in the TUI to open the model selector. It lists the current provider's models (the title shows the scope, e.g. *Switch Model — Anthropic*). Use the arrow keys to pick a model, adjust the effort slider, and press Enter to confirm.
 
-<img src="/assets/cookbook/model.gif" alt="Selecting a model and provider with /model" style={{width: '100%', borderRadius: '8px', margin: '16px 0'}} />
+<img src="/assets/cookbook/model.gif" alt="Selecting a model and effort with /models" style={{width: '100%', borderRadius: '8px', margin: '16px 0'}} />
 
-From this same interface you can:
+Press `Tab` to hand off to the provider selector when you want to switch providers instead.
 
-- **Switch providers** — press `Tab` to toggle between Anthropic, OpenAI, Gemini, Grok, and more
-- **Adjust thinking budget** — for models that support extended thinking (like Claude with thinking), configure how much reasoning the model should do before responding
+## Switching providers
+
+Type `/providers` to list every provider with its connection state. Press Enter on a connected provider to drill into its model picker — the same model list and effort slider, preselecting the model you last used on that provider. The switch commits only when you confirm with Enter; `Esc` steps back to the provider list. Enter on an unconnected provider starts its sign-in flow instead (see [Providers](/usage/providers#authentication)).
+
+Ante remembers the last model you used on each provider, so hopping between providers puts you back where you left off.
+
+## Effort
+
+Effort is Ante's single knob for how hard the model reasons before responding, on a six-level scale:
+
+```
+min · low · medium · high · xhigh · max
+```
+
+`min` is the lowest effort the model supports — thinking is disabled where the model allows that; models with always-on reasoning clamp to their lowest level. Each provider maps the scale onto its native thinking or reasoning parameter, and providers that expose fewer levels round a requested effort down to the nearest supported one.
+
+In `/models`, effort is a slider under the model list with one tick per level the selected model actually supports — a model with four native levels shows four ticks, one with all six shows six. Models with no reasoning knob show no slider.
+
+Your effort choice is remembered per model in `~/.ante/settings.json`, and you can pin it for a run from the CLI:
+
+```bash
+ante --effort high
+```
 
 :::tip
-You can also set your default model and provider via CLI flags: `ante --provider openai --model gpt-5.5`, or configure defaults in your [preferences](/configuration/preference).
+You can also set your default model and provider via CLI flags: `ante --provider openai --model gpt-5.6-sol`, or configure defaults in your [preferences](/configuration/preference).
 :::
 
 If you pick a provider without naming a model, Ante starts you on that provider's most capable model and quietly uses a lighter, cheaper one for background work like summarizing fetched web pages — see [weight classes](/reference/catalog-reference#weight-classes). Vision-capable models are detected automatically, so you can drop images straight into the chat.
