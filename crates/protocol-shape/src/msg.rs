@@ -294,6 +294,9 @@ pub struct SessionInitialized {
 /// matching `Session` setter.
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]
 pub struct SessionUpdate {
+    /// Model change, taking effect on the next turn. The spec carries the
+    /// whole request, `effort` included: a set `effort` overrides the
+    /// catalog default; unset fields resolve from the catalog.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub model: Option<ModelSpec>,
     /// Permission mode change. Applied via the non-aborting `set_permission_mode`
@@ -301,11 +304,6 @@ pub struct SessionUpdate {
     /// in-flight one.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub permission_mode: Option<PermissionMode>,
-    /// Effort change for the session's model. Applied after any `model` change
-    /// in the same update, and non-aborting like `permission_mode`: it takes
-    /// effect on the next turn.
-    #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub effort: Option<Effort>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -744,9 +742,12 @@ mod tests {
     #[test]
     fn session_update_op_serde_roundtrip() {
         let op = Op::UpdateSession(SessionUpdate {
-            model: Some(ModelSpec { temperature: Some(0.2), ..model_spec("gpt-5.4") }),
+            model: Some(ModelSpec {
+                temperature: Some(0.2),
+                effort: Some(super::Effort::High),
+                ..model_spec("gpt-5.4")
+            }),
             permission_mode: Some(PermissionMode::Yolo),
-            effort: Some(super::Effort::High),
         });
 
         let json = serde_json::to_string(&op).expect("serialize UpdateSession");
@@ -757,9 +758,10 @@ mod tests {
             Op::UpdateSession(SessionUpdate {
                 model: Some(model),
                 permission_mode: Some(PermissionMode::Yolo),
-                effort: Some(super::Effort::High),
             })
-                if model.id == "gpt-5.4" && model.temperature == Some(0.2)
+                if model.id == "gpt-5.4"
+                    && model.temperature == Some(0.2)
+                    && model.effort == Some(super::Effort::High)
         ));
     }
 
