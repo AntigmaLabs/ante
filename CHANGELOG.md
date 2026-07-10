@@ -1,5 +1,14 @@
 # Changelog
 
+## v0.preview.56 - 2026-07-10
+
+- Unify model thinking controls as a six-level Effort scale across providers, the CLI, sessions, and eval reporting
+- Redesign `/providers` and `/models` with provider-scoped model lists, an effort slider, two-step provider switching, and remembered model preferences
+- Add GPT-5.6 Sol, Terra, and Luna to the OpenAI API and OpenRouter Responses catalogs
+- Wait for loading llama-compatible servers when attaching offline mode instead of reporting them as unavailable
+- Serialize session snapshot writes so older state cannot overwrite newer state
+- Dependency updates
+
 ## v0.preview.55 - 2026-07-09
 
 - Add offline-mode attachment to existing local llama-compatible servers, with broader localhost detection, `/v1/models` validation, retryable attach errors, UTF-8-safe input, and corrected external-server state handling
