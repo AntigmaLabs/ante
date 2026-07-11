@@ -202,6 +202,13 @@ pub enum TurnEndStatus {
         reason: Option<String>,
     },
     Error {
+        /// Stable machine-readable LLM error kind. Absent for non-LLM errors
+        /// and events produced by older daemons. Notably `"oauth"` means the
+        /// provider's sign-in is missing, expired, or revoked, and only
+        /// re-authenticating can recover; clients may offer their sign-in
+        /// flow for the session's provider.
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        kind: Option<String>,
         /// One-line summary. For a classified LLM failure this is the semantic
         /// error kind, e.g. "rate limited"; otherwise the top of the error chain.
         headline: String,
@@ -603,6 +610,32 @@ mod tests {
             support_vision: None,
             weight_class: None,
         }
+    }
+
+    #[test]
+    fn turn_end_error_kind_is_optional_on_the_wire() {
+        // Payloads from daemons predating the field still deserialize.
+        let old: super::TurnEndStatus = serde_json::from_value(serde_json::json!({
+            "Error": { "headline": "authentication error", "details": [] }
+        }))
+        .unwrap();
+        let super::TurnEndStatus::Error { kind, .. } = &old else {
+            panic!("expected Error variant");
+        };
+        assert!(kind.is_none());
+
+        // None is skipped, not emitted as null.
+        let json = serde_json::to_value(&old).unwrap();
+        assert!(json["Error"].get("kind").is_none());
+
+        // Some round-trips.
+        let with = super::TurnEndStatus::Error {
+            kind: Some("oauth".to_string()),
+            headline: "OAuth sign-in required".to_string(),
+            details: vec![],
+        };
+        let json = serde_json::to_value(&with).unwrap();
+        assert_eq!(json["Error"]["kind"], "oauth");
     }
 
     #[test]
