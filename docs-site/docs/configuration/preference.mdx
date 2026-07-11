@@ -20,6 +20,7 @@ Ante stores user preferences in `~/.ante/settings.json`:
   "has_completed_onboarding": true,
   "ambient_prompt_suggestion": true,
   "ambient_thinking_phrase": true,
+  "tips": true,
   "channel": "stable",
   "resize_reflow": "conservative",
   "status_line": ["model-name", "current-dir"],
@@ -55,6 +56,7 @@ Ante stores user preferences in `~/.ante/settings.json`:
 | `has_completed_onboarding` | Whether the onboarding flow has been completed |
 | `ambient_prompt_suggestion` | Whether the TUI shows a [next-prompt suggestion](/usage/tui#next-prompt-suggestion) as ghost text after a turn. On unless set to `false` |
 | `ambient_thinking_phrase` | Whether the TUI predicts a [task-specific spinner phrase](/usage/tui#spinner-thinking-phrase) while you type. On unless set to `false` |
+| `tips` | Whether the TUI shows a [tip line](/usage/tui#spinner-tips) under the spinner while the agent works. On unless set to `false` |
 | `channel` | Release channel `ante update` tracks (`stable` or `nightly`). Defaults to `stable`; legacy `latest` values are treated as `stable`. See [Update & Channels](/start/update). |
 | `resize_reflow` | Scrollback strategy on terminal resize: `conservative` (default) or `purge` (see below) |
 | `status_line` | Items to display in the TUI status line footer (see below) |
