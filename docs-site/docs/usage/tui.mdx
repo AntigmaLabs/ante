@@ -183,6 +183,19 @@ The prediction is generated off the critical path on the cheapest available mode
 
 While you type a longer prompt, Ante predicts a short, task-specific phrase and uses it as the spinner label for that turn instead of the generic rotating messages. Like the next-prompt suggestion, it runs best-effort on the cheapest model off the critical path, and alarming or destructive words are filtered out of the phrase. On by default; disable with `"ambient_thinking_phrase": false` in `~/.ante/settings.json`.
 
+## Spinner tips
+
+While the agent works, Ante shows a short tip under the spinner pointing at a feature you might not have discovered yet:
+
+```
+◆ Thinking
+  └─ Tip: Press ctrl+r to search your prompt history.
+```
+
+Tips come from a small curated list (features, keyboard shortcuts, workflow habits) — no model call is involved. Selection is deterministic: the least recently shown eligible tip wins, each tip has a cooldown measured in app restarts so it doesn't repeat session after session, and a tip shown once stays quiet for the rest of that session. The tip appears when the turn starts, stays until the turn ends, and never enters the transcript.
+
+On by default; disable with `"tips": false` in `~/.ante/settings.json`. Show history lives in `~/.ante/tip_history.json` — delete it to reset the rotation.
+
 ## CLI flags for TUI mode
 
 ```bash
