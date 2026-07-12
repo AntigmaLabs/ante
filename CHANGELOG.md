@@ -1,5 +1,15 @@
 # Changelog
 
+## v0.preview.57 - 2026-07-12
+
+- Persist Shift+Tab-selected permission modes as the default for new sessions while keeping Yolo session-only
+- Add curated contextual tips beneath the working spinner, with cooldowns and an opt-out setting
+- Fix turns that could hang after the model completed by stopping stream collection at `MessageStop`
+- Improve LLM error recovery with structured error kinds, actionable `/connect` guidance for expired OAuth, bare 403 classification, and FastAPI detail parsing
+- Unify theme picker state and open paths to prevent stale selections and conflicting modal transitions
+- Improve Harbor eval correctness and efficiency with accurate parallel tool-call grouping, persisted effective flags, single-turn ad hoc runs, native result rendering, and batched archive reads
+- Fix and centralize the production telemetry contract
+
 ## v0.preview.56 - 2026-07-10
 
 - Unify model thinking controls as a six-level Effort scale across providers, the CLI, sessions, and eval reporting
