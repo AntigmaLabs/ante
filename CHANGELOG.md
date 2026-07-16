@@ -1,5 +1,18 @@
 # Changelog
 
+## v0.preview.58 - 2026-07-15
+
+- Add a `/config` settings dialog to the TUI
+- Fall back to `CLAUDE.md` for project instructions when no `AGENTS.md` exists
+- Fix persisted model effort restoration and ambient settings drift
+- Preserve parse error details when loading user model catalogs
+- Render agent output text in the theme foreground color
+- Improve session shutdown reliability by cancelling and draining background session tasks before the session ends
+- Unify TUI state ownership across modals, pickers, the status line, and terminal size to prevent stale rendering after resizes and modal transitions
+- Update the pinned offline `llama.cpp` engine to build b9986
+- Remove a stale xAI model catalog alias
+- Refresh the mascot logo pixel art
+
 ## v0.preview.57 - 2026-07-12
 
 - Persist Shift+Tab-selected permission modes as the default for new sessions while keeping Yolo session-only
