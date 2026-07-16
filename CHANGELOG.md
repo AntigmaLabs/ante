@@ -1,5 +1,13 @@
 # Changelog
 
+## v0.preview.59 - 2026-07-16
+
+- Add a `--no-session-save` CLI flag that skips session event logs and resumable snapshots for TUI and headless sessions, and propagates to subagents
+- Add a `--short-prompt` option (CLI flag and `settings.json`) that uses compact tool descriptions to shrink the system prompt
+- Add xAI Grok 4.5 support to Antix
+- Support GPT-5.6 on OpenAI subscriptions
+- Dependency updates
+
 ## v0.preview.58 - 2026-07-15
 
 - Add a `/config` settings dialog to the TUI
