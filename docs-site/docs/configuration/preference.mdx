@@ -5,7 +5,11 @@ description: "Settings file, environment variables, and directory structure"
 
 ## Settings file
 
-Ante stores user preferences in `~/.ante/settings.json`:
+Ante stores user preferences in `~/.ante/settings.json`.
+
+Most of these settings can also be viewed and changed interactively with the `/config` command in the TUI — a searchable settings dialog with in-place toggles (tips, ambient predictions, resize reflow, default permission mode, update channel) and shortcuts into the dedicated dialogs (theme, model, provider, status line, MCP servers, offline mode). Changes are persisted to `settings.json` immediately; settings consumed at startup, such as `resize_reflow`, are marked "(next session)" in the dialog and take effect on the next session.
+
+An example `settings.json`:
 
 ```json
 {
@@ -190,6 +194,7 @@ Settings can be overridden per-session via CLI flags.
 | `OPENAI_COMPATIBLE_BASE_URL` | Override the base URL for the OpenAI Compatible provider |
 | `OPENROUTER_BASE_URL` | Override the Open Router base URL |
 | `DEEPSEEK_BASE_URL` | Override the DeepSeek base URL |
+| `ANTIX_BASE_URL` | Override the Antix base URL |
 | `MODEL_TEMPERATURE` | Override model temperature (float) |
 | `MODEL_TOP_P` | Override model top_p sampling parameter (float) |
 | `MODEL_MAX_TOKENS` | Override max output tokens (integer) |
@@ -213,10 +218,13 @@ Settings can be overridden per-session via CLI flags.
 └── agents/            # User-level sub-agents
 ```
 
+When `~/.ante/AGENTS.md` doesn't exist, Ante falls back to `~/.claude/CLAUDE.md` for global instructions, so Claude Code setups work without migration. Only one file is read — an existing `AGENTS.md` (even an empty one) always wins.
+
 ### Project-level
 
 ```
 AGENTS.md              # Project instructions
+CLAUDE.md              # Project instructions (fallback when no AGENTS.md)
 
 .ante/
 ├── skills/            # Project-specific skills
@@ -230,6 +238,8 @@ AGENTS.md              # Project instructions
 ├── skills/            # Project-specific skills (Claude Code compatibility)
 └── agents/            # Project-specific sub-agents (Claude Code compatibility)
 ```
+
+Project instructions are found by walking up from the working directory: in each ancestor directory Ante checks `AGENTS.md` first, then `CLAUDE.md`, and the first directory containing either wins. A directory with both reads only `AGENTS.md` — `CLAUDE.md` is a fallback, never a second source.
 
 ### Project memory (`~/.ante/projects/`)
 

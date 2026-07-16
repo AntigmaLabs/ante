@@ -16,6 +16,13 @@ Ante reads two instruction files when the first user message in a session is sub
 
 The global path follows `ANTE_HOME`, so if you set `ANTE_HOME=/path/to/ante-home`, the global file is `/path/to/ante-home/AGENTS.md`.
 
+### CLAUDE.md fallback
+
+For zero-setup compatibility with Claude Code, each level falls back to a `CLAUDE.md` when no `AGENTS.md` exists — one file per level, never both:
+
+- **Project**: Ante walks up from the working directory; in each ancestor it checks `AGENTS.md`, then `CLAUDE.md`. The first directory containing either wins, and a directory with both reads only `AGENTS.md`.
+- **Global**: `~/.ante/AGENTS.md`, falling back to `~/.claude/CLAUDE.md` only when the Ante file doesn't exist. An existing (even empty) `~/.ante/AGENTS.md` suppresses the fallback.
+
 ## How Ante applies instructions
 
 If both files exist, Ante includes them in one reminder block, with the global file first and the project file second. Empty files are ignored. If the global and project paths resolve to the same file, Ante includes it once.
