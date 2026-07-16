@@ -374,6 +374,8 @@ pub struct SessionOverrides {
     pub effort: Option<Effort>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub enable_auto_memory: Option<bool>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub short_prompt: Option<bool>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
@@ -676,6 +678,17 @@ mod tests {
         let parsed: super::SessionOverrides =
             serde_json::from_value(serde_json::json!({})).unwrap();
         assert_eq!(parsed.effort, None);
+    }
+
+    #[test]
+    fn short_prompt_round_trips_and_defaults_to_unset() {
+        let parsed: super::SessionOverrides =
+            serde_json::from_value(serde_json::json!({"short_prompt": true})).unwrap();
+        assert_eq!(parsed.short_prompt, Some(true));
+
+        let parsed: super::SessionOverrides =
+            serde_json::from_value(serde_json::json!({})).unwrap();
+        assert_eq!(parsed.short_prompt, None);
     }
 
     #[test]
