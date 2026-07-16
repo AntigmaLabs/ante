@@ -38,6 +38,7 @@ Without `--prompt`, Ante starts the interactive TUI. With `--prompt`, Ante runs 
 | `--permission-mode <MODE>` | Override the permission mode for this run: `strict`, `auto`, or `yolo`. Conflicts with `--yolo`. |
 | `--system-prompt <PROMPT>` | Replace the default system prompt entirely. |
 | `--append-system-prompt <TEXT>` | Append content to the default system prompt. |
+| `--short-prompt` | Use shorter built-in tool descriptions for this run, shrinking the system prompt. Persist the default with the `short_prompt` [setting](/configuration/preference). |
 | `--enable-auto-memory` | Enable auto-memory for this run. Conflicts with `--disable-auto-memory`. |
 | `--disable-auto-memory` | Disable auto-memory for this run. Conflicts with `--enable-auto-memory`. |
 | `--include-tools <TOOLS>...` | Only allow these tools. Values are space-separated. `--tools` is a short alias; `--allowed-tools` is a deprecated alias that still works but prints a warning. |
@@ -46,6 +47,7 @@ Without `--prompt`, Ante starts the interactive TUI. With `--prompt`, Ante runs 
 | `-p`, `--prompt <PROMPT>` | Prompt to run in headless mode. Also supports stdin when piped. |
 | `--check` | Run a verification pass after the headless task completes. |
 | `-r`, `--resume <SESSION_ID>` | Resume a previous session by ID. |
+| `--no-session-save` | Do not save the session transcript or resumable snapshot. Conflicts with `--resume`. |
 | `--offline-model <PATH>` | Path to a local GGUF model file for offline inference. |
 | `-h`, `--help` | Print command help. |
 | `-V`, `--version` | Print the Ante version. |

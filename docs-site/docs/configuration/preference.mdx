@@ -25,6 +25,7 @@ An example `settings.json`:
   "ambient_prompt_suggestion": true,
   "ambient_thinking_phrase": true,
   "tips": true,
+  "short_prompt": false,
   "channel": "stable",
   "resize_reflow": "conservative",
   "status_line": ["model-name", "current-dir"],
@@ -55,12 +56,13 @@ An example `settings.json`:
 | `model` | Default model name |
 | `provider` | Default API provider |
 | `theme` | TUI color theme |
-| `permission_mode` | Default permission mode (`strict`, `auto`, or `yolo`). Unrecognized values are ignored rather than failing the whole file |
+| `permission_mode` | Default permission mode (`strict`, `auto`, or `yolo`). `strict` and `auto` are written automatically when you cycle modes with **Shift+Tab** in the TUI; `yolo` remains session-only. Unrecognized values are ignored rather than failing the whole file |
 | `permissions` | Persistent tool permission rules, grouped by `allow`, `ask`, and `deny` matchers (see [Permissions](/configuration/permission)) |
 | `has_completed_onboarding` | Whether the onboarding flow has been completed |
 | `ambient_prompt_suggestion` | Whether the TUI shows a [next-prompt suggestion](/usage/tui#next-prompt-suggestion) as ghost text after a turn. On unless set to `false` |
 | `ambient_thinking_phrase` | Whether the TUI predicts a [task-specific spinner phrase](/usage/tui#spinner-thinking-phrase) while you type. On unless set to `false` |
 | `tips` | Whether the TUI shows a [tip line](/usage/tui#spinner-tips) under the spinner while the agent works. On unless set to `false` |
+| `short_prompt` | Use shorter built-in tool descriptions to shrink the system prompt, for new and resumed sessions. Off unless set to `true`; the `--short-prompt` CLI flag enables it for a single run |
 | `channel` | Release channel `ante update` tracks (`stable` or `nightly`). Defaults to `stable`; legacy `latest` values are treated as `stable`. See [Update & Channels](/start/update). |
 | `resize_reflow` | Scrollback strategy on terminal resize: `conservative` (default) or `purge` (see below) |
 | `status_line` | Items to display in the TUI status line footer (see below) |

@@ -33,7 +33,7 @@ ante --yolo "run cargo clippy and fix all warnings"
 ante --permission-mode auto "update docs and run tests"
 ```
 
-In the TUI, press **Shift+Tab** to cycle the mode live: `strict` → `auto` → `yolo` → `strict`. The change applies to the next turn without disturbing an in-flight one.
+In the TUI, press **Shift+Tab** to cycle the mode live: `strict` → `auto` → `yolo` → `strict`. The change applies immediately, including to later tool calls in a turn that is already running. Cycling to `strict` or `auto` also saves that mode as the default in `~/.ante/settings.json`; cycling to `yolo` is session-only, so future sessions do not silently start with permission checks off.
 
 :::warning
 In headless mode, `yolo` mode is implied — all tools are auto-approved since there is no interactive prompt.

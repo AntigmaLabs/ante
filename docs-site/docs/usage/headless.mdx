@@ -48,13 +48,15 @@ ante [OPTIONS] [--prompt <PROMPT>]
 | `--provider <PROVIDER>` | Override the API provider (e.g. `anthropic`, `openai`, `gemini`, `xai`, `openrouter`, `local`) |
 | `--effort <LEVEL>` | Override the model's [effort level](/usage/models-and-thinking#effort): `min`, `low`, `medium`, `high`, `xhigh`, or `max` |
 | `--yolo` | Skip all tool approval prompts |
-| `--permission-mode <MODE>` | Override the permission mode: `strict`, `auto`, or `yolo` |
+| `--permission-mode <MODE>` | Accepted for CLI compatibility, but headless runs always use `yolo` because there is no interactive approval prompt |
 | `--output-format <FORMAT>` | Output format: `json`, `human`, `minimal` (default: `minimal`) |
 | `--system-prompt <PROMPT>` | Replace the default system prompt entirely |
 | `--append-system-prompt <TEXT>` | Append text to the system prompt |
+| `--short-prompt` | Use shorter built-in tool descriptions to shrink the system prompt |
 | `--include-tools <TOOLS>...` | Only allow these tools (space-separated). Deprecated alias: `--allowed-tools` (still works, prints a warning) |
 | `--exclude-tools <TOOLS>...` | Disallow these tools (space-separated). Deprecated alias: `--disallowed-tools` (still works, prints a warning) |
 | `-r`, `--resume <SESSION_ID>` | Resume a previously saved session by its ID |
+| `--no-session-save` | Skip session persistence — no transcript or resumable snapshot is written. Conflicts with `--resume` |
 | `--check` | Run a verification pass after the main task completes |
 | `--offline-model <PATH>` | Path to a local GGUF file. Boots a local llama-server, points the session at the `local` provider, and tears it down on exit |
 
@@ -117,6 +119,8 @@ ante --resume ses_01ARZ3NDEKTSV4RRFFQ69G5FAV -p "now add tests"
 ```
 
 The session ID is printed when a TUI session exits (`Resume this session with: ante --resume ses_...`).
+
+Sessions started with `--no-session-save` are never persisted, so they cannot be resumed later.
 
 ## Examples
 
