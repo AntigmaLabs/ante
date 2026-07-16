@@ -1,0 +1,3 @@
+# Docusaurus content is documentation, not implementation code.
+docs-site/docs/** linguist-documentation=true
+docs-site/i18n/** linguist-documentation=true
