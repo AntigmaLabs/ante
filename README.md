@@ -61,6 +61,7 @@ The three are one design decision. An agent you can **verify**, **afford**, and 
 - **Client-daemon architecture** — Run as an interactive TUI, headless CLI, or long-lived server (`ante serve`).
 - **Channel integrations** — Run Ante as a Slack or Discord bot with `ante gateway`.
 - **Multi-agent orchestration** — Spawn sub-agents and coordinate complex tasks across independent, decentralized, and centralized architectures. [See the patterns →](https://docs.antigma.ai/experimental/agent-org)
+- **ACP server** — Expose Ante over the [Agent Communication Protocol](https://agentcommunicationprotocol.dev) with `ante acp`. REST API with sync, async, and SSE streaming modes for multi-agent orchestration and programmatic integration. [Docs →](https://docs.antigma.ai/usage/acp-server)
 - **Extensible** — Custom skills, sub-agents, MCP, and persistent memory across sessions.
 
 ## Quick Start
@@ -197,6 +198,9 @@ ante update --version v0.preview.33
 │                                                             │
 │   Anthropic · OpenAI · Gemini · Grok · Open Router · Local  │
 └─────────────────────────────────────────────────────────────┘
+
+Note: `ante acp` exposes the same agent over ACP (REST + SSE),
+making it accessible to other agents and orchestration platforms.
 ```
 
 ## Supported Providers

@@ -108,7 +108,7 @@ const sidebars: SidebarsConfig = {
       label: 'Programmatic Usage',
       className: 'sidebar-section sidebar-section--api',
       collapsed: true,
-      items: ['usage/headless', 'usage/serve', 'usage/gateway'],
+      items: ['usage/headless', 'usage/serve', 'usage/acp-server', 'usage/gateway'],
     },
     {
       type: 'category',
