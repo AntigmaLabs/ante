@@ -11,7 +11,7 @@ impl Id {
     pub const PREFIX_SIZE: usize = 4;
 
     pub fn new<S: AsRef<str>>(id: S) -> Self {
-        Self { prefix: Self::clamp_prefix(id), id: Ulid::new() }
+        Self { prefix: Self::clamp_prefix(id), id: Ulid::generate() }
     }
 
     fn clamp_prefix<S: AsRef<str>>(id: S) -> [u8; Self::PREFIX_SIZE] {
