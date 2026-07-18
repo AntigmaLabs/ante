@@ -1,5 +1,17 @@
 # Changelog
 
+## v0.preview.60 - 2026-07-17
+
+- Reconnect and resume when an LLM stream dies mid-response — even before any answer text has arrived — instead of ending the turn with an error
+- Fail streams that end without a proper stop signal as retryable instead of hanging the turn
+- Honor server `Retry-After` hints, rebalance retry budgets toward the visible reconnect layer, and log every retry decision
+- Add Kimi K3 support to Antix and the OpenRouter model catalog
+- Add Meta Muse Spark 1.1 to the OpenRouter model catalog
+- Add a `short_prompt` toggle to the `/config` dialog
+- Show effort next to the model in the default status line order
+- Scroll the status line picker on short terminals instead of clipping items, and hint that Claude Code-compatible `status_line_command` scripts are supported
+- Exit cleanly when stdout closes mid-output (e.g. when piping into `head`)
+
 ## v0.preview.59 - 2026-07-16
 
 - Add a `--no-session-save` CLI flag that skips session event logs and resumable snapshots for TUI and headless sessions, and propagates to subagents
