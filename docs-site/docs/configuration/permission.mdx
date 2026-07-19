@@ -95,7 +95,7 @@ At an approval prompt you can approve a call in three ways:
 - **Yes, allow … for this session** — add a temporary grant for the rest of the run. It overrides `ask`/`allow` rules and tool defaults but never a `deny`, and disappears when the session ends.
 - **Yes, always allow … (save to settings)** — also append the matcher to `permissions.allow` in `~/.ante/settings.json` so it applies in future sessions.
 
-The grant is scoped, not blanket. A single approved Bash command generalizes to a **two-token prefix** so the next sibling call doesn't re-prompt — approving `cargo test -p foo` grants `Bash(cargo test *)`. Commands the dangerous classifier flags (e.g. `rm -rf build`), commands whose second token is a flag (`ls -la`), and multi-stage sequences (`git add -A && git commit -m wip`) stay scoped to the **exact command** instead of widening. `Agent`, `Read`, and `Edit` scope to their primary argument (sub-agent type or file path); tools without a known primary argument grant by name.
+The grant is scoped, not blanket. A single approved Bash command generalizes to a **two-token prefix** so the next sibling call doesn't re-prompt — approving `cargo test -p foo` grants `Bash(cargo test *)`. Commands the dangerous classifier flags (e.g. `rm -rf build`), commands whose second token is a flag (`ls -la`), and multi-stage sequences (`git add -A && git commit -m wip`) stay scoped to the **exact command** instead of widening. `Agent`, `Read`, `Edit`, and `Write` scope to their primary argument (sub-agent type or file path); tools without a known primary argument grant by name.
 
 Grants are subsumption-aware: a narrower grant already covered by a broader one is dropped, and approving a broader grant absorbs the redundant narrower ones — so repeatedly approving `cargo test …` calls collapses to a single `Bash(cargo test *)` rule rather than piling up.
 
@@ -131,6 +131,9 @@ Only tools with a known primary argument support scoped matchers; any other tool
 | `Agent` | `subagent_type` |
 | `Read` | `file_path` (or `path`) |
 | `Edit` | `file_path` |
+| `Write` | `file_path` |
+
+For file tools, Ante normalizes the call-side path before matching permission rules: one layer of wrapping quotes is stripped, `~` is expanded, and lexical `.` / `..` segments are resolved. A rule such as `Deny(Read(/tmp/secret*))` therefore applies to equivalent spellings like `Read("~/../tmp/secret.txt")` after expansion. Rule specifiers are still glob patterns exactly as written; only the tool call argument is normalized.
 
 ### Glob syntax
 
