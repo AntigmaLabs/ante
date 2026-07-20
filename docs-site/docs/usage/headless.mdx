@@ -50,7 +50,8 @@ ante [OPTIONS] [--prompt <PROMPT>]
 | `--yolo` | Skip all tool approval prompts |
 | `--permission-mode <MODE>` | Accepted for CLI compatibility, but headless runs always use `yolo` because there is no interactive approval prompt |
 | `--output-format <FORMAT>` | Output format: `json`, `human`, `minimal` (default: `minimal`) |
-| `--system-prompt <PROMPT>` | Replace the default system prompt entirely |
+| `--system-prompt <PROMPT>` | Replace the default system prompt entirely. Conflicts with `--system-prompt-file` |
+| `--system-prompt-file <PATH>` | Read the replacement system prompt from a UTF-8 file. Conflicts with `--system-prompt` |
 | `--append-system-prompt <TEXT>` | Append text to the system prompt |
 | `--short-prompt` | Use shorter built-in tool descriptions to shrink the system prompt |
 | `--include-tools <TOOLS>...` | Only allow these tools (space-separated). Deprecated alias: `--allowed-tools` (still works, prints a warning) |

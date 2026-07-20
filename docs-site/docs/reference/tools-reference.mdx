@@ -9,7 +9,11 @@ Tools are the capabilities available to the agent during a session. Some tools r
 
 ### Read
 
-Read text files, images, and PDFs. When the active model has no vision support, reading an image returns its metadata (type and dimensions) instead of the image itself, so the agent knows the file exists and can inspect it programmatically.
+Read text files, images, and PDFs. Long lines are returned in full rather than clipped.
+
+PDFs are processed client-side — pages are rendered locally and their embedded text extracted, with no network round-trip — and reads are bounded to a page range so large documents can be read in chunks.
+
+When the active model has no vision support, reading an image returns its metadata (type and dimensions) instead of the image itself, so the agent knows the file exists and can inspect it programmatically.
 
 ### Write
 
@@ -45,7 +49,7 @@ Track progress on multi-step work with a task list.
 
 ### WebFetch
 
-Fetch a URL, convert it to markdown, and have a small model extract what's relevant. Requires approval.
+Fetch a URL, convert it to markdown, and have a small model extract what's relevant. An oversized response is spilled to a local cache file the agent can read in slices, instead of being truncated. Requires approval.
 
 ### WebSearch
 

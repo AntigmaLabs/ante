@@ -36,7 +36,8 @@ Without `--prompt`, Ante starts the interactive TUI. With `--prompt`, Ante runs 
 | `--effort <LEVEL>` | Override the model's [effort level](/usage/models-and-thinking#effort) for this run: `min`, `low`, `medium`, `high`, `xhigh`, or `max`. |
 | `--yolo` | Skip tool approval prompts for the session. |
 | `--permission-mode <MODE>` | Override the permission mode for this run: `strict`, `auto`, or `yolo`. Conflicts with `--yolo`. |
-| `--system-prompt <PROMPT>` | Replace the default system prompt entirely. |
+| `--system-prompt <PROMPT>` | Replace the default system prompt entirely. Conflicts with `--system-prompt-file`. |
+| `--system-prompt-file <PATH>` | Read the replacement system prompt from a UTF-8 file. Conflicts with `--system-prompt`. |
 | `--append-system-prompt <TEXT>` | Append content to the default system prompt. |
 | `--short-prompt` | Use shorter built-in tool descriptions for this run, shrinking the system prompt. Persist the default with the `short_prompt` [setting](/configuration/preference). |
 | `--enable-auto-memory` | Enable auto-memory for this run. Conflicts with `--disable-auto-memory`. |
