@@ -1,5 +1,21 @@
 # Changelog
 
+## v0.preview.61 - 2026-07-19
+
+### Added
+- Client-side PDF reads: page rendering, text extraction, and page bounding
+- CLI option to load a system prompt from a file
+- WebFetch spills oversized responses to a cache file instead of truncating
+
+### Changed
+- Corrective tool errors and no line clipping in Read
+- Lenient tool path resolution and normalized permission matching
+- TUI rendering performance and composer text contrast improvements
+
+### Fixed
+- Fall back to a usable provider instead of localhost for unknown provider ids
+- Bound PDF render dimensions against hostile input
+
 ## v0.preview.60 - 2026-07-17
 
 - Reconnect and resume when an LLM stream dies mid-response — even before any answer text has arrived — instead of ending the turn with an error
