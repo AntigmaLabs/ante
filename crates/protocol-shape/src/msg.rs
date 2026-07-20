@@ -160,6 +160,9 @@ pub enum Evt {
     TurnEnd {
         turn_id: Id,
         status: TurnEndStatus,
+        /// Number of turn-loop steps attempted before the turn ended.
+        #[serde(default)]
+        steps: usize,
     },
     UsageUpdate {
         usage: Usage,
@@ -638,6 +641,23 @@ mod tests {
         };
         let json = serde_json::to_value(&with).unwrap();
         assert_eq!(json["Error"]["kind"], "oauth");
+    }
+
+    #[test]
+    fn turn_end_steps_default_for_older_events() {
+        let event = super::Evt::TurnEnd {
+            turn_id: super::Id::new("turn"),
+            status: super::TurnEndStatus::Completed,
+            steps: 3,
+        };
+        let mut json = serde_json::to_value(&event).unwrap();
+        json["TurnEnd"].as_object_mut().unwrap().remove("steps");
+        let old: super::Evt = serde_json::from_value(json).unwrap();
+
+        assert!(matches!(old, super::Evt::TurnEnd { steps: 0, .. }));
+
+        let json = serde_json::to_value(event).unwrap();
+        assert_eq!(json["TurnEnd"]["steps"], 3);
     }
 
     #[test]
