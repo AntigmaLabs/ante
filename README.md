@@ -290,3 +290,14 @@ Server mode runs Ante as a long-lived daemon that communicates over a structured
 
 Full documentation is available at [docs.antigma.ai](https://docs.antigma.ai).
 The source code is in `docs-site/docs`
+
+## License
+
+Source code in this repository (including the SDK and protocol crates) is
+licensed under the [Apache License 2.0](LICENSE).
+
+The prebuilt `ante` binary is free to use — including commercially — during
+the alpha preview under the [Binary Preview Terms](BINARY-TERMS.md). The core
+harness is currently developed in a private repository and shipped as a
+binary; the SDK and protocol surface you build against here will remain
+permissively licensed.
