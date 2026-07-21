@@ -1,5 +1,25 @@
 # Changelog
 
+## v0.preview.63 - 2026-07-21
+
+### Added
+- Add Tencent Hy3 to the OpenRouter model catalog and pricing table
+- Include step count in turn end events
+
+### Changed
+- Markdown render improved by 93% for long streams
+- Remove Qwen 3.7 Max/Plus from the OpenRouter catalog (endpoints no longer accessible); they remain available via Antix
+- Render markdown lists directly instead of via tui-markdown
+- Inset all TUI rows two columns from the window edge
+- Consolidate the ante-guide into a bundled, model-only skill
+- Warn when concurrent Edit/Write mutations target the same file path
+- Prune older built-in model catalog entries
+
+### Fixed
+- Reject tool calls with malformed arguments before execution and return the parse error so the model can retry
+- Handle tool calls truncated at the output-token limit gracefully across all providers, continuing the turn instead of surfacing a hard error
+- Drop malformed ambient replies instead of leaking model reasoning
+
 ## v0.preview.61 - 2026-07-19
 
 ### Added
