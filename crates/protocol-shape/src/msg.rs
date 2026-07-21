@@ -382,10 +382,22 @@ pub struct SessionOverrides {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+pub struct MalformedToolArgs {
+    /// Exact argument text emitted by the model before JSON decoding failed.
+    pub raw: String,
+    /// JSON decoder diagnostic. This must not contain the raw argument text.
+    pub error: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct ToolUse {
     pub id: String,
     pub name: String,
     pub args: serde_json::Value,
+    /// Present when `args` could not be decoded from the model's raw JSON.
+    /// Such a call is non-executable and must be returned as an error result.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub malformed_args: Option<MalformedToolArgs>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub signature: Option<String>,
 }
@@ -596,7 +608,7 @@ pub enum Scope {
 mod tests {
     use super::{
         Evt, ExtensionRefreshed, Id, ModelSpec, Op, PermissionMode, ProviderSpec,
-        SessionInitialized, SessionUpdate, Usage, WeightClass,
+        SessionInitialized, SessionUpdate, ToolUse, Usage, WeightClass,
     };
     use std::path::PathBuf;
 
@@ -615,6 +627,20 @@ mod tests {
             support_vision: None,
             weight_class: None,
         }
+    }
+
+    #[test]
+    fn tool_use_without_malformed_args_remains_backward_compatible() {
+        let tool_use: ToolUse = serde_json::from_value(serde_json::json!({
+            "id": "call-1",
+            "name": "Read",
+            "args": { "file_path": "README.md" }
+        }))
+        .unwrap();
+
+        assert!(tool_use.malformed_args.is_none());
+        let encoded = serde_json::to_value(tool_use).unwrap();
+        assert!(encoded.get("malformed_args").is_none());
     }
 
     #[test]
