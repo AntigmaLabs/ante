@@ -402,6 +402,13 @@ pub struct ToolUse {
     pub signature: Option<String>,
 }
 
+impl ToolUse {
+    /// A well-formed call: decoded `args`, no malformed metadata, no signature.
+    pub fn new(id: impl Into<String>, name: impl Into<String>, args: serde_json::Value) -> Self {
+        Self { id: id.into(), name: name.into(), args, malformed_args: None, signature: None }
+    }
+}
+
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]
 pub struct ModelSpec {
     #[serde(alias = "name")]
