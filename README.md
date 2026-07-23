@@ -1,6 +1,6 @@
 
 <p align="center">
-  <img src="docs-site/static/assets/ante.png" width="80" alt="Ante" />
+  <img src="docs-site/static/assets/ante-readme-banner-dark-1280x320.png" alt="Ante — substrate for self-organizing intelligence" />
 </p>
 
 <p align="center">
