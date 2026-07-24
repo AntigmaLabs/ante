@@ -1,5 +1,19 @@
 # Changelog
 
+## v0.preview.64 - 2026-07-24
+
+### Added
+- Add an Antix auth login command
+
+### Changed
+- Wrap tool header lines at the viewport edge instead of clipping them
+- Dependency updates
+
+### Fixed
+- Detect when iTerm2 blocks scrollback clearing: purge by default when verified safe, show a notice when blocked
+- Exit the TUI cleanly on broken stdout pipes
+- Omit absent optional arguments from tool call displays
+
 ## v0.preview.63 - 2026-07-21
 
 ### Added
