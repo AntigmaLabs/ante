@@ -367,8 +367,13 @@ pub struct SessionOverrides {
     pub system_prompt: Option<String>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub append_system_prompt: Option<String>,
+    /// Exactly these tools, replacing the default tool set as the base.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub tools: Option<Vec<String>>,
+    /// Tools added on top of the base set (`tools`, or the default set).
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub include_tools: Option<Vec<String>>,
+    /// Tools removed from the session; wins over `tools` and `include_tools`.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub exclude_tools: Option<Vec<String>>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
