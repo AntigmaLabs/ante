@@ -1,5 +1,21 @@
 # Changelog
 
+## v0.preview.65 - 2026-07-25
+
+### Added
+- Add a `/pty` window that attaches a native terminal side panel
+- Render LaTeX math in the TUI via a delimiter normalizer and TeX→Unicode converter
+- Add an auto compact setting
+
+### Changed
+- `--tools` now sets the base tool set and `--include-tools` adds on top of it
+- Serialize concurrent Edit/Write calls that target the same file instead of only warning
+- Speed up Grep by dropping per-file parallel fan-out (~2× faster)
+- Use catalog keys as provider IDs
+- Cap skill catalog descriptions rendered into the system prompt
+- Extend short-prompt coverage to the system prompt and more tools
+- Harden release publication identity and atomicity
+
 ## v0.preview.64 - 2026-07-24
 
 ### Added
