@@ -23,6 +23,8 @@ Create or overwrite a file. Requires approval.
 
 Make exact string replacements in a file. Requires approval.
 
+When the agent issues several `Edit`/`Write` calls for the same file in one batch, they run one at a time in call order, so later edits always see the result of earlier ones. Calls touching different files still run in parallel.
+
 ### Glob
 
 Find files by glob pattern.
@@ -73,7 +75,7 @@ Drive a Chromium browser for navigation, content extraction, and automation. The
 
 ## MCP tools
 
-Tools provided by configured [MCP servers](/extend/mcp) are exposed to the agent as `mcp__<server>__<tool>`. They appear alongside built-in tools and behave identically from the agent's perspective. MCP tools obey the same `--include-tools`/`--exclude-tools` filtering as built-in tools, so a restrictive include list that doesn't name them will strip them; filter per server with `enabled_tools` instead.
+Tools provided by configured [MCP servers](/extend/mcp) are exposed to the agent as `mcp__<server>__<tool>`. They appear alongside built-in tools and behave identically from the agent's perspective. MCP tools obey the same `--tools`/`--include-tools`/`--exclude-tools` filtering as built-in tools, so a restrictive `--tools` base that doesn't name them will strip them; filter per server with `enabled_tools` instead.
 
 ## Default tool set
 
@@ -86,8 +88,11 @@ By default Ante enables `Read`, `Bash`, `Grep`, `Glob`, `TodoWrite`, `WebFetch`,
 Control which tools are available in a session:
 
 ```bash
-# Only allow these tools
-ante --include-tools Read Glob Grep "analyze the code"
+# Replace the default tool set with exactly these tools
+ante --tools Read Glob Grep "analyze the code"
+
+# Add opt-in tools on top of the default set
+ante --include-tools PTY "drive the project TUI"
 
 # Remove these tools
 ante --exclude-tools Bash Write "read-only analysis"
@@ -97,5 +102,5 @@ Supports ToolMatcher syntax for fine-grained control:
 
 ```bash
 # Allow Bash but only for specific patterns
-ante --include-tools "Read" "Bash(cargo test)" "Bash(cargo clippy)"
+ante --tools "Read" "Bash(cargo test)" "Bash(cargo clippy)"
 ```

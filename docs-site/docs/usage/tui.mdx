@@ -19,6 +19,8 @@ The TUI is built with [ratatui](https://ratatui.rs/) and provides a rich chat in
 
 The main view shows a conversation between you and the agent. Type your prompt in the input area and press Enter to send. The agent's responses stream in real-time with markdown rendering.
 
+Markdown rendering includes LaTeX math: expressions in `$...$`, `$$...$$`, `\(...\)`, or `\[...\]` are converted to a Unicode approximation for terminal display (`\alpha` → `α`, `x^2` → `x²`, `\frac{1}{2}` → `½`), including multi-line layout for environments like `aligned` and `pmatrix`.
+
 ### Tool approval
 
 When the agent wants to execute a tool that requires approval (like `Bash` or `Write`), you'll see an approval prompt. Pick an option with the number keys or arrow keys + Enter:
@@ -173,6 +175,14 @@ The command runs in your own login shell (`$SHELL -lc`, falling back to `/bin/sh
 Bash mode runs locally and is never gated by the permission system — typing `!` is the authorization. This is separate from the agent's own `Bash` tool, which still goes through tool approval. A bare `!` with nothing after it is sent as a normal message. Interactive programs (editors, pagers) won't work, since bash mode has no terminal input.
 :::
 
+## Terminal panel
+
+The [PTY tool](/reference/tools-reference#pty) drives a shared tmux session. `/pty` opens an embedded panel in the TUI showing that session live, and `Ctrl+P` switches focus between the chat input and the panel, so you can type into the same terminal the agent is driving.
+
+`/pty window` attaches a native, full-fidelity terminal to the same session: a split of your current multiplexer when you are inside tmux or zellij, otherwise a new OS terminal window (kitty, WezTerm, Ghostty, GNOME Terminal, or Terminal.app). The embedded panel and the native view show the same session and can coexist. Running `/pty window` again closes a multiplexer split; OS windows are yours to close. When the TUI exits it kills its tmux session, which closes attached views.
+
+Both forms require `tmux`.
+
 ## Next-prompt suggestion
 
 When a turn ends and the composer is empty, Ante predicts a likely follow-up and shows it as dim ghost text. Press `Tab` to accept it — the suggestion fills the input so you can edit it before sending. Any keystroke other than `Tab` dismisses it.
@@ -203,7 +213,8 @@ ante --model claude-sonnet-4-6
 ante --provider openai
 ante --system-prompt "You are a Python expert"
 ante --append-system-prompt "Always use type hints"
-ante --include-tools Read Grep Glob
+ante --tools Read Grep Glob
+ante --include-tools PTY
 ante --exclude-tools Bash Write
 ante --yolo                       # skip all tool approvals
 ante --resume ses_01ARZ3NDEK...   # resume a previous session

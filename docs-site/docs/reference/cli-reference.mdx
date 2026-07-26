@@ -14,6 +14,7 @@ ante [OPTIONS] [COMMAND]
 | Command | Description |
 |---|---|
 | `ante` | Start the interactive TUI. If `-p` / `--prompt` is provided, run in headless mode instead. |
+| `ante auth` | Manage provider sign-in without starting an agent session. |
 | `ante serve` | Run a long-lived JSONL or WebSocket protocol server. |
 | `ante gateway` | Run the Slack / Discord channel gateway. |
 | `ante update` | Check for the latest Ante release and install it if available. |
@@ -39,11 +40,12 @@ Without `--prompt`, Ante starts the interactive TUI. With `--prompt`, Ante runs 
 | `--system-prompt <PROMPT>` | Replace the default system prompt entirely. Conflicts with `--system-prompt-file`. |
 | `--system-prompt-file <PATH>` | Read the replacement system prompt from a UTF-8 file. Conflicts with `--system-prompt`. |
 | `--append-system-prompt <TEXT>` | Append content to the default system prompt. |
-| `--short-prompt` | Use shorter built-in tool descriptions for this run, shrinking the system prompt. Persist the default with the `short_prompt` [setting](/configuration/preference). |
+| `--short-prompt` | Use the compact prompt set for this run: a condensed system prompt and shorter built-in tool descriptions. Persist the default with the `short_prompt` [setting](/configuration/preference). |
 | `--enable-auto-memory` | Enable auto-memory for this run. Conflicts with `--disable-auto-memory`. |
 | `--disable-auto-memory` | Disable auto-memory for this run. Conflicts with `--enable-auto-memory`. |
-| `--include-tools <TOOLS>...` | Only allow these tools. Values are space-separated. `--tools` is a short alias; `--allowed-tools` is a deprecated alias that still works but prints a warning. |
-| `--exclude-tools <TOOLS>...` | Remove these tools from the session. Values are space-separated. `--disallowed-tools` is a deprecated alias that still works but prints a warning. |
+| `--tools <TOOLS>...` | Replace the default tool set with exactly these tools. Values are space-separated. Deprecated alias: `--allowed-tools` still works but prints a warning. |
+| `--include-tools <TOOLS>...` | Add tools on top of the default set, or on top of the `--tools` base set. Values are space-separated. |
+| `--exclude-tools <TOOLS>...` | Remove tools from the session after `--tools` and `--include-tools` are applied. Values are space-separated. Deprecated alias: `--disallowed-tools` still works but prints a warning. |
 | `--output-format <FORMAT>` | Headless output format: `json`, `human`, or `minimal`. Defaults to `minimal`. |
 | `-p`, `--prompt <PROMPT>` | Prompt to run in headless mode. Also supports stdin when piped. |
 | `--check` | Run a verification pass after the headless task completes. |
@@ -65,6 +67,28 @@ ante --resume ses_01ARZ3NDEKTSV4RRFFQ69G5FAV -p "now add tests"
 ante -p "summarize this repo" --enable-auto-memory
 ```
 
+## `ante auth`
+
+```bash
+ante auth login [PROVIDER] [OPTIONS]
+```
+
+Sign in to an OAuth provider without starting a TUI session. Today the supported provider is `antix`, and it is the default when `[PROVIDER]` is omitted.
+
+| Flag | Description |
+|---|---|
+| `--force` | Re-run browser sign-in even when stored credentials already exist. |
+| `--no-browser` | Print the authorization URL instead of opening a browser. |
+| `-h`, `--help` | Print command help. |
+
+### Examples
+
+```bash
+ante auth login
+ante auth login antix --force
+ante auth login --no-browser
+```
+
 ## `ante serve`
 
 ```bash
@@ -81,7 +105,7 @@ Server mode exposes the Ante protocol over stdin/stdout by default, or over WebS
 | `-h`, `--help` | Print command help. |
 
 :::note
-`serve` is session-agnostic, so it does not accept the session flags (`--model`, `--provider`, `--yolo`, `--system-prompt`, `--include-tools`, …). The connecting client configures those per session over the protocol.
+`serve` is session-agnostic, so it does not accept the session flags (`--model`, `--provider`, `--yolo`, `--system-prompt`, `--tools`, …). The connecting client configures those per session over the protocol.
 :::
 
 ### Examples

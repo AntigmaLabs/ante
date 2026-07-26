@@ -66,6 +66,7 @@ Initialize a new session with model, provider, and configuration.
       "permission_mode": null,
       "system_prompt": null,
       "append_system_prompt": null,
+      "tools": null,
       "include_tools": null,
       "exclude_tools": null,
       "cwd": null,
@@ -86,8 +87,9 @@ Initialize a new session with model, provider, and configuration.
 | `permission_mode` | `PermissionMode?` | Tool approval mode: `"strict"`, `"auto"`, or `"yolo"`. `null` uses `strict` |
 | `system_prompt` | `string?` | Override the default system prompt entirely |
 | `append_system_prompt` | `string?` | Append content to the default system prompt |
-| `include_tools` | `string[]?` | Whitelist — only these tools are available. Also gates dynamically registered (MCP) tools |
-| `exclude_tools` | `string[]?` | Blacklist — these tools are removed |
+| `tools` | `string[]?` | Exactly these tools, replacing the default tool set as the base. Also gates dynamically registered (MCP) tools |
+| `include_tools` | `string[]?` | Tools added on top of the base set (`tools`, or the default set) |
+| `exclude_tools` | `string[]?` | Tools removed from the session; wins over `tools` and `include_tools` |
 | `cwd` | `string?` | Working directory. Defaults to daemon's process directory |
 | `effort` | `Effort?` | [Effort](/usage/models-and-thinking#effort) override: `"min"`, `"low"`, `"medium"`, `"high"`, `"xhigh"`, or `"max"`. `null` resolves from the catalog |
 | `enable_auto_memory` | `bool?` | Whether the agent records and recalls [auto-memory](/extend/memory). `null` leaves the daemon default (on for interactive sessions) |

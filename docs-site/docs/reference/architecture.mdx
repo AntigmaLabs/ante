@@ -127,8 +127,9 @@ pub trait Tool: Send + Sync {
 
 Tools can be filtered at session level:
 
-- **Include list** (`--include-tools`) — Only these tools are available
-- **Exclude list** (`--exclude-tools`) — These tools are removed
+- **Base list** (`--tools`) — Replace the default set with exactly these tools
+- **Include list** (`--include-tools`) — Add tools on top of the default or `--tools` base set
+- **Exclude list** (`--exclude-tools`) — Remove tools after the base and include lists are applied
 - Supports ToolMatcher syntax: `Bash(ls -la)`, `Agent(explore)`
 - Names are matched case-insensitively
 - The same selection gates dynamically registered tools (MCP servers), so they cannot bypass the filter

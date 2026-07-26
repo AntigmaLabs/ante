@@ -148,8 +148,7 @@ Open Router ships as three providers sharing one API key, split by wire style: `
 | `deepseek/deepseek-v4-flash` | DeepSeek V4 Flash | 1M |
 | `x-ai/grok-4.5` | Grok 4.5 via OpenRouter | 500K |
 | `meta/muse-spark-1.1` | Muse Spark 1.1 multimodal agentic reasoning model | 1.05M |
-| `qwen/qwen3.7-max` | Qwen3.7 Max | 1M |
-| `qwen/qwen3.7-plus` | Qwen3.7 Plus with vision | 1M |
+| `tencent/hy3` | Tencent Hy3 agentic reasoning model | 262K |
 | `xiaomi/mimo-v2.5-pro` | MiMo-V2.5-Pro flagship agentic model | 1.05M |
 | `xiaomi/mimo-v2.5` | MiMo-V2.5 omnimodal model with vision | 1.05M |
 | `z-ai/glm-5.2` | GLM 5.2 reasoning model via OpenRouter | 1.05M |
@@ -206,7 +205,6 @@ Requires a [Coding Plan subscription](https://help.aliyun.com/zh/model-studio/co
 {
   "providers": {
     "ali-coding-plan-oai": {
-      "id": "ali-coding-plan-oai",
       "display_name": "Ali Coding Plan (OpenAI)",
       "base_url": "https://coding.dashscope.aliyuncs.com/v1",
       "auth": { "bearer": { "env_key": "ALI_CODING_PLAN_API_KEY" } },
@@ -269,7 +267,7 @@ ante --provider local
 }
 ```
 
-A `providers` entry whose key matches a built-in (e.g. `openai`) patches that preset field by field; a new key adds a provider. The map key is the id you pass to `--provider`, so keep each entry's `id` equal to its key.
+A `providers` entry whose key matches a built-in (e.g. `openai`) patches that preset field by field; a new key adds a provider. The map key **is** the provider id — the value you pass to `--provider`. An `id` (or legacy `name`) field inside an entry is ignored.
 
 :::note
 `~/.ante` can be relocated with the `ANTE_HOME` environment variable; the catalog is always `$ANTE_HOME/catalog.json`.
@@ -277,10 +275,11 @@ A `providers` entry whose key matches a built-in (e.g. `openai`) patches that pr
 
 ### Provider fields
 
+The provider id comes from the map key, not from a field — there is no `id` field.
+
 | Field | Required | Description |
 |---|---|---|
-| `id` | ✅ | Provider id. Must match the map key (`name` is accepted as a legacy alias). This is what you pass to `--provider`. |
-| `display_name` | New providers: optional | Friendly name shown in the TUI. New providers default to the provider id when omitted. |
+| `display_name` | New providers: optional | Friendly name shown in the TUI. New providers default to the provider id (the map key) when omitted. |
 | `base_url` | New providers: ✅ | API base URL. |
 | `wire_style` | New providers: ✅ | API dialect Ante speaks — `AnthropicMessage`, `OpenAiCompatible`, `OpenAiResponse`, or `Gemini`. |
 | `auth` | — | How to authenticate (see [Authentication](#authentication)). Omit for a provider that needs no key. |
@@ -292,7 +291,6 @@ A `providers` entry whose key matches a built-in (e.g. `openai`) patches that pr
 {
   "providers": {
     "my-provider": {
-      "id": "my-provider",
       "display_name": "My Provider",
       "base_url": "https://api.example.com/v1",
       "wire_style": "OpenAiCompatible",
