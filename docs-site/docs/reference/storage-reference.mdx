@@ -61,7 +61,7 @@ See [Preferences](/configuration/preference) for the full field reference and th
 
 ## `catalog.json`
 
-Adds or overrides providers and models on top of the built-in catalog. Both top-level keys are optional and keyed by id — the `providers` map key is the provider id you pass to `--provider`. An entry whose key matches a built-in (e.g. `openai`) replaces it, a new key adds a provider, and a `models` entry patches that model's fields wherever it is defined.
+Adds or overrides providers and models on top of the built-in catalog. Both top-level keys are optional. The `my-provider` key is what you pass to `--provider`. An entry whose key matches a built-in (e.g. `openai`) replaces it, a new key adds a provider, and a `models` entry patches that model's fields wherever it is defined.
 
 ```json
 {
