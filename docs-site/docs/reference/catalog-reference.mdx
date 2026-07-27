@@ -9,7 +9,7 @@ This page is the exhaustive reference. For how to pick a provider day to day and
 
 ## Built-in providers
 
-| Provider | ID | Wire style | Authentication |
+| Provider | key | Wire style | Authentication |
 |---|---|---|---|
 | Anthropic | `anthropic` | `AnthropicMessage` | `ANTHROPIC_API_KEY` |
 | Anthropic Subscription | `anthropic-subscription` | `AnthropicMessage` | OAuth |
@@ -29,7 +29,7 @@ This page is the exhaustive reference. For how to pick a provider day to day and
 | Antix (API key) | `antix-api-key` | `AnthropicMessage` | `ANTIX_API_KEY` |
 | Local | `local` | `OpenAiCompatible` | none |
 
-The `ID` column is what you pass to `--provider`. Providers authenticating via OAuth (`anthropic-subscription`, `openai-subscription`, `antix`) sign in interactively through the TUI; the rest read an API key from the listed environment variable.
+The `key` column is what you pass to `--provider`. Providers authenticating via OAuth (`anthropic-subscription`, `openai-subscription`, `antix`) sign in interactively through the TUI; the rest read an API key from the listed environment variable.
 
 ## Models by provider
 
@@ -267,7 +267,7 @@ ante --provider local
 }
 ```
 
-A `providers` entry whose key matches a built-in (e.g. `openai`) patches that preset field by field; a new key adds a provider. The map key **is** the provider id — the value you pass to `--provider`. An `id` (or legacy `name`) field inside an entry is ignored.
+A `providers` entry whose key matches a built-in (e.g. `openai`) patches that preset field by field; a new key adds a provider. The map key is the value you pass to `--provider`. An `id` (or legacy `name`) field inside an entry is ignored.
 
 :::note
 `~/.ante` can be relocated with the `ANTE_HOME` environment variable; the catalog is always `$ANTE_HOME/catalog.json`.
@@ -275,11 +275,9 @@ A `providers` entry whose key matches a built-in (e.g. `openai`) patches that pr
 
 ### Provider fields
 
-The provider id comes from the map key, not from a field — there is no `id` field.
-
 | Field | Required | Description |
 |---|---|---|
-| `display_name` | New providers: optional | Friendly name shown in the TUI. New providers default to the provider id (the map key) when omitted. |
+| `display_name` | New providers: optional | Friendly name shown in the TUI. New providers default to the provider map key when omitted. |
 | `base_url` | New providers: ✅ | API base URL. |
 | `wire_style` | New providers: ✅ | API dialect Ante speaks — `AnthropicMessage`, `OpenAiCompatible`, `OpenAiResponse`, or `Gemini`. |
 | `auth` | — | How to authenticate (see [Authentication](#authentication)). Omit for a provider that needs no key. |
