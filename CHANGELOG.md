@@ -1,5 +1,17 @@
 # Changelog
 
+## v0.preview.66 - 2026-07-26
+
+### Added
+- Per-category context-window usage reporting over the protocol (`Op::ContextReport`)
+
+### Changed
+- Speed up Grep further by parallelizing the directory walk and search (large-corpus searches 40–70% faster)
+- Update and prune the built-in model catalogs
+
+### Fixed
+- Don't abort OAuth login when stdin closes
+
 ## v0.preview.65 - 2026-07-25
 
 ### Added
