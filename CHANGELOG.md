@@ -1,5 +1,23 @@
 # Changelog
 
+## v0.preview.67 - 2026-07-29
+
+### Added
+- `/term <a> <b>` composes a side-by-side viewer over several sessions in one window — watch or compare two terminal agents at once
+- Bundled `tmux` skill: session reuse, interactive-program input, and driving other CLI agents such as Claude Code or Codex
+- Discover skills from user-level `~/.claude/skills`, and highlight recognized commands in the composer
+- `@`-mention completion for `~/`, absolute, `../`, and `./` paths
+- Delete sessions from the `/resume` picker
+
+### Changed
+- Replace `/pty` with `/term`: the agent drives durable named tmux sessions through ordinary Bash (namespaced `ante-*`), and `/term <name>` opens a native terminal split/window to watch or type; sessions survive Ante restarts
+- No subprocesses or file writes before the TUI's first frame (faster, quieter startup)
+- Bump the bundled llama.cpp engine to b10107
+
+### Fixed
+- Redact the OAuth callback query from logs
+- Parse model `weight_class` values case-insensitively
+
 ## v0.preview.66 - 2026-07-26
 
 ### Added
