@@ -47,6 +47,9 @@ pub enum Op {
     RestoreLocalProvider,
     /// Manually trigger conversation compaction on the active session.
     Compact,
+    /// Request a per-category breakdown of the active session's context-window
+    /// occupancy. Answered with [`Evt::ContextReport`].
+    ContextReport,
     /// Set, clear, or report a goal-driven execution loop on the active
     /// session. A set goal keeps the session working — re-running turns and
     /// judging the condition after each one — until it is met, judged
@@ -172,6 +175,9 @@ pub enum Evt {
         #[serde(default, skip_serializing_if = "Option::is_none")]
         context: Option<ContextWindow>,
     },
+    /// Answer to [`Op::ContextReport`]: a per-category breakdown of the
+    /// session's context-window occupancy at the time of the request.
+    ContextReport(ContextBreakdown),
     /// An ephemeral ambient hint produced off the main conversation (a predicted
     /// "thinking phrase" for the draft, or a suggested next prompt — see
     /// [`AmbientKind`]). Never persisted to the event log. `req_id` lets clients
@@ -299,9 +305,8 @@ pub struct SessionInitialized {
 }
 
 /// Partial update to a live session's mutable state. Each field is optional so
-/// a caller patches only what changed; absent fields are left untouched. The
-/// daemon resolves any catalog-dependent fields and dispatches each to the
-/// matching `Session` setter.
+/// a caller patches only what changed; absent fields are left untouched.
+/// Catalog-dependent fields are resolved before the update takes effect.
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]
 pub struct SessionUpdate {
     /// Model change, taking effect on the next turn. The spec carries the
@@ -309,9 +314,8 @@ pub struct SessionUpdate {
     /// catalog default; unset fields resolve from the catalog.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub model: Option<ModelSpec>,
-    /// Permission mode change. Applied via the non-aborting `set_permission_mode`
-    /// setter, so it takes effect on the next turn without disturbing an
-    /// in-flight one.
+    /// Permission mode change, taking effect on the next turn without
+    /// aborting an in-flight one.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub permission_mode: Option<PermissionMode>,
 }
@@ -496,7 +500,7 @@ impl std::str::FromStr for Effort {
 
 /// Innate size/cost class of a model, set once per model in the catalog.
 ///
-/// Orthogonal to the per-request [`Thinking`] effort and to `context_limit`:
+/// Orthogonal to the per-request [`Effort`] and to `context_limit`:
 /// a model's weight class reflects roughly how large and costly it is to run,
 /// not how hard it is asked to think on a given turn. Variants are declared in
 /// ascending order so the derived `Ord` sorts `Feather < Middle < Heavy`.
@@ -554,6 +558,38 @@ pub struct ContextWindow {
     pub limit_tokens: u32,
 }
 
+/// Per-category breakdown of context-window occupancy.
+///
+/// `used_tokens` is anchored on the provider-reported occupancy once the
+/// session has seen a model response; before that it is estimated. The
+/// per-category fields are estimates that normally sum to `used_tokens`, but
+/// estimation error can make them disagree slightly — clients should clamp
+/// rather than assume an exact identity.
+#[derive(Debug, Clone, Copy, Default, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(default)]
+pub struct ContextBreakdown {
+    /// System prompt, excluding the skills and memory sections counted below.
+    pub system_prompt_tokens: u32,
+    /// Built-in tool schemas.
+    pub system_tools_tokens: u32,
+    /// MCP tool schemas.
+    pub mcp_tools_tokens: u32,
+    /// Memory content: project/user instruction files and the auto-memory prompt.
+    pub memory_tokens: u32,
+    /// The available-skills listing.
+    pub skills_tokens: u32,
+    /// Conversation messages: everything not attributed to a category above.
+    pub messages_tokens: u32,
+    /// Total context-window occupancy.
+    pub used_tokens: u32,
+    /// Model context limit. `None` when unverified, so clients never render a
+    /// confidently-wrong percentage.
+    pub limit_tokens: Option<u32>,
+    /// Tokens reserved at the top of the window; auto-compaction triggers once
+    /// occupancy grows into this reserve.
+    pub compact_buffer_tokens: u32,
+}
+
 impl Usage {
     pub fn new(input_tokens: u32, output_tokens: u32) -> Self {
         Self { input_tokens, output_tokens, cache_read_tokens: None, cache_creation_tokens: None }
@@ -601,8 +637,7 @@ pub enum PermissionMode {
     #[default]
     Strict,
     /// Honor user rules; an unmatched call runs unless it is provably
-    /// dangerous (a deliberately narrow classifier — see
-    /// `tools::shell::is_dangerous`).
+    /// dangerous (a deliberately narrow classification).
     Auto,
     /// Bypass all permission checks, including user deny rules.
     Yolo,
@@ -893,6 +928,33 @@ mod tests {
                     && payload.session_id == session_id
                     && payload.cwd == std::path::Path::new("/tmp/session-updated")
         ));
+    }
+
+    #[test]
+    fn context_report_serde_roundtrip() {
+        let breakdown = super::ContextBreakdown {
+            system_prompt_tokens: 1200,
+            system_tools_tokens: 3400,
+            mcp_tools_tokens: 0,
+            memory_tokens: 800,
+            skills_tokens: 150,
+            messages_tokens: 42_000,
+            used_tokens: 47_550,
+            limit_tokens: Some(200_000),
+            compact_buffer_tokens: 20_000,
+        };
+        let json = serde_json::to_string(&Evt::ContextReport(breakdown)).expect("serialize");
+        let decoded = serde_json::from_str::<Evt>(&json).expect("deserialize");
+        assert!(matches!(decoded, Evt::ContextReport(b) if b == breakdown));
+
+        // Fields absent on the wire (older daemons) fall back to defaults.
+        let sparse: super::ContextBreakdown =
+            serde_json::from_value(serde_json::json!({"used_tokens": 10})).unwrap();
+        assert_eq!(sparse.used_tokens, 10);
+        assert_eq!(sparse.limit_tokens, None);
+
+        let op = serde_json::to_string(&Op::ContextReport).expect("serialize op");
+        assert!(matches!(serde_json::from_str::<Op>(&op).unwrap(), Op::ContextReport));
     }
 
     #[test]
