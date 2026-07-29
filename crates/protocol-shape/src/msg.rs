@@ -1,7 +1,7 @@
 use std::path::PathBuf;
 
 use chrono::{DateTime, Utc};
-use serde::{Deserialize, Serialize};
+use serde::{Deserialize, Deserializer, Serialize};
 
 use crate::id::Id;
 
@@ -504,7 +504,7 @@ impl std::str::FromStr for Effort {
 /// a model's weight class reflects roughly how large and costly it is to run,
 /// not how hard it is asked to think on a given turn. Variants are declared in
 /// ascending order so the derived `Ord` sorts `Feather < Middle < Heavy`.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize)]
 #[serde(rename_all = "lowercase")]
 pub enum WeightClass {
     /// Small, fast, cheap (Haiku- / GPT-nano-class).
@@ -513,6 +513,21 @@ pub enum WeightClass {
     Middle,
     /// Largest, most capable, costliest (Opus- / GPT-5.x- / Gemini-Pro-class).
     Heavy,
+}
+
+impl<'de> Deserialize<'de> for WeightClass {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        let value = String::deserialize(deserializer)?;
+        match value.to_ascii_lowercase().as_str() {
+            "feather" => Ok(Self::Feather),
+            "middle" => Ok(Self::Middle),
+            "heavy" => Ok(Self::Heavy),
+            _ => Err(serde::de::Error::unknown_variant(&value, &["feather", "middle", "heavy"])),
+        }
+    }
 }
 
 /// Token usage for one model response.
@@ -800,6 +815,20 @@ mod tests {
             serde_json::from_value(serde_json::json!({"id": "m", "weight_class": "feather"}))
                 .unwrap();
         assert_eq!(parsed.weight_class, Some(WeightClass::Feather));
+    }
+
+    #[test]
+    fn weight_class_deserializes_case_insensitively() {
+        for (value, expected) in [
+            ("Feather", WeightClass::Feather),
+            ("MIDDLE", WeightClass::Middle),
+            ("hEaVy", WeightClass::Heavy),
+        ] {
+            let parsed: ModelSpec =
+                serde_json::from_value(serde_json::json!({"id": "m", "weight_class": value}))
+                    .unwrap();
+            assert_eq!(parsed.weight_class, Some(expected));
+        }
     }
 
     #[test]
