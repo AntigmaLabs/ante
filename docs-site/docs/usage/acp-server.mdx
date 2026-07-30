@@ -1,0 +1,375 @@
+---
+title: "ACP Server"
+description: "Expose Ante over the Agent Communication Protocol for multi-agent orchestration and programmatic access"
+---
+
+# ACP Server
+
+Ante includes a built-in [ACP (Agent Communication Protocol)](https://agentcommunicationprotocol.dev) server that exposes your agent over a standard REST API with SSE streaming. This lets any ACP-compatible client — Python SDKs, other agents, orchestration platforms — run Ante tasks programmatically.
+
+ACP is the open wire protocol for agent-to-agent and agent-to-platform communication. By implementing it, Ante becomes composable: you can orchestrate Ante alongside other ACP agents, embed it in workflows, or build custom UIs on top.
+
+## Quick start
+
+```bash
+# Start the ACP server on the default port (8420)
+ante acp
+```
+
+The server starts on `http://127.0.0.1:8420` and is ready to accept requests.
+
+```bash
+# Verify it's running
+curl http://127.0.0.1:8420/ping
+# Returns: {}
+```
+
+## CLI flags
+
+| Flag | Default | Description |
+|------|---------|-------------|
+| `--host <HOST>` | `127.0.0.1` | Network interface to bind to |
+| `-p`, `--port <PORT>` | `8420` | Port to listen on |
+
+```bash
+# Listen on all interfaces on port 9000
+ante acp --host 0.0.0.0 --port 9000
+```
+
+## REST API
+
+All endpoints accept and return JSON. The base URL is `http://127.0.0.1:8420` (adjust for your `--host` / `--port`).
+
+### Health check
+
+```bash
+curl http://127.0.0.1:8420/ping
+# Returns: {}
+```
+
+### List agents
+
+```bash
+curl http://127.0.0.1:8420/agents
+```
+
+Response:
+
+```json
+{
+  "agents": [
+    {
+      "name": "ante",
+      "description": "Self-contained Rust coding agent with multi-provider LLM support...",
+      "input_content_types": ["text/plain"],
+      "output_content_types": ["text/plain"],
+      "metadata": {
+        "programming_language": "Rust",
+        "framework": "Ante",
+        "license": "Apache-2.0",
+        "capabilities": [
+          { "name": "Code Generation & Editing", "description": "..." },
+          { "name": "Shell Execution", "description": "..." },
+          { "name": "Git Operations", "description": "..." },
+          { "name": "Code Search", "description": "..." },
+          { "name": "Multi-provider LLM", "description": "..." },
+          { "name": "Offline Inference", "description": "..." },
+          { "name": "MCP Integration", "description": "..." },
+          { "name": "Multi-agent Orchestration", "description": "..." }
+        ],
+        "tags": ["Code", "Orchestrator"],
+        "recommended_models": ["claude-sonnet-4-6", "gpt-5", "gemini-3-pro"]
+      }
+    }
+  ]
+}
+```
+
+### Get agent details
+
+```bash
+curl http://127.0.0.1:8420/agents/ante
+```
+
+Returns the same manifest as the list endpoint, but for a single agent.
+
+### Create a run (synchronous)
+
+Synchronous mode blocks until the run completes and returns the finished run object:
+
+```bash
+curl -X POST http://127.0.0.1:8420/runs \
+  -H "Content-Type: application/json" \
+  -d '{
+    "agent_name": "ante",
+    "input": [
+      {
+        "role": "user",
+        "parts": [
+          { "content_type": "text/plain", "content": "explain what this project does" }
+        ]
+      }
+    ],
+    "mode": "sync"
+  }'
+```
+
+### Create a run (asynchronous)
+
+Async mode returns immediately with `202 Accepted` and a run object in `created` status. Poll the run endpoint to check progress:
+
+```bash
+# Create the run
+curl -X POST http://127.0.0.1:8420/runs \
+  -H "Content-Type: application/json" \
+  -d '{
+    "agent_name": "ante",
+    "input": [
+      {
+        "role": "user",
+        "parts": [
+          { "content_type": "text/plain", "content": "add error handling to src/main.rs" }
+        ]
+      }
+    ],
+    "mode": "async"
+  }'
+```
+
+```bash
+# Poll for results (use the run_id from the response)
+curl http://127.0.0.1:8420/runs/<run_id>
+```
+
+### Create a run (streaming)
+
+Streaming mode returns an SSE (Server-Sent Events) connection that emits events as the run progresses:
+
+```bash
+curl -N -X POST http://127.0.0.1:8420/runs \
+  -H "Content-Type: application/json" \
+  -d '{
+    "agent_name": "ante",
+    "input": [
+      {
+        "role": "user",
+        "parts": [
+          { "content_type": "text/plain", "content": "review this codebase" }
+        ]
+      }
+    ],
+    "mode": "stream"
+  }'
+```
+
+### Get run status
+
+```bash
+curl http://127.0.0.1:8420/runs/<run_id>
+```
+
+Response:
+
+```json
+{
+  "agent_name": "ante",
+  "run_id": "550e8400-e29b-41d4-a716-446655440000",
+  "status": "completed",
+  "output": [
+    {
+      "role": "agent/ante",
+      "parts": [
+        {
+          "content_type": "text/plain",
+          "content": "This project is ..."
+        }
+      ],
+      "created_at": "2025-01-15T10:30:00Z",
+      "completed_at": "2025-01-15T10:31:15Z"
+    }
+  ],
+  "created_at": "2025-01-15T10:30:00Z",
+  "finished_at": "2025-01-15T10:31:15Z"
+}
+```
+
+### Cancel a run
+
+```bash
+curl -X POST http://127.0.0.1:8420/runs/<run_id>/cancel
+```
+
+Returns the run with status `"cancelled"`. Runs in a terminal state (`completed`, `failed`, `cancelled`) cannot be cancelled.
+
+### Resume an awaiting run
+
+```bash
+curl -X POST http://127.0.0.1:8420/runs/<run_id> \
+  -H "Content-Type: application/json" \
+  -d '{
+    "await_resume": { "decision": "approved" }
+  }'
+```
+
+## SSE events
+
+When using streaming mode (`"mode": "stream"`), the server emits the following event types:
+
+| Event | Description |
+|-------|-------------|
+| `run.created` | Run was created and queued |
+| `run.in-progress` | Execution has started |
+| `run.completed` | Run finished successfully |
+| `run.failed` | Run encountered an error |
+| `run.cancelled` | Run was cancelled by the client |
+| `run.awaiting` | Run is waiting for external input |
+| `message.created` | Agent output message started |
+| `message.part` | A chunk of agent output |
+| `message.completed` | Agent output message finished |
+| `error` | An error occurred |
+
+### SSE event format
+
+Each event follows the standard SSE wire format:
+
+```
+event: run.created
+data: {"type":"run.created","run":{"agent_name":"ante","run_id":"...","status":"created",...}}
+
+event: run.in-progress
+data: {"type":"run.in-progress","run":{...}}
+
+event: message.part
+data: {"type":"message.part","part":{"content_type":"text/plain","content":"..."}}
+
+event: run.completed
+data: {"type":"run.completed","run":{...}}
+```
+
+### Parsing SSE with curl
+
+```bash
+curl -N -X POST http://127.0.0.1:8420/runs \
+  -H "Content-Type: application/json" \
+  -d '{"agent_name":"ante","input":[{"role":"user","parts":[{"content_type":"text/plain","content":"hello"}]}],"mode":"stream"}'
+```
+
+### Parsing SSE with Python
+
+```python
+import requests
+
+response = requests.post(
+    "http://127.0.0.1:8420/runs",
+    json={
+        "agent_name": "ante",
+        "input": [{"role": "user", "parts": [{"content_type": "text/plain", "content": "hello"}]}],
+        "mode": "stream",
+    },
+    stream=True,
+)
+
+for line in response.iter_lines(decode_unicode=True):
+    if line.startswith("event:"):
+        event_type = line.split(":", 1)[1].strip()
+        print(f"Event: {event_type}")
+    elif line.startswith("data:"):
+        import json
+        data = json.loads(line.split(":", 1)[1].strip())
+        if data.get("type") == "run.completed":
+            for msg in data["run"].get("output", []):
+                for part in msg.get("parts", []):
+                    print(part.get("content", ""))
+```
+
+## Python SDK example
+
+```python
+import requests
+
+BASE_URL = "http://127.0.0.1:8420"
+
+# List available agents
+agents = requests.get(f"{BASE_URL}/agents").json()
+print(agents)
+
+# Create a synchronous run
+response = requests.post(f"{BASE_URL}/runs", json={
+    "agent_name": "ante",
+    "input": [
+        {
+            "role": "user",
+            "parts": [
+                {"content_type": "text/plain", "content": "write a python fibonacci function"}
+            ],
+        }
+    ],
+    "mode": "sync",
+})
+
+result = response.json()
+print(result["status"])  # "completed"
+print(result["output"][0]["parts"][0]["content"])
+```
+
+## Configuration
+
+### Environment variables
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `ANTE_ACP_LOG` | `ante_acp_server=info,tower_http=info` | Tracing filter. Set to `debug` for verbose logging. |
+
+All standard Ante environment variables also apply because each run spawns `ante -p` as a subprocess. This includes `ANTHROPIC_API_KEY`, `OPENAI_API_KEY`, provider selection, and any other configuration that the headless CLI respects.
+
+### CLI flags
+
+| Flag | Default | Description |
+|------|---------|-------------|
+| `--host <HOST>` | `127.0.0.1` | Bind address |
+| `-p`, `--port <PORT>` | `8420` | Listen port |
+
+## Security considerations
+
+- **Localhost by default** — The server binds to `127.0.0.1`, so it is only accessible from the local machine. Do not bind to `0.0.0.0` unless you intend to expose the agent over the network and have appropriate network-level protections.
+
+- **No authentication** — The ACP server does not implement authentication or authorization. Anyone who can reach the port can create runs. If you expose the port beyond localhost, add a reverse proxy with authentication in front of it.
+
+- **Tool permissions** — Each run spawns `ante -p` with auto-approved tool calls (yolo mode). The agent will read, write, and execute shell commands without interactive prompts. Ensure your filesystem permissions and network policies are appropriate for the codebase the agent operates on.
+
+- **Resource limits** — There are no built-in rate limits or concurrency caps. Each run spawns a subprocess. A burst of runs could consume significant CPU and memory. Consider placing a reverse proxy with rate limiting in front if exposing beyond localhost.
+
+- **No data persistence** — Run state is held in memory. Restarting the server discards all runs. This is a preview implementation; production use should pair it with external state storage.
+
+- **Subprocess isolation** — Each run executes as a child process. On Linux, consider running the server inside a container or systemd unit with resource limits (`MemoryMax`, `CPUQuota`) for additional isolation.
+
+## Architecture
+
+```
+┌─────────────────────────────────────────────────────┐
+│                 ACP Clients                         │
+│                                                     │
+│   ┌──────────┐  ┌──────────┐  ┌─────────────────┐  │
+│   │  Python   │  │  Other   │  │  Orchestration  │  │
+│   │   SDK     │  │  Agents  │  │    Platform     │  │
+│   └─────┬─────┘  └─────┬────┘  └────────┬────────┘  │
+└─────────┼───────────────┼────────────────┼───────────┘
+          │ REST + SSE    │                │
+          ▼               ▼                ▼
+┌─────────────────────────────────────────────────────┐
+│              ante acp (ACP Server)                   │
+│                                                     │
+│   ┌──────────┐  ┌──────────────┐  ┌─────────────┐  │
+│   │  Axum    │  │   Run State  │  │   SSE       │  │
+│   │  Router  │  │   (in-mem)   │  │   Stream    │  │
+│   └─────┬────┘  └──────────────┘  └─────────────┘  │
+└─────────┼───────────────────────────────────────────┘
+          │ spawns subprocess
+          ▼
+┌─────────────────────────────────────────────────────┐
+│           ante -p "<prompt>" --json                  │
+│                                                     │
+│   Agent execution with full tool access              │
+│   File editing, shell, git, code search, MCP         │
+└─────────────────────────────────────────────────────┘
+```

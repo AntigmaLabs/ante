@@ -1,0 +1,24 @@
+[package]
+name = "ante-acp-server"
+version = "0.1.0"
+edition = "2024"
+description = "ACP (Agent Communication Protocol) server for Ante"
+license = "Apache-2.0"
+
+[dependencies]
+axum = { version = "0.8", features = ["macros"] }
+tower-http = { version = "0.6", features = ["cors"] }
+tokio = { version = "1", features = ["sync", "time", "rt-multi-thread", "macros", "signal", "process"] }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+uuid = { version = "1", features = ["v4", "serde"] }
+chrono = { version = "0.4", features = ["serde"] }
+thiserror = "2"
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+async-stream = "0.3"
+futures = "0.3"
+
+[dev-dependencies]
+tokio = { version = "1", features = ["full"] }
+reqwest = { version = "0.12", default-features = false, features = ["json", "rustls-tls"] }

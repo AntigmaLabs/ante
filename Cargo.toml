@@ -1,0 +1,8 @@
+[workspace]
+members = [
+    "crates/protocol-shape",
+    "crates/exec",
+    "crates/agent-sdk",
+    "crates/acp-server",
+]
+resolver = "3"
