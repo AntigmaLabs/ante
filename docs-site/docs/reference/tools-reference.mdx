@@ -39,6 +39,8 @@ Search file contents with regular expressions.
 
 Execute shell commands. Each call runs in a fresh non-interactive process — shell state does not persist between calls. Long-running commands (servers, watchers, slow builds) can be launched in the background; the agent gets back paths it can read for status and output, and can stop the process by its pid. A trailing `&` on a background command is redundant and is stripped automatically. Requires approval.
 
+For interactive programs and persistent shells, the agent drives durable named tmux sessions (`ante-*`) through ordinary Bash calls, guided by a bundled `tmux` skill — every keystroke it sends goes through normal Bash permission checks. Watch or type in any of those sessions with [`/term <name>`](/usage/tui#terminal-sessions).
+
 ## Builtin
 
 ### Agent
@@ -65,10 +67,6 @@ These are not enabled by default. Turn them on with `--include-tools`.
 
 Read and analyze an image with a natural-language instruction.
 
-### PTY
-
-Drive a persistent shared tmux session — useful for interactive programs and full-screen TUI apps where state needs to carry across calls. Requires `tmux`.
-
 ### Browser
 
 Drive a Chromium browser for navigation, content extraction, and automation. The agent typically takes a snapshot of the page to find interactive elements, then clicks or types into them. Requires approval, and only available when Ante is built with the `browser` cargo feature.
@@ -81,7 +79,7 @@ Tools provided by configured [MCP servers](/extend/mcp) are exposed to the agent
 
 By default Ante enables `Read`, `Bash`, `Grep`, `Glob`, `TodoWrite`, `WebFetch`, `Edit`, `Write`, and `Agent`. `Browser` is also included when Ante is built with the `browser` feature. `WebSearch` is added automatically when the session's provider supports native web search.
 
-`ViewImage` and `PTY` are opt-in.
+`ViewImage` is opt-in.
 
 ## Tool filtering
 
@@ -92,7 +90,7 @@ Control which tools are available in a session:
 ante --tools Read Glob Grep "analyze the code"
 
 # Add opt-in tools on top of the default set
-ante --include-tools PTY "drive the project TUI"
+ante --include-tools ViewImage "describe the screenshots in assets/"
 
 # Remove these tools
 ante --exclude-tools Bash Write "read-only analysis"

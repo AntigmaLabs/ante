@@ -61,6 +61,7 @@ Ante persists every session to disk. Use `/resume` to pick up a previous convers
 1. Type `/resume` to open the session picker
 2. Browse sessions scoped to the current working directory — each entry shows the first message, model, message count, and relative time
 3. Press **Enter** to select, or **Esc** to cancel
+4. Press **d** (or **Delete**) to delete the selected session — press **d** again to confirm, any other key cancels. The currently active session can't be deleted
 
 On resume, Ante:
 - Restores the full conversation history
@@ -115,7 +116,6 @@ The composer supports readline-style editing with multi-step undo/redo:
 | Key | Action |
 |---|---|
 | `Ctrl+T` | Open theme dialog |
-| `Ctrl+P` | Toggle focus between the chat input and the embedded terminal panel (opens it if closed; use `/pty` to close) |
 | `Ctrl+E` | Stop running llama server (offline mode) |
 | `Ctrl+O` | Toggle local inference log panel |
 | `Ctrl+K` / `Ctrl+J` | Scroll inference log up/down |
@@ -156,6 +156,8 @@ Type `@` in the input to reference files or directories. A file search dropdown 
 - `@path/to/file.rs` — embeds the file contents in your message
 - `@path/to/dir/` — embeds the directory tree listing
 
+Completion works for project-relative paths and also for `~/`, absolute, `../`, and `./` paths, so you can reference files outside the project.
+
 :::tip
 If you paste multiple file paths, Ante auto-prefixes them with `@` for convenience.
 :::
@@ -175,13 +177,15 @@ The command runs in your own login shell (`$SHELL -lc`, falling back to `/bin/sh
 Bash mode runs locally and is never gated by the permission system — typing `!` is the authorization. This is separate from the agent's own `Bash` tool, which still goes through tool approval. A bare `!` with nothing after it is sent as a normal message. Interactive programs (editors, pagers) won't work, since bash mode has no terminal input.
 :::
 
-## Terminal panel
+## Terminal sessions
 
-The [PTY tool](/reference/tools-reference#pty) drives a shared tmux session. `/pty` opens an embedded panel in the TUI showing that session live, and `Ctrl+P` switches focus between the chat input and the panel, so you can type into the same terminal the agent is driving.
+The agent drives interactive programs — dev servers, REPLs, ssh, even other CLI agents like Claude Code or Codex — in durable named tmux sessions, using ordinary `tmux` commands through the [Bash tool](/reference/tools-reference#bash) (guided by a bundled `tmux` skill). Sessions live in the `ante-` namespace and survive Ante restarts: a later conversation can pick up a running server where it was left. You own session lifetimes — nothing is killed when the TUI exits.
 
-`/pty window` attaches a native, full-fidelity terminal to the same session: a split of your current multiplexer when you are inside tmux or zellij, otherwise a new OS terminal window (kitty, WezTerm, Ghostty, GNOME Terminal, or Terminal.app). The embedded panel and the native view show the same session and can coexist. Running `/pty window` again closes a multiplexer split; OS windows are yours to close. When the TUI exits it kills its tmux session, which closes attached views.
+`/term <name>` opens a native terminal view on the session `ante-<name>`, creating it if needed, so you can watch or type in the same terminal the agent is driving: a split of your current multiplexer when you are inside tmux or zellij, otherwise a new OS terminal window (kitty, WezTerm, Ghostty, GNOME Terminal, or Terminal.app). Running `/term <name>` again closes the view; the session keeps running. Bare `/term` targets a scratch session, and names are limited to letters, digits, `-`, and `_`.
 
-Both forms require `tmux`.
+`/term <a> <b>` composes a side-by-side viewer over several sessions in one window — handy for watching two terminal agents at once.
+
+Requires `tmux`.
 
 ## Next-prompt suggestion
 
@@ -214,7 +218,7 @@ ante --provider openai
 ante --system-prompt "You are a Python expert"
 ante --append-system-prompt "Always use type hints"
 ante --tools Read Grep Glob
-ante --include-tools PTY
+ante --include-tools ViewImage
 ante --exclude-tools Bash Write
 ante --yolo                       # skip all tool approvals
 ante --resume ses_01ARZ3NDEK...   # resume a previous session

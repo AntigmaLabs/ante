@@ -71,7 +71,8 @@ Initialize a new session with model, provider, and configuration.
       "exclude_tools": null,
       "cwd": null,
       "effort": null,
-      "enable_auto_memory": null
+      "enable_auto_memory": null,
+      "short_prompt": null
     }
   },
   "id": "op_..."
@@ -93,6 +94,7 @@ Initialize a new session with model, provider, and configuration.
 | `cwd` | `string?` | Working directory. Defaults to daemon's process directory |
 | `effort` | `Effort?` | [Effort](/usage/models-and-thinking#effort) override: `"min"`, `"low"`, `"medium"`, `"high"`, `"xhigh"`, or `"max"`. `null` resolves from the catalog |
 | `enable_auto_memory` | `bool?` | Whether the agent records and recalls [auto-memory](/extend/memory). `null` leaves the daemon default (on for interactive sessions) |
+| `short_prompt` | `bool?` | Use compact tool descriptions and system prompt to shrink the context footprint. `null` leaves the settings default |
 
 ### UpdateSession
 
@@ -147,6 +149,14 @@ Submit user text input to the agent.
 { "op": { "UserInput": "explain what this project does" }, "id": "op_..." }
 ```
 
+### ShellInput
+
+Run a shell command on the daemon side without starting a turn — the `!command` path in the TUI. The daemon answers with a `ShellOutput` event and queues the output into the agent's context for the next turn.
+
+```json
+{ "op": { "ShellInput": "git status" }, "id": "op_..." }
+```
+
 ### ApprovalResponse
 
 Respond to a tool approval request (sent after receiving a `TurnPause` event with `Approval` reason).
@@ -182,6 +192,41 @@ Invoke a skill by name.
 
 ```json
 { "op": { "SlashCommand": { "name": "commit", "args": "-m 'fix bug'" } }, "id": "op_..." }
+```
+
+### Compact
+
+Manually trigger conversation compaction on the active session (what `/compact` sends). The daemon emits `CompactStart` and `CompactEnd` around the summarization.
+
+```json
+{ "op": "Compact", "id": "op_..." }
+```
+
+### ContextReport
+
+Request a per-category breakdown of the active session's context-window occupancy (what `/context` sends). Answered with a [`ContextReport`](#contextreport-1) event.
+
+```json
+{ "op": "ContextReport", "id": "op_..." }
+```
+
+### Goal
+
+Set, clear, or report a [goal-driven execution loop](/usage/goal-sessions) on the active session. A set goal keeps the session working — re-running turns and judging the condition after each one — until it is met, judged unreachable, or cleared.
+
+```json
+{ "op": { "Goal": { "Set": "all tests pass" } }, "id": "op_..." }
+{ "op": { "Goal": "Clear" }, "id": "op_..." }
+{ "op": { "Goal": "Status" }, "id": "op_..." }
+```
+
+### AmbientPhrase / AmbientSuggestion
+
+Request an ad-hoc ambient prediction off the conversation's critical path on a cheap model: `AmbientPhrase` predicts a spinner "thinking phrase" for the in-progress draft, and `AmbientSuggestion` predicts a next-prompt suggestion from the last exchange. Both answer with an `Ambient` event; the monotonic `req_id` lets the client discard stale results.
+
+```json
+{ "op": { "AmbientPhrase": { "draft": "refactor the parser to...", "req_id": 3 } }, "id": "op_..." }
+{ "op": { "AmbientSuggestion": { "recent_user": "fix the bug", "recent_agent": "Fixed — the cause was...", "req_id": 7 } }, "id": "op_..." }
 ```
 
 ### Interrupt
@@ -280,11 +325,26 @@ Emitted when the active session is updated in place (e.g. model changed via `Upd
 
 #### SessionEnd
 
-Emitted when the session terminates.
+Emitted when the session span closes. Mirrors `TurnEnd`: it carries the session's identity, why it ended, and its final usage accounting.
 
 ```json
-{ "event": "SessionEnd" }
+{
+  "event": {
+    "SessionEnd": {
+      "session_id": "ses_01ARZ...",
+      "reason": "Shutdown",
+      "usage": { "input_tokens": 15000, "output_tokens": 3000 }
+    }
+  }
+}
 ```
+
+**SessionEndReason variants:**
+
+| Variant | Description |
+|---|---|
+| `Replaced` | The session was replaced by a new or resumed session |
+| `Shutdown` | The daemon is shutting down |
 
 ### Turn lifecycle events
 
@@ -324,12 +384,20 @@ Emitted when a turn is paused waiting for user input (e.g. tool approval).
 |---|---|---|
 | `Approval` | `tools: ToolUse[]`, `message: string` | Waiting for tool approval |
 
-#### TurnEnd
+#### TurnResume
 
-Emitted when a turn completes.
+Emitted when the turn resumes after a `TurnPause` (e.g. the approval was answered or a steer arrived), so clients never have to infer resumption from the next tool event.
 
 ```json
-{ "event": { "TurnEnd": { "turn_id": "step_01ARZ...", "status": "Completed" } } }
+{ "event": { "TurnResume": { "turn_id": "step_01ARZ..." } } }
+```
+
+#### TurnEnd
+
+Emitted when a turn completes. `steps` is the number of turn-loop steps attempted before the turn ended.
+
+```json
+{ "event": { "TurnEnd": { "turn_id": "step_01ARZ...", "status": "Completed", "steps": 4 } } }
 ```
 
 **TurnEndStatus variants:**
@@ -338,7 +406,7 @@ Emitted when a turn completes.
 |---|---|---|
 | `Completed` | — | Turn finished successfully |
 | `Interrupted` | `reason?: string` | Turn was interrupted |
-| `Error` | `message: string` | Turn ended with an error |
+| `Error` | `kind?: string`, `headline: string`, `details: string[]` | Turn ended with an error. `kind` is a stable machine-readable LLM error kind when available — notably `"oauth"` means the provider sign-in is missing, expired, or revoked. `headline` is a one-line summary; `details` are expanded cause lines |
 
 ### Message streaming events
 
@@ -516,6 +584,40 @@ Token usage statistics for the session. `context` is omitted before the first re
 }
 ```
 
+#### ContextReport
+
+Answer to the [`ContextReport`](#contextreport) operation: a per-category breakdown of the session's context-window occupancy at the time of the request.
+
+```json
+{
+  "event": {
+    "ContextReport": {
+      "system_prompt_tokens": 3200,
+      "system_tools_tokens": 4100,
+      "mcp_tools_tokens": 900,
+      "memory_tokens": 600,
+      "skills_tokens": 450,
+      "messages_tokens": 12000,
+      "used_tokens": 21250,
+      "limit_tokens": 200000,
+      "compact_buffer_tokens": 20000
+    }
+  }
+}
+```
+
+| Field | Type | Description |
+|---|---|---|
+| `system_prompt_tokens` | `u32` | System prompt, excluding the skills and memory sections counted separately |
+| `system_tools_tokens` | `u32` | Built-in tool schemas |
+| `mcp_tools_tokens` | `u32` | MCP tool schemas |
+| `memory_tokens` | `u32` | Project/user instruction files and the auto-memory prompt |
+| `skills_tokens` | `u32` | The available-skills listing |
+| `messages_tokens` | `u32` | Conversation messages — everything not attributed to a category above |
+| `used_tokens` | `u32` | Total context-window occupancy |
+| `limit_tokens` | `u32?` | Model context limit; `null` when unverified |
+| `compact_buffer_tokens` | `u32` | Tokens reserved at the top of the window; auto-compaction triggers once occupancy grows into this reserve |
+
 #### Info
 
 General informational message.
@@ -526,14 +628,15 @@ General informational message.
 
 #### InfoBlockStart
 
-Opens a grouped Info entry with a header. Subsequent `InfoBlockAppend` events sharing the same `id` render as tree-indented child lines under it — used for multi-step background notifications (e.g. MCP warm-up) that should visually cluster.
+Opens a grouped Info entry with a header. Subsequent `InfoBlockAppend` events sharing the same `id` render as tree-indented child lines under it — used for multi-step background notifications (e.g. MCP warm-up) that should visually cluster. When `loading` is true the renderer animates a `.`/`..`/`...` suffix on the header until the first `InfoBlockAppend` arrives.
 
 ```json
 {
   "event": {
     "InfoBlockStart": {
       "id": "mcp-warmup-ses_01ARZ...",
-      "header": "Warming up 4 MCP servers in the background — tools will become available as they connect."
+      "header": "Warming up 4 MCP servers in the background — tools will become available as they connect.",
+      "loading": true
     }
   }
 }
@@ -576,6 +679,31 @@ User input recorded for session replay. This variant is written to the persisted
 
 ```json
 { "event": { "UserInput": "explain what this project does" } }
+```
+
+#### ShellOutput
+
+Answer to a `ShellInput` operation: the command that ran and what it produced.
+
+```json
+{
+  "event": {
+    "ShellOutput": {
+      "command": "git status",
+      "stdout": "On branch main...",
+      "stderr": "",
+      "exit_code": 0
+    }
+  }
+}
+```
+
+#### Ambient
+
+An ephemeral ambient hint produced off the main conversation on a cheap model — a predicted "thinking phrase" for the current draft, or a suggested next prompt shown as input ghost text. Requested with the `AmbientPhrase` / `AmbientSuggestion` operations; `req_id` lets clients drop superseded results. Never persisted to the event log.
+
+```json
+{ "event": { "Ambient": { "kind": "PromptSuggestion", "req_id": 7, "text": "run the tests" } } }
 ```
 
 ### Offline mode and the protocol

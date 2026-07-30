@@ -115,7 +115,6 @@ pub trait Tool: Send + Sync {
 | `Glob` | File I/O | No | Find files by pattern |
 | `Grep` | File I/O | No | Search file contents with regex |
 | `Bash` | Shell | Yes | Execute shell commands; supports `run_in_background` for long-running processes |
-| `PTY` | Shell | No | Drive a persistent tmux session for interactive programs (opt-in) |
 | `Agent` | Builtin | No | Spawn sub-agent for complex tasks |
 | `TodoWrite` | Builtin | No | Manage task lists |
 | `WebFetch` | Builtin | Yes | Fetch and process web content |

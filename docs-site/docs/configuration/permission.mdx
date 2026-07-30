@@ -80,7 +80,6 @@ If no rule matches, the mode decides the fallback: `strict` asks except for know
 | `WebFetch` | Ask |
 | `WebSearch` | Ask |
 | `Browser` | Ask |
-| `PTY` | Allow |
 | `ViewImage` | Allow |
 
 In `strict` mode, read-only shell commands can also be auto-approved as a final fallback after explicit rules are checked. This covers vetted read-only programs — and pipelines or `&&` / `||` / `;` sequences built only from them; anything with redirections, command substitution, or an unrecognized command still prompts.

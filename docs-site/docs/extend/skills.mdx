@@ -57,11 +57,12 @@ Malformed nested YAML still fails so broken metadata does not load silently.
 
 | Directory | Scope |
 |---|---|
+| `~/.claude/skills/` | User-level (Claude Code compatibility) |
 | `~/.agents/skills/` | User-level (compat — loaded before `~/.ante/skills/`) |
 | `~/.ante/skills/` | User-level (available in all projects) |
+| `.claude/skills/` | Project-level (Claude Code compatibility) |
 | `.agents/skills/` | Project-level |
 | `.ante/skills/` | Project-level |
-| `.claude/skills/` | Project-level (Claude Code compatibility) |
 
 ## SKILL.md frontmatter
 
@@ -91,11 +92,12 @@ my-skill/
 Skills are discovered in precedence order (later overrides earlier by skill name):
 
 1. System-level (built-in skills)
-2. `~/.agents/skills/` (user-level, compat)
-3. `~/.ante/skills/` (user-level)
-4. `.claude/skills/` (project-level, Claude Code compatibility)
-5. `.agents/skills/` (project-level)
-6. `.ante/skills/` (project-level)
+2. `~/.claude/skills/` (user-level, Claude Code compatibility)
+3. `~/.agents/skills/` (user-level, compat)
+4. `~/.ante/skills/` (user-level)
+5. `.claude/skills/` (project-level, Claude Code compatibility)
+6. `.agents/skills/` (project-level)
+7. `.ante/skills/` (project-level)
 
 ## Using skills
 

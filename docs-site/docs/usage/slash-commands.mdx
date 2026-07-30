@@ -20,7 +20,8 @@ Type `/` in the [interactive TUI](/usage/tui) to run built-in commands for commo
 | `/models` | Select a model and effort level for the current provider |
 | `/providers` | Select an available provider for the current session |
 | `/offline-mode` | Run a local model with the built-in inference engine |
-| `/pty [window]` | Toggle the embedded terminal panel (`Ctrl+P` to switch focus). `/pty window` attaches a native terminal instead — see [Terminal panel](/usage/tui#terminal-panel) |
+| `/term [name ...]` | Open a native terminal window on a shared tmux session the agent can drive too; several names show side by side — see [Terminal sessions](/usage/tui#terminal-sessions) |
+| `/context` | Visualize current context usage as a colored grid, broken down by category |
 | `/welcome` | Show the welcome/onboarding dialog |
 | `/resume` | Resume a previous session in this directory |
 | `/statusline` | Configure the status line |
@@ -28,12 +29,14 @@ Type `/` in the [interactive TUI](/usage/tui) to run built-in commands for commo
 | `/goal [<condition> \| clear]` | Keep working until a condition is met, clear the active goal, or show goal status |
 
 :::note
-Some commands are "visible" (appear in conversation history) and others are "silent" (execute without adding to history). `/clear`, `/init`, `/exit`, and `/compact` are visible; the rest are silent.
+Some commands are "visible" (appear in conversation history) and others are "silent" (execute without adding to history). `/clear`, `/init`, `/exit`, `/compact`, `/context`, and `/goal` are visible; the rest are silent.
 :::
 
 ## Skills as slash commands
 
 [Skills](/extend/skills) also appear as slash commands, with scope indicators: `[p]` for project-level, `[u]` for user-level, and `[s]` for system-level skills.
+
+As you type, tokens that match a known command or skill name are highlighted in the composer, so you can see at a glance that a command is recognized before you send it.
 
 ## Related
 
