@@ -7,29 +7,31 @@
 </p>
 
 <p align="center">
+  <a href="https://github.com/AntigmaLabs/ante-preview/releases"><img src="https://img.shields.io/github/v/release/AntigmaLabs/ante-preview?include_prereleases&label=release&color=blueviolet" /></a>
   <a href="https://antigma.ai/eval"><img src="https://img.shields.io/badge/Terminal--Bench_2.1-live_results-2ea44f?logo=speedtest&logoColor=white" /></a>
-  <a href="https://discord.gg/CbAsUR434B"><img src="https://img.shields.io/badge/Discord-Join%20Us-5865F2?logo=discord&logoColor=white" /></a>
   <a href="https://docs.antigma.ai"><img src="https://img.shields.io/badge/Docs-docs.antigma.ai-orange?logo=safari&logoColor=white" /></a>
+  <a href="https://discord.gg/CbAsUR434B"><img src="https://img.shields.io/badge/Discord-Join%20Us-5865F2?logo=discord&logoColor=white" /></a>
   <a href="https://twitter.com/antigma_labs"><img src="https://img.shields.io/badge/X-@antigma__labs-black?logo=x&logoColor=white" /></a>
   <a href="https://huggingface.co/Antigma"><img src="https://img.shields.io/badge/HuggingFace-Antigma-yellow?logo=huggingface&logoColor=white" /></a>
+  <a href="LICENSE"><img src="https://img.shields.io/badge/license-Apache--2.0-blue" /></a>
 </p>
 
 # Ante
 
-> **⚠️ Alpha Preview**
-> Ante is currently in alpha and provided as a research preview. Expect breaking changes and incomplete functionality. macOS and Linux only.
+> **Alpha preview**: expect breaking changes and incomplete functionality. macOS and Linux only; on Windows we suggest [WSL](https://learn.microsoft.com/windows/wsl/install).
 
 **A ghost in your shell.** Ante is a self-contained coding agent that lives in your terminal and self-organizes. One ~15MB Rust binary from [Antigma Labs](https://antigma.ai), zero runtime dependencies, built to get the most out of any model.
 
 It works like Claude Code or Codex, with none of their dependencies or model constraints. It can also be the optimized core for building your own harness and high-performing assistants.
 
-> **We care about the harness, not the model or the prompts.**
->
-> **Documentation is the new source code.**
+```sh
+curl -fsSL https://ante.run/install.sh | bash
+ante
+```
 
 Every agent claims to be good. Here are numbers you can check:
 
-### 🥇 Proven in public, on the builds we ship
+### 🥇 Continuously evaled and evolved, in public
 
 Ante runs [Terminal-Bench 2.1](https://antigma.ai/eval) continuously under official leaderboard constraints. For every model we run, Ante is the **#1 same-model agent**. Each result pins the exact build you can download and links the raw Harbor run for independent audit. With open-weight **GLM 5.2, Ante scores 74.6%**: a top-7 slot on the public verified leaderboard.
 
@@ -58,81 +60,7 @@ ante --offline-model ~/.ante/models/Qwen3.5-9B-Q4_K_M.gguf \
 
 The three are one design decision. An agent you can **verify**, **afford**, and **run anywhere** is light enough to run by the *thousands*: the substrate for self-organizing intelligence.
 
-## Beyond the headline numbers
-
-- **Zero vendor lock-in** — Bring your own API key, subscription, or local model. Switch between 12+ providers freely. No account required — not even ours.
-- **Client-daemon architecture** — Run as an interactive TUI, headless CLI, or long-lived server (`ante serve`).
-- **Channel integrations** — Run Ante as a Slack or Discord bot with `ante gateway`.
-- **Multi-agent orchestration** — Spawn sub-agents and coordinate complex tasks across independent, decentralized, and centralized architectures. [See the patterns →](https://docs.antigma.ai/experimental/agent-org)
-- **Extensible** — Custom skills, sub-agents, MCP, and persistent memory across sessions.
-
-## Quick Start
-
-### Installation
-
-Ante is distributed as a single, self-contained binary with no external dependencies — just download and run.
-
-```sh
-curl -fsSL https://ante.run/install.sh | bash
-
-# Install a specific release channel
-curl -fsSL https://ante.run/install.sh | bash -s -- nightly
-
-# Install into a directory already on PATH
-curl -fsSL https://ante.run/install.sh | ANTE_INSTALL_DIR=/usr/local/bin bash
-```
-
-### Interactive TUI
-
-```sh
-ante
-```
-
-### Headless Mode
-
-```sh
-# Fix a bug
-ante -p "find and fix the failing test in src/auth"
-
-# Review a diff
-git diff | ante -p "review this for security issues"
-
-# Use a different provider
-ante --provider openai --model gpt-5.5 -p "refactor the database module"
-
-# Resume a saved session
-ante --resume ses_01ARZ3NDEKTSV4RRFFQ69G5FAV -p "now add tests"
-
-# Run fully offline with a local GGUF model
-ante --offline-model ~/.ante/models/Qwen3.5-9B-Q4_K_M.gguf \
-  -p "add error handling to src/main.rs"
-```
-
-### Server Mode
-
-```sh
-ante serve
-```
-
-### Gateway Mode
-
-```sh
-ante gateway
-```
-
-### Update Ante
-
-```sh
-ante update
-
-# One-off update from a different channel
-ante update --channel nightly
-
-# Roll back or pin to an exact release
-ante update --version v0.preview.33
-```
-
-## Example Usages with TUI
+## See it in action
 
 <table>
 <tr>
@@ -171,7 +99,98 @@ ante update --version v0.preview.33
 
 [See all cookbook guides](https://docs.antigma.ai/usage/providers)
 
-## Architecture
+## Quick Start
+
+### Installation
+
+Ante is a single, self-contained binary with no external dependencies: download and run.
+
+```sh
+curl -fsSL https://ante.run/install.sh | bash
+
+# Install a specific release channel
+curl -fsSL https://ante.run/install.sh | bash -s -- nightly
+
+# Install into a directory already on PATH
+curl -fsSL https://ante.run/install.sh | ANTE_INSTALL_DIR=/usr/local/bin bash
+```
+
+### Modes
+
+| Mode | Command | Use it for |
+|------|---------|------------|
+| [Interactive TUI](https://docs.antigma.ai/usage/tui) | `ante` | day-to-day work in the terminal |
+| [Headless](https://docs.antigma.ai/usage/headless) | `ante -p "..."` | one-shot tasks, scripts, CI |
+| [Server](https://docs.antigma.ai/usage/serve) | `ante serve` | editor plugins and integrations, over a JSONL protocol |
+| [Gateway](https://docs.antigma.ai/usage/gateway) | `ante gateway` | running Ante as a Slack or Discord bot |
+
+### Headless examples
+
+```sh
+# Fix a bug
+ante -p "find and fix the failing test in src/auth"
+
+# Review a diff
+git diff | ante -p "review this for security issues"
+
+# Use a different provider
+ante --provider openai --model gpt-5.5 -p "refactor the database module"
+
+# Resume a saved session
+ante --resume ses_01ARZ3NDEKTSV4RRFFQ69G5FAV -p "now add tests"
+
+# Run fully offline with a local GGUF model
+ante --offline-model ~/.ante/models/Qwen3.5-9B-Q4_K_M.gguf \
+  -p "add error handling to src/main.rs"
+```
+
+### Update Ante
+
+```sh
+ante update
+
+# One-off update from a different channel
+ante update --channel nightly
+
+# Roll back or pin to an exact release
+ante update --version v0.preview.33
+```
+
+## Beyond the headline numbers
+
+- **Zero vendor lock-in**: bring your own API key, subscription, or local model. Switch between 12+ providers freely. No account required, not even with us.
+- **Multi-agent orchestration**: spawn sub-agents and coordinate complex tasks across independent, decentralized, and centralized architectures. [See the patterns →](https://docs.antigma.ai/experimental/agent-org)
+- **Channel integrations**: run Ante as a Slack or Discord bot with `ante gateway`.
+- **Extensible**: custom skills, sub-agents, MCP, and persistent memory across sessions.
+
+## Supported Providers
+
+Ante works with 12+ providers out of the box:
+
+| Provider | Example Models |
+|----------|---------------|
+| Anthropic | Claude Sonnet 4.5, Opus 4.6 |
+| OpenAI | GPT-5 family |
+| Google Gemini | Gemini 3 family |
+| Grok (xAI) | Grok 4 |
+| Open Router | Multiple providers |
+| Local (GGUF) | Any GGUF model via built-in llama.cpp |
+| ...and more | Vertex AI, Zai, Antix, OpenAI-compatible |
+
+Configure providers via environment variables (`ANTHROPIC_API_KEY`, `OPENAI_API_KEY`, etc.) or OAuth. Add custom providers in `~/.ante/catalog.json`.
+
+## What's in this repo
+
+The core harness is developed in a private repository during the alpha and ships as a prebuilt binary via [releases](https://github.com/AntigmaLabs/ante-preview/releases). Everything you build against lives here under Apache 2.0, and core libraries from the harness are included progressively as they stabilize:
+
+- **[`crates/agent-sdk`](crates/agent-sdk)**: Rust SDK and client for agent runtimes.
+- **[`crates/protocol-shape`](crates/protocol-shape)**: protocol schema and wire message shapes spoken by `ante serve`.
+- **[`crates/exec`](crates/exec)**: process execution utilities, the first core library extracted from the harness.
+- **[`ante-harbor/`](ante-harbor)**: the Harbor agent adapter behind our Terminal-Bench results. Use it to reproduce our runs.
+- **[`docs-site/`](docs-site)**: source for [docs.antigma.ai](https://docs.antigma.ai).
+- **[`CHANGELOG.md`](CHANGELOG.md)**: what changed in each release.
+
+The protocol surface maps to Ante's client-daemon architecture:
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
@@ -202,62 +221,31 @@ ante update --version v0.preview.33
 └─────────────────────────────────────────────────────────────┘
 ```
 
-## Supported Providers
-
-Ante works with 12+ providers out of the box:
-
-| Provider | Example Models |
-|----------|---------------|
-| Anthropic | Claude Sonnet 4.5, Opus 4.6 |
-| OpenAI | GPT-5 family |
-| Google Gemini | Gemini 3 family |
-| Grok (xAI) | Grok 4 |
-| Open Router | Multiple providers |
-| Local (GGUF) | Any GGUF model via built-in llama.cpp |
-| ...and more | Vertex AI, Zai, Antix, OpenAI-compatible |
-
-Configure providers via environment variables (`ANTHROPIC_API_KEY`, `OPENAI_API_KEY`, etc.) or OAuth. Add custom providers in `~/.ante/catalog.json`.
-
 ## The bigger picture
+
+> **We care about the harness, not the model or the prompts.**
+>
+> **Documentation is the new source code.**
 
 Ante is designed for **cellular-native** agents: like cells in an organism, tiny, expendable, massively replicated. That thesis is why the three headline claims exist. A cell-scale agent must be *verified* (reliability compounds at scale), *tiny* (every byte is multiplied by thousands), and *self-contained* (no runtime to install, no service to phone home to). Read more in our [philosophy](https://docs.antigma.ai/start/philosophy) and [agent organization patterns](https://docs.antigma.ai/experimental/agent-org).
 
 ## FAQ
 
-### Why <span style="color: #f59e0b;">An</span>other <span style="color: #f59e0b;">Te</span>rminal agent?
+### Why another terminal agent?
 
-The name is the answer: **An**other **Te**rminal agent — and *ante*, the stake you put on the table to play. Ante is fast, lightweight, and the only terminal agent with native local inference built in. We believe a self-contained agent core that self-organizes is the foundation of the coming agent economy.
-
-<details>
-<summary><b>How is Ante different than other agents</b></summary>
-On the high level, it has most of your favorite features (Multi-agents, skills, etc.) of your favorite agents (like Claude Code, Codex, etc.)
-
-- Ante is built from scratch in native Rust. We're obsessed with being self-contained — only essential libraries, no framework or runtime dependencies.
-
-- You only need an LLM provider configured to run it. And if you have the hardware, you don't even need one — Ante natively supports a private inference engine.
-
-- This resulted in ~15MB self-contained binary and multi-agent orchestration designed to run hundreds of replicas in parallel at scale.
-See the [benchmark details](https://docs.antigma.ai/benchmarks/eval) across 20 parallel tasks for concrete numbers.
-
-- Every claim above is backed by public, reproducible benchmarks of the exact builds we ship: see [antigma.ai/eval](https://antigma.ai/eval).
-
-- No vendor lock-in, not even to ourselves. You don't need an account and can reuse your favorite API credentials.
-
-</details>
+The name is the answer: **An**other **Te**rminal agent, and *ante*, the stake you put on the table to play. Ante is fast, lightweight, and the only terminal agent with native local inference built in. We believe a self-contained agent core that self-organizes is the foundation of the coming agent economy.
 
 <details>
-<summary><b>What's your advantage over similar projects?</b></summary>
+<summary><b>How is Ante different from other agents?</b></summary>
 
-Most projects in this space are written in TypeScript or Python and carry heavy runtime dependencies (Node.js, CPython). In practice that usually means an order-of-magnitude larger resource footprint (often ~10×).
+Ante has most of the features you expect from agents like Claude Code or Codex: multi-agents, skills, MCP, persistent memory. The difference is the build philosophy.
 
-We genuinely mean it when we say the agent should be self-contained:
+- Built from scratch in Rust. Core components like `Grep` (fully rebuilt and customized) and `git` are embedded in the same ~15MB binary and run in the same process at runtime, so nothing is shelled out and no resources leak. Most similar projects ship on Node.js or CPython and carry an order-of-magnitude larger footprint.
+- We built our own inference engine from the ground up (see [nanochat-rs](https://github.com/AntigmaLabs/nanochat-rs) for a toy version of that work), so a local GGUF model is all Ante needs to run without any provider.
+- No vendor lock-in, not even to ourselves: no account needed, reuse your existing API credentials. An opt-in, fully integrated server-side experience lives at [antix.antigma.ai](https://antix.antigma.ai).
+- Every claim is backed by public, reproducible benchmarks of the exact builds we ship: [antigma.ai/eval](https://antigma.ai/eval).
 
-- Core components like `Grep` (fully rebuilt and customized) and `git` are **embedded into the same binary** (while maintaining ~15MB size) and run **in the same process** at runtime — not shelled out to external processes — to prevent accidental resource leakage.
-- We've built our own inference engine from the ground up. (See [nanochat-rs](https://github.com/AntigmaLabs/nanochat-rs), a toy version of the kind of work that goes into it.)
-- There's an opt-in, fully integrated server-side experience at [antix.antigma.ai](https://antix.antigma.ai).
-- And much more in the pipeline — including a multi-agent platform.
-
-Beyond the footprint, it comes down to agent architecture — and ultimately to *who* is building it, and with what philosophy. Anyone can fork a binary; taste and engineering rigor don't copy. Those differences leak into every detail of the product.
+Beyond the footprint it comes down to agent architecture, and ultimately to *who* is building it and with what philosophy. Anyone can fork a binary; taste and engineering rigor don't copy. Those differences leak into every detail of the product.
 
 </details>
 
@@ -289,10 +277,7 @@ Server mode runs Ante as a long-lived daemon that communicates over a structured
 
 ## Documentation
 
-> **Documentation is the new source code.**
-
 Full documentation is available at [docs.antigma.ai](https://docs.antigma.ai).
-The source code is in `docs-site/docs`
 
 ## License
 
