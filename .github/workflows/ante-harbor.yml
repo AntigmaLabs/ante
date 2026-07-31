@@ -3,10 +3,10 @@ name: Harbor Test
 on:
   workflow_dispatch:
     inputs:
-      release_tag:
-        description: 'GitHub release tag to test (e.g., main, v0.1.0)'
+      install_args:
+        description: 'install.sh args for the Ante build to test (e.g. stable, nightly, a version); empty = install.sh default'
         required: false
-        default: 'main'
+        default: ''
       harbor_args:
         description: 'Arguments to pass to harbor'
         required: true
@@ -16,9 +16,13 @@ on:
         required: false
         default: 'gemini-3-pro-preview'
       provider:
-        description: 'Model provider (anthropic, openai, etc.)'
+        description: 'Model provider (anthropic, openai, gemini, etc.)'
         required: false
         default: 'gemini'
+      effort:
+        description: 'Reasoning effort passed to ante --effort'
+        required: false
+        default: ''
       model_base_url:
         description: 'Base URL for model API'
         required: false
@@ -27,14 +31,6 @@ on:
         description: 'Model temperature'
         required: false
         default: ''
-      model_top_p:
-        description: 'Model top-p'
-        required: false
-        default: ''
-      model_thinking:
-        description: 'Enable model thinking'
-        required: false
-        default: 'enabled'
       model_max_tokens:
         description: 'Max tokens for model'
         required: false
@@ -60,14 +56,13 @@ jobs:
           echo "=========================================="
           echo "         Workflow Input Parameters        "
           echo "=========================================="
-          echo "release_tag:       ${{ github.event.inputs.release_tag }}"
+          echo "install_args:      ${{ github.event.inputs.install_args }}"
           echo "harbor_args:       ${{ github.event.inputs.harbor_args }}"
           echo "model_name:        ${{ github.event.inputs.model_name }}"
           echo "provider:          ${{ github.event.inputs.provider }}"
+          echo "effort:            ${{ github.event.inputs.effort }}"
           echo "model_base_url:    ${{ github.event.inputs.model_base_url }}"
           echo "model_temperature: ${{ github.event.inputs.model_temperature }}"
-          echo "model_top_p:       ${{ github.event.inputs.model_top_p }}"
-          echo "model_thinking:    ${{ github.event.inputs.model_thinking }}"
           echo "model_max_tokens:  ${{ github.event.inputs.model_max_tokens }}"
           echo "runs_on:           ${{ github.event.inputs.runs_on }}"
           echo "run_count:         ${{ github.event.inputs.run_count }}"
@@ -130,39 +125,58 @@ jobs:
       - name: Run Harbor tests
         id: run-tests
         env:
-          TAG: ${{ github.event.inputs.release_tag }}
-          GITHUB_TOKEN: ${{ secrets.ANTE_GITHUB_TOKEN }}
+          INSTALL_ARGS: ${{ github.event.inputs.install_args }}
+          HARBOR_ARGS: ${{ github.event.inputs.harbor_args }}
+          MODEL_NAME: ${{ github.event.inputs.model_name }}
+          PROVIDER: ${{ github.event.inputs.provider }}
+          EFFORT: ${{ github.event.inputs.effort }}
           MODEL_BASE_URL: ${{ github.event.inputs.model_base_url }}
+          MODEL_TEMPERATURE: ${{ github.event.inputs.model_temperature }}
+          MODEL_MAX_TOKENS: ${{ github.event.inputs.model_max_tokens }}
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
-          VERTEX_GEMINI_API_KEY: ${{ secrets.VERTEX_GEMINI_API_KEY }}
-          MODEL_NAME: ${{ github.event.inputs.model_name }}
-          PROVIDER: ${{ github.event.inputs.provider }}
-          MODEL_TEMPERATURE: ${{ github.event.inputs.model_temperature }}
-          MODEL_TOP_P: ${{ github.event.inputs.model_top_p }}
-          MODEL_THINKING: ${{ github.event.inputs.model_thinking }}
-          MODEL_MAX_TOKENS: ${{ github.event.inputs.model_max_tokens }}
-          HARBOR_ARGS: ${{ github.event.inputs.harbor_args }}
-          GITHUB_RUN_ID: ${{ github.run_id }}
           ANTE_ENV: github_action
-          ANTE_TAG: ${{ github.event.inputs.release_tag }}
-          GRAFANA_CLOUD_AUTH: ${{ secrets.GRAFANA_CLOUD_AUTH }}
-          GRAFANA_CLOUD_URL: ${{ vars.GRAFANA_CLOUD_URL }}
         run: |
           cd $HOME/harbor
-          cp -r "$GITHUB_WORKSPACE/.github/ante" .
 
           echo "=== Run ${{ matrix.run_index }} of ${{ github.event.inputs.run_count }} ==="
           echo "Running harbor with args: $HARBOR_ARGS and model: $MODEL_NAME"
-          
-          # Unset MODEL_BASE_URL if it's empty
-          if [ -z "$MODEL_BASE_URL" ]; then
-            unset MODEL_BASE_URL
+
+          # Only the selected provider's credential is forwarded into the sandbox.
+          case "$PROVIDER" in
+            anthropic) CRED=ANTHROPIC_API_KEY ;;
+            openai) CRED=OPENAI_API_KEY ;;
+            gemini) CRED=GEMINI_API_KEY ;;
+            *) echo "Unsupported provider: $PROVIDER" >&2; exit 1 ;;
+          esac
+          if [ -z "${!CRED}" ]; then
+            echo "$CRED is not set for provider $PROVIDER" >&2
+            exit 1
           fi
-          
+
+          CMD=(uv run harbor run
+            --agent ante_agent:AnteAgent
+            --model "$MODEL_NAME"
+            --ak "provider=$PROVIDER"
+            --ak "install_args=$INSTALL_ARGS")
+          if [ -n "$EFFORT" ]; then
+            CMD+=(--ak "reasoning_effort=$EFFORT")
+          fi
+          # ${KEY} is passed literally; harbor expands it when building the sandbox env.
+          CMD+=(--ae "$CRED=\${$CRED}")
+          for key in MODEL_BASE_URL MODEL_TEMPERATURE MODEL_MAX_TOKENS ANTE_ENV; do
+            if [ -n "${!key}" ]; then
+              CMD+=(--ae "$key=\${$key}")
+            fi
+          done
+          CMD+=($HARBOR_ARGS)
+
+          # The adapter is imported from the checkout; harbor resolves it via PYTHONPATH.
+          export PYTHONPATH="$GITHUB_WORKSPACE/ante-harbor${PYTHONPATH:+:$PYTHONPATH}"
+
           # Use sg to run with docker group permissions (avoids needing to log out/in)
-          sg docker -c "uv run harbor run --agent-import-path ante.ante_agent:AnteAgent --model \"$MODEL_NAME\" $HARBOR_ARGS"
+          sg docker -c "$(printf '%q ' "${CMD[@]}")"
 
       - name: Collect results
         if: always()

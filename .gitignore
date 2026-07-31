@@ -25,3 +25,7 @@ target
 
 # Obsidian vault config
 .obsidian/
+
+# Python bytecode (ante-harbor agent adapter)
+__pycache__/
+*.pyc
