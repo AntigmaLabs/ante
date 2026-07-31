@@ -388,6 +388,10 @@ pub struct SessionOverrides {
     pub enable_auto_memory: Option<bool>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub short_prompt: Option<bool>,
+    /// When true, the session loads no skills: none are discovered,
+    /// advertised, or invocable.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub no_skills: Option<bool>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
