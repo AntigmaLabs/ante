@@ -1,5 +1,21 @@
 # Changelog
 
+## v0.preview.68 - 2026-07-31
+
+### Added
+- `/term <name> [args...]` launches the named binary in the fresh session — `/term claude --continue` opens a split already running claude; existing sessions still just attach
+- `terminals` status-line chip (on by default) showing live `ante-*` tmux sessions by name
+- `--no-skills` run flag: skip skill discovery entirely (nothing advertised in the system prompt or dispatchable as commands); `/resume` preserves the choice
+
+### Changed
+- Repeated `/term` calls stack viewer splits in one right-hand column, replacing the composed `ante-view-*` viewer — every agent keeps a full-width column and Ante keeps its size
+- Two-row footer: identity items (model, dir, branch, …) on top, permission mode and activity chips beneath
+- Default DeepSeek V4 Flash to max reasoning effort on all routes (Antix, direct, OpenRouter)
+- Dependency updates
+
+### Fixed
+- Fully typed commands that take arguments (e.g. bare `/term`) no longer swallow the first Enter
+
 ## v0.preview.67 - 2026-07-29
 
 ### Added
