@@ -19,10 +19,10 @@ uv run harbor run \
   --n-attempts 5
 ```
 
-The Ante agent adapter (`ante_agent.py` and `ante_events.py`) lives in the
-`ante-harbor` directory and is put on `PYTHONPATH` for the harbor run. Ante
-itself is installed inside each sandbox from the published install.sh
-(`https://download.ante.run/install.sh`) using `install_args`.
+This directory contains the Ante agent adapter (`ante_agent.py` and
+`ante_events.py`), which the workflow puts on `PYTHONPATH` for the harbor
+run. Ante itself is installed inside each sandbox from the published
+install.sh (`https://download.ante.run/install.sh`) using `install_args`.
 
 ## Workflow Parameters
 
