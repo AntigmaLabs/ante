@@ -181,14 +181,13 @@ Configure providers via environment variables (`ANTHROPIC_API_KEY`, `OPENAI_API_
 
 ## What's in this repo
 
-The core harness is developed in a private repository during the alpha and ships as a prebuilt binary via [releases](https://github.com/AntigmaLabs/ante-preview/releases). Everything you build against lives here under Apache 2.0, and core libraries from the harness are included progressively as they stabilize:
+We open sourced what really matters in the age of agentic coding, all under Apache 2.0:
 
-- **[`crates/agent-sdk`](crates/agent-sdk)**: Rust SDK and client for agent runtimes.
-- **[`crates/protocol-shape`](crates/protocol-shape)**: protocol schema and wire message shapes spoken by `ante serve`.
-- **[`crates/exec`](crates/exec)**: process execution utilities, the first core library extracted from the harness.
-- **[`ante-harbor/`](ante-harbor)**: the Harbor agent adapter behind our Terminal-Bench results. Use it to reproduce our runs.
-- **[`docs-site/`](docs-site)**: source for [docs.antigma.ai](https://docs.antigma.ai).
-- **[`CHANGELOG.md`](CHANGELOG.md)**: what changed in each release.
+1. **Detailed documentation, the descriptive truth.** [`docs-site/`](docs-site) is the source for [docs.antigma.ai](https://docs.antigma.ai): a precise description of what the harness does and how to drive it.
+2. **The protocol, the algorithm of the core.** [`crates/protocol-shape`](crates/protocol-shape) defines the schema and wire messages spoken by `ante serve`; [`crates/agent-sdk`](crates/agent-sdk) is the Rust SDK and client for building against agent runtimes.
+3. **The eval pipeline, constraint and continuous improvement.** [`ante-harbor/`](ante-harbor) is the Harbor agent adapter behind our Terminal-Bench results: use it to reproduce any run at [antigma.ai/eval](https://antigma.ai/eval). [`CHANGELOG.md`](CHANGELOG.md) records the improvement, release by release.
+
+The core harness itself is developed in a private repository during the alpha and ships as a prebuilt binary via [releases](https://github.com/AntigmaLabs/ante-preview/releases). Core libraries from it are included here progressively as they stabilize; [`crates/exec`](crates/exec), standalone process execution, is the first.
 
 The protocol surface maps to Ante's client-daemon architecture:
 
