@@ -1,5 +1,19 @@
 # Changelog
 
+## v0.preview.69 - 2026-08-02
+
+### Added
+- Shift+Enter and Ctrl+Enter insert a newline in the composer on terminals with kitty keyboard protocol support (kitty, ghostty, WezTerm, iTerm2 3.5+, Alacritty 0.13+)
+
+### Changed
+- Diff View V2 across all diff surfaces — chat Edit/Write details, the `/diff` pager, the approval Tab preview, and the theme dialog: numbered line gutter, full-width added/removed background bands, and `+N -M` change counts inline in headers
+
+### Fixed
+- Normalize MCP tool schemas to the portable provider subset at ingestion, so servers using advanced JSON Schema keywords (`exclusiveMinimum`, `$ref`, `oneOf`, …) no longer get requests rejected by strict providers such as Gemini
+- Merge system prompt fragments into a single leading system message for unrecognized OpenAI-compatible models, fixing strict local chat templates that error on multiple system messages
+- Spinner token count now shows only tokens generated this turn (it previously re-added the full context every generation, inflating wildly), with a ↑/↓ request/stream phase arrow
+- Gemini quota errors that mention token limits are classified as quota, not context overflow, so they no longer trigger futile compaction
+
 ## v0.preview.68 - 2026-07-31
 
 ### Added
