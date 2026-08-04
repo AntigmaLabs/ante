@@ -1,5 +1,23 @@
 # Changelog
 
+## v0.preview.70 - 2026-08-03
+
+### Added
+- `--profile <name>`: named settings profiles as whole-file replacement settings files (`<name>.settings.json`), plus the `ANTE_PROFILE` env var and a built-in file-less `bare` profile
+- Bare `/term` opens a terminal picker — list, attach/detach, kill, and create sessions
+
+### Changed
+- Updates now ride the normal TUI flow: when a new version is available an in-chat notice shows its release notes, and `/update` installs it on exit (`/update skip` dismisses that version, `/update cancel` unschedules); the blocking startup modal is gone, and running sessions now check for updates hourly
+- Use DeepSeek V4 Flash 0731 on OpenRouter
+- Nightly builds log at debug level by default
+- SKILL.md reads are labeled as skill loads in the transcript
+
+### Fixed
+- `ante catalog` exits cleanly instead of panicking when its output pipe closes early
+- Brighter agent response text; thinking text pinned to foreground gray
+- Hidden hardware cursor parked at the composer so OS IME popups appear at the caret
+- Z.ai five-hour usage-limit errors (code 1308) are classified as terminal quota instead of being retried
+
 ## v0.preview.69 - 2026-08-02
 
 ### Added
