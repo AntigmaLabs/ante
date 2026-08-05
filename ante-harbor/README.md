@@ -92,7 +92,7 @@ install.sh (`https://download.ante.run/install.sh`) using `install_args`.
 - **Description**: Number of times to run Harbor tests (each run is a separate job)
 - **Default**: `1`
 - **Required**: No
-- **Usage**: Number of independent test runs to execute. Each run is a separate job. The workflow is configured with a 120-hour timeout (`timeout-minutes: 7200`), but note that GitHub-hosted runners have a hard 6-hour limit regardless of the configured timeout. Self-hosted runners can utilize the full 120-hour timeout. Runs execute sequentially (`max-parallel: 1`). Useful for long-running tests that exceed a single job's time limit on GitHub-hosted runners.
+- **Usage**: Number of independent test runs to execute (an integer from 1 to 100). Each run is a separate job. The workflow is configured with a 120-hour timeout (`timeout-minutes: 7200`), but note that GitHub-hosted runners have a hard 6-hour limit regardless of the configured timeout. Self-hosted runners can utilize the full 120-hour timeout. Runs execute sequentially (`max-parallel: 1`). Useful for long-running tests that exceed a single job's time limit on GitHub-hosted runners.
 
 ## Execution Details
 

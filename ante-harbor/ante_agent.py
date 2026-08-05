@@ -147,28 +147,49 @@ def with_install_prerequisites(command: str) -> str:
     return "\n".join([install_prerequisites_command(), command])
 
 
-def setup_log_command(command: str, *, append: bool = True) -> str:
-    """Mirror setup output to Harbor Hub's conventional setup log path."""
-    escaped_setup_dir = shlex.quote(str(_SETUP_LOG.parent))
-    escaped_setup_path = shlex.quote(str(_SETUP_LOG))
-    tee_args = f"-a {escaped_setup_path}" if append else escaped_setup_path
+def _tee_command(command: str, log_path: Path, *, append: bool) -> str:
+    escaped_log_dir = shlex.quote(str(log_path.parent))
+    escaped_log_path = shlex.quote(str(log_path))
+    tee_args = f"-a {escaped_log_path}" if append else escaped_log_path
     return "\n".join(
         [
-            f"mkdir -p {escaped_setup_dir}",
+            f"mkdir -p {escaped_log_dir} || exit",
+            "status_file=$(mktemp) || exit",
+            "trap 'rm -f \"$status_file\"' EXIT",
             "{",
-            command,
+            f"  sh -c {shlex.quote(command)}",
+            "  command_status=$?",
+            "  printf '%s\\n' \"$command_status\" > \"$status_file\" || exit",
             f"}} 2>&1 | tee {tee_args}",
+            "tee_status=$?",
+            "command_status=$(cat \"$status_file\") || exit",
+            "case \"$command_status\" in ''|*[!0-9]*) exit 1 ;; esac",
+            "if [ \"$command_status\" -ne 0 ]; then exit \"$command_status\"; fi",
+            "exit \"$tee_status\"",
         ]
     )
+
+
+def setup_log_command(command: str, *, append: bool = True) -> str:
+    """Mirror setup output to Harbor Hub's conventional setup log path."""
+    logged_command = "\n".join(["set -e", command])
+    return _tee_command(logged_command, _SETUP_LOG, append=append)
 
 
 def install_command_from_args(install_args: str) -> str:
     """Build a robust in-sandbox install.sh command for published Ante builds."""
     quoted_args = " ".join(shlex.quote(arg) for arg in shlex.split(install_args or ""))
-    install_line = (
-        "curl -fsSL https://download.ante.run/install.sh | "
-        f"ANTE_INSTALL_DIR=/usr/local/bin NO_MODIFY_PATH=true bash -s -- {quoted_args}"
-    ).rstrip()
+    install_line = "\n".join(
+        [
+            "installer=$(mktemp)",
+            "trap 'rm -f \"$installer\"' EXIT",
+            "curl -fsSL https://download.ante.run/install.sh -o \"$installer\"",
+            (
+                "ANTE_INSTALL_DIR=/usr/local/bin NO_MODIFY_PATH=true "
+                f'bash "$installer" {quoted_args}'
+            ).rstrip(),
+        ]
+    )
     return with_install_prerequisites(install_line)
 
 
@@ -204,14 +225,14 @@ def ante_command(
         args += ["--effort", effort]
     args += split_extra_ante_args(ante_args)
     command = " ".join(shlex.quote(arg) for arg in args)
-    escaped_log_dir = shlex.quote(str(_AGENT_LOG.parent))
-    escaped_log_path = shlex.quote(str(_AGENT_LOG))
     escaped_instruction_path = shlex.quote(str(_INSTRUCTION_PATH))
-    return (
-        f"trap 'rm -f {escaped_instruction_path}' EXIT && "
-        f"mkdir -p {escaped_log_dir} && "
-        f"{command} < {escaped_instruction_path} 2>&1 | tee {escaped_log_path}"
+    logged_command = "\n".join(
+        [
+            f"trap 'rm -f {escaped_instruction_path}' EXIT",
+            f"{command} < {escaped_instruction_path}",
+        ]
     )
+    return _tee_command(logged_command, _AGENT_LOG, append=False)
 
 
 async def upload_instruction(environment: BaseEnvironment, instruction: str) -> None:
