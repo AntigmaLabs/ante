@@ -976,8 +976,24 @@ mod tests {
             limit_tokens: Some(200_000),
             compact_buffer_tokens: 20_000,
         };
-        let json = serde_json::to_string(&Evt::ContextReport(breakdown)).expect("serialize");
-        let decoded = serde_json::from_str::<Evt>(&json).expect("deserialize");
+        let json = serde_json::to_value(Evt::ContextReport(breakdown)).expect("serialize");
+        assert_eq!(
+            json,
+            serde_json::json!({
+                "ContextReport": {
+                    "system_prompt_tokens": 1200,
+                    "system_tools_tokens": 3400,
+                    "mcp_tools_tokens": 0,
+                    "memory_tokens": 800,
+                    "skills_tokens": 150,
+                    "messages_tokens": 42000,
+                    "used_tokens": 47550,
+                    "limit_tokens": 200000,
+                    "compact_buffer_tokens": 20000
+                }
+            })
+        );
+        let decoded = serde_json::from_value::<Evt>(json).expect("deserialize");
         assert!(matches!(decoded, Evt::ContextReport(b) if b == breakdown));
 
         // Fields absent on the wire (older daemons) fall back to defaults.
@@ -986,8 +1002,9 @@ mod tests {
         assert_eq!(sparse.used_tokens, 10);
         assert_eq!(sparse.limit_tokens, None);
 
-        let op = serde_json::to_string(&Op::ContextReport).expect("serialize op");
-        assert!(matches!(serde_json::from_str::<Op>(&op).unwrap(), Op::ContextReport));
+        let op = serde_json::to_value(Op::ContextReport).expect("serialize op");
+        assert_eq!(op, serde_json::json!("ContextReport"));
+        assert!(matches!(serde_json::from_value::<Op>(op).unwrap(), Op::ContextReport));
     }
 
     #[test]
