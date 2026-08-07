@@ -41,6 +41,7 @@ from harbor.agents.installed.base import (
 )
 from harbor.environments.base import BaseEnvironment
 from harbor.models.agent.context import AgentContext
+from harbor.models.trial.result import AgentInfo, ModelInfo
 from harbor.utils.trajectory_utils import format_trajectory_json
 
 
@@ -53,7 +54,7 @@ ENABLE_ATIF_ENV = "ANTE_ENABLE_ATIF"
 # Extra Ante behavior flags used when the caller passes none. Model/provider are
 # structured inputs owned by the adapter, never part of this string. run.py
 # imports this so the orchestrator and adapter defaults cannot drift.
-DEFAULT_ANTE_ARGS = "--yolo --output-format json --check"
+DEFAULT_ANTE_ARGS = "--yolo --output-format json --no-session-save --no-skills"
 
 _HARBOR_ERROR_BY_EXCEPTION_KIND = {
     "rate_limited": ApiRateLimitError,
@@ -286,6 +287,18 @@ class AnteAgent(BaseInstalledAgent):
     @staticmethod
     def name() -> str:
         return "ante"
+
+    def to_agent_info(self) -> AgentInfo:
+        """Report the provider and model consumed by Ante without re-parsing them."""
+        return AgentInfo(
+            name=self.name(),
+            version=self.version() or "unknown",
+            model_info=(
+                ModelInfo(name=self.model_name, provider=self._provider)
+                if self.model_name
+                else None
+            ),
+        )
 
     async def _installed_ante_matches_requested_version(
         self, environment: BaseEnvironment

@@ -21,7 +21,8 @@ class _Model:
 
 
 class _BaseInstalledAgent:
-    pass
+    def version(self):
+        return getattr(self, "_version", None)
 
 
 def _install_harbor_stubs() -> None:
@@ -35,6 +36,8 @@ def _install_harbor_stubs() -> None:
         "harbor.models": types.ModuleType("harbor.models"),
         "harbor.models.agent": types.ModuleType("harbor.models.agent"),
         "harbor.models.agent.context": types.ModuleType("harbor.models.agent.context"),
+        "harbor.models.trial": types.ModuleType("harbor.models.trial"),
+        "harbor.models.trial.result": types.ModuleType("harbor.models.trial.result"),
         "harbor.models.trajectories": types.ModuleType("harbor.models.trajectories"),
         "harbor.utils": types.ModuleType("harbor.utils"),
         "harbor.utils.trajectory_utils": types.ModuleType("harbor.utils.trajectory_utils"),
@@ -60,6 +63,8 @@ def _install_harbor_stubs() -> None:
     base.with_prompt_template = lambda function: function
     modules["harbor.environments.base"].BaseEnvironment = _Model
     modules["harbor.models.agent.context"].AgentContext = _Model
+    modules["harbor.models.trial.result"].AgentInfo = _Model
+    modules["harbor.models.trial.result"].ModelInfo = _Model
     trajectories = modules["harbor.models.trajectories"]
     for name in (
         "Agent",
@@ -129,6 +134,27 @@ class ShellCommandTests(unittest.TestCase):
             self.assertEqual(result.returncode, 19)
             self.assertEqual(log.read_text(), "agent output\n")
             self.assertFalse(instruction.exists())
+
+
+class AdapterMetadataTests(unittest.TestCase):
+    def test_default_args_disable_session_persistence_and_skills(self):
+        self.assertEqual(
+            ante_agent.DEFAULT_ANTE_ARGS,
+            "--yolo --output-format json --no-session-save --no-skills",
+        )
+
+    def test_agent_info_preserves_runtime_provider_and_full_model_name(self):
+        agent = object.__new__(ante_agent.AnteAgent)
+        agent._version = "1.2.3"
+        agent.model_name = "deepseek/deepseek-v4-flash-0731"
+        agent._provider = "openrouter"
+
+        info = agent.to_agent_info()
+
+        self.assertEqual(info.name, "ante")
+        self.assertEqual(info.version, "1.2.3")
+        self.assertEqual(info.model_info.name, "deepseek/deepseek-v4-flash-0731")
+        self.assertEqual(info.model_info.provider, "openrouter")
 
 
 if __name__ == "__main__":
