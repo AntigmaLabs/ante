@@ -1,5 +1,20 @@
 # Changelog
 
+## v0.preview.71 - 2026-08-07
+
+### Added
+- `ante doctor` checks that the Ante home directory (`~/.ante`) is writable
+
+### Changed
+- Dependency updates
+
+### Fixed
+- Cancelling a running Bash tool call now kills its whole process group, so grandchild processes no longer keep running after Ante reports execution stopped
+- Streaming model calls that produce no usable output within 5 minutes fail with a timeout instead of hanging the turn indefinitely
+- The installer refuses `sudo` installs that would leave `~/.ante` root-owned, and startup shows a visible notice when the Ante home is unwritable
+- Proxy `auth_unavailable` credential failures are classified as terminal auth errors instead of consuming the reconnect budget
+- Parameterless tool schemas keep an explicit empty `properties` object on OpenAI-compatible requests, fixing rejections from strict endpoints
+
 ## v0.preview.70 - 2026-08-03
 
 ### Added
