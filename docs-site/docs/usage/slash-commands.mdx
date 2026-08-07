@@ -20,7 +20,8 @@ Type `/` in the [interactive TUI](/usage/tui) to run built-in commands for commo
 | `/models` | Select a model and effort level for the current provider |
 | `/providers` | Select an available provider for the current session |
 | `/offline-mode` | Run a local model with the built-in inference engine |
-| `/term [name ...]` | Open a native terminal window on a shared tmux session the agent can drive too; several names show side by side — see [Terminal sessions](/usage/tui#terminal-sessions) |
+| `/term [name [args...]]` | With no name, open the terminal-session picker; with a name, attach or detach that tmux session, launching a same-named command plus arguments when the session is new — see [Terminal sessions](/usage/tui#terminal-sessions) |
+| `/update [skip \| cancel]` | Schedule the pending update for installation on exit; `skip` dismisses that version and `cancel` unschedules an accepted update |
 | `/context` | Visualize current context usage as a colored grid, broken down by category |
 | `/welcome` | Show the welcome/onboarding dialog |
 | `/resume` | Resume a previous session in this directory |

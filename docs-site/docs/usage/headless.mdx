@@ -46,6 +46,7 @@ ante [OPTIONS] [--prompt <PROMPT>]
 | `-p`, `--prompt <PROMPT>` | The prompt to run |
 | `-m`, `--model <MODEL>` | Override the model name |
 | `--provider <PROVIDER>` | Override the API provider (e.g. `anthropic`, `openai`, `gemini`, `xai`, `openrouter`, `local`) |
+| `--profile <NAME>` | Use `~/.ante/<name>.settings.json` instead of `settings.json`; `ANTE_PROFILE` is equivalent, and the built-in `bare` profile disables ambient features, skills, MCP servers, session saving, and auto-memory |
 | `--effort <LEVEL>` | Override the model's [effort level](/usage/models-and-thinking#effort): `min`, `low`, `medium`, `high`, `xhigh`, or `max` |
 | `--yolo` | Skip all tool approval prompts |
 | `--permission-mode <MODE>` | Accepted for CLI compatibility, but headless runs always use `yolo` because there is no interactive approval prompt |
@@ -54,6 +55,7 @@ ante [OPTIONS] [--prompt <PROMPT>]
 | `--system-prompt-file <PATH>` | Read the replacement system prompt from a UTF-8 file. Conflicts with `--system-prompt` |
 | `--append-system-prompt <TEXT>` | Append text to the system prompt |
 | `--short-prompt` | Use the compact prompt set: a condensed system prompt and shorter built-in tool descriptions |
+| `--no-skills` | Skip all skill discovery; no skills are advertised or invocable |
 | `--tools <TOOLS>...` | Replace the default tool set with exactly these tools. Deprecated alias: `--allowed-tools` still works but prints a warning |
 | `--include-tools <TOOLS>...` | Add tools on top of the default set, or on top of the `--tools` base set |
 | `--exclude-tools <TOOLS>...` | Remove tools after `--tools` and `--include-tools` are applied. Deprecated alias: `--disallowed-tools` still works but prints a warning |
@@ -135,7 +137,7 @@ ante --yolo -p "run cargo clippy and fix all warnings"
 ### Code generation
 
 ```bash
-ante --model claude-sonnet-4-6 --check \
+ante --model claude-sonnet-5 --check \
   -p "add comprehensive unit tests for src/core/session.rs"
 ```
 

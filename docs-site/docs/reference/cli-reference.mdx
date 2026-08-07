@@ -34,6 +34,7 @@ Without `--prompt`, Ante starts the interactive TUI. With `--prompt`, Ante runs 
 |---|---|
 | `-m`, `--model <MODEL>` | Override the default model name. |
 | `--provider <PROVIDER>` | Override the API provider by catalog provider name. |
+| `--profile <NAME>` | Use `~/.ante/<name>.settings.json` as a whole-file replacement for `settings.json` for this run. An unknown name starts from defaults. The built-in file-less `bare` profile disables skills, MCP servers, session saving, auto-memory, and ambient UI features. Can also be set with `ANTE_PROFILE`. |
 | `--effort <LEVEL>` | Override the model's [effort level](/usage/models-and-thinking#effort) for this run: `min`, `low`, `medium`, `high`, `xhigh`, or `max`. |
 | `--yolo` | Skip tool approval prompts for the session. |
 | `--permission-mode <MODE>` | Override the permission mode for this run: `strict`, `auto`, or `yolo`. Conflicts with `--yolo`. |
@@ -41,6 +42,7 @@ Without `--prompt`, Ante starts the interactive TUI. With `--prompt`, Ante runs 
 | `--system-prompt-file <PATH>` | Read the replacement system prompt from a UTF-8 file. Conflicts with `--system-prompt`. |
 | `--append-system-prompt <TEXT>` | Append content to the default system prompt. |
 | `--short-prompt` | Use the compact prompt set for this run: a condensed system prompt and shorter built-in tool descriptions. Persist the default with the `short_prompt` [setting](/configuration/preference). |
+| `--no-skills` | Skip skill discovery for this run. No skills are advertised to the model or available as slash commands. |
 | `--enable-auto-memory` | Enable auto-memory for this run. Conflicts with `--disable-auto-memory`. |
 | `--disable-auto-memory` | Disable auto-memory for this run. Conflicts with `--enable-auto-memory`. |
 | `--tools <TOOLS>...` | Replace the default tool set with exactly these tools. Values are space-separated. Deprecated alias: `--allowed-tools` still works but prints a warning. |
@@ -63,6 +65,8 @@ ante -p "explain what this project does"
 git diff | ante -p "review this diff for bugs"
 ante --provider openai --model gpt-5.6-sol -p "refactor the database module"
 ante --effort max -p "find the race condition in the scheduler"
+ante --profile work
+ante --profile bare -p "review this repository"
 ante --resume ses_01ARZ3NDEKTSV4RRFFQ69G5FAV -p "now add tests"
 ante -p "summarize this repo" --enable-auto-memory
 ```
@@ -136,7 +140,7 @@ Gateway mode connects Ante to Slack, Discord, or both using the channels config 
 
 ```bash
 ante gateway
-ante gateway --provider anthropic --model claude-sonnet-4-6
+ante gateway --provider anthropic --model claude-sonnet-5
 ante gateway --config ./channels.json --output-format human
 ```
 
@@ -155,7 +159,7 @@ The update command checks for a newer Ante release and installs it when one is a
 | Flag | Description |
 |---|---|
 | `--channel <CHANNEL>` | Release channel to update from. Equivalent to the positional form. |
-| `--version <VERSION>` | Install an exact release instead of the channel's newest release. Accepts values with or without a leading `v`, such as `v0.preview.33` or `0.preview.33`. Conflicts with channel arguments. |
+| `--version <VERSION>` | Install an exact release instead of the channel's newest release. Accepts values with or without a leading `v`, such as `v0.preview.71` or `0.preview.71`. Conflicts with channel arguments. |
 | `-h`, `--help` | Print command help. |
 
 ### Examples
@@ -164,7 +168,7 @@ The update command checks for a newer Ante release and installs it when one is a
 ante update
 ante update nightly
 ante update --channel stable
-ante update --version v0.preview.33
+ante update --version v0.preview.71
 ```
 
 ## `ante rage`
@@ -229,7 +233,7 @@ ante doctor
 
 Boot the same runtime a real launch uses — load the merged catalog, start a daemon session, and render the first TUI frame — then print a readiness report with per-phase timings. Use it to confirm Ante is installed and configured correctly, or as a CI smoke test ("does Ante boot, does the first frame render").
 
-It needs no TTY and no API key: MCP warm-up is skipped and the session reaches readiness from the catalog alone. The report lists three checks — `catalog` (provider/model counts), `session` (the resolved `provider/model`), and `first frame` (the headless render) — followed by a total. Warnings (such as no authenticated provider, a skipped catalog entry, or a `settings.json` parse notice) are listed below the table without failing the check. `doctor` exits non-zero if any hard check fails, so it works in scripts.
+It needs no TTY and no API key: MCP warm-up is skipped and the session reaches readiness from the catalog alone. The report lists four checks — `home` (the Ante home and input history are writable), `catalog` (provider/model counts), `session` (the resolved `provider/model`), and `first frame` (the headless render) — followed by a total. Warnings (such as no authenticated provider, a skipped catalog entry, or a `settings.json` parse notice) are listed below the table. `doctor` exits non-zero if any hard check fails, including an unwritable Ante home, so it works in scripts.
 
 ### Examples
 

@@ -18,16 +18,26 @@ If a newer version exists, Ante runs the installer for the same channel and prin
 
 If you are already on the latest version, Ante prints a confirmation and exits without touching the binary.
 
+### Update from the TUI
+
+When a newer release is available, the running TUI adds an in-chat notice with a preview of its release notes. It never blocks startup with a modal.
+
+- `/update` schedules that release to install when you exit Ante
+- `/update cancel` keeps the offer but cancels a scheduled exit install
+- `/update skip` dismisses that version permanently; a later version can still be offered
+
+The install choice is scoped to the running session. Ante applies an accepted update after restoring the terminal on exit, then the next launch uses the new binary.
+
 ## Pin or roll back
 
 Install an exact release with `--version`:
 
 ```bash
-ante update --version v0.preview.33
-ante update --version 0.preview.33
+ante update --version v0.preview.71
+ante update --version 0.preview.71
 ```
 
-This bypasses the channel's "newer than current" check, so it can upgrade, reinstall the current version, or roll back to an older published release. When rolling back, Ante remembers the version you left so the next background update prompt does not immediately offer to reinstall it.
+This bypasses the channel's "newer than current" check, so it can upgrade, reinstall the current version, or roll back to an older published release. When rolling back, Ante remembers the version you left so the next background update notice does not immediately offer to reinstall it.
 
 ## Channels
 
@@ -38,7 +48,7 @@ A release channel is a named track of builds. Ante publishes two:
 | `stable` | Recommended for daily use. Tagged releases published from the release workflow. |
 | `nightly` | Built from the development branch. New features and bugs land here first. |
 
-The default channel is `stable`. The channel a binary tracks is stored in `~/.ante/settings.json` under the `channel` field — `ante update` reads this on every run, and the in-app update prompt uses the same setting.
+The default channel is `stable`. The channel a binary tracks is stored in `~/.ante/settings.json` under the `channel` field. `ante update` reads the default settings file on every run; a TUI started with a [named profile](/configuration/preference#named-profiles) uses that profile's channel for its in-app update notices.
 
 ```json
 {
@@ -84,4 +94,4 @@ curl -fsSL https://ante.run/install.sh | ANTE_INSTALL_DIR=/usr/local/bin bash
 
 ## How update checks work
 
-On launch, Ante runs a background check against the channel manifest at most once every six hours and caches the result in `~/.ante/versions.json`. When a newer version is available, the TUI surfaces an update prompt with the release notes; dismissing a version skips it until a newer one lands. `ante update` ignores the cache and always fetches the manifest fresh.
+On launch and during long-running sessions, Ante consults the update cache in the background. Network checks against the channel manifest are shared across running Ante processes and happen at most once per hour; the result and release notes are cached in `~/.ante/versions.json`. When a newer version is available, the TUI adds the in-chat notice described above. `ante update` ignores the cache and always fetches the manifest fresh.

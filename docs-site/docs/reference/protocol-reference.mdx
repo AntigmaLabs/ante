@@ -18,7 +18,7 @@ Every operation is wrapped in an `OpMsg`:
 
 ```json
 {
-  "op": { "StartSession": { "model": "claude-sonnet-4-6", "provider": "anthropic" } },
+  "op": { "StartSession": { "model": "claude-sonnet-5", "provider": "anthropic" } },
   "id": "op_01ARZ3NDEKTSV4RRFFQ69G5FAV"
 }
 ```
@@ -61,7 +61,7 @@ Initialize a new session with model, provider, and configuration.
 {
   "op": {
     "StartSession": {
-      "model": "claude-sonnet-4-6",
+      "model": "claude-sonnet-5",
       "provider": "anthropic",
       "permission_mode": null,
       "system_prompt": null,
@@ -72,7 +72,8 @@ Initialize a new session with model, provider, and configuration.
       "cwd": null,
       "effort": null,
       "enable_auto_memory": null,
-      "short_prompt": null
+      "short_prompt": null,
+      "no_skills": null
     }
   },
   "id": "op_..."
@@ -83,7 +84,7 @@ Initialize a new session with model, provider, and configuration.
 
 | Field | Type | Description |
 |---|---|---|
-| `model` | `string` | Model name (e.g. `"claude-sonnet-4-6"`) |
+| `model` | `string` | Model name (e.g. `"claude-sonnet-5"`) |
 | `provider` | `string` | Provider name (e.g. `"anthropic"`, `"openai"`, `"gemini"`, `"xai"`, `"openrouter"`, `"local"`) |
 | `permission_mode` | `PermissionMode?` | Tool approval mode: `"strict"`, `"auto"`, or `"yolo"`. `null` uses `strict` |
 | `system_prompt` | `string?` | Override the default system prompt entirely |
@@ -95,6 +96,7 @@ Initialize a new session with model, provider, and configuration.
 | `effort` | `Effort?` | [Effort](/usage/models-and-thinking#effort) override: `"min"`, `"low"`, `"medium"`, `"high"`, `"xhigh"`, or `"max"`. `null` resolves from the catalog |
 | `enable_auto_memory` | `bool?` | Whether the agent records and recalls [auto-memory](/extend/memory). `null` leaves the daemon default (on for interactive sessions) |
 | `short_prompt` | `bool?` | Use compact tool descriptions and system prompt to shrink the context footprint. `null` leaves the settings default |
+| `no_skills` | `bool?` | When `true`, skip all skill discovery so no skills are advertised or invocable. `null` leaves the session default |
 
 ### UpdateSession
 
@@ -286,7 +288,7 @@ Emitted when a session is initialized. Contains metadata about the active model,
 {
   "event": {
     "SessionStart": {
-      "model": { "id": "claude-sonnet-4-6", "max_tokens": 8192 },
+      "model": { "id": "claude-sonnet-5", "max_tokens": 8192 },
       "provider": "anthropic",
       "session_id": "ses_01ARZ...",
       "cwd": "/home/user/project",

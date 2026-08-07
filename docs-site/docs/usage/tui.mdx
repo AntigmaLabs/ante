@@ -34,7 +34,7 @@ Press `Tab` to preview the proposed diff or request details before deciding.
 
 ### Diff view
 
-When the agent proposes file edits, Ante switches to a fullscreen diff view on an alternate screen. You can review the exact changes before approving.
+When the agent proposes file edits, Ante switches to a fullscreen diff view on an alternate screen. You can review the exact changes before approving. Diff views use numbered gutters, full-width added/removed bands, and `+N -M` change counts in their headers.
 
 ### Model and provider selection
 
@@ -65,7 +65,7 @@ Ante persists every session to disk. Use `/resume` to pick up a previous convers
 
 On resume, Ante:
 - Restores the full conversation history
-- Re-discovers agents and skills in the project directory
+- Re-discovers agents and skills in the project directory (unless the session was started with `--no-skills`)
 - Refreshes system prompts and tool definitions (so new features are available)
 - Replays up to 200 recent events so the TUI rebuilds the conversation view
 
@@ -82,7 +82,8 @@ You can also resume from the CLI with `ante --resume <SESSION_ID>` (or `-r`) in 
 | Key | Action |
 |---|---|
 | `Enter` | Send message (or run a shell command in [bash mode](#bash-mode) if the line starts with `!`) |
-| `Ctrl+Enter` / `Alt+Enter` / `Shift+Enter` | Insert newline |
+| `Alt+Enter` | Insert newline |
+| `Ctrl+Enter` / `Shift+Enter` | Insert newline when the terminal supports the kitty keyboard protocol (kitty, Ghostty, WezTerm, iTerm2 3.5+, or Alacritty 0.13+) |
 | `Up` / `Down` | Move cursor, then navigate history |
 | `Tab` | Complete a command or file path; on empty input, accept the [next-prompt suggestion](#next-prompt-suggestion) |
 | `Shift+Tab` | Cycle permission mode: `strict` → `auto` → `yolo`. Takes effect immediately, including on a turn already running |
@@ -179,11 +180,11 @@ Bash mode runs locally and is never gated by the permission system — typing `!
 
 ## Terminal sessions
 
-The agent drives interactive programs — dev servers, REPLs, ssh, even other CLI agents like Claude Code or Codex — in durable named tmux sessions, using ordinary `tmux` commands through the [Bash tool](/reference/tools-reference#bash) (guided by a bundled `tmux` skill). Sessions live in the `ante-` namespace and survive Ante restarts: a later conversation can pick up a running server where it was left. You own session lifetimes — nothing is killed when the TUI exits.
+The agent drives interactive programs — dev servers, REPLs, ssh, even other CLI agents like Claude Code or Codex — in durable named tmux sessions, using ordinary `tmux` commands through the [Bash tool](/reference/tools-reference#bash) (guided by a bundled `tmux` skill). Sessions live in the `ante-` namespace and survive Ante restarts: a later conversation can pick up a running server where it was left. You own session lifetimes — nothing is killed when the TUI exits. The default `terminals` status-line item shows live sessions in the footer.
 
-`/term <name>` opens a native terminal view on the session `ante-<name>`, creating it if needed, so you can watch or type in the same terminal the agent is driving: a split of your current multiplexer when you are inside tmux or zellij, otherwise a new OS terminal window (kitty, WezTerm, Ghostty, GNOME Terminal, or Terminal.app). Running `/term <name>` again closes the view; the session keeps running. Bare `/term` targets a scratch session, and names are limited to letters, digits, `-`, and `_`.
+`/term <name> [args...]` opens a native terminal view on `ante-<name>`, creating the session if needed. If `<name>` is an executable on `PATH`, a newly created session launches `<name> [args...]`; for example, `/term claude --continue` opens a fresh session already running `claude --continue`. Existing sessions only attach, so later arguments never restart or replace a running program. Running `/term <name>` again detaches the viewer while leaving the session alive. Names are limited to letters, digits, `-`, and `_`.
 
-`/term <a> <b>` composes a side-by-side viewer over several sessions in one window — handy for watching two terminal agents at once.
+Bare `/term` opens a picker of all live Ante sessions. Press **Enter** to attach or detach the selected session, press **d** or **Delete** twice to kill it, or choose **new terminal** to create one. When Ante runs inside tmux, the first viewer opens to its right and additional viewers stack beneath that viewer; other supported terminal hosts open a native split or window.
 
 Requires `tmux`.
 
@@ -213,8 +214,10 @@ On by default; disable with `"tips": false` in `~/.ante/settings.json`. Show his
 ## CLI flags for TUI mode
 
 ```bash
-ante --model claude-sonnet-4-6
+ante --model claude-sonnet-5
 ante --provider openai
+ante --profile work
+ante --no-skills
 ante --system-prompt "You are a Python expert"
 ante --append-system-prompt "Always use type hints"
 ante --tools Read Grep Glob

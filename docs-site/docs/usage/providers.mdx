@@ -11,7 +11,7 @@ This page covers the everyday tasks: picking a provider, authenticating, and cus
 
 You can set your provider three ways, in order of precedence:
 
-1. **CLI flag** — `ante --provider anthropic --model claude-sonnet-4-6`
+1. **CLI flag** — `ante --provider anthropic --model claude-sonnet-5`
 2. **Settings file** — set `provider` and `model` in `~/.ante/settings.json`
 3. **Auto-detect** — if you specify neither, Ante uses the first provider you have credentials for (and `local` if none).
 
@@ -25,7 +25,7 @@ Most providers read an API key from an environment variable:
 
 ```bash
 export ANTHROPIC_API_KEY="sk-ant-..."
-ante --provider anthropic --model claude-sonnet-4-6
+ante --provider anthropic --model claude-sonnet-5
 ```
 
 Each provider's exact auth method (env var name or OAuth) is in the [Catalog Reference](/reference/catalog-reference#built-in-providers).
@@ -121,8 +121,8 @@ The `models` section patches a model by id without redefining it. Each field you
 ```json
 {
   "models": {
-    "claude-opus-4-8": { "effort": "max" },
-    "claude-sonnet-4-6": { "effort": "high", "max_tokens": 64000 },
+    "claude-opus-5": { "effort": "max" },
+    "claude-sonnet-5": { "effort": "high", "max_tokens": 64000 },
     "gpt-5.5": { "temperature": 0.2 }
   }
 }

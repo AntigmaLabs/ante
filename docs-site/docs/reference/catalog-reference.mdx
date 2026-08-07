@@ -43,8 +43,7 @@ Each provider ships a set of `preferred_models` — the ids that appear in the m
 |---|---|---|
 | `claude-haiku-4-5` | Fastest model with near-frontier intelligence | 200K |
 | `claude-sonnet-5` | Best combination of speed and intelligence | 1M |
-| `claude-sonnet-4-6` | Fast and capable | 1M |
-| `claude-opus-4-8` | Most capable Opus-tier model | 1M |
+| `claude-opus-5` | Complex agentic coding and enterprise work | 1M |
 | `claude-fable-5` | Highest capability for demanding reasoning | 1M |
 
 ```bash
@@ -68,7 +67,7 @@ ante --provider anthropic --model claude-sonnet-5
 ante --provider openai --model gpt-5.6-sol
 ```
 
-The `openai-subscription` provider (ChatGPT/Codex OAuth) serves a smaller set — `gpt-5.5`, `gpt-5.4`, and `gpt-5.4-mini` — since the other GPT ids aren't available on ChatGPT accounts.
+The `openai-subscription` provider (ChatGPT/Codex OAuth) serves `gpt-5.6-sol`, `gpt-5.6-terra`, and `gpt-5.6-luna` with 272K context, plus `gpt-5.5`, `gpt-5.4`, and `gpt-5.4-mini` with 400K context.
 
 #### OpenAI transports
 
@@ -106,10 +105,10 @@ Notes:
 
 | Model | Description | Context |
 |---|---|---|
-| `gemini-3.5-flash` | Gemini 3.5 Flash, agentic workflows | 1M |
+| `gemini-3.6-flash` | Latest Gemini Flash for agentic and multimodal workflows | 1M |
 | `gemini-3.1-pro-preview` | Gemini 3.1 Pro with deep thinking | 1M |
 | `gemini-3.1-pro-preview-customtools` | Gemini 3.1 Pro optimized for custom tool usage | 1M |
-| `gemini-3.1-flash-lite` | Low-latency, cost-effective Gemini 3.1 model | 1M |
+| `gemini-3.5-flash-lite` | Fastest, lowest-cost Gemini 3.5 model for high-throughput work | 1M |
 
 ```bash
 ante --provider gemini --model gemini-3.1-pro-preview
@@ -120,7 +119,6 @@ ante --provider gemini --model gemini-3.1-pro-preview
 | Model | Description | Context |
 |---|---|---|
 | `grok-4.5` | Grok 4.5 with vision | 500K |
-| `grok-4-latest` | Grok 4 | 256K |
 
 ```bash
 ante --provider xai --model grok-4.5
@@ -131,7 +129,6 @@ ante --provider xai --model grok-4.5
 | Model | Description | Context |
 |---|---|---|
 | `glm-5.2` | Latest GLM-5.2 model | 1M |
-| `glm-5.1` | GLM-5.1 model | 200K |
 
 ```bash
 ante --provider zai --model glm-5.2
@@ -145,8 +142,10 @@ Open Router ships as three providers sharing one API key, split by wire style: `
 
 | Model | Description | Context |
 |---|---|---|
-| `deepseek/deepseek-v4-flash` | DeepSeek V4 Flash | 1M |
+| `deepseek/deepseek-v4-flash-0731` | DeepSeek V4 Flash 0731 | 1.05M |
 | `x-ai/grok-4.5` | Grok 4.5 via OpenRouter | 500K |
+| `qwen/qwen3.7-max` | Qwen 3.7 flagship for agentic workloads | 1M |
+| `qwen/qwen3.7-plus` | Cost-effective Qwen 3.7 model with vision | 1M |
 | `meta/muse-spark-1.1` | Muse Spark 1.1 multimodal agentic reasoning model | 1.05M |
 | `tencent/hy3` | Tencent Hy3 agentic reasoning model | 262K |
 | `xiaomi/mimo-v2.5-pro` | MiMo-V2.5-Pro flagship agentic model | 1.05M |
@@ -157,9 +156,9 @@ Open Router ships as three providers sharing one API key, split by wire style: `
 | `minimax/minimax-m3` | MiniMax M3 multimodal model | 512K |
 | `deepseek/deepseek-v4-pro` | DeepSeek V4 Pro | 1M |
 
-`openrouter-responses` serves the GPT family over the Responses API: `openai/gpt-5.6-sol`, `openai/gpt-5.6-terra`, `openai/gpt-5.6-luna` (1.05M context), plus `openai/gpt-5.5-pro`, `openai/gpt-5.4-pro`, `openai/gpt-5.3-codex`, `openai/gpt-5.4-mini`, and `openai/gpt-5.4-nano` (400K).
+`openrouter-responses` serves `openai/gpt-5.6-sol`, `openai/gpt-5.6-sol-pro`, `openai/gpt-5.6-terra`, `openai/gpt-5.6-terra-pro`, `openai/gpt-5.6-luna`, and `openai/gpt-5.6-luna-pro` (1.05M context), plus `openai/gpt-5.3-codex` (400K). The `-pro` ids select OpenRouter's pro reasoning route.
 
-`openrouter-anthropic` serves the Claude family over Anthropic Messages: `anthropic/claude-haiku-4.5` (200K context), plus `anthropic/claude-sonnet-5`, `anthropic/claude-sonnet-4.6`, `anthropic/claude-opus-4.8`, `anthropic/claude-opus-4.8-fast`, and `anthropic/claude-fable-5` (1M).
+`openrouter-anthropic` serves the Claude family over Anthropic Messages: `anthropic/claude-haiku-4.5` (200K context), plus `anthropic/claude-sonnet-5`, `anthropic/claude-opus-5`, `anthropic/claude-opus-5-fast`, and `anthropic/claude-fable-5` (1M).
 
 Each provider also accepts any model from Open Router's [full model list](https://openrouter.ai/models) by id, as long as it speaks that provider's wire style.
 
@@ -234,10 +233,6 @@ Requires a [Coding Plan subscription](https://help.aliyun.com/zh/model-studio/co
 | `claude-sonnet-4-6` | Fast and capable | 200K |
 | `claude-opus-4-8` | Most capable, slower | 200K |
 | `claude-fable-5` | Most capable Claude model | 1M |
-| `gpt-5.5` | Latest flagship GPT model | — |
-| `gpt-5.5-pro` | Highest reliability on complex problems | — |
-| `gpt-5.4` | Latest model powering Codex and Codex CLI | — |
-| `gpt-5.4-pro` | Highest reliability in the GPT-5.4 family | — |
 | `gpt-5.3-codex` | Coding-optimized Codex model | — |
 | `deepseek-v4-flash` | Fast DeepSeek V4 Flash | 1M |
 | `deepseek-v4-pro` | DeepSeek V4 Pro with deep thinking | 1M |
@@ -366,7 +361,7 @@ The `models` section patches a model by id wherever it is defined, layering on t
 ```json
 {
   "models": {
-    "claude-sonnet-4-6": { "effort": "high", "max_tokens": 64000 }
+    "claude-sonnet-5": { "effort": "high", "max_tokens": 64000 }
   }
 }
 ```

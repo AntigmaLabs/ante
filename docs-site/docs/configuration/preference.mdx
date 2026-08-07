@@ -13,7 +13,7 @@ An example `settings.json`:
 
 ```json
 {
-  "model": "claude-sonnet-4-6",
+  "model": "claude-sonnet-5",
   "provider": "anthropic",
   "theme": "default",
   "permission_mode": "auto",
@@ -36,11 +36,11 @@ An example `settings.json`:
     "refresh_interval": 5
   },
   "model_effort": {
-    "claude-sonnet-4-6": "medium",
+    "claude-sonnet-5": "medium",
     "gpt-5.4": "high"
   },
   "provider_model": {
-    "anthropic": "claude-sonnet-4-6",
+    "anthropic": "claude-sonnet-5",
     "openai": "gpt-5.6-sol"
   },
   "mcp_servers": {
@@ -73,9 +73,22 @@ An example `settings.json`:
 | `provider_model` | Last model used per provider — a provider switch adopts this before falling back to the provider's default model. Written automatically on every model/provider selection |
 | `mcp_servers` | MCP servers to launch on session start (see [MCP Servers](/extend/mcp)) |
 
+### Named profiles
+
+Use `--profile <name>` to replace `settings.json` with a separate settings file for one TUI or headless run:
+
+```bash
+ante --profile work
+ANTE_PROFILE=review ante -p "review this change"
+```
+
+The profile `work` reads and writes `~/.ante/work.settings.json`. Profiles are whole-file replacements, not layers: values omitted from the profile fall back to Ante defaults, not to `settings.json`. A new name starts from defaults and its file is created on the first saved change. Profile names may contain lowercase ASCII letters, digits, `-`, and `_`. CLI flags still override the selected profile.
+
+The built-in `bare` profile is file-less and starts from default settings with onboarding and ambient UI features disabled. It also disables skills, MCP servers, session saving, and auto-memory; explicit run flags such as `--enable-auto-memory` can still override the run behavior. Changes made in `/config` last only until that `bare` process exits.
+
 ### Status line
 
-The `status_line` field controls which items appear in the TUI's footer bar. It accepts an array of item identifiers:
+The `status_line` field controls which items appear in the top row of the TUI footer. Permission mode and live activity appear on a separate row beneath it, so they do not compete with identity items for width. The field accepts an array of item identifiers:
 
 | Item | Description |
 |---|---|
@@ -86,6 +99,7 @@ The `status_line` field controls which items appear in the TUI's footer bar. It 
 | `git-branch` | Current Git branch (omitted when unavailable) |
 | `pr-link` | GitHub pull request link for the current branch (requires `gh`) |
 | `context-used` | Context-window usage, shown as `N% ctx` of the window remaining (omitted until known) |
+| `terminals` | Live `ante-*` tmux sessions, shown by name (omitted when none are running or tmux is unavailable) |
 
 Default: all items, in the order above. Configure via `~/.ante/settings.json` or the `/statusline` command in the TUI.
 
@@ -120,7 +134,7 @@ The JSON input is a compatible subset of [Claude Code's statusline input](https:
   "cwd": "/work/repo",
   "session_id": "ses_...",
   "version": "0.1.0",
-  "model": { "id": "claude-sonnet-4-6", "display_name": "claude-sonnet-4-6" },
+  "model": { "id": "claude-sonnet-5", "display_name": "claude-sonnet-5" },
   "workspace": { "current_dir": "/work/repo", "project_dir": "/work/repo" },
   "thinking": { "enabled": true },
   "pr": { "number": 7, "url": "https://github.com/..." },
@@ -205,6 +219,7 @@ Settings can be overridden per-session via CLI flags.
 | `MODEL_CONTEXT_LIMIT` | Override max context window size (integer) |
 | `ANTE_LOCAL_PROVIDER_PORT` | Override the local provider port (default: 8080) |
 | `ANTE_HOME` | Override the home config directory (default: `~/.ante`) |
+| `ANTE_PROFILE` | Select a named settings profile for TUI or headless runs; equivalent to `--profile <name>` |
 | `ANTE_INSTALL_DIR` | Installer-only override for the binary install directory (default: `~/.ante/bin`) |
 | `ANTE_OPENAI_TRANSPORT` | OpenAI Responses transport: `http_sse` (default) or `websocket_auto` (see [OpenAI transports](/reference/catalog-reference#openai-transports)) |
 
@@ -215,6 +230,7 @@ Settings can be overridden per-session via CLI flags.
 ```
 ~/.ante/
 ├── settings.json      # User preferences
+├── <name>.settings.json # Named settings profile selected by --profile
 ├── catalog.json       # Custom provider/model catalog
 ├── AGENTS.md          # Global instructions
 ├── sessions/          # Persisted sessions (for /resume)

@@ -10,6 +10,7 @@ Ante persists configuration and state on the local filesystem. This page is a re
 | Location | Purpose |
 |---|---|
 | `~/.ante/settings.json` | User preferences (model, provider, theme, MCP servers) |
+| `~/.ante/<name>.settings.json` | Whole-file settings profile selected by `--profile <name>` or `ANTE_PROFILE` |
 | `~/.ante/catalog.json` | Custom provider/model catalog |
 | `~/.ante/AGENTS.md` | Global instructions injected into every project session |
 | `~/.ante/skills/` | User-level skills |
@@ -30,7 +31,7 @@ Stores user preferences. All fields are optional.
 
 ```json
 {
-  "model": "claude-sonnet-4-6",
+  "model": "claude-sonnet-5",
   "provider": "anthropic",
   "theme": "default",
   "permission_mode": "strict",
@@ -42,11 +43,11 @@ Stores user preferences. All fields are optional.
   "has_completed_onboarding": true,
   "status_line": ["model-name", "current-dir"],
   "model_effort": {
-    "claude-sonnet-4-6": "medium",
+    "claude-sonnet-5": "medium",
     "gpt-5.4": "high"
   },
   "provider_model": {
-    "anthropic": "claude-sonnet-4-6"
+    "anthropic": "claude-sonnet-5"
   },
   "mcp_servers": {
     "filesystem": {
@@ -57,11 +58,11 @@ Stores user preferences. All fields are optional.
 }
 ```
 
-See [Preferences](/configuration/preference) for the full field reference and the precedence rules between this file, environment variables, and CLI flags.
+Named profile files have the same schema but replace `settings.json` wholesale for that run; they do not inherit missing values from it. See [Preferences](/configuration/preference#named-profiles) for profile behavior and the full field reference.
 
 ## `catalog.json`
 
-Adds or overrides providers and models on top of the built-in catalog. Both top-level keys are optional. The `my-provider` key is what you pass to `--provider`. An entry whose key matches a built-in (e.g. `openai`) replaces it, a new key adds a provider, and a `models` entry patches that model's fields wherever it is defined.
+Adds or overrides providers and models on top of the built-in catalog. Both top-level keys are optional. The `my-provider` key is what you pass to `--provider`. An entry whose key matches a built-in (e.g. `openai`) patches that provider field by field, a new key adds a provider, and a `models` entry patches that model's fields wherever it is defined.
 
 ```json
 {
@@ -74,7 +75,7 @@ Adds or overrides providers and models on top of the built-in catalog. Both top-
     }
   },
   "models": {
-    "claude-sonnet-4-6": { "effort": "high", "max_tokens": 64000 }
+    "claude-sonnet-5": { "effort": "high", "max_tokens": 64000 }
   }
 }
 ```
@@ -96,6 +97,7 @@ See [AGENTS.md](/extend/agents-md) for usage guidance and precedence details.
 ```
 ~/.ante/
 ├── settings.json       # User preferences
+├── <name>.settings.json # Named settings profiles
 ├── catalog.json        # Custom provider/model catalog
 ├── AGENTS.md           # Global instructions
 ├── skills/             # User-level skills
