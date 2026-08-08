@@ -146,7 +146,14 @@ pub enum Evt {
     ToolUpdate(ToolUpdate),
     ToolEnd(ToolEnd),
     CompactStart,
-    CompactEnd,
+    /// Compaction finished. `summary` is the text that replaced the
+    /// compacted history and carries forward as the session's context;
+    /// `None` when compaction failed (history unchanged) or produced no
+    /// displayable text.
+    CompactEnd {
+        #[serde(default)]
+        summary: Option<String>,
+    },
     TurnStart {
         turn_id: Id,
     },
@@ -854,10 +861,12 @@ mod tests {
     fn compact_events_serde_roundtrip() {
         let compact_start =
             serde_json::to_string(&Evt::CompactStart).expect("serialize CompactStart");
-        let compact_end = serde_json::to_string(&Evt::CompactEnd).expect("serialize CompactEnd");
+        let compact_end =
+            serde_json::to_string(&Evt::CompactEnd { summary: Some("the summary".to_string()) })
+                .expect("serialize CompactEnd");
 
         assert_eq!(compact_start, "\"CompactStart\"");
-        assert_eq!(compact_end, "\"CompactEnd\"");
+        assert_eq!(compact_end, r#"{"CompactEnd":{"summary":"the summary"}}"#);
 
         assert!(matches!(
             serde_json::from_str::<Evt>(&compact_start).expect("deserialize CompactStart"),
@@ -865,7 +874,12 @@ mod tests {
         ));
         assert!(matches!(
             serde_json::from_str::<Evt>(&compact_end).expect("deserialize CompactEnd"),
-            Evt::CompactEnd
+            Evt::CompactEnd { summary: Some(s) } if s == "the summary"
+        ));
+        assert!(matches!(
+            serde_json::from_str::<Evt>(r#"{"CompactEnd":{}}"#)
+                .expect("deserialize CompactEnd without summary"),
+            Evt::CompactEnd { summary: None }
         ));
     }
 
