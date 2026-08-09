@@ -5,6 +5,8 @@ description: "Run local GGUF models through Ante's natively managed llama.cpp en
 
 Ante runs local GGUF models through a natively managed [llama.cpp](https://github.com/ggerganov/llama.cpp) engine. No API key, no account: point Ante at a model file and the full agent loop runs on your hardware. Once a model is on disk, inference needs no network connection at all.
 
+For a fully disconnected run, set `ANTE_TELEMETRY=off` as well. This disables application metrics and log export independently of local inference; see [Telemetry](/configuration/preference#telemetry).
+
 :::info
 Offline mode is under active development. Expect rough edges and rapid iteration.
 :::

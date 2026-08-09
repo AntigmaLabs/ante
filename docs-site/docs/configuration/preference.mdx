@@ -221,7 +221,18 @@ Settings can be overridden per-session via CLI flags.
 | `ANTE_HOME` | Override the home config directory (default: `~/.ante`) |
 | `ANTE_PROFILE` | Select a named settings profile for TUI or headless runs; equivalent to `--profile <name>` |
 | `ANTE_INSTALL_DIR` | Installer-only override for the binary install directory (default: `~/.ante/bin`) |
+| `ANTE_OFFLINE_CONTEXT` | Override the local model context-window cap in tokens (see [Offline Mode](/local/offline#environment-variables)) |
 | `ANTE_OPENAI_TRANSPORT` | OpenAI Responses transport: `http_sse` (default) or `websocket_auto` (see [OpenAI transports](/reference/catalog-reference#openai-transports)) |
+| `ANTE_TELEMETRY` | Disable OpenTelemetry export with `off`, `false`, `0`, `disable`, or `disabled` (case-insensitive) |
+| `OTEL_EXPORTER_OTLP_ENDPOINT` | Send application metrics and logs to this OTLP/HTTP base URL; overrides any endpoint embedded in the binary |
+| `OTEL_EXPORTER_OTLP_AUTH` | Optional base64-encoded `user:token` credentials sent as HTTP Basic authentication to the OTLP endpoint |
+| `RUST_LOG` | Override the application log filter (release default: `ante=info`); applies to local and exported logs |
+
+### Telemetry
+
+Ante initializes an OpenTelemetry exporter when `OTEL_EXPORTER_OTLP_ENDPOINT` is set or when the binary was built with an embedded endpoint. The exporter sends metrics and application `tracing` logs over OTLP/HTTP. Set `ANTE_TELEMETRY=off` to disable the exporter regardless of how its endpoint was configured; local logs under `~/.ante/logs/` continue to be written.
+
+The metrics cover tool and model call duration and errors, plus token counts when the provider reports usage. Labels include tool name, model, provider, Ante version, OS/architecture, and the local username. Deployments can override the username label with `ANTE_USER`, add `ANTE_USER_ID`, and group data with `ANTE_ENV` (default: `local`). All application tracing records that pass the active `RUST_LOG` filter are also exported, so only point `OTEL_EXPORTER_OTLP_ENDPOINT` at a collector you trust.
 
 ## Directory structure
 
