@@ -1,5 +1,20 @@
 # Changelog
 
+## v0.preview.72 - 2026-08-09
+
+### Added
+- Onboarding "Use API key" now takes a pasted key directly: masked input with provider auto-detect from the key prefix, validated against the provider, and stored owner-only under `~/.ante/auth` (env vars still take precedence)
+- On the API-key step with Anthropic selected, `Tab` signs in to the Anthropic Console in the browser and provisions an API key automatically — the key never touches the clipboard
+- Compaction results are now visible: a collapsed `* Compacted` marker appears in the conversation (manual and auto compaction), with the full summary in the ctrl+o transcript view; `CompactEnd` now carries the summary text on the wire, and trimmed oversized tool results are reported with an info line
+
+### Changed
+- Improved Bash command execution
+- Antix OAuth is listed ahead of OpenAI in `/connect` and provider auto-detection
+
+### Fixed
+- A fresh install with no credentials no longer lands in a session silently wired to the unreachable built-in `localhost:8080` fallback — the not-connected state points at `/connect`, and a successful sign-in restarts the session on the newly connected provider
+- Standalone `ante update` no longer panics with a broken pipe when its launcher closes stdout, and a closed pipe can no longer cancel an update
+
 ## v0.preview.71 - 2026-08-07
 
 ### Added
