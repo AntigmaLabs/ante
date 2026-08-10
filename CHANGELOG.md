@@ -1,5 +1,19 @@
 # Changelog
 
+## v0.preview.73 - 2026-08-10
+
+### Added
+- Coming from Claude Code or Codex: when a session in this directory was active within the last 4 hours, startup offers to pick it up. `/resume-claude` and `/resume-codex` are bundled skills that locate the foreign transcript, read it as data, and reconstruct task, progress, and next step before confirming with you. The hint appears once per project and never in headless runs.
+- `/import-claude` copies Claude Code's project memory for this directory into Ante's project memory. Existing Ante files are never overwritten, and re-running is a clean no-op.
+- `settings.json` accepts `system_prompt`, `append_system_prompt`, and `tools` as fresh-session defaults, plus `auto_memory`, `skills`, and `session_save` with matching CLI overrides. Explicit CLI flags and wire values stay authoritative, and persisted custom prompt text is redacted from `ante rage` bundles.
+
+### Changed
+- Bump the bundled llama.cpp engine to b10217
+- The built-in `bare` profile is now a real `bare.settings.json` file, seeded once and editable like any other profile
+
+### Fixed
+- Headless runs exit cleanly when their output consumer closes stdout or stderr, instead of panicking with a broken pipe
+
 ## v0.preview.72 - 2026-08-09
 
 ### Added
