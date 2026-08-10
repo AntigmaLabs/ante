@@ -12,6 +12,7 @@ Ante persists configuration and state on the local filesystem. This page is a re
 | `~/.ante/settings.json` | User preferences (model, provider, theme, MCP servers) |
 | `~/.ante/<name>.settings.json` | Whole-file settings profile selected by `--profile <name>` or `ANTE_PROFILE` |
 | `~/.ante/catalog.json` | Custom provider/model catalog |
+| `~/.ante/auth/` | OAuth credentials and API keys pasted in-app (owner-only; env vars take precedence) |
 | `~/.ante/AGENTS.md` | Global instructions injected into every project session |
 | `~/.ante/skills/` | User-level skills |
 | `~/.ante/agents/` | User-level sub-agents |
@@ -99,6 +100,7 @@ See [AGENTS.md](/extend/agents-md) for usage guidance and precedence details.
 ├── settings.json       # User preferences
 ├── <name>.settings.json # Named settings profiles
 ├── catalog.json        # Custom provider/model catalog
+├── auth/               # OAuth credentials and pasted API keys
 ├── AGENTS.md           # Global instructions
 ├── skills/             # User-level skills
 ├── agents/             # User-level sub-agents

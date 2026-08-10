@@ -55,12 +55,13 @@ ante [OPTIONS] [--prompt <PROMPT>]
 | `--system-prompt-file <PATH>` | Read the replacement system prompt from a UTF-8 file. Conflicts with `--system-prompt` |
 | `--append-system-prompt <TEXT>` | Append text to the system prompt |
 | `--short-prompt` | Use the compact prompt set: a condensed system prompt and shorter built-in tool descriptions |
-| `--no-skills` | Skip all skill discovery; no skills are advertised or invocable |
+| `--skills` / `--no-skills` | Load or skip skill discovery, overriding the `skills` setting. With `--no-skills`, no skills are advertised or invocable |
+| `--enable-auto-memory` / `--disable-auto-memory` | Turn [auto-memory](/extend/memory) on or off, overriding the `auto_memory` setting (headless default: off) |
 | `--tools <TOOLS>...` | Replace the default tool set with exactly these tools. Deprecated alias: `--allowed-tools` still works but prints a warning |
 | `--include-tools <TOOLS>...` | Add tools on top of the default set, or on top of the `--tools` base set |
 | `--exclude-tools <TOOLS>...` | Remove tools after `--tools` and `--include-tools` are applied. Deprecated alias: `--disallowed-tools` still works but prints a warning |
 | `-r`, `--resume <SESSION_ID>` | Resume a previously saved session by its ID |
-| `--no-session-save` | Skip session persistence — no transcript or resumable snapshot is written. Conflicts with `--resume` |
+| `--session-save` / `--no-session-save` | Save or skip session persistence, overriding the `session_save` setting. With `--no-session-save`, no transcript or resumable snapshot is written; conflicts with `--resume` |
 | `--check` | Run a verification pass after the main task completes |
 | `--offline-model <PATH>` | Path to a local GGUF file. Boots a local llama-server, points the session at the `local` provider, and tears it down on exit |
 

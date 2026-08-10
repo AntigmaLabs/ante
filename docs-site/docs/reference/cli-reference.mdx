@@ -34,25 +34,27 @@ Without `--prompt`, Ante starts the interactive TUI. With `--prompt`, Ante runs 
 |---|---|
 | `-m`, `--model <MODEL>` | Override the default model name. |
 | `--provider <PROVIDER>` | Override the API provider by catalog provider name. |
-| `--profile <NAME>` | Use `~/.ante/<name>.settings.json` as a whole-file replacement for `settings.json` for this run. An unknown name starts from defaults. The built-in file-less `bare` profile disables skills, MCP servers, session saving, auto-memory, and ambient UI features. Can also be set with `ANTE_PROFILE`. |
+| `--profile <NAME>` | Use `~/.ante/<name>.settings.json` as a whole-file replacement for `settings.json` for this run. An unknown name starts from defaults. The built-in `bare` profile (seeded as a real file on first use) disables skills, MCP servers, session saving, auto-memory, and ambient UI features. Can also be set with `ANTE_PROFILE`. |
 | `--effort <LEVEL>` | Override the model's [effort level](/usage/models-and-thinking#effort) for this run: `min`, `low`, `medium`, `high`, `xhigh`, or `max`. |
 | `--yolo` | Skip tool approval prompts for the session. |
 | `--permission-mode <MODE>` | Override the permission mode for this run: `strict`, `auto`, or `yolo`. Conflicts with `--yolo`. |
-| `--system-prompt <PROMPT>` | Replace the default system prompt entirely. Conflicts with `--system-prompt-file`. |
+| `--system-prompt <PROMPT>` | Replace the default system prompt entirely. Conflicts with `--system-prompt-file`. Persist a default with the `system_prompt` [setting](/configuration/preference). |
 | `--system-prompt-file <PATH>` | Read the replacement system prompt from a UTF-8 file. Conflicts with `--system-prompt`. |
-| `--append-system-prompt <TEXT>` | Append content to the default system prompt. |
+| `--append-system-prompt <TEXT>` | Append content to the default system prompt. Persist a default with the `append_system_prompt` [setting](/configuration/preference). |
 | `--short-prompt` | Use the compact prompt set for this run: a condensed system prompt and shorter built-in tool descriptions. Persist the default with the `short_prompt` [setting](/configuration/preference). |
-| `--no-skills` | Skip skill discovery for this run. No skills are advertised to the model or available as slash commands. |
-| `--enable-auto-memory` | Enable auto-memory for this run. Conflicts with `--disable-auto-memory`. |
-| `--disable-auto-memory` | Disable auto-memory for this run. Conflicts with `--enable-auto-memory`. |
-| `--tools <TOOLS>...` | Replace the default tool set with exactly these tools. Values are space-separated. Deprecated alias: `--allowed-tools` still works but prints a warning. |
+| `--skills` | Load skills for this run, overriding the `skills` setting. Conflicts with `--no-skills`. |
+| `--no-skills` | Skip skill discovery for this run, overriding the `skills` setting. No skills are advertised to the model or available as slash commands. |
+| `--enable-auto-memory` | Enable auto-memory for this run, overriding the `auto_memory` setting. Conflicts with `--disable-auto-memory`. |
+| `--disable-auto-memory` | Disable auto-memory for this run, overriding the `auto_memory` setting. Conflicts with `--enable-auto-memory`. |
+| `--tools <TOOLS>...` | Replace the default tool set with exactly these tools. Values are space-separated. Overrides the `tools` setting. Deprecated alias: `--allowed-tools` still works but prints a warning. |
 | `--include-tools <TOOLS>...` | Add tools on top of the default set, or on top of the `--tools` base set. Values are space-separated. |
 | `--exclude-tools <TOOLS>...` | Remove tools from the session after `--tools` and `--include-tools` are applied. Values are space-separated. Deprecated alias: `--disallowed-tools` still works but prints a warning. |
 | `--output-format <FORMAT>` | Headless output format: `json`, `human`, or `minimal`. Defaults to `minimal`. |
 | `-p`, `--prompt <PROMPT>` | Prompt to run in headless mode. Also supports stdin when piped. |
 | `--check` | Run a verification pass after the headless task completes. |
 | `-r`, `--resume <SESSION_ID>` | Resume a previous session by ID. |
-| `--no-session-save` | Do not save the session transcript or resumable snapshot. Conflicts with `--resume`. |
+| `--session-save` | Save the session transcript and resumable snapshot, overriding the `session_save` setting. Conflicts with `--no-session-save`. |
+| `--no-session-save` | Do not save the session transcript or resumable snapshot, overriding the `session_save` setting. Conflicts with `--resume`. |
 | `--offline-model <PATH>` | Path to a local GGUF model file for offline inference. |
 | `-h`, `--help` | Print command help. |
 | `-V`, `--version` | Print the Ante version. |
@@ -187,7 +189,7 @@ The archive contains:
 |---|---|
 | `report.md` | Ante version, OS/architecture, shell, git branch, the resolved model/provider, a provider authentication table (present/absent), and a redaction notice. |
 | `env.txt` | Ante-relevant environment variables. Safe values are shown verbatim; known secrets appear as `<SET>` / `<UNSET>` only. |
-| `settings.redacted.json` | `~/.ante/settings.json` with secrets removed (MCP server credentials are stripped). |
+| `settings.redacted.json` | `~/.ante/settings.json` with secrets removed (MCP server credentials and custom `system_prompt` / `append_system_prompt` text are stripped). |
 | `catalog.redacted.json` | `~/.ante/catalog.json` with secrets removed, included only when a custom catalog exists. |
 | `logs/` | Recent application and crash logs, filtered and scrubbed. `DEBUG`/`TRACE` lines are dropped so request bodies never enter the bundle. |
 

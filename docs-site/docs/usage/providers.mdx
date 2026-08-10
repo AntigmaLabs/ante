@@ -30,6 +30,12 @@ ante --provider anthropic --model claude-sonnet-5
 
 Each provider's exact auth method (env var name or OAuth) is in the [Catalog Reference](/reference/catalog-reference#built-in-providers).
 
+### Paste an API key
+
+You can also paste a key directly in the onboarding dialog (reopen it any time with `/welcome`): choose **Use API key**, and Ante auto-detects the provider from the key prefix, masks the input, and validates the key against the provider before storing it owner-only under `~/.ante/auth/`. A key set in the environment always takes precedence over a stored one.
+
+With Anthropic selected on the API-key step, press `Tab` to sign in to the Anthropic Console in your browser instead — Ante provisions an API key for you automatically, without the key ever touching the clipboard.
+
 ### Subscription login (OAuth)
 
 Providers with subscription plans (Anthropic, OpenAI, Antix, etc.) can sign in via OAuth instead, so you use your existing subscription without managing API keys. Type `/connect` in the TUI to open the provider login flow. Ante launches your default browser for authentication, then links your session automatically.

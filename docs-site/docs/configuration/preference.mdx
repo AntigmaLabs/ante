@@ -16,6 +16,11 @@ An example `settings.json`:
   "model": "claude-sonnet-5",
   "provider": "anthropic",
   "theme": "default",
+  "append_system_prompt": "Prefer small, focused commits.",
+  "tools": ["Read", "Write", "Edit", "Bash"],
+  "auto_memory": true,
+  "skills": true,
+  "session_save": true,
   "permission_mode": "auto",
   "permissions": {
     "allow": ["Bash(npm run *)"],
@@ -57,6 +62,12 @@ An example `settings.json`:
 | `model` | Default model name |
 | `provider` | Default API provider |
 | `theme` | TUI color theme |
+| `system_prompt` | Replacement system prompt for fresh sessions. The `--system-prompt` / `--system-prompt-file` CLI flags override it for a run. Persisted prompt text is redacted from `ante rage` bundles |
+| `append_system_prompt` | Extra text appended to the system prompt of fresh sessions. `--append-system-prompt` overrides it for a run |
+| `tools` | Base tool set for fresh sessions, replacing the default set (an empty list selects no tools). `--tools` overrides it for a run; `--include-tools` / `--exclude-tools` still apply on top |
+| `auto_memory` | Whether [auto-memory](/extend/memory) is on. When unset, the launch mode decides: on in the TUI, off in headless runs. `--enable-auto-memory` / `--disable-auto-memory` override it for a run |
+| `skills` | Whether [skills](/extend/skills) are discovered and loaded. On unless set to `false`; `--skills` / `--no-skills` override it for a run |
+| `session_save` | Whether session transcripts and resumable snapshots are saved. On unless set to `false`; `--session-save` / `--no-session-save` override it for a run |
 | `permission_mode` | Default permission mode (`strict`, `auto`, or `yolo`). `strict` and `auto` are written automatically when you cycle modes with **Shift+Tab** in the TUI; `yolo` remains session-only. Unrecognized values are ignored rather than failing the whole file |
 | `permissions` | Persistent tool permission rules, grouped by `allow`, `ask`, and `deny` matchers (see [Permissions](/configuration/permission)) |
 | `has_completed_onboarding` | Whether the onboarding flow has been completed |
@@ -84,7 +95,7 @@ ANTE_PROFILE=review ante -p "review this change"
 
 The profile `work` reads and writes `~/.ante/work.settings.json`. Profiles are whole-file replacements, not layers: values omitted from the profile fall back to Ante defaults, not to `settings.json`. A new name starts from defaults and its file is created on the first saved change. Profile names may contain lowercase ASCII letters, digits, `-`, and `_`. CLI flags still override the selected profile.
 
-The built-in `bare` profile is file-less and starts from default settings with onboarding and ambient UI features disabled. It also disables skills, MCP servers, session saving, and auto-memory; explicit run flags such as `--enable-auto-memory` can still override the run behavior. Changes made in `/config` last only until that `bare` process exits.
+The built-in `bare` profile ships with Ante: the first `--profile bare` run seeds `~/.ante/bare.settings.json` with onboarding and ambient UI features disabled, plus `auto_memory`, `skills`, and `session_save` set to `false` (and no MCP servers, since the profile defines none). After that it behaves like any other profile — edit the file or change settings in `/config` and they persist. Explicit run flags such as `--enable-auto-memory` still override it per run.
 
 ### Status line
 
@@ -243,6 +254,7 @@ The metrics cover tool and model call duration and errors, plus token counts whe
 ├── settings.json      # User preferences
 ├── <name>.settings.json # Named settings profile selected by --profile
 ├── catalog.json       # Custom provider/model catalog
+├── auth/              # OAuth credentials and pasted API keys
 ├── AGENTS.md          # Global instructions
 ├── sessions/          # Persisted sessions (for /resume)
 ├── skills/            # User-level skills

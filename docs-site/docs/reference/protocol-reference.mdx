@@ -522,10 +522,10 @@ Emitted when dialog compaction begins.
 
 #### CompactEnd
 
-Emitted when dialog compaction completes.
+Emitted when dialog compaction completes. `summary` is the text that replaced the compacted history and carries forward as the session's context; it is `null` when compaction failed (history unchanged) or produced no displayable text.
 
 ```json
-{ "event": "CompactEnd" }
+{ "event": { "CompactEnd": { "summary": "The user asked to..." } } }
 ```
 
 ### Extension events

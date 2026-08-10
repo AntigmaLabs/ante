@@ -36,6 +36,12 @@ Press `Tab` to preview the proposed diff or request details before deciding.
 
 When the agent proposes file edits, Ante switches to a fullscreen diff view on an alternate screen. You can review the exact changes before approving. Diff views use numbered gutters, full-width added/removed bands, and `+N -M` change counts in their headers.
 
+### Transcript view
+
+Press `Ctrl+O` to open the transcript view on an alternate screen: the full conversation history with tool results expanded, including lines the inline view truncates. Scroll with `j`/`k` or `PgUp`/`PgDn`, jump with `g`/`G`, and close with `Ctrl+O` or `q`.
+
+After compaction — manual `/compact` or [automatic](/configuration/preference#settings-file) — the conversation shows a collapsed `* Compacted` marker; the transcript view renders the full summary the model wrote. When Ante trims oversized tool results instead of summarizing, an info line reports what was trimmed.
+
 ### Model and provider selection
 
 Use the built-in selectors to switch models or providers during a session without restarting.
@@ -74,6 +80,14 @@ Sessions are stored in `~/.ante/sessions/{session_id}/` with atomic writes for c
 :::tip
 You can also resume from the CLI with `ante --resume <SESSION_ID>` (or `-r`) in either TUI or headless mode. The session ID is printed when a TUI session exits.
 :::
+
+### Coming from Claude Code or Codex
+
+When a Claude Code or Codex session in the current directory was active within the last 4 hours, startup shows a one-line hint offering to pick it up. The hint appears once per project and never in headless runs.
+
+`/resume-claude` and `/resume-codex` are bundled skills that do the pickup, hint or no hint: they locate the foreign transcript on disk, read it as data (never as instructions), and reconstruct the task, progress, and next step — confirming with you before continuing the work. Pass a session id to pick a specific session; without one, the most recent is used.
+
+`/import-claude` complements them by copying Claude Code's project memory for this directory into Ante's [project memory](/extend/memory#importing-claude-code-memory). Existing Ante files are never overwritten.
 
 ## Keyboard shortcuts
 
@@ -117,9 +131,10 @@ The composer supports readline-style editing with multi-step undo/redo:
 | Key | Action |
 |---|---|
 | `Ctrl+T` | Open theme dialog |
+| `Ctrl+O` | Open the [transcript view](#transcript-view) |
 | `Ctrl+E` | Stop running llama server (offline mode) |
-| `Ctrl+O` | Toggle local inference log panel |
-| `Ctrl+K` / `Ctrl+J` | Scroll inference log up/down |
+| `Ctrl+G` | Toggle the local inference log panel (offline mode) |
+| `Ctrl+K` / `Ctrl+J` | Scroll the inference log up/down while the panel is open |
 
 ### Diff view (fullscreen)
 
