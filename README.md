@@ -33,7 +33,7 @@ Every agent claims to be good. Here are numbers you can check:
 
 ### 🥇 Continuously evaled and evolved, in public
 
-Ante runs [Terminal-Bench 2.1](https://antigma.ai/eval) continuously under official leaderboard constraints. For every model we run, Ante is the **#1 same-model agent**. Each result pins the exact build you can download and links the raw Harbor run for independent audit. With open-weight **GLM 5.2, Ante scores 74.6%**: a top-7 slot on the public verified leaderboard.
+Ante runs [Terminal-Bench 2.1](https://antigma.ai/eval) continuously under official leaderboard constraints: 89 tasks, 5 trials each. Each result pins the exact build you can download and links the raw Harbor run for independent audit. Latest full run: **82.7%** with open-weight **DeepSeek V4 Flash 0731** (368/445 trials, Ante 0.preview.71, about $68 of inference). DeepSeek [reports](https://deepseek.ai/blog/deepseek-v4-flash-ga-agent-benchmarks) the same 82.7 for this model, measured with its unreleased DeepSeek Harness in minimal mode.
 
 **[Live results →](https://antigma.ai/eval)** · [Methodology →](https://docs.antigma.ai/benchmarks/eval)
 
