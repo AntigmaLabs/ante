@@ -39,7 +39,7 @@ Ante runs [Terminal-Bench 2.1](https://antigma.ai/eval) continuously under offic
 
 ### 🪶 A fraction of the footprint
 
-Ante is hand-written Rust with the heavy parts (`Grep`, `git`, local inference) embedded in one binary, one process. Across the same 20 parallel tasks in Docker, Ante uses **~7× less peak memory**, **~9× less average CPU**, and **~5× less disk I/O** than Claude Code.
+Ante is hand-written Rust with the heavy parts (`Grep`, `git`) embedded in one binary, one process, and local inference handled by a pinned, managed llama.cpp. Across the same 20 parallel tasks in Docker, Ante uses **~7× less peak memory**, **~9× less average CPU**, and **~5× less disk I/O** than Claude Code.
 
 ![Resource Usage Comparison](docs-site/docs/benchmarks/compare_animated.gif)
 
@@ -47,14 +47,14 @@ Ante is hand-written Rust with the heavy parts (`Grep`, `git`, local inference) 
 
 ### 🔌 Natively offline
 
-Ante ships its own inference engine. Point it at a GGUF file and the whole loop runs on your machine: no API key, no account, no internet.
+Ante's inference engine is a pinned, managed version of [llama.cpp](https://github.com/ggml-org/llama.cpp). Point it at a GGUF file and the whole loop runs on your machine: no API key, no account, no internet.
 
 ```sh
 ante --offline-model ~/.ante/models/Qwen3.5-9B-Q4_K_M.gguf \
   -p "add error handling to src/main.rs"
 ```
 
-**[Offline mode →](https://docs.antigma.ai/usage/offline)**
+**[Offline mode →](https://docs.antigma.ai/usage/offline)** · [nanochat-rs, a toy engine for study →](https://github.com/AntigmaLabs/nanochat-rs)
 
 ---
 
@@ -240,7 +240,7 @@ The name is the answer: **An**other **Te**rminal agent, and *ante*, the stake yo
 Ante has most of the features you expect from agents like Claude Code or Codex: multi-agents, skills, MCP, persistent memory. The difference is the build philosophy.
 
 - Built from scratch in Rust. Core components like `Grep` (fully rebuilt and customized) and `git` are embedded in the same ~15MB binary and run in the same process at runtime, so nothing is shelled out and no resources leak. Most similar projects ship on Node.js or CPython and carry an order-of-magnitude larger footprint.
-- We built our own inference engine from the ground up (see [nanochat-rs](https://github.com/AntigmaLabs/nanochat-rs) for a toy version of that work), so a local GGUF model is all Ante needs to run without any provider.
+- Local inference is built in: the engine is a pinned, managed version of [llama.cpp](https://github.com/ggml-org/llama.cpp), so a local GGUF model is all Ante needs to run without any provider. To study how such an engine works, see [nanochat-rs](https://github.com/AntigmaLabs/nanochat-rs), our toy version.
 - No vendor lock-in, not even to ourselves: no account needed, reuse your existing API credentials. An opt-in, fully integrated server-side experience lives at [antix.antigma.ai](https://antix.antigma.ai).
 - Every claim is backed by public, reproducible benchmarks of the exact builds we ship: [antigma.ai/eval](https://antigma.ai/eval).
 
