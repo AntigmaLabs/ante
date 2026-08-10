@@ -8,7 +8,7 @@ const src = new URL('../../CHANGELOG.md', import.meta.url)
 const dest = new URL('../docs/changelog.md', import.meta.url)
 const zhHansDest = new URL('../i18n/zh-Hans/docusaurus-plugin-content-docs/current/changelog.md', import.meta.url)
 
-const REPO_URL = 'https://github.com/AntigmaLabs/ante-preview'
+const REPO_URL = 'https://github.com/AntigmaLabs/ante'
 
 const EN_MONTHS = [
   'January', 'February', 'March', 'April', 'May', 'June',

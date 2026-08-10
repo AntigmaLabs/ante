@@ -145,7 +145,7 @@ const config: Config = {
           position: 'right',
         },
         {
-          href: 'https://github.com/AntigmaLabs/ante-preview',
+          href: 'https://github.com/AntigmaLabs/ante',
           html: socialLinkHtml('GitHub', githubIcon),
           position: 'right',
         },
@@ -169,7 +169,7 @@ const config: Config = {
           title: 'Community',
           items: [
             { label: 'Discord', href: 'https://discord.gg/pqhj3DNGz2' },
-            { label: 'GitHub', href: 'https://github.com/AntigmaLabs/ante-preview' },
+            { label: 'GitHub', href: 'https://github.com/AntigmaLabs/ante' },
           ],
         },
         {

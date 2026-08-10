@@ -7,7 +7,7 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/AntigmaLabs/ante-preview/releases"><img src="https://img.shields.io/github/v/release/AntigmaLabs/ante-preview?include_prereleases&label=release&color=blueviolet" /></a>
+  <a href="https://github.com/AntigmaLabs/ante/releases"><img src="https://img.shields.io/github/v/release/AntigmaLabs/ante?include_prereleases&label=release&color=blueviolet" /></a>
   <a href="https://antigma.ai/eval"><img src="https://img.shields.io/badge/Terminal--Bench_2.1-live_results-2ea44f?logo=speedtest&logoColor=white" /></a>
   <a href="https://docs.antigma.ai"><img src="https://img.shields.io/badge/Docs-docs.antigma.ai-orange?logo=safari&logoColor=white" /></a>
   <a href="https://discord.gg/CbAsUR434B"><img src="https://img.shields.io/badge/Discord-Join%20Us-5865F2?logo=discord&logoColor=white" /></a>
@@ -187,7 +187,7 @@ We open sourced what really matters in the age of agentic coding, all under Apac
 2. **The protocol, the algorithm of the core.** [`crates/protocol-shape`](crates/protocol-shape) defines the schema and wire messages spoken by `ante serve`; [`crates/agent-sdk`](crates/agent-sdk) is the Rust SDK and client for building against agent runtimes.
 3. **The eval pipeline, constraint and continuous improvement.** [`ante-harbor/`](ante-harbor) is the Harbor agent adapter behind our Terminal-Bench results: use it to reproduce any run at [antigma.ai/eval](https://antigma.ai/eval). [`CHANGELOG.md`](CHANGELOG.md) records the improvement, release by release.
 
-The core harness itself is developed in a private repository during the alpha and ships as a prebuilt binary via [releases](https://github.com/AntigmaLabs/ante-preview/releases). Core libraries from it are included here progressively as they stabilize; [`crates/exec`](crates/exec), standalone process execution, is the first.
+The core harness itself is developed in a private repository during the alpha and ships as a prebuilt binary via [releases](https://github.com/AntigmaLabs/ante/releases). Core libraries from it are included here progressively as they stabilize; [`crates/exec`](crates/exec), standalone process execution, is the first.
 
 The protocol surface maps to Ante's client-daemon architecture:
 
