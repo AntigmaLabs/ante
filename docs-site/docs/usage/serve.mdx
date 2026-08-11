@@ -33,6 +33,10 @@ The `--ws` flag starts a WebSocket server on the given address. Each connection 
 `--stdio` and `--ws` are mutually exclusive — you cannot use both at the same time.
 :::
 
+:::caution
+The address must be a loopback address (`127.0.0.0/8` or `::1`). Ante refuses to bind anything else — `0.0.0.0:8080` exits with an error rather than starting. The protocol has no authentication, so a listener on a routable interface would give any client that reaches it full tool execution on your machine. Reach a remote daemon through an SSH tunnel or an authenticating reverse proxy instead.
+:::
+
 ## How it works
 
 1. The daemon starts and waits for operations on stdin
@@ -100,7 +104,7 @@ ante.stdin.write(JSON.stringify({
 | Flag | Description |
 |---|---|
 | `--stdio` | Use JSONL over stdin/stdout (default) |
-| `--ws <ADDR>` | Serve the protocol over WebSocket |
+| `--ws <ADDR>` | Serve the protocol over WebSocket on a loopback address |
 | `--offline-model <PATH>` | Boot a local llama-server with this GGUF model and register it as the `local` provider for every connecting client |
 
 :::note

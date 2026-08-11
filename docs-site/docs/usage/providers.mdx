@@ -120,6 +120,28 @@ preset value:
 }
 ```
 
+### Send extra request parameters
+
+Gateways and proxies often require a parameter Ante doesn't model. Put it in `extra_body` and it is merged into every chat and streaming request body for that provider:
+
+```json
+{
+  "providers": {
+    "my-gateway": {
+      "display_name": "My Gateway",
+      "base_url": "https://gateway.example.com/v1",
+      "wire_style": "OpenAiCompatible",
+      "auth": { "bearer": { "env_key": "MY_GATEWAY_API_KEY" } },
+      "extra_body": {
+        "service_tier": "priority"
+      }
+    }
+  }
+}
+```
+
+`extra_body` can only add fields — keys Ante already generates for that wire style (`model`, `messages`, `stream`, and friends) are dropped at startup with a notice, and the provider still loads. See [Extra request fields](/reference/catalog-reference#extra-request-fields) for the full reserved list.
+
 ### Override model defaults
 
 The `models` section patches a model by id without redefining it. Each field you set replaces the built-in default; everything else is left alone:

@@ -289,7 +289,11 @@ Emitted when a session is initialized. Contains metadata about the active model,
   "event": {
     "SessionStart": {
       "model": { "id": "claude-sonnet-5", "max_tokens": 8192 },
-      "provider": "anthropic",
+      "provider": {
+        "id": "anthropic",
+        "display_name": "Anthropic",
+        "base_url": "https://api.anthropic.com/v1"
+      },
       "session_id": "ses_01ARZ...",
       "cwd": "/home/user/project",
       "permission_mode": "strict"
@@ -303,23 +307,38 @@ Emitted when a session is initialized. Contains metadata about the active model,
 | Field | Type | Description |
 |---|---|---|
 | `model` | `ModelSpec` | Active model specification |
-| `provider` | `string` | Active provider name (e.g. `"anthropic"`) |
+| `provider` | `ProviderSpec` | Active provider (see below) |
 | `session_id` | `Id` | Unique session identifier |
 | `cwd` | `string` | Working directory path |
 | `permission_mode` | `PermissionMode` | Active permission mode (`"strict"`, `"auto"`, or `"yolo"`) |
 
+**ProviderSpec fields:**
+
+| Field | Type | Description |
+|---|---|---|
+| `id` | `string` | Provider key, e.g. `"anthropic"` (accepts `name` as a legacy alias) |
+| `display_name` | `string` | Friendly name for display |
+| `base_url` | `string` | Endpoint actually in use for this session — environment overrides can move it away from the catalog default |
+
+`ProviderSpec` deliberately carries only what a client cannot look up for itself. The provider's model list is not on the wire; it is identical for every session and is published by [`ante catalog`](/reference/cli-reference#ante-catalog). Unknown fields are ignored, so payloads from older daemons that still send `preferred_models` decode fine.
+
 #### SessionUpdated
 
-Emitted when the active session is updated in place (e.g. model changed via `UpdateSession`).
+Emitted when the active session is updated in place (e.g. model changed via `UpdateSession`). Carries the same fields as `SessionStart`.
 
 ```json
 {
   "event": {
     "SessionUpdated": {
       "model": { "id": "gpt-5.4" },
-      "provider": "openai",
+      "provider": {
+        "id": "openai",
+        "display_name": "OpenAI",
+        "base_url": "https://api.openai.com/v1"
+      },
       "session_id": "ses_01ARZ...",
-      "cwd": "/home/user/project"
+      "cwd": "/home/user/project",
+      "permission_mode": "strict"
     }
   }
 }

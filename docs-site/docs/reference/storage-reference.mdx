@@ -20,6 +20,7 @@ Ante persists configuration and state on the local filesystem. This page is a re
 | `~/.ante/projects/<project-id>/memory/` | Per-project auto-memory |
 | `~/.ante/cache/<project-id>/` | Per-project temporary files |
 | `~/.ante/tip_history.json` | Show history for [spinner tips](/usage/tui#spinner-tips) (delete to reset the rotation) |
+| `~/.ante/installation-id` | Random installation label for [telemetry](/configuration/preference#identity), written only when telemetry is configured (delete to reset the identity) |
 | `AGENTS.md` | Project instructions injected alongside global instructions |
 | `.ante/` | Project-local configuration (skills, sub-agents) |
 | `.agents/`, `.claude/` | Additional project-local skill/sub-agent directories |
@@ -102,6 +103,7 @@ See [AGENTS.md](/extend/agents-md) for usage guidance and precedence details.
 ├── catalog.json        # Custom provider/model catalog
 ├── auth/               # OAuth credentials and pasted API keys
 ├── AGENTS.md           # Global instructions
+├── installation-id     # Random telemetry installation label
 ├── skills/             # User-level skills
 ├── agents/             # User-level sub-agents
 ├── sessions/           # Persisted sessions (for /resume)

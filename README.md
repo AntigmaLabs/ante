@@ -26,7 +26,7 @@ Two things many people ask about:
 
 **Where is the source?** The core harness currently ships as a prebuilt binary; this repo holds the docs, protocol, SDK, and eval pipeline ([details](#whats-in-this-repo)). We are working out a way to ship the source code along with the binary, to address security and privacy concerns first, while taking the time to figure out how open source should work in the agentic era. If you have concerns today, run Ante in a sandbox: it is a single binary with minimal runtime dependencies, built to be easy to deploy in a container or on a remote machine.
 
-**Is there telemetry?** Yes, and it is opt-out: set `ANTE_TELEMETRY=off` to disable export entirely. The `RUST_LOG` filter also applies to exported logs, a convenience carried over from the Rust ecosystem. A better UX is in the works. [Details →](https://docs.antigma.ai/configuration/preference#telemetry)
+**Is there telemetry?** Yes, and it is opt-out: set `ANTE_TELEMETRY=off` to disable export entirely. What it sends is anonymous — a random installation label you can delete and re-mint, never your username, hostname, or machine id. The `RUST_LOG` filter also applies to exported logs, a convenience carried over from the Rust ecosystem. A better UX is in the works. [Details →](https://docs.antigma.ai/configuration/preference#telemetry)
 
 ---
 

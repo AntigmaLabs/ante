@@ -106,12 +106,16 @@ Server mode exposes the Ante protocol over stdin/stdout by default, or over WebS
 | Flag | Description |
 |---|---|
 | `--stdio` | Serve the JSONL protocol over stdin/stdout. This is the default transport. |
-| `--ws <ADDR>` | Serve the protocol over WebSocket on the given socket address. Conflicts with `--stdio`. |
+| `--ws <ADDR>` | Serve the protocol over WebSocket on the given loopback socket address. Conflicts with `--stdio`. |
 | `--offline-model <PATH>` | Load a local GGUF model at startup for offline mode. |
 | `-h`, `--help` | Print command help. |
 
 :::note
 `serve` is session-agnostic, so it does not accept the session flags (`--model`, `--provider`, `--yolo`, `--system-prompt`, `--tools`, …). The connecting client configures those per session over the protocol.
+:::
+
+:::caution
+`--ws` accepts loopback addresses only (`127.0.0.0/8`, `::1`). A non-loopback address such as `0.0.0.0:8080` is refused before the listener binds — the protocol is unauthenticated, so exposing it beyond the local machine would hand any reachable client full tool access. To reach the daemon from elsewhere, front it with an SSH tunnel or an authenticating reverse proxy.
 :::
 
 ### Examples
@@ -187,7 +191,7 @@ The archive contains:
 
 | File | Contents |
 |---|---|
-| `report.md` | Ante version, OS/architecture, shell, git branch, the resolved model/provider, a provider authentication table (present/absent), and a redaction notice. |
+| `report.md` | Ante version, OS/architecture, shell, git branch, the resolved model/provider, a provider authentication table (present/absent), the [telemetry installation id](/configuration/preference#identity) if one exists, and a redaction notice. |
 | `env.txt` | Ante-relevant environment variables. Safe values are shown verbatim; known secrets appear as `<SET>` / `<UNSET>` only. |
 | `settings.redacted.json` | `~/.ante/settings.json` with secrets removed (MCP server credentials and custom `system_prompt` / `append_system_prompt` text are stripped). |
 | `catalog.redacted.json` | `~/.ante/catalog.json` with secrets removed, included only when a custom catalog exists. |

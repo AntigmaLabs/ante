@@ -277,6 +277,7 @@ A `providers` entry whose key matches a built-in (e.g. `openai`) patches that pr
 | `wire_style` | New providers: ✅ | API dialect Ante speaks — `AnthropicMessage`, `OpenAiCompatible`, `OpenAiResponse`, or `Gemini`. |
 | `auth` | — | How to authenticate (see [Authentication](#authentication)). Omit for a provider that needs no key. |
 | `http_headers` | — | Extra headers sent with every request, as a string→string map. |
+| `extra_body` | — | Provider-specific JSON fields merged into every chat and streaming request body (see [Extra request fields](#extra-request-fields)). |
 | `supports_web_search` | — | Whether the provider exposes a native web-search affordance. When `true`, the `WebSearch` tool is added to sessions on this provider automatically; when `false` (the default), `WebSearch` is not offered. |
 | `preferred_models` | — | Models shown for this provider in the picker and used as provider defaults (see [Model fields](#model-fields)). For built-in provider overlays, matching model ids are patched and new ids are appended; omitted leaves the preset list unchanged. |
 
@@ -319,6 +320,44 @@ provider at a local proxy that should not send the built-in auth or headers:
 }
 ```
 
+### Extra request fields
+
+Some gateways and proxies require parameters Ante doesn't model — a service tier, a routing hint, a vendor-specific beta block. `extra_body` is a JSON object merged into the top level of every chat and streaming request body Ante sends to that provider:
+
+```json
+{
+  "providers": {
+    "my-gateway": {
+      "base_url": "https://gateway.example.com/v1",
+      "wire_style": "OpenAiCompatible",
+      "auth": { "bearer": { "env_key": "MY_GATEWAY_API_KEY" } },
+      "extra_body": {
+        "service_tier": "priority",
+        "routing": { "region": "us-east" }
+      }
+    }
+  }
+}
+```
+
+Values are passed through verbatim, so any JSON shape works. On a built-in provider overlay, `extra_body` merges key by key into the preset's — matching keys are replaced, others are left alone.
+
+`extra_body` can only add fields, never override the ones Ante generates for the selected `wire_style`:
+
+| `wire_style` | Reserved keys |
+|---|---|
+| `AnthropicMessage` | `model`, `max_tokens`, `messages`, `system`, `temperature`, `tools`, `stream`, `thinking`, `stop_sequences`, `output_config`, `cache_control` |
+| `OpenAiCompatible` | `model`, `messages`, `reasoning_effort`, `max_tokens`, `stream`, `stream_options`, `temperature`, `top_p`, `top_k`, `stop`, `tools`, `tool_choice`, `thinking`, `enable_thinking`, `thinking_budget`, `enable_search`, `search_options` |
+| `OpenAiResponse` | `model`, `instructions`, `input`, `tools`, `tool_choice`, `parallel_tool_calls`, `max_output_tokens`, `temperature`, `reasoning`, `stream`, `include`, `store` |
+| `Gemini` | `contents`, `systemInstruction`, `generationConfig`, `tools`, `toolConfig` |
+
+A reserved key is dropped at catalog load and named in the startup notice; the rest of the provider still loads. To change one of these, use the [model fields](#model-fields) or the [environment overrides](#environment-overrides) instead:
+
+```
+Skipped 1 entry in ~/.ante/catalog.json:
+  - providers.my-gateway.extra_body: ignoring Ante-owned request field(s): model
+```
+
 ### Authentication
 
 `auth` is a tagged object: the tag chooses where the credential goes, and the credential is either an environment variable (`env_key`) or one of Ante's built-in OAuth flows (`oauth_preset`).
@@ -346,10 +385,10 @@ The same fields describe a model fully inside a provider's `preferred_models` (w
 | `id` | Model id. Required in `preferred_models` (`name` is accepted as a legacy alias); supplied by the map key under `models`. |
 | `display_name` | Friendly name. |
 | `description` | Short description shown in the model picker. |
-| `temperature` | Sampling temperature. |
+| `temperature` | Sampling temperature. On `AnthropicMessage` providers, extended thinking requires `1` — any other value with an effort level set fails the turn with an explicit message. |
 | `top_p` | Nucleus sampling cutoff. |
 | `top_k` | Top-k sampling cutoff. |
-| `max_tokens` | Maximum output tokens per turn. |
+| `max_tokens` | Maximum output tokens per turn. On `AnthropicMessage` providers that take an explicit thinking budget, it must exceed 1024 — the API's minimum budget — when an effort level is set. |
 | `stop_sequences` | List of strings that end generation. |
 | `context_limit` | Context window size, in tokens. |
 | `effort` | Default [effort level](/usage/models-and-thinking#effort) — `min`, `low`, `medium`, `high`, `xhigh`, or `max`. Omit for models with no reasoning knob (Ante then sends no effort parameter and hides the effort slider). |
