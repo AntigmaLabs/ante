@@ -1,5 +1,20 @@
 # Changelog
 
+## v0.preview.76 - 2026-08-11
+
+### Added
+- Qwen 3.8 Max, Qwen 3.7 Flash, and Muse Spark 1.2 in the OpenRouter catalog; the superseded Qwen 3.7 Max and Muse Spark 1.1 entries are pruned
+
+### Changed
+- Tool headers color their arguments — file paths, commands, search patterns — in the design blue instead of plain gray
+- The composer cursor blinks
+- Skill and agent frontmatter goes through one shared reader with size and nesting-depth limits, so oversized or malformed frontmatter fails with a clear error instead of being partially accepted
+
+### Fixed
+- Bundled skills are installed before the daemon starts serving, so they are usable on the very first launch after an update instead of only from the second launch on
+- Multiline Grep searches over a directory run one worker at a time, so concurrent search buffers can no longer multiply peak memory
+- The Grep header separates its pattern and path — `Search (foo in /tmp/src)` instead of `Search (foo)/tmp/src`
+
 ## v0.preview.75 - 2026-08-10
 
 ### Added
