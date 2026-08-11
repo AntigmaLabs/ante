@@ -1,5 +1,16 @@
 # Changelog
 
+## v0.preview.75 - 2026-08-10
+
+### Added
+- Custom providers in the user catalog accept an `extra_body` map — provider-specific fields merged into chat and streaming request bodies, for gateways and proxies that require extra parameters. Keys that collide with Ante-owned request fields are dropped with a notice at catalog load instead of rejecting the whole provider
+
+### Changed
+- `SessionStart` and `SessionUpdated` no longer carry the active provider's full model list on the wire; that catalog data is available from `ante catalog`. Clients still receive the provider id, display name, and effective base URL
+
+### Fixed
+- Anthropic requests are compatible with proxies and gateways again: the unsupported context-management field is no longer sent, extended-thinking budgets respect the 1024-token minimum, and a temperature other than 1 with thinking enabled now fails with a clear message instead of a confusing provider error
+
 ## v0.preview.74 - 2026-08-10
 
 ### Changed
