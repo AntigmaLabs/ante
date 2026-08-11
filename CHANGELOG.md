@@ -1,5 +1,10 @@
 # Changelog
 
+## v0.preview.74 - 2026-08-10
+
+### Changed
+- When telemetry is configured, Ante uses a random, resettable installation ID and per-process run IDs; operator identity is sent only when explicitly configured
+
 ## v0.preview.73 - 2026-08-10
 
 ### Added
