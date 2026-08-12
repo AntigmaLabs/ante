@@ -292,14 +292,20 @@ pub struct SubagentMetadata {
     pub scope: Scope,
 }
 
+/// The provider a session resolved to.
+///
+/// Carries only what a client cannot look up for itself: the id to key state
+/// on, a name to show a user, and the endpoint actually in use — which env
+/// overrides can move away from the published default, so it is a property of
+/// this session rather than of the provider. The provider's model list is not
+/// here; it is the same for every session and is published by `ante catalog`.
+/// Unknown fields are ignored, so payloads still carrying it decode fine.
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]
 pub struct ProviderSpec {
     #[serde(alias = "name")]
     pub id: String,
     pub display_name: String,
     pub base_url: String,
-    #[serde(default, skip_serializing_if = "Vec::is_empty")]
-    pub preferred_models: Vec<ModelSpec>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -853,7 +859,6 @@ mod tests {
             id: name.to_string(),
             display_name: name.to_string(),
             base_url: format!("https://api.{name}.test/v1"),
-            preferred_models: vec![model_spec("preferred-model")],
         }
     }
 
@@ -971,10 +976,30 @@ mod tests {
                 if payload.model.id == "claude-sonnet-4-6"
                     && payload.provider.id == "anthropic"
                     && payload.provider.base_url == "https://api.anthropic.test/v1"
-                    && payload.provider.preferred_models.len() == 1
                     && payload.session_id == session_id
                     && payload.cwd == std::path::Path::new("/tmp/session-updated")
         ));
+    }
+
+    #[test]
+    fn provider_spec_ignores_the_dropped_model_list() {
+        // Payloads from daemons that still send the provider's model list
+        // decode against the narrowed shape.
+        let spec: ProviderSpec = serde_json::from_value(serde_json::json!({
+            "id": "anthropic",
+            "display_name": "Anthropic",
+            "base_url": "https://api.anthropic.test/v1",
+            "preferred_models": [{ "id": "claude-sonnet-4-6" }],
+        }))
+        .unwrap();
+
+        assert_eq!(spec.id, "anthropic");
+        assert_eq!(spec.display_name, "Anthropic");
+        assert_eq!(spec.base_url, "https://api.anthropic.test/v1");
+
+        // And the catalog data does not go back out.
+        let encoded = serde_json::to_value(&spec).unwrap();
+        assert!(encoded.get("preferred_models").is_none());
     }
 
     #[test]
