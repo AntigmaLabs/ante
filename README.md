@@ -32,7 +32,7 @@ Two things many people ask about:
 
 **A ghost in your shell.** Ante is a self-contained coding agent that lives in your terminal and self-organizes. One ~15MB Rust binary from [Antigma Labs](https://antigma.ai), zero runtime dependencies, built to get the most out of any model.
 
-It works like Claude Code or Codex, with none of their dependencies or model constraints. It can also be the optimized core for building your own harness and high-performing assistants.
+It works like Claude Code or Codex, with none of their dependencies or model constraints. It can also be the optimized core for [building your own harness](#one-binary-many-agents) and high-performing assistants.
 
 ```sh
 curl -fsSL https://ante.run/install.sh | bash
@@ -49,7 +49,7 @@ Ante runs [Terminal-Bench 2.1](https://antigma.ai/eval) continuously under offic
 
 ### 🪶 A fraction of the footprint
 
-Ante is hand-written Rust with the heavy parts (`Grep`, `git`) embedded in one binary, one process, and local inference handled by a pinned, managed llama.cpp. Across the same 20 parallel tasks in Docker, Ante uses **~7× less peak memory**, **~9× less average CPU**, and **~5× less disk I/O** than Claude Code.
+Ante is hand-written Rust: the heavy parts (`Grep`, `git`) are embedded in one binary and one process, and local inference is handled by a pinned, managed llama.cpp. Across the same 20 parallel tasks in Docker, Ante uses **~7× less peak memory**, **~9× less average CPU**, and **~5× less disk I/O** than Claude Code.
 
 ![Resource Usage Comparison](docs-site/docs/benchmarks/compare_animated.gif)
 
@@ -175,6 +175,21 @@ ante update --version v0.preview.71
 - **Channel integrations**: run Ante as a Slack or Discord bot with `ante gateway`.
 - **Extensible**: custom skills, sub-agents, MCP, and persistent memory across sessions.
 
+## One binary, many agents
+
+Ante's behavior lives in a settings file, and `--profile <name>` swaps that file per run: system prompt, tool set, skills, memory. The same binary can be a full assistant in one terminal and a minimal agent in the next.
+
+The curated `pi` profile is the extreme case. It strips Ante down to four tools (Read, Write, Edit, Bash) and one short replacement system prompt; file search runs through `rg`, subagents through `ante -p "<task>"`, web access through `curl`. The whole agent fits in one JSON file you can read in a minute:
+
+```sh
+cp curated/profiles/pi.settings.json ~/.ante/
+ante --profile pi
+```
+
+A profile replaces the whole settings file, so anything it omits falls back to Ante defaults, and explicit CLI flags still win. Ante also ships a built-in `bare` profile for stripped-down runs: no skills, MCP servers, session saving, or auto-memory. Share what you build in [`curated/profiles`](curated/profiles).
+
+**[Named profiles →](https://docs.antigma.ai/configuration/preference#named-profiles)** · [Curated profiles →](curated/profiles)
+
 ## Supported Providers
 
 Provider support comes in two layers.
@@ -217,6 +232,8 @@ We open sourced what really matters in the age of agentic coding, all under Apac
 1. **Detailed documentation, the descriptive truth.** [`docs-site/`](docs-site) is the source for [docs.antigma.ai](https://docs.antigma.ai): a precise description of what the harness does and how to drive it.
 2. **The protocol, the algorithm of the core.** [`crates/protocol-shape`](crates/protocol-shape) defines the schema and wire messages spoken by `ante serve`; [`crates/agent-sdk`](crates/agent-sdk) is the Rust SDK and client for building against agent runtimes.
 3. **The eval pipeline, constraint and continuous improvement.** [`ante-harbor/`](ante-harbor) is the Harbor agent adapter behind our Terminal-Bench results: use it to reproduce any run at [antigma.ai/eval](https://antigma.ai/eval). [`CHANGELOG.md`](CHANGELOG.md) records the improvement, release by release.
+
+Alongside these, [`curated/`](curated) is a shared space for reusable pieces from the team and community: settings profiles like [`pi`](curated/profiles), and skills.
 
 The core harness itself is developed in a private repository during the alpha and ships as a prebuilt binary via [releases](https://github.com/AntigmaLabs/ante/releases). Core libraries from it are included here progressively as they stabilize; [`crates/exec`](crates/exec), standalone process execution, is the first.
 
