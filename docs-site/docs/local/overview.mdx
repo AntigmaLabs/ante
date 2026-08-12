@@ -28,7 +28,7 @@ Local is a first-class way to run Ante. Hosted and local providers live in the s
 
 **Native integration.** Ante goes further than tolerating a base URL. [Offline mode](/local/offline) manages llama.cpp itself: pinned, checksum-verified builds matched to your hardware (Metal on Apple silicon, CUDA or Vulkan or CPU on Linux), GGUF discovery across your disk, memory estimation before a model loads, live load progress, and server lifecycle handled in the TUI. A [curated model list](/local/verified-models) tells you what runs well before you download 17 GB. Prefer your own build or launch flags? [Custom engines](/local/custom-engines) covers that.
 
-**Agent-native inference, in progress.** The endgame is an inference engine inside the agent process, tuned for how agents actually call models. Local models become a preferred substrate for many workloads, with benchmark numbers to back that up. See the [experimental preview](/experimental/agent-native-inference).
+**Agent-native inference, in progress.** The endgame is an inference engine inside the agent process, tuned for how agents actually call models: prefix reuse across turns, constrained decoding for tool calls, batching across subagents. We explore that in the open with [nanochat-rs](https://github.com/AntigmaLabs/nanochat-rs), a small pure-Rust inference core you can clone and run. See [Agent-Native Inference](/experimental/agent-native-inference).
 
 ## Mixing local and frontier
 

@@ -64,7 +64,9 @@ ante --offline-model ~/.ante/models/Qwen3.5-9B-Q4_K_M.gguf \
   -p "add error handling to src/main.rs"
 ```
 
-**[Offline mode →](https://docs.antigma.ai/usage/offline)** · [nanochat-rs, a toy engine for study →](https://github.com/AntigmaLabs/nanochat-rs)
+We think about the engine layer in public too. [**nanochat-rs**](https://github.com/AntigmaLabs/nanochat-rs) is a small GPT inference core we wrote in pure Rust on [candle](https://github.com/huggingface/candle): readable, runnable, and living in the same process as the code that calls it. It is a study project rather than part of the binary, published because in-process inference is where local models get interesting for agents.
+
+**[Offline mode →](https://docs.antigma.ai/local/offline)** · [nanochat-rs →](https://github.com/AntigmaLabs/nanochat-rs) · [Where this is going →](https://docs.antigma.ai/experimental/agent-native-inference)
 
 ---
 
@@ -250,7 +252,7 @@ The name is the answer: **An**other **Te**rminal agent, and *ante*, the stake yo
 Ante has most of the features you expect from agents like Claude Code or Codex: multi-agents, skills, MCP, persistent memory. The difference is the build philosophy.
 
 - Built from scratch in Rust. Core components like `Grep` (fully rebuilt and customized) and `git` are embedded in the same ~15MB binary and run in the same process at runtime, so nothing is shelled out and no resources leak. Most similar projects ship on Node.js or CPython and carry an order-of-magnitude larger footprint.
-- Local inference is built in: the engine is a pinned, managed version of [llama.cpp](https://github.com/ggml-org/llama.cpp), so a local GGUF model is all Ante needs to run without any provider. To study how such an engine works, see [nanochat-rs](https://github.com/AntigmaLabs/nanochat-rs), our toy version.
+- Local inference is built in: the engine is a pinned, managed version of [llama.cpp](https://github.com/ggml-org/llama.cpp), so a local GGUF model is all Ante needs to run without any provider. We also share our own work on the engine layer: [nanochat-rs](https://github.com/AntigmaLabs/nanochat-rs), a small in-process inference core in pure Rust.
 - No vendor lock-in, not even to ourselves: no account needed, reuse your existing API credentials. An opt-in, fully integrated server-side experience lives at [antix.antigma.ai](https://antix.antigma.ai).
 - Every claim is backed by public, reproducible benchmarks of the exact builds we ship: [antigma.ai/eval](https://antigma.ai/eval).
 
