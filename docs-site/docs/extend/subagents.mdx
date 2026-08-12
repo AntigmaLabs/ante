@@ -55,6 +55,8 @@ Provide findings with severity ratings and remediation steps.
 | `model` | No | Override the LLM model for this agent |
 | `tools` | No | Restrict which tools this agent can use |
 
+Frontmatter is read the same way as [skill frontmatter](/extend/skills#creating-a-skill): common unquoted-scalar mistakes are repaired when they can be interpreted unambiguously, and the block is capped at 16 KB and 32 levels of nesting. Past either limit, or on YAML that cannot be repaired, the agent fails to load with an explicit error.
+
 ## How sub-agents work
 
 When the main agent encounters a task that matches a sub-agent's description, it uses the `Agent` tool to spawn the sub-agent:

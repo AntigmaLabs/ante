@@ -52,6 +52,9 @@ Frontmatter parsing is lenient for common scalar mistakes: unquoted values that
 contain `: `, begin with flow-like characters such as `[` or `{`, or include
 inline comments are repaired when they can be interpreted unambiguously.
 Malformed nested YAML still fails so broken metadata does not load silently.
+The block is capped at 16 KB and 32 levels of nesting; past either limit the
+skill fails to load with an explicit error rather than loading partially.
+Sub-agent frontmatter goes through the same reader with the same rules.
 
 ## Skill directories
 
