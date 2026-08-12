@@ -118,80 +118,29 @@ def _populate_context_from_events(
         metadata[FAILURE_CLASS_METADATA_KEY] = diagnostic_failure_class
 
 
-def install_prerequisites_command() -> str:
-    """Best-effort sandbox prerequisites for published or custom installs."""
-    return "\n".join(
-        [
-            "set -e",
-            "if ! command -v curl >/dev/null 2>&1 || ! command -v bash >/dev/null 2>&1; then",
-            "  if command -v apt-get >/dev/null 2>&1; then",
-            "    apt-get update && "
-            "DEBIAN_FRONTEND=noninteractive apt-get install -y curl ca-certificates bash",
-            "  elif command -v apk >/dev/null 2>&1; then",
-            "    apk add --no-cache curl ca-certificates bash",
-            "  elif command -v yum >/dev/null 2>&1; then",
-            "    yum install -y curl ca-certificates bash",
-            "  elif command -v dnf >/dev/null 2>&1; then",
-            "    dnf install -y curl ca-certificates bash",
-            "  else",
-            "    echo 'curl or bash missing and no supported package manager found' >&2",
-            "    exit 127",
-            "  fi",
-            "fi",
-            "command -v curl >/dev/null",
-            "command -v bash >/dev/null",
-        ]
-    )
-
-
-def with_install_prerequisites(command: str) -> str:
-    return "\n".join([install_prerequisites_command(), command])
-
-
-def _tee_command(command: str, log_path: Path, *, append: bool) -> str:
-    escaped_log_dir = shlex.quote(str(log_path.parent))
-    escaped_log_path = shlex.quote(str(log_path))
-    tee_args = f"-a {escaped_log_path}" if append else escaped_log_path
-    return "\n".join(
-        [
-            f"mkdir -p {escaped_log_dir} || exit",
-            "status_file=$(mktemp) || exit",
-            "trap 'rm -f \"$status_file\"' EXIT",
-            "{",
-            f"  sh -c {shlex.quote(command)}",
-            "  command_status=$?",
-            "  printf '%s\\n' \"$command_status\" > \"$status_file\" || exit",
-            f"}} 2>&1 | tee {tee_args}",
-            "tee_status=$?",
-            "command_status=$(cat \"$status_file\") || exit",
-            "case \"$command_status\" in ''|*[!0-9]*) exit 1 ;; esac",
-            "if [ \"$command_status\" -ne 0 ]; then exit \"$command_status\"; fi",
-            "exit \"$tee_status\"",
-        ]
-    )
-
-
 def setup_log_command(command: str, *, append: bool = True) -> str:
     """Mirror setup output to Harbor Hub's conventional setup log path."""
-    logged_command = "\n".join(["set -e", command])
-    return _tee_command(logged_command, _SETUP_LOG, append=append)
+    escaped_setup_dir = shlex.quote(str(_SETUP_LOG.parent))
+    escaped_setup_path = shlex.quote(str(_SETUP_LOG))
+    tee_args = f"-a {escaped_setup_path}" if append else escaped_setup_path
+    return "\n".join(
+        [
+            f"mkdir -p {escaped_setup_dir}",
+            "{",
+            command,
+            f"}} 2>&1 | tee {tee_args}",
+        ]
+    )
 
 
 def install_command_from_args(install_args: str) -> str:
     """Build a robust in-sandbox install.sh command for published Ante builds."""
     quoted_args = " ".join(shlex.quote(arg) for arg in shlex.split(install_args or ""))
-    install_line = "\n".join(
-        [
-            "installer=$(mktemp)",
-            "trap 'rm -f \"$installer\"' EXIT",
-            "curl -fsSL https://download.ante.run/install.sh -o \"$installer\"",
-            (
-                "ANTE_INSTALL_DIR=/usr/local/bin NO_MODIFY_PATH=true "
-                f'bash "$installer" {quoted_args}'
-            ).rstrip(),
-        ]
-    )
-    return with_install_prerequisites(install_line)
+    install_line = (
+        "curl -fsSL https://download.ante.run/install.sh | "
+        f"ANTE_INSTALL_DIR=/usr/local/bin NO_MODIFY_PATH=true bash -s -- {quoted_args}"
+    ).rstrip()
+    return install_line
 
 
 def split_extra_ante_args(ante_args: str) -> list[str]:
@@ -226,14 +175,17 @@ def ante_command(
         args += ["--effort", effort]
     args += split_extra_ante_args(ante_args)
     command = " ".join(shlex.quote(arg) for arg in args)
+    escaped_log_dir = shlex.quote(str(_AGENT_LOG.parent))
+    escaped_log_path = shlex.quote(str(_AGENT_LOG))
     escaped_instruction_path = shlex.quote(str(_INSTRUCTION_PATH))
-    logged_command = "\n".join(
-        [
-            f"trap 'rm -f {escaped_instruction_path}' EXIT",
-            f"{command} < {escaped_instruction_path}",
-        ]
+    return (
+        f"trap 'rm -f {escaped_instruction_path}' EXIT && "
+        f"mkdir -p {escaped_log_dir} && "
+        "{ "
+        f"{command} < {escaped_instruction_path} 2>&1 | tee {escaped_log_path}; "
+        'exit "${PIPESTATUS[0]}"; '
+        "}"
     )
-    return _tee_command(logged_command, _AGENT_LOG, append=False)
 
 
 async def upload_instruction(environment: BaseEnvironment, instruction: str) -> None:
@@ -280,8 +232,8 @@ class AnteAgent(BaseInstalledAgent):
         # builds. It must leave `ante` on PATH for the shared --version check.
         self._install_command = install_command or None
         self._install_args = install_args
-        # Success-path fallback retained only until Harbor downloads ante.txt.
-        # Event parsing and translation stay in populate_context_post_run.
+        # Successful exec output is authoritative over a possibly partial
+        # downloaded ante.txt. Timeouts leave this unset and use the file.
         self._event_output: str | None = None
 
     @staticmethod
@@ -322,14 +274,15 @@ class AnteAgent(BaseInstalledAgent):
             self.logger.debug("Ante is already available at the requested version")
             return
 
+        if self._install_command is not None or self._install_args is not None:
+            await self.ensure_system_dependencies(environment, ("curl", "bash"))
+
         if self._install_command is not None:
             # Reuse mode: provision ante from within the sandbox (e.g. download a
             # published build via install.sh). No runner-built binary required.
             await self.exec_as_root(
                 environment,
-                command=setup_log_command(
-                    with_install_prerequisites(self._install_command), append=False
-                ),
+                command=setup_log_command(self._install_command, append=False),
             )
         elif self._install_args is not None:
             await self.exec_as_root(
@@ -401,7 +354,10 @@ class AnteAgent(BaseInstalledAgent):
 
     def populate_context_post_run(self, context: AgentContext) -> None:
         log_text = read_event_log_text(Path(self.logs_dir))
-        event_text = log_text or self._event_output or ""
+        # A successful exec captured the complete stream even when tee could
+        # only write a prefix. Timeouts never set _event_output, so their
+        # downloaded on-disk prefix remains the fallback for partial metrics.
+        event_text = self._event_output or log_text or ""
         self._event_output = None
         events = events_from_text(event_text)
         failure = final_turn_failure(events)
@@ -451,6 +407,7 @@ class AnteAgent(BaseInstalledAgent):
         command = ante_command(model_name, self._provider, self._effort, self._ante_args)
 
         result = await self.exec_as_agent(environment, command=command)
-        # tee mirrors the event stream to stdout. Harbor normally downloads the
-        # log before populating context; retain stdout only as a download fallback.
+        # tee mirrors the event stream to stdout. A successful exec's captured
+        # stream is authoritative because the downloaded log may be truncated
+        # by a tee write failure.
         self._event_output = getattr(result, "stdout", "") or ""
