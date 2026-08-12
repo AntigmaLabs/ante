@@ -177,19 +177,38 @@ ante update --version v0.preview.71
 
 ## Supported Providers
 
-Ante works with 12+ providers out of the box:
+Provider support comes in two layers.
+
+**Built-in presets we maintain.** 17 presets, each tested and kept current, so the per-provider quirks are already handled: wire dialect, API key and OAuth flows, thinking and streaming behavior.
 
 | Provider | Example Models |
 |----------|---------------|
-| Anthropic | Claude Sonnet 4.5, Opus 4.6 |
-| OpenAI | GPT-5 family |
-| Google Gemini | Gemini 3 family |
-| Grok (xAI) | Grok 4 |
-| Open Router | Multiple providers |
+| Anthropic | Claude Sonnet 5, Opus 5, Fable 5 (API key or subscription OAuth) |
+| OpenAI | GPT-5.6 family (API key or ChatGPT/Codex OAuth) |
+| Google Gemini | Gemini 3.x family (Gemini API or Vertex AI) |
+| Grok (xAI) | Grok 4.5 |
+| DeepSeek | DeepSeek V4 |
+| Open Router | Any Open Router model, over three wire styles |
 | Local (GGUF) | Any GGUF model via built-in llama.cpp |
-| ...and more | Vertex AI, Zai, Antix, OpenAI-compatible |
+| ...and more | Zai, Ali Coding Plan, Antix, OpenAI-compatible |
 
-Configure providers via environment variables (`ANTHROPIC_API_KEY`, `OPENAI_API_KEY`, etc.) or OAuth. Add custom providers in `~/.ante/catalog.json`.
+**A config layer for everything else.** Your own proxy, gateway, or inference engine is one entry in `~/.ante/catalog.json`: a `wire_style` (Ante speaks four API dialects), an auth style (bearer, header, or query, from an env var or OAuth), plus `http_headers` and `extra_body` for whatever else the endpoint expects. The combinations cover most setups without a plugin or a code change:
+
+```json
+{
+  "providers": {
+    "my-gateway": {
+      "base_url": "https://gateway.example.com/v1",
+      "wire_style": "OpenAiCompatible",
+      "auth": { "bearer": { "env_key": "MY_GATEWAY_API_KEY" } },
+      "http_headers": { "X-Org": "my-team" },
+      "extra_body": { "service_tier": "priority" }
+    }
+  }
+}
+```
+
+[Providers guide →](https://docs.antigma.ai/usage/providers) · [Catalog Reference →](https://docs.antigma.ai/reference/catalog-reference)
 
 ## What's in this repo
 
