@@ -117,6 +117,64 @@ def total_steps_from_events(events: Iterable[dict[str, Any]]) -> int | None:
     return sum(counts) if counts else None
 
 
+def incomplete_steps_lower_bound_from_events(
+    events: Iterable[dict[str, Any]],
+) -> int | None:
+    """Bound total steps when a started root turn has no terminal event.
+
+    Each non-compaction ``UsageUpdate`` proves that one model iteration
+    finished. An unmatched ``TurnStart`` proves the following iteration was
+    attempted, so its minimum is one plus those updates. Completed turns still
+    contribute their exact ``TurnEnd.steps`` value. ``None`` means every
+    observed root turn ended, so callers should retain the exact total instead.
+    """
+    total = 0
+    active_usage_updates: int | None = None
+    skip_compaction_usage = False
+    saw_incomplete_turn = False
+
+    for event_msg in events:
+        name, data = _event_name_data(event_msg)
+        if name == "TurnStart":
+            if active_usage_updates is not None:
+                total += 1 + active_usage_updates
+                saw_incomplete_turn = True
+            active_usage_updates = 0
+            skip_compaction_usage = False
+            continue
+
+        if active_usage_updates is None:
+            if name == "TurnEnd" and isinstance(data, dict):
+                value = data.get("steps")
+                if isinstance(value, int) and not isinstance(value, bool) and value >= 0:
+                    total += value
+            continue
+
+        if name == "CompactEnd":
+            # A successful compaction emits its own UsageUpdate next, but it
+            # does not advance the enclosing turn loop's step counter.
+            skip_compaction_usage = True
+        elif name == "UsageUpdate":
+            if skip_compaction_usage:
+                skip_compaction_usage = False
+            else:
+                active_usage_updates += 1
+        elif name == "TurnEnd":
+            value = data.get("steps") if isinstance(data, dict) else None
+            if isinstance(value, int) and not isinstance(value, bool) and value >= 0:
+                total += value
+            else:
+                total += 1 + active_usage_updates
+            active_usage_updates = None
+            skip_compaction_usage = False
+
+    if active_usage_updates is not None:
+        total += 1 + active_usage_updates
+        saw_incomplete_turn = True
+
+    return total if saw_incomplete_turn else None
+
+
 def event_from_line(line: str) -> dict[str, Any] | None:
     """Return one Ante EventMsg JSONL object, if present."""
     line = line.strip()
