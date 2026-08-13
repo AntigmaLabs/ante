@@ -1,5 +1,20 @@
 # Changelog
 
+## v0.preview.77 - 2026-08-12
+
+### Added
+- Grok 4.6 in the xAI and OpenRouter catalogs, replacing Grok 4.5
+
+### Changed
+- Thinking renders as markdown in the thinking grey, instead of showing raw `**` markers
+
+### Fixed
+- Hitting a usage limit no longer triggers repeated compaction attempts
+- OpenAI server-overload errors are retried instead of failing the turn
+- Background job handle files are cleaned up at startup once the job has finished, instead of accumulating
+- `/term` reports tmux as missing instead of opening an empty picker
+- An empty `ANTE_ENV` is treated as unset, so telemetry keeps its default environment label
+
 ## v0.preview.76 - 2026-08-11
 
 ### Added
