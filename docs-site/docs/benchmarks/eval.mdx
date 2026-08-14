@@ -11,7 +11,7 @@ description: "Public, reproducible benchmarks of the exact builds we ship — li
 Our benchmarks are designed to be checked:
 
 - **We benchmark what we ship.** Every eval runs against a pinned, publicly downloadable Ante release, the same binary `ante update` installs (e.g. `0.preview.43`). No eval-only branches, no benchmark-specific prompts.
-- **The runs are auditable.** Every result links its raw [Harbor](https://github.com/laude-institute/harbor) run, so anyone can inspect the trials behind the number.
+- **The runs are auditable.** Every result links its raw [Harbor](https://github.com/harbor-framework/harbor) run, so anyone can inspect the trials behind the number.
 - **The constraints are official.** All trials use the same parameters as the official Terminal-Bench leaderboard: 89 tasks, 5 trials per task, strict timeouts and hardware limits.
 - **The results are live.** We publish continuously at [antigma.ai/eval](https://antigma.ai/eval).
 
@@ -65,7 +65,7 @@ A good harness moves the frontier down-market: it makes open-weight models do wo
   </figure>
 </div>
 
-We use [Terminal Bench](https://github.com/laude-institute/terminal-bench) and [Harbor](https://github.com/laude-institute/harbor) as our primary external benchmark. The team behind Harbor and Terminal Bench are genuine researchers — rigorous, principled, and motivated by getting it right rather than hype.
+We use [Terminal Bench](https://github.com/harbor-framework/terminal-bench-1) and [Harbor](https://github.com/harbor-framework/harbor) as our primary external benchmark. The team behind Harbor and Terminal Bench are genuine researchers — rigorous, principled, and motivated by getting it right rather than hype.
 
 Why Terminal Bench:
 - **Rigorous.** Unambiguous task specs, deterministic grading where possible, and isolated execution environments.
