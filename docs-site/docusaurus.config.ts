@@ -107,6 +107,33 @@ const config: Config = {
         redirects: isZhHansBuild ? [] : legacyAnteRedirects,
       },
     ],
+    // Generates llms.txt and llms-full.txt (llmstxt.org) at build time.
+    // English build only: the plugin reads source markdown from docs/,
+    // which the zh-Hans build neither includes nor serves.
+    !isZhHansBuild && [
+      'docusaurus-plugin-llms',
+      {
+        title: 'Ante',
+        description:
+          'Ante is a ghost in your shell: self-contained, self-organizing, benchmarked in public.',
+        // Mirrors the docs preset's routeBasePath: '/' — without this the
+        // plugin assumes docs are served under /docs and mislinks the root page.
+        docsDir: [{ path: 'docs', routeBasePath: '/' }],
+        includeOrder: [
+          'start/**',
+          'benchmarks/**',
+          'usage/**',
+          'local/**',
+          'configuration/**',
+          'extend/**',
+          'reference/**',
+          'experimental/**',
+          'changelog*',
+          'antix/**',
+        ],
+        includeUnmatchedLast: true,
+      },
+    ],
   ],
 
   themeConfig: {
