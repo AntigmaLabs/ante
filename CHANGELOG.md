@@ -1,5 +1,20 @@
 # Changelog
 
+## v0.preview.78 - 2026-08-13
+
+### Added
+- Grok 4.6 in the Antix OAuth catalog
+- DeepSeek V4 Pro 0813 on OpenRouter, replacing the superseded preview build, with the GA model's native `max` reasoning effort
+
+### Changed
+- Dependency updates
+
+### Fixed
+- xAI turns no longer fail with `Argument not supported: search_context_size` — the field is dropped from the provider-native web search tool, so xAI works without `--exclude-tools WebSearch`
+- OAuth credentials refresh against the active preset's endpoint, and token issuer URLs are validated
+- Antix Grok 4.5 is marked text-only, matching what the live route actually accepts
+- `ante doctor` no longer errors when its output is piped to a consumer that closes the pipe early
+
 ## v0.preview.77 - 2026-08-12
 
 ### Added
