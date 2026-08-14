@@ -1,5 +1,13 @@
 # Changelog
 
+## v0.preview.80 - 2026-08-14
+
+### Changed
+- The bundled `ante-guide` skill routes to the documentation corpus instead of inlining reference tables that drift, and no longer suggests the nonexistent `/permissions` command
+
+### Fixed
+- Empty streaming deltas from providers (Qwen-style reasoning placeholders, OpenRouter-style empty text) no longer fragment messages into broken parts
+
 ## v0.preview.79 - 2026-08-14
 
 ### Added
