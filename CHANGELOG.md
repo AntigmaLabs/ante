@@ -1,5 +1,17 @@
 # Changelog
 
+## v0.preview.79 - 2026-08-14
+
+### Added
+- Gemini 3.7 Flash in the native Gemini, Vertex AI Gemini, and OpenRouter catalogs
+
+### Changed
+- The bundled `ante-guide` skill answers configuration questions and edits Ante's own settings from a built-in reference, without cloning the docs repository
+
+### Fixed
+- The composer cursor no longer blinks, which broke scrollback in terminals that scroll on output
+- WebSearch calls are capped at 90 seconds instead of hanging a tool batch
+
 ## v0.preview.78 - 2026-08-13
 
 ### Added
