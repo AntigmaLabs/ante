@@ -1,5 +1,17 @@
 # Changelog
 
+## v0.preview.81 - 2026-08-15
+
+### Added
+- Qwen 3.8 27B as a verified offline model
+
+### Changed
+- macOS release binaries are signed and notarized, so Gatekeeper no longer blocks first launch
+- Sent messages are restyled with a muted margin bar, and the composer prompt shows a chevron
+- Quiet tool calls are grouped into one collapsing activity cell instead of stacking individual rows
+- Log files are written to per-day directories (`logs/<date>/ante.<pid>.log`)
+- Background job handles live under `run/jobs/<proc_id>/`, and the Ante home gains a `tmp/` scratch tier
+
 ## v0.preview.80 - 2026-08-14
 
 ### Changed
