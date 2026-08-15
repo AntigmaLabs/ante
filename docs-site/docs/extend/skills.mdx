@@ -104,6 +104,20 @@ Skills are discovered in precedence order (later overrides earlier by skill name
 
 Start Ante with `--no-skills` to skip this discovery entirely. No system, user, or project skills are advertised to the model or exposed as slash commands, and `/resume` preserves that choice for the resumed session. To turn skills off persistently, set `"skills": false` in [`settings.json`](/configuration/preference#settings-file) (`--skills` re-enables them for a run). The built-in `--profile bare` also disables skills.
 
+## Bundled skills
+
+Ante ships a few skills at the system level:
+
+| Skill | What it does |
+|---|---|
+| `ante-guide` | Answers questions about Ante itself from the official docs and handles requests to change Ante's own configuration. Model-invoked only |
+| `skill-creator` | Creates, improves, and evaluates skills (`/skill-creator`) |
+| `tmux` | Drives interactive terminals, servers, and REPLs in named tmux sessions — see [Terminal sessions](/usage/tui#terminal-sessions). Model-invoked only |
+| `resume-claude` | Continues a recent Claude Code session in this directory (`/resume-claude`) |
+| `resume-codex` | Continues a recent Codex session in this directory (`/resume-codex`) |
+
+A user or project skill with the same name overrides the bundled version.
+
 ## Using skills
 
 ```

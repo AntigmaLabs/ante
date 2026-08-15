@@ -105,7 +105,8 @@ Notes:
 
 | Model | Description | Context |
 |---|---|---|
-| `gemini-3.6-flash` | Latest Gemini Flash for agentic and multimodal workflows | 1M |
+| `gemini-3.7-flash` | Gemini 3.7 Flash for fast agentic and multimodal workflows | 1.05M |
+| `gemini-3.6-flash` | Gemini 3.6 Flash for agentic and multimodal workflows | 1M |
 | `gemini-3.1-pro-preview` | Gemini 3.1 Pro with deep thinking | 1M |
 | `gemini-3.1-pro-preview-customtools` | Gemini 3.1 Pro optimized for custom tool usage | 1M |
 | `gemini-3.5-flash-lite` | Fastest, lowest-cost Gemini 3.5 model for high-throughput work | 1M |
@@ -118,10 +119,10 @@ ante --provider gemini --model gemini-3.1-pro-preview
 
 | Model | Description | Context |
 |---|---|---|
-| `grok-4.5` | Grok 4.5 with vision | 500K |
+| `grok-4.6` | Grok 4.6 flagship reasoning model | 500K |
 
 ```bash
-ante --provider xai --model grok-4.5
+ante --provider xai --model grok-4.6
 ```
 
 ### Zai
@@ -143,7 +144,8 @@ Open Router ships as three providers sharing one API key, split by wire style: `
 | Model | Description | Context |
 |---|---|---|
 | `deepseek/deepseek-v4-flash-0731` | DeepSeek V4 Flash 0731 | 1.05M |
-| `x-ai/grok-4.5` | Grok 4.5 via OpenRouter | 500K |
+| `google/gemini-3.7-flash` | Gemini 3.7 Flash for fast multimodal agentic workflows | 1.05M |
+| `x-ai/grok-4.6` | Grok 4.6 flagship reasoning model via OpenRouter | 500K |
 | `qwen/qwen3.8-max` | Qwen 3.8 flagship multimodal reasoning model | 1M |
 | `qwen/qwen3.7-plus` | Cost-effective Qwen 3.7 model with vision | 1M |
 | `qwen/qwen3.7-flash` | Low-cost Qwen 3.7 multimodal reasoning model | 1M |
@@ -155,7 +157,7 @@ Open Router ships as three providers sharing one API key, split by wire style: `
 | `moonshotai/kimi-k3` | Kimi K3 flagship multimodal reasoning model | 1.05M |
 | `moonshotai/kimi-k2.7-code` | Kimi K2.7 Code reasoning model with vision | 262K |
 | `minimax/minimax-m3` | MiniMax M3 multimodal model | 512K |
-| `deepseek/deepseek-v4-pro` | DeepSeek V4 Pro | 1M |
+| `deepseek/deepseek-v4-pro-0813` | DeepSeek V4 Pro 0813 GA | 1.05M |
 
 `openrouter-responses` serves `openai/gpt-5.6-sol`, `openai/gpt-5.6-sol-pro`, `openai/gpt-5.6-terra`, `openai/gpt-5.6-terra-pro`, `openai/gpt-5.6-luna`, and `openai/gpt-5.6-luna-pro` (1.05M context), plus `openai/gpt-5.3-codex` (400K). The `-pro` ids select OpenRouter's pro reasoning route.
 
@@ -164,7 +166,7 @@ Open Router ships as three providers sharing one API key, split by wire style: `
 Each provider also accepts any model from Open Router's [full model list](https://openrouter.ai/models) by id, as long as it speaks that provider's wire style.
 
 ```bash
-ante --provider openrouter --model deepseek/deepseek-v4-pro
+ante --provider openrouter --model deepseek/deepseek-v4-pro-0813
 ante --provider openrouter-responses --model openai/gpt-5.6-sol
 ante --provider openrouter-anthropic --model anthropic/claude-fable-5
 ```
@@ -226,6 +228,7 @@ Requires a [Coding Plan subscription](https://help.aliyun.com/zh/model-studio/co
 |---|---|---|
 | `gemini-3.5-flash` | Gemini 3.5 Flash, agentic workflows | 1M |
 | `grok-4.5` | Grok 4.5, xAI flagship for code and agentic work | 500K |
+| `grok-4.6` | Grok 4.6 flagship reasoning model | 500K |
 | `kimi-k3` | Kimi K3 flagship reasoning model with vision | 1M |
 | `qwen3.7-max` | Latest Qwen 3.7 Max | 1M |
 | `qwen3.7-plus` | Latest Qwen 3.7 Plus | 1M |

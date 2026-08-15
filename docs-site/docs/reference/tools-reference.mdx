@@ -57,7 +57,7 @@ Fetch a URL, convert it to markdown, and have a small model extract what's relev
 
 ### WebSearch
 
-Search the web and return results with citations. Requires approval. Uses the provider's native web search, so it is available only on a provider that advertises `supports_web_search` (Anthropic, OpenAI, Gemini, Grok, OpenRouter, Antix, and Ali Coding Plan). On those providers it is added to the tool set automatically; on others it is not offered.
+Search the web and return results with citations. Requires approval. Uses the provider's native web search, so it is available only on a provider that advertises `supports_web_search` (Anthropic, OpenAI, Gemini, Grok, OpenRouter, Antix, and Ali Coding Plan). On those providers it is added to the tool set automatically; on others it is not offered. A search is capped at 90 seconds — past that it fails with an error suggesting a narrower query instead of hanging the tool batch.
 
 ## Opt-in tools
 

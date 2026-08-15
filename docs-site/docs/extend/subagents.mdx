@@ -7,7 +7,7 @@ Sub-agents are specialized agents that the main agent can spawn to handle comple
 
 ## Built-in sub-agents
 
-Ante ships with three built-in sub-agents:
+Ante ships with two built-in sub-agents:
 
 ### general
 
@@ -17,9 +17,7 @@ A general-purpose agent for researching complex questions, searching for code, a
 
 A fast agent specialized for codebase exploration. It can quickly find files by patterns, search code for keywords, and answer structural questions about the codebase.
 
-### ante-guide
-
-An assistant for questions about Ante itself — features, configuration, the protocol, skills, and sub-agents. The main agent routes user questions about Ante's own functionality here.
+Questions about Ante itself are handled by the bundled `ante-guide` [skill](/extend/skills#bundled-skills), not a sub-agent.
 
 ## Creating custom sub-agents
 
@@ -82,7 +80,7 @@ When the main agent encounters a task that matches a sub-agent's description, it
 
 Sub-agents are discovered in precedence order (later overrides earlier by name):
 
-1. Built-in agents (`general`, `explorer`, `ante-guide`)
+1. Built-in agents (`general`, `explorer`)
 2. `~/.ante/agents/` (user-level)
 3. `.agents/agents/` (project-level)
 4. `.ante/agents/` (project-level)
