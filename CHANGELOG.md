@@ -1,5 +1,16 @@
 # Changelog
 
+## v0.preview.82 - 2026-08-17
+
+### Added
+- `ante offline install` downloads and installs the bundled offline inference engine; running an offline model on a machine without the engine now fails fast with that instruction instead of an opaque error
+
+### Changed
+- Grep and Glob permission rules and session approvals now scope to the search pattern instead of blanketing the whole tool, and their transcript rows show just the pattern
+- Tool calls in the transcript show wider, more balanced argument previews
+- Markdown output is restyled: headings, ordered-list markers, inline code, tables, and fenced code blocks on a dark panel background
+- `ante catalog` output is wrapped in a `{"providers": [...]}` envelope
+
 ## v0.preview.81 - 2026-08-15
 
 ### Added
