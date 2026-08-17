@@ -16,9 +16,21 @@ Ante persists configuration and state on the local filesystem. This page is a re
 | `~/.ante/AGENTS.md` | Global instructions injected into every project session |
 | `~/.ante/skills/` | User-level skills |
 | `~/.ante/agents/` | User-level sub-agents |
+| `~/.ante/.system/` | Bundled skills and sub-agents managed by the installed Ante version |
 | `~/.ante/sessions/<session-id>/` | Persisted sessions (for `/resume` and `--resume`) |
 | `~/.ante/projects/<project-id>/memory/` | Per-project auto-memory |
-| `~/.ante/cache/<project-id>/` | Per-project temporary files |
+| `~/.ante/cache/` | Oversized WebFetch response spill files; entries older than 48 hours are removed at startup |
+| `~/.ante/run/jobs/<proc-id>/` | Background Bash job handles: `status.json`, `stdout.txt`, and `stderr.txt` |
+| `~/.ante/tmp/` | Disposable staging files; entries older than 48 hours are removed at startup |
+| `~/.ante/logs/<YYYY-MM-DD>/` | Application and crash logs, partitioned by UTC date (`ante.<pid>.log` and `ante.<pid>.crash.log`) |
+| `~/.ante/logs/llama-server.log` | Local inference server log |
+| `~/.ante/models/` | Default directory for local GGUF models |
+| `~/.ante/llama.cpp/` | Managed llama.cpp installation |
+| `~/.ante/offline-config.json` | Offline-mode engine, model, and server preferences |
+| `~/.ante/verified_models.json` | Optional user additions and overrides for the verified local-model list |
+| `~/.ante/channels.json` | Slack and Discord gateway configuration |
+| `~/.ante/versions.json` | Cached update check and release-note state |
+| `~/.ante/user_input_history.jsonl` | TUI prompt history |
 | `~/.ante/tip_history.json` | Show history for [spinner tips](/usage/tui#spinner-tips) (delete to reset the rotation) |
 | `~/.ante/installation-id` | Random installation label for [telemetry](/configuration/preference#identity), written only when telemetry is configured (delete to reset the identity) |
 | `AGENTS.md` | Project instructions injected alongside global instructions |
@@ -26,6 +38,8 @@ Ante persists configuration and state on the local filesystem. This page is a re
 | `.agents/`, `.claude/` | Additional project-local skill/sub-agent directories |
 
 `<project-id>` is a sanitized form of the project's absolute path. The `ANTE_HOME` environment variable overrides `~/.ante`.
+
+Background job directories are live process state rather than scratch data. Ante never removes a live job because of age; after a job settles, its directory is retained for 24 hours and then collected on a later startup.
 
 ## `settings.json`
 
@@ -104,6 +118,13 @@ See [AGENTS.md](/extend/agents-md) for usage guidance and precedence details.
 ├── auth/               # OAuth credentials and pasted API keys
 ├── AGENTS.md           # Global instructions
 ├── installation-id     # Random telemetry installation label
+├── user_input_history.jsonl # TUI prompt history
+├── tip_history.json    # Spinner-tip history
+├── versions.json       # Update cache and release-note state
+├── channels.json       # Gateway configuration
+├── offline-config.json # Offline-mode preferences
+├── verified_models.json # Optional local-model catalog overrides
+├── .system/            # Bundled skills and sub-agents (Ante-managed)
 ├── skills/             # User-level skills
 ├── agents/             # User-level sub-agents
 ├── sessions/           # Persisted sessions (for /resume)
@@ -111,8 +132,16 @@ See [AGENTS.md](/extend/agents-md) for usage guidance and precedence details.
 │   └── <project-id>/
 │       └── memory/
 │           └── MEMORY.md
-└── cache/              # Per-project temporary files
-    └── <project-id>/
+├── cache/              # WebFetch spills (48-hour scratch)
+├── run/
+│   └── jobs/
+│       └── <proc-id>/  # Background Bash status and output
+├── tmp/                # Disposable staging (48-hour scratch)
+├── logs/
+│   ├── <YYYY-MM-DD>/   # ante.<pid>.log and crash logs
+│   └── llama-server.log
+├── models/             # Local GGUF models
+└── llama.cpp/          # Managed local inference engine
 ```
 
 ### Project-local

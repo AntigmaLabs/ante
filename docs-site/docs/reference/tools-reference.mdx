@@ -37,7 +37,7 @@ Search file contents with regular expressions.
 
 ### Bash
 
-Execute shell commands. Each call runs in a fresh non-interactive process — shell state does not persist between calls. Long-running commands (servers, watchers, slow builds) can be launched in the background; the agent gets back paths it can read for status and output, and can stop the process by its pid. A trailing `&` on a background command is redundant and is stripped automatically. Cancelling a foreground Bash call terminates its whole process group, including child and grandchild processes. Requires approval.
+Execute shell commands. Each call runs in a fresh non-interactive process — shell state does not persist between calls. Long-running commands (servers, watchers, slow builds) can be launched in the background; the agent gets back a handle under `~/.ante/run/jobs/<proc-id>/` with `status.json`, `stdout.txt`, and `stderr.txt`, and can stop the process by its pid. Live handles survive Ante restarts; settled handles are collected after 24 hours. A trailing `&` on a background command is redundant and is stripped automatically. Cancelling a foreground Bash call terminates its whole process group, including child and grandchild processes. Requires approval.
 
 For interactive programs and persistent shells, the agent drives durable named tmux sessions (`ante-*`) through ordinary Bash calls, guided by a bundled `tmux` skill — every keystroke it sends goes through normal Bash permission checks. Watch or type in any of those sessions with [`/term <name>`](/usage/tui#terminal-sessions).
 

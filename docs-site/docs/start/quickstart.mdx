@@ -23,6 +23,8 @@ curl -fsSL https://ante.run/install.sh | ANTE_INSTALL_DIR=/usr/local/bin bash
 
 Run the default installer as your normal user, not with `sudo`. A sudoed home-directory install would leave `~/.ante` root-owned and prevent Ante from saving settings and input history, so the installer refuses that combination.
 
+macOS release binaries are Developer ID-signed and notarized, so Gatekeeper accepts them without a manual security bypass.
+
 ## Quick examples
 
 ### Interactive session
@@ -77,7 +79,7 @@ ante update
 ante update nightly
 
 # Roll back or pin to an exact release
-ante update --version v0.preview.71
+ante update --version v0.preview.81
 ```
 
 ## What's next?

@@ -7,7 +7,7 @@ description: "Settings file, environment variables, and directory structure"
 
 Ante stores user preferences in `~/.ante/settings.json`.
 
-Most of these settings can also be viewed and changed interactively with the `/config` command in the TUI — a searchable settings dialog with in-place toggles (tips, ambient predictions, short prompt, auto compact, resize reflow, default permission mode, update channel) and shortcuts into the dedicated dialogs (theme, model, provider, status line, MCP servers, offline mode). Changes are persisted to `settings.json` immediately; settings consumed at startup, such as `resize_reflow`, are marked "(next session)" in the dialog and take effect on the next session.
+Most of these settings can also be viewed and changed interactively with the `/config` command in the TUI — a searchable settings dialog with in-place toggles (tips, ambient predictions, grouped tool activity, short prompt, auto compact, resize reflow, default permission mode, update channel) and shortcuts into the dedicated dialogs (theme, model, provider, status line, MCP servers, offline mode). Changes are persisted to `settings.json` immediately; settings consumed at startup, such as `resize_reflow`, are marked "(next session)" in the dialog and take effect on the next session.
 
 An example `settings.json`:
 
@@ -30,6 +30,7 @@ An example `settings.json`:
   "ambient_prompt_suggestion": true,
   "ambient_thinking_phrase": true,
   "tips": true,
+  "group_tool_activity": true,
   "short_prompt": false,
   "auto_compact": true,
   "channel": "stable",
@@ -74,6 +75,7 @@ An example `settings.json`:
 | `ambient_prompt_suggestion` | Whether the TUI shows a [next-prompt suggestion](/usage/tui#next-prompt-suggestion) as ghost text after a turn. On unless set to `false` |
 | `ambient_thinking_phrase` | Whether the TUI predicts a [task-specific spinner phrase](/usage/tui#spinner-thinking-phrase) while you type. On unless set to `false` |
 | `tips` | Whether the TUI shows a [tip line](/usage/tui#spinner-tips) under the spinner while the agent works. On unless set to `false` |
+| `group_tool_activity` | Collapse contiguous quiet tool calls into a single activity summary in the chat. On unless set to `false`; full per-call details remain in the **Ctrl+O** transcript. Changes apply to new tool activity only |
 | `short_prompt` | Use the compact prompt set — a condensed system prompt and shorter built-in tool descriptions — for new and resumed sessions. Off unless set to `true`; the `--short-prompt` CLI flag enables it for a single run |
 | `auto_compact` | Proactively summarize conversation history as it nears the model's context limit. On unless set to `false`; `/compact` and overflow recovery still work when disabled. Toggling it in `/config` applies to the running session |
 | `channel` | Release channel `ante update` tracks (`stable` or `nightly`). Defaults to `stable`; legacy `latest` values are treated as `stable`. See [Update & Channels](/start/update). |
@@ -276,6 +278,11 @@ All application tracing records that pass the active `RUST_LOG` filter are expor
 ├── AGENTS.md          # Global instructions
 ├── installation-id    # Random telemetry installation label
 ├── sessions/          # Persisted sessions (for /resume)
+├── projects/          # Per-project auto-memory
+├── cache/             # WebFetch spill files (48-hour scratch)
+├── run/jobs/          # Background Bash status and output
+├── tmp/               # Disposable staging (48-hour scratch)
+├── logs/              # Application logs partitioned by UTC date
 ├── skills/            # User-level skills
 └── agents/            # User-level sub-agents
 ```
@@ -305,7 +312,7 @@ Project instructions are found by walking up from the working directory: in each
 
 ### Project memory (`~/.ante/projects/`)
 
-Project-scoped state — memory, persisted sessions, event logs — lives under `~/.ante/projects/<project-id>/`, where `<project-id>` is a sanitized form of the project's absolute path.
+Project-scoped auto-memory lives under `~/.ante/projects/<project-id>/`, where `<project-id>` is a sanitized form of the project's absolute path. Persisted sessions live separately under `~/.ante/sessions/`.
 
 ```
 ~/.ante/projects/
@@ -314,9 +321,11 @@ Project-scoped state — memory, persisted sessions, event logs — lives under 
         └── MEMORY.md      # Auto-memory for this project
 ```
 
-### Temporary files
+### Runtime and temporary files
 
-Per-project temp files live under `~/.ante/cache/<project-id>/`.
+Oversized WebFetch responses spill into `~/.ante/cache/`, while disposable staging uses `~/.ante/tmp/`; entries in both scratch tiers are removed at startup after 48 hours. Background Bash handles live under `~/.ante/run/jobs/<proc-id>/` and are retained while their process is live, then for 24 hours after it settles. Application logs live under `~/.ante/logs/<YYYY-MM-DD>/`, partitioned by UTC date.
+
+See [Storage Reference](/reference/storage-reference) for the complete layout and file purposes.
 
 ## Precedence
 

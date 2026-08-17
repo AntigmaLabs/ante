@@ -165,7 +165,7 @@ ante update
 ante update --channel nightly
 
 # Roll back or pin to an exact release
-ante update --version v0.preview.71
+ante update --version v0.preview.81
 ```
 
 ## Beyond the headline numbers

@@ -40,6 +40,8 @@ When the agent proposes file edits, Ante switches to a fullscreen diff view on a
 
 Press `Ctrl+O` to open the transcript view on an alternate screen: the full conversation history with tool results expanded, including lines the inline view truncates. Scroll with `j`/`k` or `PgUp`/`PgDn`, jump with `g`/`G`, and close with `Ctrl+O` or `q`.
 
+In the main chat, contiguous quiet calls such as Bash, Read, Grep, Glob, WebFetch, WebSearch, and MCP tools are grouped into one compact activity cell by default. While calls are running, the cell shows their count, arguments, and elapsed time; once complete it collapses to a summary such as `Ran 2 shell commands, read 3 files`. Edit, Write, and Agent calls keep their richer standalone cells, and the transcript view always preserves every call and result. Disable grouping with **Group tool activity** in `/config` or set `"group_tool_activity": false` in `~/.ante/settings.json`; the change applies to new calls only.
+
 After compaction — manual `/compact` or [automatic](/configuration/preference#settings-file) — the conversation shows a collapsed `* Compacted` marker; the transcript view renders the full summary the model wrote. When Ante trims oversized tool results instead of summarizing, an info line reports what was trimmed.
 
 ### Model and provider selection
