@@ -20,6 +20,7 @@ pub enum ThinkingDialect {
     KimiThinkingObject,
     KimiK3ReasoningEffort,
     MuseSparkReasoningEffort,
+    Qwen38ReasoningEffort,
     QwenEnableThinking,
     DeepSeek { max_reasoning_effort: ReasoningEffort },
     None,
@@ -151,6 +152,20 @@ impl OpenAiCompatProfile {
                 enable_thinking: None,
                 thinking_budget: None,
             },
+            ThinkingDialect::Qwen38ReasoningEffort => {
+                let setting = requested.map(|r| effort::resolve(QWEN38_RUNGS, r));
+                let (reasoning_effort, enable_thinking) = match setting {
+                    Some(Qwen38Setting::ThinkingOff) => (None, Some(false)),
+                    Some(Qwen38Setting::ReasoningEffort(effort)) => (Some(effort), None),
+                    None => (None, None),
+                };
+                ThinkingParams {
+                    reasoning_effort,
+                    thinking: None,
+                    enable_thinking,
+                    thinking_budget: None,
+                }
+            }
             ThinkingDialect::QwenEnableThinking => ThinkingParams {
                 reasoning_effort: None,
                 thinking: None,
@@ -244,6 +259,7 @@ impl OpenAiCompatFamily {
             Self::KimiK3 => ThinkingDialect::KimiK3ReasoningEffort,
             Self::MuseSpark => ThinkingDialect::MuseSparkReasoningEffort,
             Self::MiniMax => ThinkingDialect::None,
+            Self::Qwen if is_qwen38(model_id) => ThinkingDialect::Qwen38ReasoningEffort,
             Self::Qwen => ThinkingDialect::QwenEnableThinking,
             Self::MistralNoSystem | Self::Generic => ThinkingDialect::ReasoningEffort,
         }
@@ -338,9 +354,9 @@ fn openrouter_web_search_extra_body() -> Map<String, Value> {
     body
 }
 
-/// On/off ladder shared by the binary dialects (GLM, Kimi K2.x, Qwen): `min` is
-/// off, anything above is on. An unset effort defaults to on, matching each
-/// dialect's historical behavior.
+/// On/off ladder shared by the binary dialects (GLM, Kimi K2.x, and Qwen
+/// before 3.8): `min` is off, anything above is on. An unset effort defaults
+/// to on, matching each dialect's historical behavior.
 const ON_OFF_RUNGS: &[(Effort, bool)] = &[(Effort::Min, false), (Effort::Low, true)];
 
 /// Kimi K3 always reasons and currently accepts only the top-level `max`
@@ -356,6 +372,21 @@ const MUSE_SPARK_RUNGS: &[(Effort, ReasoningEffort)] = &[
     (Effort::Medium, ReasoningEffort::Medium),
     (Effort::High, ReasoningEffort::High),
     (Effort::XHigh, ReasoningEffort::XHigh),
+];
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum Qwen38Setting {
+    ThinkingOff,
+    ReasoningEffort(ReasoningEffort),
+}
+
+/// Qwen 3.8 accepts graded `reasoning_effort` values while retaining
+/// `enable_thinking: false` as its explicit off switch.
+const QWEN38_RUNGS: &[(Effort, Qwen38Setting)] = &[
+    (Effort::Min, Qwen38Setting::ThinkingOff),
+    (Effort::Low, Qwen38Setting::ReasoningEffort(ReasoningEffort::Low)),
+    (Effort::Medium, Qwen38Setting::ReasoningEffort(ReasoningEffort::Medium)),
+    (Effort::XHigh, Qwen38Setting::ReasoningEffort(ReasoningEffort::XHigh)),
 ];
 
 fn thinking_on(requested: Option<Effort>) -> bool {
@@ -418,6 +449,7 @@ pub fn effort_levels(provider_id: &str, model_id: &str) -> Vec<Effort> {
         ThinkingDialect::ThinkingObject
         | ThinkingDialect::KimiThinkingObject
         | ThinkingDialect::QwenEnableThinking => effort::levels(ON_OFF_RUNGS),
+        ThinkingDialect::Qwen38ReasoningEffort => effort::levels(QWEN38_RUNGS),
         ThinkingDialect::KimiK3ReasoningEffort => effort::levels(KIMI_K3_RUNGS),
         ThinkingDialect::MuseSparkReasoningEffort => effort::levels(MUSE_SPARK_RUNGS),
         ThinkingDialect::DeepSeek { max_reasoning_effort } => {
@@ -427,6 +459,15 @@ pub fn effort_levels(provider_id: &str, model_id: &str) -> Vec<Effort> {
         ThinkingDialect::OpenRouterHighXHigh => effort::levels(OPENROUTER_RUNGS),
         ThinkingDialect::None => Vec::new(),
     }
+}
+
+fn is_qwen38(model_id: &str) -> bool {
+    let model = model_id.to_ascii_lowercase();
+    let name = model.split_once('/').map_or(model.as_str(), |(_, name)| name);
+    let Some(rest) = name.strip_prefix("qwen3.8") else {
+        return false;
+    };
+    rest.is_empty() || rest.chars().next().is_some_and(|c| matches!(c, '-' | '_' | ':' | '.'))
 }
 
 fn starts_with_family_token(name: &str, family: &str) -> bool {
@@ -468,6 +509,11 @@ mod tests {
         assert_eq!(qwen.thinking_dialect, ThinkingDialect::QwenEnableThinking);
         assert_eq!(qwen.system_role, SystemRolePolicy::Merged);
         assert_eq!(qwen.search, SearchPolicy::QwenEnableSearch);
+
+        let qwen38 = profile("openai-compatible", "Qwen3.8-27B-MLX");
+        assert_eq!(qwen38.thinking_dialect, ThinkingDialect::Qwen38ReasoningEffort);
+        assert_eq!(qwen38.system_role, SystemRolePolicy::Merged);
+        assert_eq!(qwen38.search, SearchPolicy::QwenEnableSearch);
 
         let minimax = profile("openrouter", "minimax/minimax-m3");
         assert_eq!(minimax.thinking_dialect, ThinkingDialect::None);
@@ -515,6 +561,10 @@ mod tests {
         assert_eq!(
             OpenAiCompatFamily::from_provider_model("openai-compatible", "made-by-deepseek-ish"),
             OpenAiCompatFamily::Generic
+        );
+        assert_eq!(
+            profile("openai-compatible", "qwen3.80-max").thinking_dialect,
+            ThinkingDialect::QwenEnableThinking
         );
     }
 
@@ -595,6 +645,33 @@ mod tests {
         );
     }
 
+    #[test]
+    fn qwen38_maps_graded_reasoning_effort_and_preserves_explicit_off() {
+        let cases = [
+            (Effort::Min, None, Some(false)),
+            (Effort::Low, Some(ReasoningEffort::Low), None),
+            (Effort::Medium, Some(ReasoningEffort::Medium), None),
+            (Effort::High, Some(ReasoningEffort::Medium), None),
+            (Effort::XHigh, Some(ReasoningEffort::XHigh), None),
+            (Effort::Max, Some(ReasoningEffort::XHigh), None),
+        ];
+        for (requested, reasoning_effort, enable_thinking) in cases {
+            let params =
+                profile("openai-compatible", "Qwen3.8-27B-MLX").thinking_params(Some(requested));
+            assert_eq!(params.reasoning_effort, reasoning_effort, "Qwen 3.8 {requested}");
+            assert_eq!(params.enable_thinking, enable_thinking, "Qwen 3.8 {requested}");
+        }
+
+        let unset = profile("openai-compatible", "Qwen3.8-27B-MLX").thinking_params(None);
+        assert!(unset.reasoning_effort.is_none());
+        assert!(unset.enable_thinking.is_none());
+
+        let openrouter =
+            profile("openrouter", "qwen/qwen3.8-max").thinking_params(Some(Effort::Low));
+        assert_eq!(openrouter.reasoning_effort, Some(ReasoningEffort::Low));
+        assert!(openrouter.enable_thinking.is_none());
+    }
+
     /// Golden table for the OpenRouter dialect. `medium` no longer collapses
     /// into `high`; `min` still sends an explicit "none" while an unset
     /// effort omits the field entirely.
@@ -639,6 +716,10 @@ mod tests {
         assert_eq!(
             effort_levels("openai-compatible", "qwen3.7-max"),
             vec![Effort::Min, Effort::Low],
+        );
+        assert_eq!(
+            effort_levels("openai-compatible", "Qwen3.8-27B-MLX"),
+            vec![Effort::Min, Effort::Low, Effort::Medium, Effort::XHigh],
         );
         assert_eq!(
             effort_levels("deepseek", "deepseek-v4-pro"),
