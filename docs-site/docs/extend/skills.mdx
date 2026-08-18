@@ -102,7 +102,22 @@ Skills are discovered in precedence order (later overrides earlier by skill name
 6. `.agents/skills/` (project-level)
 7. `.ante/skills/` (project-level)
 
+Discovered skills are advertised to the model in a reminder attached to the first user message, and [sub-agents](/extend/subagents) inherit the parent session's skills.
+
 Start Ante with `--no-skills` to skip this discovery entirely. No system, user, or project skills are advertised to the model or exposed as slash commands, and `/resume` preserves that choice for the resumed session. To turn skills off persistently, set `"skills": false` in [`settings.json`](/configuration/preference#settings-file) (`--skills` re-enables them for a run). The built-in `--profile bare` also disables skills.
+
+### Selecting individual skills
+
+To drop or add specific skills instead of all of them, set `exclude_skills` / `include_skills` in [`settings.json`](/configuration/preference#settings-file):
+
+```json
+{
+  "exclude_skills": ["noisy-skill"],
+  "include_skills": ["deploy-checklist"]
+}
+```
+
+Both take exact skill names. `exclude_skills` removes the named skills from every session and wins over `include_skills`; `include_skills` adds names on top of the session's base skill set, like `--include-tools` for tools. The selection applies to fresh and resumed sessions alike.
 
 ## Bundled skills
 

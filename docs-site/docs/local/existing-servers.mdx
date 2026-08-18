@@ -86,23 +86,17 @@ for your machine.
 
 When Ante starts `llama-server`, it owns that process and can stop it. When Ante
 attaches to an external server, stopping offline mode only detaches Ante from
-the endpoint and restores the static `local` provider entry. The external server
-keeps running.
+the endpoint; the external server keeps running.
+
+The `local` provider exists in the catalog only while a server is registered —
+managed or attached. After a detach, `local` leaves the catalog, and selecting
+it with no server running gates the session with a notice instead of retrying a
+dead endpoint; run `/offline-mode` to start or attach a server again.
 
 Attaching to a non-loopback host sends your conversation data to that host. Only
 attach remote endpoints that you intentionally operate or trust.
 
 ## Related environment variables
-
-`ANTE_LOCAL_PROVIDER_PORT` changes the static `local` provider preset port used
-outside an active offline-mode server session:
-
-```bash
-ANTE_LOCAL_PROVIDER_PORT=8081 ante --provider local "your prompt"
-```
-
-Manual attach and auto-detected running servers override that static provider
-while attached.
 
 `ANTE_OFFLINE_CONTEXT` changes the default context-window cap when Ante starts a
 managed offline model. It does not change a server you started externally.

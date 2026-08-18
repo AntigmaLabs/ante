@@ -64,6 +64,8 @@ When the main agent encounters a task that matches a sub-agent's description, it
 3. The sub-agent runs independently with its own context
 4. The result is returned to the main agent, which incorporates it into the conversation
 
+A sub-agent inherits the [skills](/extend/skills) equipped in the parent session, so skill-driven workflows keep working inside delegated tasks. Delegation is one level deep: a sub-agent never carries the `Agent` tool, so it cannot spawn further sub-agents.
+
 ```
 ┌────────────┐     Agent     ┌──────────────┐
 │ Main Agent │ ────────────▶ │  Sub-Agent   │
@@ -86,4 +88,4 @@ Sub-agents are discovered in precedence order (later overrides earlier by name):
 4. `.ante/agents/` (project-level)
 5. `.claude/agents/` (project-level, Claude Code compatibility)
 
-User and project agents are loaded alongside the built-in ones. All available agents are registered at session initialization time and refreshed via the `ExtensionRefreshed` protocol event.
+User and project agents are loaded alongside the built-in ones. All available agents are registered at session initialization time, advertised to the model in a reminder attached to the first user message, and refreshed via the `ExtensionRefreshed` protocol event.

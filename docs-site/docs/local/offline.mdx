@@ -46,7 +46,7 @@ Prefer your own llama.cpp build, extra server flags, or a server you started you
    ```
    Ante boots the llama-server, waits for it to be ready, then runs the session. Useful in scripts or CI.
 
-Once a model is loaded, it is registered as the `local` provider in the catalog, so you can also switch to it from any session with `/providers` or target it with `--provider local`. See [mixing local and frontier](/local/overview#mixing-local-and-frontier).
+Once a model is loaded, it is registered as the `local` provider in the catalog, so you can also switch to it with `/providers` or target it with `--provider local`. The entry exists only while a server is registered: when the server stops, `local` leaves the catalog. Starting with a saved `local` selection and no server running gates the session with a notice (run `/offline-mode` to start or attach one); headless runs fail fast with the same message. See [mixing local and frontier](/local/overview#mixing-local-and-frontier).
 
 ## Scripted and server usage
 
@@ -168,4 +168,3 @@ All offline mode configuration is stored in `~/.ante/offline-config.json`:
 | Variable | Description |
 |---|---|
 | `ANTE_OFFLINE_CONTEXT` | Override the default context window cap (tokens). Useful when you need a larger context than the 32K default, and your hardware has enough RAM. Example: `ANTE_OFFLINE_CONTEXT=65536 ante --offline-model ...` |
-| `ANTE_LOCAL_PROVIDER_PORT` | Port the `local` provider connects to when you use `--provider local` directly (default `8080`) |

@@ -20,6 +20,8 @@ An example `settings.json`:
   "tools": ["Read", "Write", "Edit", "Bash"],
   "auto_memory": true,
   "skills": true,
+  "include_skills": ["deploy-checklist"],
+  "exclude_skills": ["noisy-skill"],
   "session_save": true,
   "permission_mode": "auto",
   "permissions": {
@@ -68,6 +70,8 @@ An example `settings.json`:
 | `tools` | Base tool set for fresh sessions, replacing the default set (an empty list selects no tools). `--tools` overrides it for a run; `--include-tools` / `--exclude-tools` still apply on top |
 | `auto_memory` | Whether [auto-memory](/extend/memory) is on. When unset, the launch mode decides: on in the TUI, off in headless runs. `--enable-auto-memory` / `--disable-auto-memory` override it for a run |
 | `skills` | Whether [skills](/extend/skills) are discovered and loaded. On unless set to `false`; `--skills` / `--no-skills` override it for a run |
+| `include_skills` | Skill names equipped on top of the session's base skill set — additive, like `--include-tools` for tools. Names match exactly |
+| `exclude_skills` | Skill names removed from every session's skill set. Wins over `include_skills`; names match exactly. See [Selecting individual skills](/extend/skills#selecting-individual-skills) |
 | `session_save` | Whether session transcripts and resumable snapshots are saved. On unless set to `false`; `--session-save` / `--no-session-save` override it for a run |
 | `permission_mode` | Default permission mode (`strict`, `auto`, or `yolo`). `strict` and `auto` are written automatically when you cycle modes with **Shift+Tab** in the TUI; `yolo` remains session-only. Unrecognized values are ignored rather than failing the whole file |
 | `permissions` | Persistent tool permission rules, grouped by `allow`, `ask`, and `deny` matchers (see [Permissions](/configuration/permission)) |
@@ -230,7 +234,7 @@ Settings can be overridden per-session via CLI flags.
 | `MODEL_TOP_P` | Override model top_p sampling parameter (float) |
 | `MODEL_MAX_TOKENS` | Override max output tokens (integer) |
 | `MODEL_CONTEXT_LIMIT` | Override max context window size (integer) |
-| `ANTE_LOCAL_PROVIDER_PORT` | Override the local provider port (default: 8080) |
+| `ANTE_LOCAL_PROVIDER_PORT` | Port assumed for the `local` provider when no live model server registration provides one (default: 8080) |
 | `ANTE_HOME` | Override the home config directory (default: `~/.ante`) |
 | `ANTE_PROFILE` | Select a named settings profile for TUI or headless runs; equivalent to `--profile <name>` |
 | `ANTE_INSTALL_DIR` | Installer-only override for the binary install directory (default: `~/.ante/bin`) |

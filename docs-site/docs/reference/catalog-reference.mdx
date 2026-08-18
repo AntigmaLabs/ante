@@ -249,7 +249,7 @@ ante --provider antix-api-key --model claude-sonnet-4-6 # ANTIX_API_KEY
 
 ### Local
 
-Run GGUF models locally via the built-in llama.cpp engine — no API key required. `local` is a wildcard provider; the available model depends on what the offline server has loaded. See [Offline Mode](/local/offline) for setup.
+Run GGUF models locally via the built-in llama.cpp engine — no API key required. `local` is a wildcard provider; the available model depends on what the offline server has loaded, and the entry exists in the catalog only while a live server is registered. Selecting `local` with no server running gates the session with a notice until you start or attach one. See [Offline Mode](/local/offline) for setup.
 
 ```bash
 ante --provider local
