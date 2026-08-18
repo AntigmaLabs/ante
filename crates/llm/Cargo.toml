@@ -1,0 +1,11 @@
+[package]
+name = "ante-llm"
+version = "0.1.0"
+edition = "2024"
+description = "Provider profiles and shared LLM primitives for Ante"
+license = "Apache-2.0"
+
+[dependencies]
+ante-protocol-shape = { path = "../protocol-shape" }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
