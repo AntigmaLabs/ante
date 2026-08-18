@@ -1,0 +1,18 @@
+{
+  "has_completed_onboarding": true,
+  "permission_mode": "strict",
+  "tools": [
+    "Read",
+    "Glob",
+    "Grep",
+    "TodoWrite",
+    "Agent",
+    "WebFetch",
+    "WebSearch",
+    "Bash"
+  ],
+  "permissions": {
+    "allow": ["WebFetch", "WebSearch"]
+  },
+  "append_system_prompt": "Plan mode: research the codebase and produce an implementation plan with the files to touch, steps in order, risks, and open questions. Do not modify files, run mutating commands, or commit. End with the plan, not the implementation."
+}

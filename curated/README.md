@@ -33,6 +33,19 @@ jq --rawfile prompt pi.system-prompt.md \
   pi.settings.json > tmp && mv tmp pi.settings.json
 ```
 
+### plan
+
+A planning profile: the agent researches the codebase and delivers an implementation plan, but cannot edit. Write and Edit are absent from the tool set, so file changes are impossible, and an appended prompt keeps the model in planning posture. Permission mode is `strict`: known-safe read-only shell commands (`git log`, `git diff`, `rg`, and pipelines of vetted programs) run without prompts, while anything mutating asks. WebFetch and WebSearch are allowed by rule so research flows uninterrupted.
+
+Plan under the profile, then execute without it — resuming a session restores the default tool set:
+
+```sh
+ante --profile plan       # produce the plan
+ante                      # then /resume to execute with full tools
+```
+
+Headless runs imply yolo mode, which skips permission rules including the Bash ask; add `--exclude-tools Bash` for unattended planning. The profile omits `model` and `provider`, so it uses your default credentials. Pin a heavier model or effort by adding those fields to your copy.
+
 ## Skills
 
 [Agent Skills](https://agentskills.io) folders, each with a `SKILL.md`. Copy a folder into `~/.ante/skills/` for all projects, or `.ante/skills/` for one project. See the [skills docs](https://docs.antigma.ai/extend/skills).
