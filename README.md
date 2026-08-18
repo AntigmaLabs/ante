@@ -184,16 +184,16 @@ ante update --version v0.preview.81
 
 Ante's behavior lives in a settings file, and `--profile <name>` swaps that file per run: system prompt, tool set, skills, memory. The same binary can be a full assistant in one terminal and a minimal agent in the next.
 
-The curated [`pi` profile](curated/profiles/pi.settings.json) is the extreme case. It strips Ante down to four tools (Read, Write, Edit, Bash) and one [short replacement system prompt](curated/profiles/pi.system-prompt.md); file search runs through `rg`, subagents through `ante -p "<task>"`, web access through `curl`. The whole agent fits in one JSON file you can read in a minute:
+The curated [`pi` profile](curated/pi.settings.json) is the extreme case. It strips Ante down to four tools (Read, Write, Edit, Bash) and one [short replacement system prompt](curated/pi.system-prompt.md); file search runs through `rg`, subagents through `ante -p "<task>"`, web access through `curl`. The whole agent fits in one JSON file you can read in a minute:
 
 ```sh
-cp curated/profiles/pi.settings.json ~/.ante/
+cp curated/pi.settings.json ~/.ante/
 ante --profile pi
 ```
 
-A profile replaces the whole settings file, so anything it omits falls back to Ante defaults, and explicit CLI flags still win. Ante also ships a built-in `bare` profile for stripped-down runs: no skills, MCP servers, session saving, or auto-memory. Share what you build in [`curated/profiles`](curated/profiles).
+A profile replaces the whole settings file, so anything it omits falls back to Ante defaults, and explicit CLI flags still win. Ante also ships a built-in `bare` profile for stripped-down runs: no skills, MCP servers, session saving, or auto-memory. Share what you build in [`curated/`](curated).
 
-**[Named profiles →](https://docs.antigma.ai/configuration/preference#named-profiles)** · [Curated profiles →](curated/profiles)
+**[Named profiles →](https://docs.antigma.ai/configuration/preference#named-profiles)** · [Curated profiles →](curated)
 
 ## Supported Providers
 
@@ -240,7 +240,7 @@ We open sourced what really matters in the age of agentic coding, all under Apac
 2. **The protocol, the algorithm of the core.** [`crates/protocol-shape`](crates/protocol-shape) defines the schema and wire messages spoken by `ante serve`; [`crates/agent-sdk`](crates/agent-sdk) is the Rust SDK and client for building against agent runtimes.
 3. **The eval pipeline, constraint and continuous improvement.** [`ante-harbor/`](ante-harbor) is the Harbor agent adapter behind our Terminal-Bench results: use it to reproduce any run at [antigma.ai/eval](https://antigma.ai/eval). [`CHANGELOG.md`](CHANGELOG.md) records the improvement, release by release.
 
-Alongside these, [`curated/`](curated) is a shared space for reusable pieces from the team and community: settings profiles like [`pi`](curated/profiles), and skills.
+Alongside these, [`curated/`](curated) is a shared space for reusable pieces from the team and community, laid out to mirror `~/.ante/`: settings profiles like [`pi`](curated/pi.settings.json), and skills.
 
 The core harness itself is developed in a private repository during the alpha and ships as a prebuilt binary via [releases](https://github.com/AntigmaLabs/ante/releases). Core libraries from it are included here progressively as they stabilize; [`crates/exec`](crates/exec), standalone process execution, is the first. Open-sourcing progress is tracked in [issue #21](https://github.com/AntigmaLabs/ante/issues/21).
 
