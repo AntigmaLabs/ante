@@ -24,13 +24,13 @@
 
 Two things many people ask about:
 
-**Where is the source?** The core harness currently ships as a prebuilt binary; this repo holds the docs, protocol, SDK, and eval pipeline ([details](#whats-in-this-repo)). We are working out a way to ship the source code along with the binary, to address security and privacy concerns first, while taking the time to figure out how open source should work in the agentic era. Progress and discussion: [issue #21](https://github.com/AntigmaLabs/ante/issues/21). If you have concerns today, run Ante in a sandbox: it is a single binary with minimal runtime dependencies, built to be easy to deploy in a container or on a remote machine.
+**Where is the source?** The core harness currently ships as a prebuilt binary; this repo holds the docs, protocol, SDK, and eval pipeline ([details](#whats-in-this-repo)). We are working out a way to ship the source code along with the binary, to address security and privacy concerns first, while taking the time to figure out how open source should work in the agentic era. Progress and discussion: [issue #21](https://github.com/AntigmaLabs/ante/issues/21). If you have concerns today, run Ante in a sandbox: it is a single self-contained binary, built to be easy to deploy in a container or on a remote machine.
 
 **Is there telemetry?** Yes, and it is opt-out: set `ANTE_TELEMETRY=off` to disable export entirely. What it sends is anonymous — a random installation label you can delete and re-mint, never your username, hostname, or machine id. The `RUST_LOG` filter also applies to exported logs, a convenience carried over from the Rust ecosystem. A better UX is in the works. [Details →](https://docs.antigma.ai/configuration/preference#telemetry)
 
 ---
 
-**A ghost in your shell.** Ante is a self-contained coding agent that lives in your terminal and self-organizes. One ~15MB Rust binary from [Antigma Labs](https://antigma.ai), zero runtime dependencies, built to get the most out of any model.
+**A ghost in your shell.** Ante is a self-contained coding agent that lives in your terminal and self-organizes. One ~15MB compressed download from [Antigma Labs](https://antigma.ai) that expands to a single Rust executable with zero runtime dependencies, built to get the most out of any model.
 
 It works like Claude Code or Codex, with none of their dependencies or model constraints. It can also be the optimized core for [building your own harness](#one-binary-many-agents) and high-performing assistants.
 
@@ -39,17 +39,29 @@ curl -fsSL https://ante.run/install.sh | bash
 ante
 ```
 
+### One harness to run them all
+
+We care about **the harness, not a co-trained model or a secret prompt**. The harness and the model are a dynamic duo: they should evolve together but not be bound together. Prompts belong to the user.
+
+Ante makes this declarative: [one settings profile](#one-binary-many-agents) can define the whole agent, replacement system prompt included.
+
+[![One harness to run them all, and in the darkness unbind them — the Ante film](docs-site/static/assets/one-harness-poster.jpg)](https://download.ante.run/media/one-harness.mp4)
+
+**[▶ Watch the film (1 min)](https://download.ante.run/media/one-harness.mp4)**
+
 Every agent claims to be good. Here are numbers you can check:
 
 ### 🥇 Continuously evaled and evolved, in public
 
-Ante runs [Terminal-Bench 2.1](https://antigma.ai/eval) continuously under official leaderboard constraints: 89 tasks, 5 trials each. Each result pins the exact build you can download and links the raw Harbor run for independent audit. Latest full run: **82.7%** with open-weight **DeepSeek V4 Flash 0731** (368/445 trials, Ante 0.preview.71, about $68 of inference). DeepSeek [reports](https://deepseek.ai/blog/deepseek-v4-flash-ga-agent-benchmarks) the same 82.7 for this model, measured with its unreleased DeepSeek Harness in minimal mode.
+We evaluate Ante as a harness across different model families instead of coupling it to one hero model. Ante runs [Terminal-Bench 2.1](https://antigma.ai/eval) continuously under official leaderboard constraints: 89 tasks, 5 trials each. Each result pins the exact Ante build you can download and links the raw Harbor run for independent audit. Latest full run: **82.7%** with open-weight **DeepSeek V4 Flash 0731** (368/445 trials, Ante 0.preview.71, about $68 of inference). DeepSeek [reports](https://deepseek.ai/blog/deepseek-v4-flash-ga-agent-benchmarks) the same 82.7 for this model, measured with its unreleased DeepSeek Harness in minimal mode.
 
-**[Live results →](https://antigma.ai/eval)** · [Methodology →](https://docs.antigma.ai/benchmarks/eval)
+We also isolate the harness itself: in a controlled test using the same DeepSeek model slug, tasks, and sandbox across five harness configurations, Ante passed **10/10**, Ante with its short prompt passed **9/10**, and Pi, OpenCode, and Hermes each passed **7/10**. Ten tasks are an early signal, not a definitive ranking, but they show that fixing the model does not fix the outcome.
+
+**[Live cross-model results →](https://antigma.ai/eval)** · [Same-model harness comparison →](https://antigma.ai/blog/2026/08/04/harness-matter) · [Methodology →](https://docs.antigma.ai/benchmarks/eval)
 
 ### 🪶 A fraction of the footprint
 
-Ante is hand-written Rust: the heavy parts (`Grep`, `git`) are embedded in one binary and one process, and local inference is handled by a pinned, managed llama.cpp. Across the same 20 parallel tasks in Docker, Ante uses **~7× less peak memory**, **~9× less average CPU**, and **~5× less disk I/O** than Claude Code.
+Ante is hand-written Rust: the heavy parts (`Grep`, `git`) are embedded in one binary and one process, and local inference is handled by a managed llama.cpp. Across the same 20 parallel tasks in Docker, Ante uses **~7× less peak memory**, **~9× less average CPU**, and **~5× less disk I/O** than Claude Code.
 
 ![Resource Usage Comparison](docs-site/docs/benchmarks/compare_animated.gif)
 
@@ -70,7 +82,7 @@ We think about the engine layer in public too. [**nanochat-rs**](https://github.
 
 ---
 
-The three are one design decision. An agent you can **verify**, **afford**, and **run anywhere** is light enough to run by the *thousands*: the substrate for self-organizing intelligence.
+These three properties are one design decision. An agent you can **verify**, **afford**, and **run anywhere** is light enough to run by the *thousands*: the substrate for self-organizing intelligence.
 
 ## See it in action
 
@@ -168,18 +180,11 @@ ante update --channel nightly
 ante update --version v0.preview.81
 ```
 
-## Beyond the headline numbers
-
-- **Zero vendor lock-in**: bring your own API key, subscription, or local model. Switch between 12+ providers freely. No account required, not even with us.
-- **Multi-agent orchestration**: spawn sub-agents and coordinate complex tasks across independent, decentralized, and centralized architectures. [See the patterns →](https://docs.antigma.ai/experimental/agent-org)
-- **Channel integrations**: run Ante as a Slack or Discord bot with `ante gateway`.
-- **Extensible**: custom skills, sub-agents, MCP, and persistent memory across sessions.
-
 ## One binary, many agents
 
 Ante's behavior lives in a settings file, and `--profile <name>` swaps that file per run: system prompt, tool set, skills, memory. The same binary can be a full assistant in one terminal and a minimal agent in the next.
 
-The curated `pi` profile is the extreme case. It strips Ante down to four tools (Read, Write, Edit, Bash) and one short replacement system prompt; file search runs through `rg`, subagents through `ante -p "<task>"`, web access through `curl`. The whole agent fits in one JSON file you can read in a minute:
+The curated [`pi` profile](curated/profiles/pi.settings.json) is the extreme case. It strips Ante down to four tools (Read, Write, Edit, Bash) and one [short replacement system prompt](curated/profiles/pi.system-prompt.md); file search runs through `rg`, subagents through `ante -p "<task>"`, web access through `curl`. The whole agent fits in one JSON file you can read in a minute:
 
 ```sh
 cp curated/profiles/pi.settings.json ~/.ante/
@@ -192,7 +197,7 @@ A profile replaces the whole settings file, so anything it omits falls back to A
 
 ## Supported Providers
 
-Provider support comes in two layers.
+Bring your own API key, subscription, or local model; no account required, not even with us. Provider support comes in two layers.
 
 **Built-in presets we maintain.** 17 presets, each tested and kept current, so the per-provider quirks are already handled: wire dialect, API key and OAuth flows, thinking and streaming behavior.
 
@@ -226,6 +231,8 @@ Provider support comes in two layers.
 [Providers guide →](https://docs.antigma.ai/usage/providers) · [Catalog Reference →](https://docs.antigma.ai/reference/catalog-reference)
 
 ## What's in this repo
+
+> **Documentation is the new source code.**
 
 We open sourced what really matters in the age of agentic coding, all under Apache 2.0:
 
@@ -270,10 +277,6 @@ The protocol surface maps to Ante's client-daemon architecture:
 
 ## The bigger picture
 
-> **We care about the harness, not the model or the prompts.**
->
-> **Documentation is the new source code.**
-
 Ante is designed for **cellular-native** agents: like cells in an organism, tiny, expendable, massively replicated. That thesis is why the three headline claims exist. A cell-scale agent must be *verified* (reliability compounds at scale), *tiny* (every byte is multiplied by thousands), and *self-contained* (no runtime to install, no service to phone home to). Read more in our [philosophy](https://docs.antigma.ai/start/philosophy) and [agent organization patterns](https://docs.antigma.ai/experimental/agent-org).
 
 ## FAQ
@@ -287,8 +290,8 @@ The name is the answer: **An**other **Te**rminal agent, and *ante*, the stake yo
 
 Ante has most of the features you expect from agents like Claude Code or Codex: multi-agents, skills, MCP, persistent memory. The difference is the build philosophy.
 
-- Built from scratch in Rust. Core components like `Grep` (fully rebuilt and customized) and `git` are embedded in the same ~15MB binary and run in the same process at runtime, so nothing is shelled out and no resources leak. Most similar projects ship on Node.js or CPython and carry an order-of-magnitude larger footprint.
-- Local inference is built in: the engine is a pinned, managed version of [llama.cpp](https://github.com/ggml-org/llama.cpp), so a local GGUF model is all Ante needs to run without any provider. We also share our own work on the engine layer: [nanochat-rs](https://github.com/AntigmaLabs/nanochat-rs), a small in-process inference core in pure Rust.
+- Built from scratch in Rust: one executable that downloads as ~15MB compressed and unpacks to 34.1 MiB (the figure our [harness comparison](https://antigma.ai/blog/2026/08/04/harness-matter) tables report). Core components like `Grep` (fully rebuilt and customized) and `git` run in the same process, so nothing is shelled out and no resources leak. Most similar projects ship on Node.js or CPython and carry an order-of-magnitude larger footprint.
+- Local inference is built in: a local GGUF model is all Ante needs to run without any provider.
 - No vendor lock-in, not even to ourselves: no account needed, reuse your existing API credentials. An opt-in, fully integrated server-side experience lives at [antix.antigma.ai](https://antix.antigma.ai).
 - Every claim is backed by public, reproducible benchmarks of the exact builds we ship: [antigma.ai/eval](https://antigma.ai/eval).
 

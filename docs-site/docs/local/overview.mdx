@@ -6,7 +6,7 @@ description: "Local models in Ante: one binary, your hardware, and any point bet
 
 # Self-Contained by Design
 
-Ante is a single ~15MB binary that manages its own inference engine. Add a GGUF file and you have a complete coding agent on your own hardware: no API key, no account, and model calls that never leave your machine.
+Ante is a single self-contained binary (a ~15MB compressed download) that manages its own inference engine. Add a GGUF file and you have a complete coding agent on your own hardware: no API key, no account, and model calls that never leave your machine.
 
 :::note Privacy boundary
 Local inference keeps model requests and responses on your hardware. Ante application telemetry is separate from model traffic; set `ANTE_TELEMETRY=off` for runs where no OpenTelemetry metrics or logs should be exported. This does not disable local log files. See [Telemetry](/configuration/preference#telemetry).
