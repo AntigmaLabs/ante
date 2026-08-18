@@ -497,6 +497,39 @@ impl Effort {
             Effort::Max => "max",
         }
     }
+
+    /// Round this requested effort down to the nearest level the provider
+    /// exposes, implementing the contract documented on the enum: providers
+    /// that expose fewer levels round a requested effort down to the nearest
+    /// supported one.
+    ///
+    /// Returns the largest supported level at or below this one, or `None`
+    /// when the requested level sits below every supported level — the caller
+    /// then omits the effort knob entirely (the same treatment a model with
+    /// no reasoning knob gets).
+    pub fn round_down_to(self, provider_levels: &[Effort]) -> Option<Effort> {
+        Effort::ALL
+            .iter()
+            .rev()
+            .find(|level| **level <= self && provider_levels.contains(level))
+            .copied()
+    }
+
+    /// The OpenAI-compatible `reasoning_effort` wire token for this level,
+    /// per the three-level `low | medium | high` contract (issue #155).
+    ///
+    /// Levels above `high` round down to `high`; [`Effort::Min`] maps to
+    /// `None` — thinking-off has no token on that contract, so the field is
+    /// omitted rather than sent a value the server rejects. This is the
+    /// concrete instance of the enum's documented rounding contract.
+    pub fn openai_reasoning_effort(self) -> Option<&'static str> {
+        match self.round_down_to(&[Effort::Low, Effort::Medium, Effort::High]) {
+            Some(Effort::Low) => Some("low"),
+            Some(Effort::Medium) => Some("medium"),
+            Some(Effort::High) => Some("high"),
+            _ => None,
+        }
+    }
 }
 
 impl std::fmt::Display for Effort {
@@ -792,6 +825,52 @@ mod tests {
         assert_eq!(sorted, super::Effort::ALL);
         assert!(super::Effort::Min < super::Effort::Low);
         assert!(super::Effort::XHigh < super::Effort::Max);
+    }
+
+    #[test]
+    fn effort_rounds_down_to_nearest_supported_level() {
+        // Full ladder: every level lands on itself.
+        for level in super::Effort::ALL {
+            assert_eq!(level.round_down_to(&super::Effort::ALL), Some(level), "full ladder {level}");
+        }
+
+        // A three-level provider ladder: levels above the top clamp to the
+        // top, `min` (thinking-off) falls below the ladder and is omitted.
+        let three = [super::Effort::Low, super::Effort::Medium, super::Effort::High];
+        assert_eq!(super::Effort::Min.round_down_to(&three), None);
+        assert_eq!(super::Effort::Low.round_down_to(&three), Some(super::Effort::Low));
+        assert_eq!(super::Effort::Medium.round_down_to(&three), Some(super::Effort::Medium));
+        assert_eq!(super::Effort::High.round_down_to(&three), Some(super::Effort::High));
+        assert_eq!(super::Effort::XHigh.round_down_to(&three), Some(super::Effort::High));
+        assert_eq!(super::Effort::Max.round_down_to(&three), Some(super::Effort::High));
+
+        // Sparse ladder, unordered on purpose: containment, not position, wins.
+        let sparse = [super::Effort::Max, super::Effort::Medium];
+        assert_eq!(super::Effort::Low.round_down_to(&sparse), None);
+        assert_eq!(super::Effort::Medium.round_down_to(&sparse), Some(super::Effort::Medium));
+        assert_eq!(super::Effort::XHigh.round_down_to(&sparse), Some(super::Effort::Medium));
+        assert_eq!(super::Effort::Max.round_down_to(&sparse), Some(super::Effort::Max));
+
+        // Empty ladder: nothing to round down to.
+        assert_eq!(super::Effort::Max.round_down_to(&[]), None);
+    }
+
+    #[test]
+    fn effort_openai_reasoning_effort_maps_to_three_level_contract() {
+        // OpenAI-compatible providers (catalog `OpenAiCompatible`) take
+        // `reasoning_effort: low | medium | high`. Ante's six levels collapse
+        // by rounding down; `min` (thinking-off) has no token and is omitted.
+        let cases = [
+            (super::Effort::Min, None),
+            (super::Effort::Low, Some("low")),
+            (super::Effort::Medium, Some("medium")),
+            (super::Effort::High, Some("high")),
+            (super::Effort::XHigh, Some("high")),
+            (super::Effort::Max, Some("high")),
+        ];
+        for (level, expected) in cases {
+            assert_eq!(level.openai_reasoning_effort(), expected, "openai token {level}");
+        }
     }
 
     #[test]
