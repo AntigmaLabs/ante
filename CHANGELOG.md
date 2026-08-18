@@ -1,5 +1,18 @@
 # Changelog
 
+## v0.preview.83 - 2026-08-18
+
+### Added
+- `include_skills` / `exclude_skills` settings control which skills a session equips; exclude wins over include
+
+### Changed
+- The `local` provider exists only while a live model server is registered; a saved `local` selection with no server running gates with a clear notice instead of retrying for ~17 seconds per turn
+- Skill and agent lists moved from the system prompt to a first-message reminder, making the prompt byte-stable across sessions; subagents inherit the parent's skills
+- The stable channel and installer only promote after artifacts pass an installer smoke test
+
+### Fixed
+- Long TUI sessions no longer retain render caches for archived scrollback, and transcripts beyond 65,535 rows stay complete
+
 ## v0.preview.82 - 2026-08-17
 
 ### Added
