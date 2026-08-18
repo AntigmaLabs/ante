@@ -18,8 +18,9 @@ ante [OPTIONS] [COMMAND]
 | `ante serve` | Run a long-lived JSONL or WebSocket protocol server. |
 | `ante gateway` | Run the Slack / Discord channel gateway. |
 | `ante update` | Check for the latest Ante release and install it if available. |
+| `ante offline` | Manage the local inference engine used by offline mode. |
 | `ante rage` | Collect a redacted bug-report bundle (logs + environment) to share with the Ante team. |
-| `ante catalog` | Print the loaded provider/model catalog as JSON. |
+| `ante catalog` | Print the loaded provider catalog as JSON. |
 | `ante doctor` | Run a boot-time self-check and report startup phase timings. |
 
 ## `ante`
@@ -165,7 +166,7 @@ The update command checks for a newer Ante release and installs it when one is a
 | Flag | Description |
 |---|---|
 | `--channel <CHANNEL>` | Release channel to update from. Equivalent to the positional form. |
-| `--version <VERSION>` | Install an exact release instead of the channel's newest release. Accepts values with or without a leading `v`, such as `v0.preview.81` or `0.preview.81`. Conflicts with channel arguments. |
+| `--version <VERSION>` | Install an exact release instead of the channel's newest release. Accepts values with or without a leading `v`, such as `v0.preview.82` or `0.preview.82`. Conflicts with channel arguments. |
 | `-h`, `--help` | Print command help. |
 
 ### Examples
@@ -174,7 +175,27 @@ The update command checks for a newer Ante release and installs it when one is a
 ante update
 ante update nightly
 ante update --channel stable
-ante update --version v0.preview.81
+ante update --version v0.preview.82
+```
+
+## `ante offline`
+
+```bash
+ante offline <COMMAND>
+```
+
+Manage the local inference engine used by [offline mode](/local/offline), without starting a session.
+
+| Subcommand | Description |
+|---|---|
+| `install` | Download and install Ante's pinned llama.cpp build. |
+
+`install` converges the engine on the pinned build: it is a no-op when the pin is already installed, and replaces a different (or unrecorded) build otherwise, printing progress as it goes. It installs the same pinned, checksum-verified build as the TUI's `/offline-mode` dialog; running an offline model on a machine without the engine fails fast and points here.
+
+### Examples
+
+```bash
+ante offline install
 ```
 
 ## `ante rage`
@@ -195,7 +216,7 @@ The archive contains:
 | `env.txt` | Ante-relevant environment variables. Safe values are shown verbatim; known secrets appear as `<SET>` / `<UNSET>` only. |
 | `settings.redacted.json` | `~/.ante/settings.json` with secrets removed (MCP server credentials and custom `system_prompt` / `append_system_prompt` text are stripped). |
 | `catalog.redacted.json` | `~/.ante/catalog.json` with secrets removed, included only when a custom catalog exists. |
-| `logs/` | Recent application and crash logs, filtered and scrubbed. `DEBUG`/`TRACE` lines are dropped so request bodies never enter the bundle. |
+| `logs/` | Recent application and crash logs, filtered and scrubbed; each copy is prefixed with its date (`<date>-<name>`). `DEBUG`/`TRACE` lines are dropped so request bodies never enter the bundle. |
 
 By default the newest logs are collected, up to 10 files or 10 MB (crash logs are always prioritized). Use `--since` to collect everything within a time window instead.
 
@@ -222,13 +243,13 @@ ante rage --no-compress
 ante catalog
 ```
 
-Print the merged provider/model catalog (built-in presets plus `~/.ante/catalog.json`) to stdout as JSON, in the same schema the catalog file uses. Warnings for skipped catalog entries go to stderr, so stdout stays a clean JSON document that pipes into `jq`. See the [Catalog Reference](/reference/catalog-reference) for the schema.
+Print the merged provider catalog (built-in presets plus `~/.ante/catalog.json`) to stdout as a JSON document with a single `providers` array, in catalog order. Each provider embeds its preferred models with user model overrides applied, so the output is a published view for consumers; it is not the config-file schema and does not round-trip into `~/.ante/catalog.json`. Warnings for skipped catalog entries go to stderr, so stdout stays a clean JSON document that pipes into `jq`. See the [Catalog Reference](/reference/catalog-reference) for the config-file schema.
 
 ### Examples
 
 ```bash
 ante catalog
-ante catalog | jq '.providers | keys'
+ante catalog | jq '.providers[].id'
 ```
 
 ## `ante doctor`

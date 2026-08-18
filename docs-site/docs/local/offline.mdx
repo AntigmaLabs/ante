@@ -33,7 +33,7 @@ Prefer your own llama.cpp build, extra server flags, or a server you started you
    /offline-mode
    ```
 
-2. **Install llama.cpp** — If not installed, Ante will prompt you to install it automatically to `~/.ante/llama.cpp`. When the pinned version changes in a new Ante release, Ante offers an upgrade.
+2. **Install llama.cpp** — If not installed, Ante will prompt you to install it automatically to `~/.ante/llama.cpp`. When the pinned version changes in a new Ante release, Ante offers an upgrade. To do the same without the TUI, run [`ante offline install`](/reference/cli-reference#ante-offline): it installs the pinned build, replaces a mismatched one, and is a no-op when already current.
 
 3. **Select a model** — Choose from:
    - **Verified models** — [curated models](/local/verified-models) downloaded from Hugging Face
@@ -61,6 +61,8 @@ ante --offline-model ~/.ante/models/Qwen3.5-9B-Q4_K_M.gguf "Explain this code"
 <img src="/assets/offline-headless.gif" alt="Headless offline mode running a one-shot prompt against a local GGUF model" style={{width: '100%', borderRadius: '8px', margin: '16px 0'}} />
 
 Ante starts the llama-server, waits for it to become ready, runs the session, then shuts the server down automatically.
+
+Headless runs never prompt to install the engine. On a machine that doesn't have it yet, the run fails fast and tells you to run `ante offline install` first — useful to bake into scripts and CI images.
 
 ### Serve mode (WebSocket server)
 
