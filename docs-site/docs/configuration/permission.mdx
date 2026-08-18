@@ -167,10 +167,9 @@ ante --tools Read Glob Grep "analyze the code"
 
 # Remove these tools
 ante --exclude-tools Bash Write "read-only analysis"
-
-# Fine-grained: allow Bash only for specific commands
-ante --tools Read "Bash(cargo test *)" "Bash(cargo clippy *)" "analyze and test"
 ```
+
+Matcher syntax such as `Bash(cargo test *)` is accepted in these lists but selects by tool name only — it keeps the whole `Bash` tool available. To scope what a tool may run, use `allow`/`ask`/`deny` rules.
 
 :::tip
 Tool filtering and permissions are independent. Filtering controls what tools **exist** in the session; permissions control whether existing tools **require approval**.

@@ -96,9 +96,4 @@ ante --include-tools ViewImage "describe the screenshots in assets/"
 ante --exclude-tools Bash Write "read-only analysis"
 ```
 
-Supports ToolMatcher syntax for fine-grained control:
-
-```bash
-# Allow Bash but only for specific patterns
-ante --tools "Read" "Bash(cargo test)" "Bash(cargo clippy)"
-```
+Matcher syntax such as `Bash(cargo test *)` is accepted in these lists but selects by tool name only — it keeps the whole `Bash` tool available. To scope *what* a tool may run, use [permission rules](/configuration/permission#tool-matchers) alongside filtering.
