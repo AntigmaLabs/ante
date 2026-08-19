@@ -274,7 +274,6 @@ pub enum ReviewDecision {
     /// Approve and persist an allow rule to settings.json so the same call is
     /// auto-approved across future sessions ("always allow").
     AcceptAlways,
-    Abort,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]

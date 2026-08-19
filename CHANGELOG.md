@@ -1,5 +1,14 @@
 # Changelog
 
+## v0.preview.85 - 2026-08-19
+
+### Changed
+- The `Abort` approval decision is removed from the wire protocol; "deny and stop" composes as a deny plus an interrupt
+
+### Fixed
+- Invalid permission rules in settings are surfaced as settings notices instead of being silently skipped, while the valid rules keep loading
+- A background job's directory is cleaned up on any startup failure, instead of a failed output-file creation stranding it until the 24-hour GC sweep
+
 ## v0.preview.84 - 2026-08-18
 
 ### Changed
