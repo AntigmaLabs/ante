@@ -1,5 +1,16 @@
 # Changelog
 
+## v0.preview.84 - 2026-08-18
+
+### Changed
+- Qwen 3.8 models send graded `reasoning_effort` levels instead of collapsing every level to thinking on/off, and the effort picker lists only the distinct supported levels
+- MCP servers are discovered in parallel (one slow server no longer delays the rest), and MCP tool calls time out after 10 minutes — overridable via `ANTE_MCP_TOOL_TIMEOUT` — instead of pinning a turn until interrupt
+
+### Fixed
+- Headless (`ante -p`) sessions wait for MCP warm-up before the first turn, so MCP tools are present in the model's schema instead of every MCP call failing silently
+- llama.cpp context overflows are recognized as context-full and trigger the one-time compaction retry instead of failing the turn
+- Writing to a closed or broken output pipe (consumer exits, macOS EIO) is handled leniently instead of panicking during terminal teardown
+
 ## v0.preview.83 - 2026-08-18
 
 ### Added
