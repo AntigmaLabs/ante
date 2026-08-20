@@ -31,7 +31,11 @@ We care about **the harness, not a co-trained model or a secret prompt**. The ha
 
 Ante makes this declarative: [one settings profile](#one-binary-many-agents) can define the whole agent, replacement system prompt included.
 
-[![Watch the Ante film (1 min)](docs-site/static/assets/one-harness-poster.jpg)](https://download.ante.run/media/one-harness.mp4)
+<p align="center">
+  <a href="https://download.ante.run/media/one-harness.mp4">
+    <img src="docs-site/static/assets/one-harness-poster-play.jpg" alt="Watch the Ante film (1 min)" width="640">
+  </a>
+</p>
 
 ### 🥇 Continuously evaluated and evolved in public
 
