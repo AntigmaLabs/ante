@@ -197,7 +197,7 @@ sequenceDiagram
 Ante automatically manages context windows:
 
 - **Token budget** — Each turn tracks token usage against the model's context limit
-- **Auto-compaction** — When the dialog approaches the context limit, Ante uses the LLM to summarize the conversation history, preserving important context while freeing tokens
+- **Auto-compaction** — When the dialog approaches the context limit, Ante uses the LLM to summarize the conversation history, preserving important context while freeing tokens. On by default; disable with the `auto_compact` [setting](/configuration/preference#settings-file) (manual `/compact` and overflow recovery remain available)
 - **Tool result trimming** — Large tool outputs are automatically trimmed to fit within budget
 
 ## Permissions

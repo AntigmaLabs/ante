@@ -1,26 +1,27 @@
 ---
-title: Overview
+title: Ante
+sidebar_label: Overview
 description: "Ante — a ghost in your shell: self-contained, self-organizing, benchmarked in public"
 slug: /
 ---
 
 # Ante
 
-**A ghost in your shell.** Ante is a self-contained coding agent that lives in your terminal and self-organizes. One ~15MB Rust binary from [Antigma Labs](https://antigma.ai), zero runtime dependencies, built to get the most out of any model.
+**A ghost in your shell.** Ante is a self-contained coding agent that lives in your terminal and self-organizes. One ~15MB compressed download from [Antigma Labs](https://antigma.ai) that expands to a single Rust executable with zero runtime dependencies, built to get the most out of any model.
 
 It works like Claude Code or Codex, with none of their dependencies or model constraints. It can also be the optimized core for [building your own harness](/usage/serve) and high-performing assistants.
 
 Every agent claims to be good. Here are numbers you can check:
 
 <CardGroup cols={3}>
-  <Card title="Proven in public" icon="chart-line" href="https://antigma.ai/eval">
+  <Card title="Continuously evaled, in public" icon="chart-line" href="https://antigma.ai/eval">
     #1 same-model agent on Terminal-Bench 2.1: for every model we run, no other harness scores higher with that model. Every result pins the exact downloadable build and links the raw Harbor run. Live at antigma.ai/eval.
   </Card>
   <Card title="A fraction of the footprint" icon="feather" href="/benchmarks/compare_table">
     Across the same 20 parallel tasks, Ante uses ~7× less peak memory, ~9× less average CPU, and ~5× less disk I/O than Claude Code.
   </Card>
   <Card title="Natively offline" icon="wifi-slash" href="/local/overview">
-    A built-in inference engine runs GGUF models locally. No API key, no account, no data leaving your machine.
+    A built-in inference engine runs GGUF models locally. No API key, no account, and model calls stay on your machine.
   </Card>
 </CardGroup>
 

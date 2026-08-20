@@ -3,7 +3,9 @@ title: Offline Mode
 description: "Run local GGUF models through Ante's natively managed llama.cpp engine"
 ---
 
-Ante runs local GGUF models through a natively managed [llama.cpp](https://github.com/ggerganov/llama.cpp) engine. No API key, no account: point Ante at a model file and the full agent loop runs on your hardware. Once a model is on disk, inference needs no network connection at all.
+Ante runs local GGUF models through a natively managed [llama.cpp](https://github.com/ggml-org/llama.cpp) engine. No API key, no account: point Ante at a model file and the full agent loop runs on your hardware. Once a model is on disk, inference needs no network connection at all.
+
+For a fully disconnected run, set `ANTE_TELEMETRY=off` as well. This disables application metrics and log export independently of local inference; see [Telemetry](/configuration/preference#telemetry).
 
 :::info
 Offline mode is under active development. Expect rough edges and rapid iteration.
@@ -31,7 +33,7 @@ Prefer your own llama.cpp build, extra server flags, or a server you started you
    /offline-mode
    ```
 
-2. **Install llama.cpp** — If not installed, Ante will prompt you to install it automatically to `~/.ante/llama.cpp`. When the pinned version changes in a new Ante release, Ante offers an upgrade.
+2. **Install llama.cpp** — If not installed, Ante will prompt you to install it automatically to `~/.ante/llama.cpp`. When the pinned version changes in a new Ante release, Ante offers an upgrade. To do the same without the TUI, run [`ante offline install`](/reference/cli-reference#ante-offline): it installs the pinned build, replaces a mismatched one, and is a no-op when already current.
 
 3. **Select a model** — Choose from:
    - **Verified models** — [curated models](/local/verified-models) downloaded from Hugging Face
@@ -44,7 +46,7 @@ Prefer your own llama.cpp build, extra server flags, or a server you started you
    ```
    Ante boots the llama-server, waits for it to be ready, then runs the session. Useful in scripts or CI.
 
-Once a model is loaded, it is registered as the `local` provider in the catalog, so you can also switch to it from any session with `/providers` or target it with `--provider local`. See [mixing local and frontier](/local/overview#mixing-local-and-frontier).
+Once a model is loaded, it is registered as the `local` provider in the catalog, so you can also switch to it with `/providers` or target it with `--provider local`. The entry exists only while a server is registered: when the server stops, `local` leaves the catalog. Starting with a saved `local` selection and no server running gates the session with a notice (run `/offline-mode` to start or attach one); headless runs fail fast with the same message. See [mixing local and frontier](/local/overview#mixing-local-and-frontier).
 
 ## Scripted and server usage
 
@@ -59,6 +61,8 @@ ante --offline-model ~/.ante/models/Qwen3.5-9B-Q4_K_M.gguf "Explain this code"
 <img src="/assets/offline-headless.gif" alt="Headless offline mode running a one-shot prompt against a local GGUF model" style={{width: '100%', borderRadius: '8px', margin: '16px 0'}} />
 
 Ante starts the llama-server, waits for it to become ready, runs the session, then shuts the server down automatically.
+
+Headless runs never prompt to install the engine. On a machine that doesn't have it yet, the run fails fast and tells you to run `ante offline install` first — useful to bake into scripts and CI images.
 
 ### Serve mode (WebSocket server)
 
@@ -164,4 +168,3 @@ All offline mode configuration is stored in `~/.ante/offline-config.json`:
 | Variable | Description |
 |---|---|
 | `ANTE_OFFLINE_CONTEXT` | Override the default context window cap (tokens). Useful when you need a larger context than the 32K default, and your hardware has enough RAM. Example: `ANTE_OFFLINE_CONTEXT=65536 ante --offline-model ...` |
-| `ANTE_LOCAL_PROVIDER_PORT` | Port the `local` provider connects to when you use `--provider local` directly (default `8080`) |

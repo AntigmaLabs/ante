@@ -33,6 +33,10 @@ The `--ws` flag starts a WebSocket server on the given address. Each connection 
 `--stdio` and `--ws` are mutually exclusive — you cannot use both at the same time.
 :::
 
+:::caution
+The address must be a loopback address (`127.0.0.0/8` or `::1`). Ante refuses to bind anything else — `0.0.0.0:8080` exits with an error rather than starting. The protocol has no authentication, so a listener on a routable interface would give any client that reaches it full tool execution on your machine. Reach a remote daemon through an SSH tunnel or an authenticating reverse proxy instead.
+:::
+
 ## How it works
 
 1. The daemon starts and waits for operations on stdin
@@ -50,7 +54,7 @@ See the [Protocol Reference](/reference/protocol-reference) for the complete mes
 # Start the daemon, sending JSONL to its stdin via a named pipe
 mkfifo /tmp/ante-pipe
 ante serve < /tmp/ante-pipe &
-echo '{"op":{"StartSession":{"model":"claude-sonnet-4-6","provider":"anthropic"}},"id":"op_001"}' > /tmp/ante-pipe
+echo '{"op":{"StartSession":{"model":"claude-sonnet-5","provider":"anthropic"}},"id":"op_001"}' > /tmp/ante-pipe
 echo '{"op":{"UserInput":"what is 2+2"},"id":"op_002"}' > /tmp/ante-pipe
 ```
 
@@ -74,7 +78,7 @@ ante.stdout.on("data", (chunk) => {
 });
 
 ante.stdin.write(JSON.stringify({
-  op: { StartSession: { model: "claude-sonnet-4-6", provider: "anthropic" } },
+  op: { StartSession: { model: "claude-sonnet-5", provider: "anthropic" } },
   id: "op_001"
 }) + "\n");
 
@@ -100,7 +104,7 @@ ante.stdin.write(JSON.stringify({
 | Flag | Description |
 |---|---|
 | `--stdio` | Use JSONL over stdin/stdout (default) |
-| `--ws <ADDR>` | Serve the protocol over WebSocket |
+| `--ws <ADDR>` | Serve the protocol over WebSocket on a loopback address |
 | `--offline-model <PATH>` | Boot a local llama-server with this GGUF model and register it as the `local` provider for every connecting client |
 
 :::note

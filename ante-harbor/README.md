@@ -8,21 +8,29 @@ With default parameters, the workflow executes:
 
 ```bash
 uv run harbor run \
-  --agent-import-path ante.ante_agent:AnteAgent \
+  --agent ante_agent:AnteAgent \
   --model "gemini-3-pro-preview" \
+  --ak provider=gemini \
+  --ak install_args= \
+  --ae 'GEMINI_API_KEY=${GEMINI_API_KEY}' \
+  --ae 'MODEL_BASE_URL=${MODEL_BASE_URL}' \
+  --ae 'ANTE_ENV=${ANTE_ENV}' \
   --dataset terminal-bench@2.0 \
   --n-attempts 5
 ```
 
-The Ante agent files can be found in the `.github/ante` directory.
+This directory contains the Ante agent adapter (`ante_agent.py` and
+`ante_events.py`), which the workflow puts on `PYTHONPATH` for the harbor
+run. Ante itself is installed inside each sandbox from the published
+install.sh (`https://download.ante.run/install.sh`) using `install_args`.
 
 ## Workflow Parameters
 
-### `release_tag`
-- **Description**: GitHub release tag to test (e.g., main, v0.1.0)
-- **Default**: `main`
+### `install_args`
+- **Description**: install.sh args selecting the Ante build to test (e.g. `stable`, `nightly`, a version)
+- **Default**: `` (empty — install.sh's default build)
 - **Required**: No
-- **Usage**: Specifies which version of Ante to test. This value is also used as the `ANTE_TAG` environment variable.
+- **Usage**: Passed to the published install.sh inside the sandbox to select which Ante build to install.
 
 ### `harbor_args`
 - **Description**: Arguments to pass to harbor
@@ -37,20 +45,25 @@ The Ante agent files can be found in the `.github/ante` directory.
 - **Description**: Model name to use
 - **Default**: `gemini-3-pro-preview`
 - **Required**: No
-- **Usage**: The model identifier passed to Harbor. Examples:
+- **Usage**: The model identifier passed to Harbor and forwarded to `ante --model`.
 
 ### `provider`
-- **Description**: Model provider (anthropic, openai, etc.)
-- **Default**: `vertex-gemini`
+- **Description**: Model provider (anthropic, openai, gemini)
+- **Default**: `gemini`
 - **Required**: No
-- **Usage**: Specifies the API provider for the model. Common values:
-  - `vertex-gemini`: Google Vertex AI (Gemini models)
-  - `anthropic`: Anthropic API
-  - `openai`: OpenAI API
+- **Usage**: Passed to `ante --provider`, and selects which API key is forwarded into the sandbox:
+  - `anthropic`: `ANTHROPIC_API_KEY`
+  - `openai`: `OPENAI_API_KEY`
+  - `gemini`: `GEMINI_API_KEY`
+
+### `effort`
+- **Description**: Reasoning effort passed to `ante --effort`
+- **Default**: `` (empty — Ante's catalog default)
+- **Required**: No
 
 ### `model_base_url`
 - **Description**: Base URL for model API
-- **Default**: `https://litellm-classic-178302479088.us-west2.run.app`
+- **Default**: `https://generativelanguage.googleapis.com/v1beta`
 - **Required**: No
 - **Usage**: The base URL for the model API endpoint. Used when routing through a proxy or custom endpoint.
 
@@ -60,21 +73,9 @@ The Ante agent files can be found in the `.github/ante` directory.
 - **Required**: No
 - **Usage**: Controls randomness in model outputs (0.0 to 2.0). Lower values make outputs more deterministic. If empty, the model's default temperature is used.
 
-### `model_top_p`
-- **Description**: Model top-p (nucleus sampling)
-- **Default**: `` (empty)
-- **Required**: No
-- **Usage**: Nucleus sampling parameter (0.0 to 1.0). Controls diversity by considering only tokens with cumulative probability up to this value. If empty, the model's default is used.
-
-### `model_thinking`
-- **Description**: Enable model thinking
-- **Default**: `enabled`
-- **Required**: No
-- **Usage**: Enables thinking/reasoning mode for models that support it. Set to `enabled` or `disabled`.
-
 ### `model_max_tokens`
 - **Description**: Max tokens for model
-- **Default**: `64000`
+- **Default**: `` (empty)
 - **Required**: No
 - **Usage**: Maximum number of tokens in the model's response. If empty, the model's default is used.
 
@@ -91,7 +92,7 @@ The Ante agent files can be found in the `.github/ante` directory.
 - **Description**: Number of times to run Harbor tests (each run is a separate job)
 - **Default**: `1`
 - **Required**: No
-- **Usage**: Number of independent test runs to execute. Each run is a separate job. The workflow is configured with a 120-hour timeout (`timeout-minutes: 7200`), but note that GitHub-hosted runners have a hard 6-hour limit regardless of the configured timeout. Self-hosted runners can utilize the full 120-hour timeout. Runs execute sequentially (`max-parallel: 1`). Useful for long-running tests that exceed a single job's time limit on GitHub-hosted runners.
+- **Usage**: Number of independent test runs to execute (an integer from 1 to 100). Each run is a separate job. The workflow is configured with a 120-hour timeout (`timeout-minutes: 7200`), but note that GitHub-hosted runners have a hard 6-hour limit regardless of the configured timeout. Self-hosted runners can utilize the full 120-hour timeout. Runs execute sequentially (`max-parallel: 1`). Useful for long-running tests that exceed a single job's time limit on GitHub-hosted runners.
 
 ## Execution Details
 
@@ -105,7 +106,7 @@ The Ante agent files can be found in the `.github/ante` directory.
 
 ### Basic test with defaults
 ```
-release_tag: main
+install_args: stable
 harbor_args: --dataset terminal-bench@2.0 --n-attempts 5
 model_name: gemini-3-pro-preview
 ```
@@ -116,4 +117,3 @@ run_count: 5
 harbor_args: --dataset terminal-bench@2.0 --n-attempts 5
 ```
 This creates 5 separate jobs, each configured with a 120-hour timeout. Note: On GitHub-hosted runners, each job is limited to 6 hours regardless of the configured timeout. Self-hosted runners can use the full 120-hour timeout. Jobs run sequentially.
-

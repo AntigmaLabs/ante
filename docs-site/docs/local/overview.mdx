@@ -6,7 +6,11 @@ description: "Local models in Ante: one binary, your hardware, and any point bet
 
 # Self-Contained by Design
 
-Ante is a single ~15MB binary that manages its own inference engine. Add a GGUF file and you have a complete coding agent on your own hardware: no API key, no account, and model calls that never leave your machine.
+Ante is a single self-contained binary (a ~15MB compressed download) that manages its own inference engine. Add a GGUF file and you have a complete coding agent on your own hardware: no API key, no account, and model calls that never leave your machine.
+
+:::note Privacy boundary
+Local inference keeps model requests and responses on your hardware. Ante application telemetry is separate from model traffic; set `ANTE_TELEMETRY=off` for runs where no OpenTelemetry metrics or logs should be exported. This does not disable local log files. See [Telemetry](/configuration/preference#telemetry).
+:::
 
 Local is a first-class way to run Ante. Hosted and local providers live in the same catalog, run the same full prompt and tool stack, and go through the same [public benchmarks](/benchmarks/eval). You choose per session which one a task deserves.
 
@@ -24,14 +28,14 @@ Local is a first-class way to run Ante. Hosted and local providers live in the s
 
 **Native integration.** Ante goes further than tolerating a base URL. [Offline mode](/local/offline) manages llama.cpp itself: pinned, checksum-verified builds matched to your hardware (Metal on Apple silicon, CUDA or Vulkan or CPU on Linux), GGUF discovery across your disk, memory estimation before a model loads, live load progress, and server lifecycle handled in the TUI. A [curated model list](/local/verified-models) tells you what runs well before you download 17 GB. Prefer your own build or launch flags? [Custom engines](/local/custom-engines) covers that.
 
-**Agent-native inference, in progress.** The endgame is an inference engine inside the agent process, tuned for how agents actually call models. Local models become a preferred substrate for many workloads, with benchmark numbers to back that up. See the [experimental preview](/experimental/agent-native-inference).
+**Agent-native inference, in progress.** The endgame is an inference engine inside the agent process, tuned for how agents actually call models: prefix reuse across turns, constrained decoding for tool calls, batching across subagents. We explore that in the open with [nanochat-rs](https://github.com/AntigmaLabs/nanochat-rs), a small pure-Rust inference core you can clone and run. See [Agent-Native Inference](/experimental/agent-native-inference).
 
 ## Mixing local and frontier
 
 When offline mode loads a model, Ante registers it as the `local` provider: an ordinary OpenAI-compatible entry in the catalog, next to Anthropic or OpenAI. From there, mixing is normal provider mechanics:
 
 - **Switch mid-session.** `/providers` in the TUI switches provider and model without a restart. Draft against a frontier model, flip to local for a sensitive repo, flip back.
-- **Pick per invocation.** `ante --provider local` runs a script or headless job against the loaded model while other sessions use hosted providers.
+- **Pick per invocation.** `ante --offline-model <file>` runs a script or headless job against a local model while other sessions use hosted providers.
 - **Share one model across clients.** `ante serve --offline-model <path>` loads the model once for every connecting client, and any session can [attach to a llama server](/local/existing-servers) already running on your machine (ports 8080-8179 are scanned automatically).
 - **Lighter models for subagents.** A [subagent](/extend/subagents) can pin its own model id via `model:` frontmatter, so exploration or search agents can run on a smaller model than the main loop.
 

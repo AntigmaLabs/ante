@@ -1,7 +1,7 @@
 use std::path::PathBuf;
 
 use chrono::{DateTime, Utc};
-use serde::{Deserialize, Serialize};
+use serde::{Deserialize, Deserializer, Serialize};
 
 use crate::id::Id;
 
@@ -47,6 +47,9 @@ pub enum Op {
     RestoreLocalProvider,
     /// Manually trigger conversation compaction on the active session.
     Compact,
+    /// Request a per-category breakdown of the active session's context-window
+    /// occupancy. Answered with [`Evt::ContextReport`].
+    ContextReport,
     /// Set, clear, or report a goal-driven execution loop on the active
     /// session. A set goal keeps the session working — re-running turns and
     /// judging the condition after each one — until it is met, judged
@@ -143,7 +146,14 @@ pub enum Evt {
     ToolUpdate(ToolUpdate),
     ToolEnd(ToolEnd),
     CompactStart,
-    CompactEnd,
+    /// Compaction finished. `summary` is the text that replaced the
+    /// compacted history and carries forward as the session's context;
+    /// `None` when compaction failed (history unchanged) or produced no
+    /// displayable text.
+    CompactEnd {
+        #[serde(default)]
+        summary: Option<String>,
+    },
     TurnStart {
         turn_id: Id,
     },
@@ -172,6 +182,9 @@ pub enum Evt {
         #[serde(default, skip_serializing_if = "Option::is_none")]
         context: Option<ContextWindow>,
     },
+    /// Answer to [`Op::ContextReport`]: a per-category breakdown of the
+    /// session's context-window occupancy at the time of the request.
+    ContextReport(ContextBreakdown),
     /// An ephemeral ambient hint produced off the main conversation (a predicted
     /// "thinking phrase" for the draft, or a suggested next prompt — see
     /// [`AmbientKind`]). Never persisted to the event log. `req_id` lets clients
@@ -261,7 +274,6 @@ pub enum ReviewDecision {
     /// Approve and persist an allow rule to settings.json so the same call is
     /// auto-approved across future sessions ("always allow").
     AcceptAlways,
-    Abort,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -279,14 +291,20 @@ pub struct SubagentMetadata {
     pub scope: Scope,
 }
 
+/// The provider a session resolved to.
+///
+/// Carries only what a client cannot look up for itself: the id to key state
+/// on, a name to show a user, and the endpoint actually in use — which env
+/// overrides can move away from the published default, so it is a property of
+/// this session rather than of the provider. The provider's model list is not
+/// here; it is the same for every session and is published by `ante catalog`.
+/// Unknown fields are ignored, so payloads still carrying it decode fine.
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]
 pub struct ProviderSpec {
     #[serde(alias = "name")]
     pub id: String,
     pub display_name: String,
     pub base_url: String,
-    #[serde(default, skip_serializing_if = "Vec::is_empty")]
-    pub preferred_models: Vec<ModelSpec>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -299,9 +317,8 @@ pub struct SessionInitialized {
 }
 
 /// Partial update to a live session's mutable state. Each field is optional so
-/// a caller patches only what changed; absent fields are left untouched. The
-/// daemon resolves any catalog-dependent fields and dispatches each to the
-/// matching `Session` setter.
+/// a caller patches only what changed; absent fields are left untouched.
+/// Catalog-dependent fields are resolved before the update takes effect.
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]
 pub struct SessionUpdate {
     /// Model change, taking effect on the next turn. The spec carries the
@@ -309,9 +326,8 @@ pub struct SessionUpdate {
     /// catalog default; unset fields resolve from the catalog.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub model: Option<ModelSpec>,
-    /// Permission mode change. Applied via the non-aborting `set_permission_mode`
-    /// setter, so it takes effect on the next turn without disturbing an
-    /// in-flight one.
+    /// Permission mode change, taking effect on the next turn without
+    /// aborting an in-flight one.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub permission_mode: Option<PermissionMode>,
 }
@@ -367,8 +383,13 @@ pub struct SessionOverrides {
     pub system_prompt: Option<String>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub append_system_prompt: Option<String>,
+    /// Exactly these tools, replacing the default tool set as the base.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub tools: Option<Vec<String>>,
+    /// Tools added on top of the base set (`tools`, or the default set).
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub include_tools: Option<Vec<String>>,
+    /// Tools removed from the session; wins over `tools` and `include_tools`.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub exclude_tools: Option<Vec<String>>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
@@ -379,6 +400,10 @@ pub struct SessionOverrides {
     pub enable_auto_memory: Option<bool>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub short_prompt: Option<bool>,
+    /// When true, the session loads no skills: none are discovered,
+    /// advertised, or invocable.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub no_skills: Option<bool>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
@@ -491,11 +516,11 @@ impl std::str::FromStr for Effort {
 
 /// Innate size/cost class of a model, set once per model in the catalog.
 ///
-/// Orthogonal to the per-request [`Thinking`] effort and to `context_limit`:
+/// Orthogonal to the per-request [`Effort`] and to `context_limit`:
 /// a model's weight class reflects roughly how large and costly it is to run,
 /// not how hard it is asked to think on a given turn. Variants are declared in
 /// ascending order so the derived `Ord` sorts `Feather < Middle < Heavy`.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize)]
 #[serde(rename_all = "lowercase")]
 pub enum WeightClass {
     /// Small, fast, cheap (Haiku- / GPT-nano-class).
@@ -504,6 +529,21 @@ pub enum WeightClass {
     Middle,
     /// Largest, most capable, costliest (Opus- / GPT-5.x- / Gemini-Pro-class).
     Heavy,
+}
+
+impl<'de> Deserialize<'de> for WeightClass {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        let value = String::deserialize(deserializer)?;
+        match value.to_ascii_lowercase().as_str() {
+            "feather" => Ok(Self::Feather),
+            "middle" => Ok(Self::Middle),
+            "heavy" => Ok(Self::Heavy),
+            _ => Err(serde::de::Error::unknown_variant(&value, &["feather", "middle", "heavy"])),
+        }
+    }
 }
 
 /// Token usage for one model response.
@@ -547,6 +587,38 @@ pub struct ContextWindow {
     pub used_tokens: u32,
     /// Raw model context limit (e.g. 200_000).
     pub limit_tokens: u32,
+}
+
+/// Per-category breakdown of context-window occupancy.
+///
+/// `used_tokens` is anchored on the provider-reported occupancy once the
+/// session has seen a model response; before that it is estimated. The
+/// per-category fields are estimates that normally sum to `used_tokens`, but
+/// estimation error can make them disagree slightly — clients should clamp
+/// rather than assume an exact identity.
+#[derive(Debug, Clone, Copy, Default, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(default)]
+pub struct ContextBreakdown {
+    /// System prompt, excluding the skills and memory sections counted below.
+    pub system_prompt_tokens: u32,
+    /// Built-in tool schemas.
+    pub system_tools_tokens: u32,
+    /// MCP tool schemas.
+    pub mcp_tools_tokens: u32,
+    /// Memory content: project/user instruction files and the auto-memory prompt.
+    pub memory_tokens: u32,
+    /// The available-skills listing.
+    pub skills_tokens: u32,
+    /// Conversation messages: everything not attributed to a category above.
+    pub messages_tokens: u32,
+    /// Total context-window occupancy.
+    pub used_tokens: u32,
+    /// Model context limit. `None` when unverified, so clients never render a
+    /// confidently-wrong percentage.
+    pub limit_tokens: Option<u32>,
+    /// Tokens reserved at the top of the window; auto-compaction triggers once
+    /// occupancy grows into this reserve.
+    pub compact_buffer_tokens: u32,
 }
 
 impl Usage {
@@ -596,8 +668,7 @@ pub enum PermissionMode {
     #[default]
     Strict,
     /// Honor user rules; an unmatched call runs unless it is provably
-    /// dangerous (a deliberately narrow classifier — see
-    /// `tools::shell::is_dangerous`).
+    /// dangerous (a deliberately narrow classification).
     Auto,
     /// Bypass all permission checks, including user deny rules.
     Yolo,
@@ -763,6 +834,20 @@ mod tests {
     }
 
     #[test]
+    fn weight_class_deserializes_case_insensitively() {
+        for (value, expected) in [
+            ("Feather", WeightClass::Feather),
+            ("MIDDLE", WeightClass::Middle),
+            ("hEaVy", WeightClass::Heavy),
+        ] {
+            let parsed: ModelSpec =
+                serde_json::from_value(serde_json::json!({"id": "m", "weight_class": value}))
+                    .unwrap();
+            assert_eq!(parsed.weight_class, Some(expected));
+        }
+    }
+
+    #[test]
     fn weight_class_orders_feather_lightest_to_heavy_heaviest() {
         assert!(WeightClass::Feather < WeightClass::Middle);
         assert!(WeightClass::Middle < WeightClass::Heavy);
@@ -773,7 +858,6 @@ mod tests {
             id: name.to_string(),
             display_name: name.to_string(),
             base_url: format!("https://api.{name}.test/v1"),
-            preferred_models: vec![model_spec("preferred-model")],
         }
     }
 
@@ -781,10 +865,12 @@ mod tests {
     fn compact_events_serde_roundtrip() {
         let compact_start =
             serde_json::to_string(&Evt::CompactStart).expect("serialize CompactStart");
-        let compact_end = serde_json::to_string(&Evt::CompactEnd).expect("serialize CompactEnd");
+        let compact_end =
+            serde_json::to_string(&Evt::CompactEnd { summary: Some("the summary".to_string()) })
+                .expect("serialize CompactEnd");
 
         assert_eq!(compact_start, "\"CompactStart\"");
-        assert_eq!(compact_end, "\"CompactEnd\"");
+        assert_eq!(compact_end, r#"{"CompactEnd":{"summary":"the summary"}}"#);
 
         assert!(matches!(
             serde_json::from_str::<Evt>(&compact_start).expect("deserialize CompactStart"),
@@ -792,7 +878,12 @@ mod tests {
         ));
         assert!(matches!(
             serde_json::from_str::<Evt>(&compact_end).expect("deserialize CompactEnd"),
-            Evt::CompactEnd
+            Evt::CompactEnd { summary: Some(s) } if s == "the summary"
+        ));
+        assert!(matches!(
+            serde_json::from_str::<Evt>(r#"{"CompactEnd":{}}"#)
+                .expect("deserialize CompactEnd without summary"),
+            Evt::CompactEnd { summary: None }
         ));
     }
 
@@ -884,10 +975,74 @@ mod tests {
                 if payload.model.id == "claude-sonnet-4-6"
                     && payload.provider.id == "anthropic"
                     && payload.provider.base_url == "https://api.anthropic.test/v1"
-                    && payload.provider.preferred_models.len() == 1
                     && payload.session_id == session_id
                     && payload.cwd == std::path::Path::new("/tmp/session-updated")
         ));
+    }
+
+    #[test]
+    fn provider_spec_ignores_the_dropped_model_list() {
+        // Payloads from daemons that still send the provider's model list
+        // decode against the narrowed shape.
+        let spec: ProviderSpec = serde_json::from_value(serde_json::json!({
+            "id": "anthropic",
+            "display_name": "Anthropic",
+            "base_url": "https://api.anthropic.test/v1",
+            "preferred_models": [{ "id": "claude-sonnet-4-6" }],
+        }))
+        .unwrap();
+
+        assert_eq!(spec.id, "anthropic");
+        assert_eq!(spec.display_name, "Anthropic");
+        assert_eq!(spec.base_url, "https://api.anthropic.test/v1");
+
+        // And the catalog data does not go back out.
+        let encoded = serde_json::to_value(&spec).unwrap();
+        assert!(encoded.get("preferred_models").is_none());
+    }
+
+    #[test]
+    fn context_report_serde_roundtrip() {
+        let breakdown = super::ContextBreakdown {
+            system_prompt_tokens: 1200,
+            system_tools_tokens: 3400,
+            mcp_tools_tokens: 0,
+            memory_tokens: 800,
+            skills_tokens: 150,
+            messages_tokens: 42_000,
+            used_tokens: 47_550,
+            limit_tokens: Some(200_000),
+            compact_buffer_tokens: 20_000,
+        };
+        let json = serde_json::to_value(Evt::ContextReport(breakdown)).expect("serialize");
+        assert_eq!(
+            json,
+            serde_json::json!({
+                "ContextReport": {
+                    "system_prompt_tokens": 1200,
+                    "system_tools_tokens": 3400,
+                    "mcp_tools_tokens": 0,
+                    "memory_tokens": 800,
+                    "skills_tokens": 150,
+                    "messages_tokens": 42000,
+                    "used_tokens": 47550,
+                    "limit_tokens": 200000,
+                    "compact_buffer_tokens": 20000
+                }
+            })
+        );
+        let decoded = serde_json::from_value::<Evt>(json).expect("deserialize");
+        assert!(matches!(decoded, Evt::ContextReport(b) if b == breakdown));
+
+        // Fields absent on the wire (older daemons) fall back to defaults.
+        let sparse: super::ContextBreakdown =
+            serde_json::from_value(serde_json::json!({"used_tokens": 10})).unwrap();
+        assert_eq!(sparse.used_tokens, 10);
+        assert_eq!(sparse.limit_tokens, None);
+
+        let op = serde_json::to_value(Op::ContextReport).expect("serialize op");
+        assert_eq!(op, serde_json::json!("ContextReport"));
+        assert!(matches!(serde_json::from_value::<Op>(op).unwrap(), Op::ContextReport));
     }
 
     #[test]

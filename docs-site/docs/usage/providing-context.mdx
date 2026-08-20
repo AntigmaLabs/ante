@@ -17,6 +17,8 @@ Type `@` followed by a file or directory path. Ante shows a search dropdown as y
 - **`@path/to/file.rs`** — embeds the full file contents into your message
 - **`@path/to/dir/`** — embeds the directory tree listing
 
+Completion covers project-relative paths as well as `~/`, absolute, `../`, and `./` paths, so files outside the project work too.
+
 This ensures the agent sees exactly the code you're asking about, without guessing or searching.
 
 :::tip

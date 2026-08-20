@@ -52,16 +52,20 @@ Frontmatter parsing is lenient for common scalar mistakes: unquoted values that
 contain `: `, begin with flow-like characters such as `[` or `{`, or include
 inline comments are repaired when they can be interpreted unambiguously.
 Malformed nested YAML still fails so broken metadata does not load silently.
+The block is capped at 16 KB and 32 levels of nesting; past either limit the
+skill fails to load with an explicit error rather than loading partially.
+Sub-agent frontmatter goes through the same reader with the same rules.
 
 ## Skill directories
 
 | Directory | Scope |
 |---|---|
+| `~/.claude/skills/` | User-level (Claude Code compatibility) |
 | `~/.agents/skills/` | User-level (compat — loaded before `~/.ante/skills/`) |
 | `~/.ante/skills/` | User-level (available in all projects) |
+| `.claude/skills/` | Project-level (Claude Code compatibility) |
 | `.agents/skills/` | Project-level |
 | `.ante/skills/` | Project-level |
-| `.claude/skills/` | Project-level (Claude Code compatibility) |
 
 ## SKILL.md frontmatter
 
@@ -91,11 +95,43 @@ my-skill/
 Skills are discovered in precedence order (later overrides earlier by skill name):
 
 1. System-level (built-in skills)
-2. `~/.agents/skills/` (user-level, compat)
-3. `~/.ante/skills/` (user-level)
-4. `.claude/skills/` (project-level, Claude Code compatibility)
-5. `.agents/skills/` (project-level)
-6. `.ante/skills/` (project-level)
+2. `~/.claude/skills/` (user-level, Claude Code compatibility)
+3. `~/.agents/skills/` (user-level, compat)
+4. `~/.ante/skills/` (user-level)
+5. `.claude/skills/` (project-level, Claude Code compatibility)
+6. `.agents/skills/` (project-level)
+7. `.ante/skills/` (project-level)
+
+Discovered skills are advertised to the model in a reminder attached to the first user message, and [sub-agents](/extend/subagents) inherit the parent session's skills.
+
+Start Ante with `--no-skills` to skip this discovery entirely. No system, user, or project skills are advertised to the model or exposed as slash commands, and `/resume` preserves that choice for the resumed session. To turn skills off persistently, set `"skills": false` in [`settings.json`](/configuration/preference#settings-file) (`--skills` re-enables them for a run). The built-in `--profile bare` also disables skills.
+
+### Selecting individual skills
+
+To drop or add specific skills instead of all of them, set `exclude_skills` / `include_skills` in [`settings.json`](/configuration/preference#settings-file):
+
+```json
+{
+  "exclude_skills": ["noisy-skill"],
+  "include_skills": ["deploy-checklist"]
+}
+```
+
+Both take exact skill names. `exclude_skills` removes the named skills from every session and wins over `include_skills`; `include_skills` adds names on top of the session's base skill set, like `--include-tools` for tools. The selection applies to fresh and resumed sessions alike.
+
+## Bundled skills
+
+Ante ships a few skills at the system level:
+
+| Skill | What it does |
+|---|---|
+| `ante-guide` | Answers questions about Ante itself from the official docs and handles requests to change Ante's own configuration. Model-invoked only |
+| `skill-creator` | Creates, improves, and evaluates skills (`/skill-creator`) |
+| `tmux` | Drives interactive terminals, servers, and REPLs in named tmux sessions — see [Terminal sessions](/usage/tui#terminal-sessions). Model-invoked only |
+| `resume-claude` | Continues a recent Claude Code session in this directory (`/resume-claude`) |
+| `resume-codex` | Continues a recent Codex session in this directory (`/resume-codex`) |
+
+A user or project skill with the same name overrides the bundled version.
 
 ## Using skills
 

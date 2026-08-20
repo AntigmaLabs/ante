@@ -9,7 +9,7 @@ This page is the exhaustive reference. For how to pick a provider day to day and
 
 ## Built-in providers
 
-| Provider | ID | Wire style | Authentication |
+| Provider | key | Wire style | Authentication |
 |---|---|---|---|
 | Anthropic | `anthropic` | `AnthropicMessage` | `ANTHROPIC_API_KEY` |
 | Anthropic Subscription | `anthropic-subscription` | `AnthropicMessage` | OAuth |
@@ -29,7 +29,7 @@ This page is the exhaustive reference. For how to pick a provider day to day and
 | Antix (API key) | `antix-api-key` | `AnthropicMessage` | `ANTIX_API_KEY` |
 | Local | `local` | `OpenAiCompatible` | none |
 
-The `ID` column is what you pass to `--provider`. Providers authenticating via OAuth (`anthropic-subscription`, `openai-subscription`, `antix`) sign in interactively through the TUI; the rest read an API key from the listed environment variable.
+The `key` column is what you pass to `--provider`. Providers authenticating via OAuth (`anthropic-subscription`, `openai-subscription`, `antix`) sign in interactively through the TUI; the rest read an API key from the listed environment variable.
 
 ## Models by provider
 
@@ -43,8 +43,7 @@ Each provider ships a set of `preferred_models` — the ids that appear in the m
 |---|---|---|
 | `claude-haiku-4-5` | Fastest model with near-frontier intelligence | 200K |
 | `claude-sonnet-5` | Best combination of speed and intelligence | 1M |
-| `claude-sonnet-4-6` | Fast and capable | 1M |
-| `claude-opus-4-8` | Most capable Opus-tier model | 1M |
+| `claude-opus-5` | Complex agentic coding and enterprise work | 1M |
 | `claude-fable-5` | Highest capability for demanding reasoning | 1M |
 
 ```bash
@@ -68,7 +67,7 @@ ante --provider anthropic --model claude-sonnet-5
 ante --provider openai --model gpt-5.6-sol
 ```
 
-The `openai-subscription` provider (ChatGPT/Codex OAuth) serves a smaller set — `gpt-5.5`, `gpt-5.4`, and `gpt-5.4-mini` — since the other GPT ids aren't available on ChatGPT accounts.
+The `openai-subscription` provider (ChatGPT/Codex OAuth) serves `gpt-5.6-sol`, `gpt-5.6-terra`, and `gpt-5.6-luna` with 272K context, plus `gpt-5.5`, `gpt-5.4`, and `gpt-5.4-mini` with 400K context.
 
 #### OpenAI transports
 
@@ -97,7 +96,7 @@ Notes:
 - To verify which transport is active: in debug builds, toggle the debug panel (`Ctrl+L`) and check the **Info** tab for the `OpenAI Transport:` line. Otherwise grep your session log for `transport selected`:
 
   ```bash
-  grep "transport selected" ~/.ante/logs/ante.*.log.*
+  grep "transport selected" ~/.ante/logs/*/ante.*.log
   ```
 
 ### Gemini
@@ -106,10 +105,11 @@ Notes:
 
 | Model | Description | Context |
 |---|---|---|
-| `gemini-3.5-flash` | Gemini 3.5 Flash, agentic workflows | 1M |
+| `gemini-3.7-flash` | Gemini 3.7 Flash for fast agentic and multimodal workflows | 1.05M |
+| `gemini-3.6-flash` | Gemini 3.6 Flash for agentic and multimodal workflows | 1M |
 | `gemini-3.1-pro-preview` | Gemini 3.1 Pro with deep thinking | 1M |
 | `gemini-3.1-pro-preview-customtools` | Gemini 3.1 Pro optimized for custom tool usage | 1M |
-| `gemini-3.1-flash-lite` | Low-latency, cost-effective Gemini 3.1 model | 1M |
+| `gemini-3.5-flash-lite` | Fastest, lowest-cost Gemini 3.5 model for high-throughput work | 1M |
 
 ```bash
 ante --provider gemini --model gemini-3.1-pro-preview
@@ -119,11 +119,10 @@ ante --provider gemini --model gemini-3.1-pro-preview
 
 | Model | Description | Context |
 |---|---|---|
-| `grok-4.5` | Grok 4.5 with vision | 500K |
-| `grok-4-latest` | Grok 4 | 256K |
+| `grok-4.6` | Grok 4.6 flagship reasoning model | 500K |
 
 ```bash
-ante --provider xai --model grok-4.5
+ante --provider xai --model grok-4.6
 ```
 
 ### Zai
@@ -131,7 +130,6 @@ ante --provider xai --model grok-4.5
 | Model | Description | Context |
 |---|---|---|
 | `glm-5.2` | Latest GLM-5.2 model | 1M |
-| `glm-5.1` | GLM-5.1 model | 200K |
 
 ```bash
 ante --provider zai --model glm-5.2
@@ -145,27 +143,30 @@ Open Router ships as three providers sharing one API key, split by wire style: `
 
 | Model | Description | Context |
 |---|---|---|
-| `deepseek/deepseek-v4-flash` | DeepSeek V4 Flash | 1M |
-| `x-ai/grok-4.5` | Grok 4.5 via OpenRouter | 500K |
-| `meta/muse-spark-1.1` | Muse Spark 1.1 multimodal agentic reasoning model | 1.05M |
-| `qwen/qwen3.7-max` | Qwen3.7 Max | 1M |
-| `qwen/qwen3.7-plus` | Qwen3.7 Plus with vision | 1M |
+| `deepseek/deepseek-v4-flash-0731` | DeepSeek V4 Flash 0731 | 1.05M |
+| `google/gemini-3.7-flash` | Gemini 3.7 Flash for fast multimodal agentic workflows | 1.05M |
+| `x-ai/grok-4.6` | Grok 4.6 flagship reasoning model via OpenRouter | 500K |
+| `qwen/qwen3.8-max` | Qwen 3.8 flagship multimodal reasoning model | 1M |
+| `qwen/qwen3.7-plus` | Cost-effective Qwen 3.7 model with vision | 1M |
+| `qwen/qwen3.7-flash` | Low-cost Qwen 3.7 multimodal reasoning model | 1M |
+| `meta/muse-spark-1.2` | Muse Spark 1.2 multimodal agentic reasoning model | 1.05M |
+| `tencent/hy3` | Tencent Hy3 agentic reasoning model | 262K |
 | `xiaomi/mimo-v2.5-pro` | MiMo-V2.5-Pro flagship agentic model | 1.05M |
 | `xiaomi/mimo-v2.5` | MiMo-V2.5 omnimodal model with vision | 1.05M |
 | `z-ai/glm-5.2` | GLM 5.2 reasoning model via OpenRouter | 1.05M |
 | `moonshotai/kimi-k3` | Kimi K3 flagship multimodal reasoning model | 1.05M |
 | `moonshotai/kimi-k2.7-code` | Kimi K2.7 Code reasoning model with vision | 262K |
 | `minimax/minimax-m3` | MiniMax M3 multimodal model | 512K |
-| `deepseek/deepseek-v4-pro` | DeepSeek V4 Pro | 1M |
+| `deepseek/deepseek-v4-pro-0813` | DeepSeek V4 Pro 0813 GA | 1.05M |
 
-`openrouter-responses` serves the GPT family over the Responses API: `openai/gpt-5.6-sol`, `openai/gpt-5.6-terra`, `openai/gpt-5.6-luna` (1.05M context), plus `openai/gpt-5.5-pro`, `openai/gpt-5.4-pro`, `openai/gpt-5.3-codex`, `openai/gpt-5.4-mini`, and `openai/gpt-5.4-nano` (400K).
+`openrouter-responses` serves `openai/gpt-5.6-sol`, `openai/gpt-5.6-sol-pro`, `openai/gpt-5.6-terra`, `openai/gpt-5.6-terra-pro`, `openai/gpt-5.6-luna`, and `openai/gpt-5.6-luna-pro` (1.05M context), plus `openai/gpt-5.3-codex` (400K). The `-pro` ids select OpenRouter's pro reasoning route.
 
-`openrouter-anthropic` serves the Claude family over Anthropic Messages: `anthropic/claude-haiku-4.5` (200K context), plus `anthropic/claude-sonnet-5`, `anthropic/claude-sonnet-4.6`, `anthropic/claude-opus-4.8`, `anthropic/claude-opus-4.8-fast`, and `anthropic/claude-fable-5` (1M).
+`openrouter-anthropic` serves the Claude family over Anthropic Messages: `anthropic/claude-haiku-4.5` (200K context), plus `anthropic/claude-sonnet-5`, `anthropic/claude-opus-5`, `anthropic/claude-opus-5-fast`, and `anthropic/claude-fable-5` (1M).
 
 Each provider also accepts any model from Open Router's [full model list](https://openrouter.ai/models) by id, as long as it speaks that provider's wire style.
 
 ```bash
-ante --provider openrouter --model deepseek/deepseek-v4-pro
+ante --provider openrouter --model deepseek/deepseek-v4-pro-0813
 ante --provider openrouter-responses --model openai/gpt-5.6-sol
 ante --provider openrouter-anthropic --model anthropic/claude-fable-5
 ```
@@ -206,7 +207,6 @@ Requires a [Coding Plan subscription](https://help.aliyun.com/zh/model-studio/co
 {
   "providers": {
     "ali-coding-plan-oai": {
-      "id": "ali-coding-plan-oai",
       "display_name": "Ali Coding Plan (OpenAI)",
       "base_url": "https://coding.dashscope.aliyuncs.com/v1",
       "auth": { "bearer": { "env_key": "ALI_CODING_PLAN_API_KEY" } },
@@ -228,6 +228,7 @@ Requires a [Coding Plan subscription](https://help.aliyun.com/zh/model-studio/co
 |---|---|---|
 | `gemini-3.5-flash` | Gemini 3.5 Flash, agentic workflows | 1M |
 | `grok-4.5` | Grok 4.5, xAI flagship for code and agentic work | 500K |
+| `grok-4.6` | Grok 4.6 flagship reasoning model | 500K |
 | `kimi-k3` | Kimi K3 flagship reasoning model with vision | 1M |
 | `qwen3.7-max` | Latest Qwen 3.7 Max | 1M |
 | `qwen3.7-plus` | Latest Qwen 3.7 Plus | 1M |
@@ -236,10 +237,6 @@ Requires a [Coding Plan subscription](https://help.aliyun.com/zh/model-studio/co
 | `claude-sonnet-4-6` | Fast and capable | 200K |
 | `claude-opus-4-8` | Most capable, slower | 200K |
 | `claude-fable-5` | Most capable Claude model | 1M |
-| `gpt-5.5` | Latest flagship GPT model | — |
-| `gpt-5.5-pro` | Highest reliability on complex problems | — |
-| `gpt-5.4` | Latest model powering Codex and Codex CLI | — |
-| `gpt-5.4-pro` | Highest reliability in the GPT-5.4 family | — |
 | `gpt-5.3-codex` | Coding-optimized Codex model | — |
 | `deepseek-v4-flash` | Fast DeepSeek V4 Flash | 1M |
 | `deepseek-v4-pro` | DeepSeek V4 Pro with deep thinking | 1M |
@@ -252,7 +249,7 @@ ante --provider antix-api-key --model claude-sonnet-4-6 # ANTIX_API_KEY
 
 ### Local
 
-Run GGUF models locally via the built-in llama.cpp engine — no API key required. `local` is a wildcard provider; the available model depends on what the offline server has loaded. See [Offline Mode](/local/offline) for setup.
+Run GGUF models locally via the built-in llama.cpp engine — no API key required. `local` is a wildcard provider; the available model depends on what the offline server has loaded, and the entry exists in the catalog only while a live server is registered. Selecting `local` with no server running gates the session with a notice until you start or attach one. See [Offline Mode](/local/offline) for setup.
 
 ```bash
 ante --provider local
@@ -269,7 +266,7 @@ ante --provider local
 }
 ```
 
-A `providers` entry whose key matches a built-in (e.g. `openai`) patches that preset field by field; a new key adds a provider. The map key is the id you pass to `--provider`, so keep each entry's `id` equal to its key.
+A `providers` entry whose key matches a built-in (e.g. `openai`) patches that preset field by field; a new key adds a provider. The map key is the value you pass to `--provider`. An `id` (or legacy `name`) field inside an entry is ignored.
 
 :::note
 `~/.ante` can be relocated with the `ANTE_HOME` environment variable; the catalog is always `$ANTE_HOME/catalog.json`.
@@ -279,12 +276,12 @@ A `providers` entry whose key matches a built-in (e.g. `openai`) patches that pr
 
 | Field | Required | Description |
 |---|---|---|
-| `id` | ✅ | Provider id. Must match the map key (`name` is accepted as a legacy alias). This is what you pass to `--provider`. |
-| `display_name` | New providers: optional | Friendly name shown in the TUI. New providers default to the provider id when omitted. |
+| `display_name` | New providers: optional | Friendly name shown in the TUI. New providers default to the provider map key when omitted. |
 | `base_url` | New providers: ✅ | API base URL. |
 | `wire_style` | New providers: ✅ | API dialect Ante speaks — `AnthropicMessage`, `OpenAiCompatible`, `OpenAiResponse`, or `Gemini`. |
 | `auth` | — | How to authenticate (see [Authentication](#authentication)). Omit for a provider that needs no key. |
 | `http_headers` | — | Extra headers sent with every request, as a string→string map. |
+| `extra_body` | — | Provider-specific JSON fields merged into every chat and streaming request body (see [Extra request fields](#extra-request-fields)). |
 | `supports_web_search` | — | Whether the provider exposes a native web-search affordance. When `true`, the `WebSearch` tool is added to sessions on this provider automatically; when `false` (the default), `WebSearch` is not offered. |
 | `preferred_models` | — | Models shown for this provider in the picker and used as provider defaults (see [Model fields](#model-fields)). For built-in provider overlays, matching model ids are patched and new ids are appended; omitted leaves the preset list unchanged. |
 
@@ -292,7 +289,6 @@ A `providers` entry whose key matches a built-in (e.g. `openai`) patches that pr
 {
   "providers": {
     "my-provider": {
-      "id": "my-provider",
       "display_name": "My Provider",
       "base_url": "https://api.example.com/v1",
       "wire_style": "OpenAiCompatible",
@@ -328,6 +324,44 @@ provider at a local proxy that should not send the built-in auth or headers:
 }
 ```
 
+### Extra request fields
+
+Some gateways and proxies require parameters Ante doesn't model — a service tier, a routing hint, a vendor-specific beta block. `extra_body` is a JSON object merged into the top level of every chat and streaming request body Ante sends to that provider:
+
+```json
+{
+  "providers": {
+    "my-gateway": {
+      "base_url": "https://gateway.example.com/v1",
+      "wire_style": "OpenAiCompatible",
+      "auth": { "bearer": { "env_key": "MY_GATEWAY_API_KEY" } },
+      "extra_body": {
+        "service_tier": "priority",
+        "routing": { "region": "us-east" }
+      }
+    }
+  }
+}
+```
+
+Values are passed through verbatim, so any JSON shape works. On a built-in provider overlay, `extra_body` merges key by key into the preset's — matching keys are replaced, others are left alone.
+
+`extra_body` can only add fields, never override the ones Ante generates for the selected `wire_style`:
+
+| `wire_style` | Reserved keys |
+|---|---|
+| `AnthropicMessage` | `model`, `max_tokens`, `messages`, `system`, `temperature`, `tools`, `stream`, `thinking`, `stop_sequences`, `output_config`, `cache_control` |
+| `OpenAiCompatible` | `model`, `messages`, `reasoning_effort`, `max_tokens`, `stream`, `stream_options`, `temperature`, `top_p`, `top_k`, `stop`, `tools`, `tool_choice`, `thinking`, `enable_thinking`, `thinking_budget`, `enable_search`, `search_options` |
+| `OpenAiResponse` | `model`, `instructions`, `input`, `tools`, `tool_choice`, `parallel_tool_calls`, `max_output_tokens`, `temperature`, `reasoning`, `stream`, `include`, `store` |
+| `Gemini` | `contents`, `systemInstruction`, `generationConfig`, `tools`, `toolConfig` |
+
+A reserved key is dropped at catalog load and named in the startup notice; the rest of the provider still loads. To change one of these, use the [model fields](#model-fields) or the [environment overrides](#environment-overrides) instead:
+
+```
+Skipped 1 entry in ~/.ante/catalog.json:
+  - providers.my-gateway.extra_body: ignoring Ante-owned request field(s): model
+```
+
 ### Authentication
 
 `auth` is a tagged object: the tag chooses where the credential goes, and the credential is either an environment variable (`env_key`) or one of Ante's built-in OAuth flows (`oauth_preset`).
@@ -355,10 +389,10 @@ The same fields describe a model fully inside a provider's `preferred_models` (w
 | `id` | Model id. Required in `preferred_models` (`name` is accepted as a legacy alias); supplied by the map key under `models`. |
 | `display_name` | Friendly name. |
 | `description` | Short description shown in the model picker. |
-| `temperature` | Sampling temperature. |
+| `temperature` | Sampling temperature. On `AnthropicMessage` providers, extended thinking requires `1` — any other value with an effort level set fails the turn with an explicit message. |
 | `top_p` | Nucleus sampling cutoff. |
 | `top_k` | Top-k sampling cutoff. |
-| `max_tokens` | Maximum output tokens per turn. |
+| `max_tokens` | Maximum output tokens per turn. On `AnthropicMessage` providers that take an explicit thinking budget, it must exceed 1024 — the API's minimum budget — when an effort level is set. |
 | `stop_sequences` | List of strings that end generation. |
 | `context_limit` | Context window size, in tokens. |
 | `effort` | Default [effort level](/usage/models-and-thinking#effort) — `min`, `low`, `medium`, `high`, `xhigh`, or `max`. Omit for models with no reasoning knob (Ante then sends no effort parameter and hides the effort slider). |
@@ -370,7 +404,7 @@ The `models` section patches a model by id wherever it is defined, layering on t
 ```json
 {
   "models": {
-    "claude-sonnet-4-6": { "effort": "high", "max_tokens": 64000 }
+    "claude-sonnet-5": { "effort": "high", "max_tokens": 64000 }
   }
 }
 ```

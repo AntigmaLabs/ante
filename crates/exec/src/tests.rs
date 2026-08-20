@@ -203,7 +203,7 @@ async fn background_file_ipc_pattern() -> Result<()> {
 
     timeout(Duration::from_secs(5), handle.wait_for_exit()).await?;
     drop(handle);
-    let _ = timeout(Duration::from_secs(5), file_task).await?;
+    timeout(Duration::from_secs(5), file_task).await???;
 
     let content = tokio::fs::read_to_string(&output_path).await?;
     assert!(content.contains("line1"));

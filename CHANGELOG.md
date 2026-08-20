@@ -1,5 +1,294 @@
 # Changelog
 
+## v0.preview.85 - 2026-08-19
+
+### Changed
+- The `Abort` approval decision is removed from the wire protocol; "deny and stop" composes as a deny plus an interrupt
+
+### Fixed
+- Invalid permission rules in settings are surfaced as settings notices instead of being silently skipped, while the valid rules keep loading
+- A background job's directory is cleaned up on any startup failure, instead of a failed output-file creation stranding it until the 24-hour GC sweep
+
+## v0.preview.84 - 2026-08-18
+
+### Changed
+- Qwen 3.8 models send graded `reasoning_effort` levels instead of collapsing every level to thinking on/off, and the effort picker lists only the distinct supported levels
+- MCP servers are discovered in parallel (one slow server no longer delays the rest), and MCP tool calls time out after 10 minutes — overridable via `ANTE_MCP_TOOL_TIMEOUT` — instead of pinning a turn until interrupt
+
+### Fixed
+- Headless (`ante -p`) sessions wait for MCP warm-up before the first turn, so MCP tools are present in the model's schema instead of every MCP call failing silently
+- llama.cpp context overflows are recognized as context-full and trigger the one-time compaction retry instead of failing the turn
+- Writing to a closed or broken output pipe (consumer exits, macOS EIO) is handled leniently instead of panicking during terminal teardown
+
+## v0.preview.83 - 2026-08-18
+
+### Added
+- `include_skills` / `exclude_skills` settings control which skills a session equips; exclude wins over include
+
+### Changed
+- The `local` provider exists only while a live model server is registered; a saved `local` selection with no server running gates with a clear notice instead of retrying for ~17 seconds per turn
+- Skill and agent lists moved from the system prompt to a first-message reminder, making the prompt byte-stable across sessions; subagents inherit the parent's skills
+- The stable channel and installer only promote after artifacts pass an installer smoke test
+
+### Fixed
+- Long TUI sessions no longer retain render caches for archived scrollback, and transcripts beyond 65,535 rows stay complete
+
+## v0.preview.82 - 2026-08-17
+
+### Added
+- `ante offline install` downloads and installs the bundled offline inference engine; running an offline model on a machine without the engine now fails fast with that instruction instead of an opaque error
+
+### Changed
+- Grep and Glob permission rules and session approvals now scope to the search pattern instead of blanketing the whole tool, and their transcript rows show just the pattern
+- Tool calls in the transcript show wider, more balanced argument previews
+- Markdown output is restyled: headings, ordered-list markers, inline code, tables, and fenced code blocks on a dark panel background
+- `ante catalog` output is wrapped in a `{"providers": [...]}` envelope
+
+## v0.preview.81 - 2026-08-15
+
+### Added
+- Qwen 3.8 27B as a verified offline model
+
+### Changed
+- macOS release binaries are signed and notarized, so Gatekeeper no longer blocks first launch
+- Sent messages are restyled with a muted margin bar, and the composer prompt shows a chevron
+- Quiet tool calls are grouped into one collapsing activity cell instead of stacking individual rows
+- Log files are written to per-day directories (`logs/<date>/ante.<pid>.log`)
+- Background job handles live under `run/jobs/<proc_id>/`, and the Ante home gains a `tmp/` scratch tier
+
+## v0.preview.80 - 2026-08-14
+
+### Changed
+- The bundled `ante-guide` skill routes to the documentation corpus instead of inlining reference tables that drift, and no longer suggests the nonexistent `/permissions` command
+
+### Fixed
+- Empty streaming deltas from providers (Qwen-style reasoning placeholders, OpenRouter-style empty text) no longer fragment messages into broken parts
+
+## v0.preview.79 - 2026-08-14
+
+### Added
+- Gemini 3.7 Flash in the native Gemini, Vertex AI Gemini, and OpenRouter catalogs
+
+### Changed
+- The bundled `ante-guide` skill answers configuration questions and edits Ante's own settings from a built-in reference, without cloning the docs repository
+
+### Fixed
+- The composer cursor no longer blinks, which broke scrollback in terminals that scroll on output
+- WebSearch calls are capped at 90 seconds instead of hanging a tool batch
+
+## v0.preview.78 - 2026-08-13
+
+### Added
+- Grok 4.6 in the Antix OAuth catalog
+- DeepSeek V4 Pro 0813 on OpenRouter, replacing the superseded preview build, with the GA model's native `max` reasoning effort
+
+### Changed
+- Dependency updates
+
+### Fixed
+- xAI turns no longer fail with `Argument not supported: search_context_size` — the field is dropped from the provider-native web search tool, so xAI works without `--exclude-tools WebSearch`
+- OAuth credentials refresh against the active preset's endpoint, and token issuer URLs are validated
+- Antix Grok 4.5 is marked text-only, matching what the live route actually accepts
+- `ante doctor` no longer errors when its output is piped to a consumer that closes the pipe early
+
+## v0.preview.77 - 2026-08-12
+
+### Added
+- Grok 4.6 in the xAI and OpenRouter catalogs, replacing Grok 4.5
+
+### Changed
+- Thinking renders as markdown in the thinking grey, instead of showing raw `**` markers
+
+### Fixed
+- Hitting a usage limit no longer triggers repeated compaction attempts
+- OpenAI server-overload errors are retried instead of failing the turn
+- Background job handle files are cleaned up at startup once the job has finished, instead of accumulating
+- `/term` reports tmux as missing instead of opening an empty picker
+- An empty `ANTE_ENV` is treated as unset, so telemetry keeps its default environment label
+
+## v0.preview.76 - 2026-08-11
+
+### Added
+- Qwen 3.8 Max, Qwen 3.7 Flash, and Muse Spark 1.2 in the OpenRouter catalog; the superseded Qwen 3.7 Max and Muse Spark 1.1 entries are pruned
+
+### Changed
+- Tool headers color their arguments — file paths, commands, search patterns — in the design blue instead of plain gray
+- The composer cursor blinks
+- Skill and agent frontmatter goes through one shared reader with size and nesting-depth limits, so oversized or malformed frontmatter fails with a clear error instead of being partially accepted
+
+### Fixed
+- Bundled skills are installed before the daemon starts serving, so they are usable on the very first launch after an update instead of only from the second launch on
+- Multiline Grep searches over a directory run one worker at a time, so concurrent search buffers can no longer multiply peak memory
+- The Grep header separates its pattern and path — `Search (foo in /tmp/src)` instead of `Search (foo)/tmp/src`
+
+## v0.preview.75 - 2026-08-10
+
+### Added
+- Custom providers in the user catalog accept an `extra_body` map — provider-specific fields merged into chat and streaming request bodies, for gateways and proxies that require extra parameters. Keys that collide with Ante-owned request fields are dropped with a notice at catalog load instead of rejecting the whole provider
+
+### Changed
+- `SessionStart` and `SessionUpdated` no longer carry the active provider's full model list on the wire; that catalog data is available from `ante catalog`. Clients still receive the provider id, display name, and effective base URL
+
+### Fixed
+- Anthropic requests are compatible with proxies and gateways again: the unsupported context-management field is no longer sent, extended-thinking budgets respect the 1024-token minimum, and a temperature other than 1 with thinking enabled now fails with a clear message instead of a confusing provider error
+
+## v0.preview.74 - 2026-08-10
+
+### Changed
+- When telemetry is configured, Ante uses a random, resettable installation ID and per-process run IDs; operator identity is sent only when explicitly configured
+
+## v0.preview.73 - 2026-08-10
+
+### Added
+- Coming from Claude Code or Codex: when a session in this directory was active within the last 4 hours, startup offers to pick it up. `/resume-claude` and `/resume-codex` are bundled skills that locate the foreign transcript, read it as data, and reconstruct task, progress, and next step before confirming with you. The hint appears once per project and never in headless runs.
+- `/import-claude` copies Claude Code's project memory for this directory into Ante's project memory. Existing Ante files are never overwritten, and re-running is a clean no-op.
+- `settings.json` accepts `system_prompt`, `append_system_prompt`, and `tools` as fresh-session defaults, plus `auto_memory`, `skills`, and `session_save` with matching CLI overrides. Explicit CLI flags and wire values stay authoritative, and persisted custom prompt text is redacted from `ante rage` bundles.
+
+### Changed
+- Bump the bundled llama.cpp engine to b10217
+- The built-in `bare` profile is now a real `bare.settings.json` file, seeded once and editable like any other profile
+
+### Fixed
+- Headless runs exit cleanly when their output consumer closes stdout or stderr, instead of panicking with a broken pipe
+
+## v0.preview.72 - 2026-08-09
+
+### Added
+- Onboarding "Use API key" now takes a pasted key directly: masked input with provider auto-detect from the key prefix, validated against the provider, and stored owner-only under `~/.ante/auth` (env vars still take precedence)
+- On the API-key step with Anthropic selected, `Tab` signs in to the Anthropic Console in the browser and provisions an API key automatically — the key never touches the clipboard
+- Compaction results are now visible: a collapsed `* Compacted` marker appears in the conversation (manual and auto compaction), with the full summary in the ctrl+o transcript view; `CompactEnd` now carries the summary text on the wire, and trimmed oversized tool results are reported with an info line
+
+### Changed
+- Improved Bash command execution
+- Antix OAuth is listed ahead of OpenAI in `/connect` and provider auto-detection
+
+### Fixed
+- A fresh install with no credentials no longer lands in a session silently wired to the unreachable built-in `localhost:8080` fallback — the not-connected state points at `/connect`, and a successful sign-in restarts the session on the newly connected provider
+- Standalone `ante update` no longer panics with a broken pipe when its launcher closes stdout, and a closed pipe can no longer cancel an update
+
+## v0.preview.71 - 2026-08-07
+
+### Added
+- `ante doctor` checks that the Ante home directory (`~/.ante`) is writable
+
+### Changed
+- Dependency updates
+
+### Fixed
+- Cancelling a running Bash tool call now kills its whole process group, so grandchild processes no longer keep running after Ante reports execution stopped
+- Streaming model calls that produce no usable output within 5 minutes fail with a timeout instead of hanging the turn indefinitely
+- The installer refuses `sudo` installs that would leave `~/.ante` root-owned, and startup shows a visible notice when the Ante home is unwritable
+- Proxy `auth_unavailable` credential failures are classified as terminal auth errors instead of consuming the reconnect budget
+- Parameterless tool schemas keep an explicit empty `properties` object on OpenAI-compatible requests, fixing rejections from strict endpoints
+
+## v0.preview.70 - 2026-08-03
+
+### Added
+- `--profile <name>`: named settings profiles as whole-file replacement settings files (`<name>.settings.json`), plus the `ANTE_PROFILE` env var and a built-in file-less `bare` profile
+- Bare `/term` opens a terminal picker — list, attach/detach, kill, and create sessions
+
+### Changed
+- Updates now ride the normal TUI flow: when a new version is available an in-chat notice shows its release notes, and `/update` installs it on exit (`/update skip` dismisses that version, `/update cancel` unschedules); the blocking startup modal is gone, and running sessions now check for updates hourly
+- Use DeepSeek V4 Flash 0731 on OpenRouter
+- Nightly builds log at debug level by default
+- SKILL.md reads are labeled as skill loads in the transcript
+
+### Fixed
+- `ante catalog` exits cleanly instead of panicking when its output pipe closes early
+- Brighter agent response text; thinking text pinned to foreground gray
+- Hidden hardware cursor parked at the composer so OS IME popups appear at the caret
+- Z.ai five-hour usage-limit errors (code 1308) are classified as terminal quota instead of being retried
+
+## v0.preview.69 - 2026-08-02
+
+### Added
+- Shift+Enter and Ctrl+Enter insert a newline in the composer on terminals with kitty keyboard protocol support (kitty, ghostty, WezTerm, iTerm2 3.5+, Alacritty 0.13+)
+
+### Changed
+- Diff View V2 across all diff surfaces — chat Edit/Write details, the `/diff` pager, the approval Tab preview, and the theme dialog: numbered line gutter, full-width added/removed background bands, and `+N -M` change counts inline in headers
+
+### Fixed
+- Normalize MCP tool schemas to the portable provider subset at ingestion, so servers using advanced JSON Schema keywords (`exclusiveMinimum`, `$ref`, `oneOf`, …) no longer get requests rejected by strict providers such as Gemini
+- Merge system prompt fragments into a single leading system message for unrecognized OpenAI-compatible models, fixing strict local chat templates that error on multiple system messages
+- Spinner token count now shows only tokens generated this turn (it previously re-added the full context every generation, inflating wildly), with a ↑/↓ request/stream phase arrow
+- Gemini quota errors that mention token limits are classified as quota, not context overflow, so they no longer trigger futile compaction
+
+## v0.preview.68 - 2026-07-31
+
+### Added
+- `/term <name> [args...]` launches the named binary in the fresh session — `/term claude --continue` opens a split already running claude; existing sessions still just attach
+- `terminals` status-line chip (on by default) showing live `ante-*` tmux sessions by name
+- `--no-skills` run flag: skip skill discovery entirely (nothing advertised in the system prompt or dispatchable as commands); `/resume` preserves the choice
+
+### Changed
+- Repeated `/term` calls stack viewer splits in one right-hand column, replacing the composed `ante-view-*` viewer — every agent keeps a full-width column and Ante keeps its size
+- Two-row footer: identity items (model, dir, branch, …) on top, permission mode and activity chips beneath
+- Default DeepSeek V4 Flash to max reasoning effort on all routes (Antix, direct, OpenRouter)
+- Dependency updates
+
+### Fixed
+- Fully typed commands that take arguments (e.g. bare `/term`) no longer swallow the first Enter
+
+## v0.preview.67 - 2026-07-29
+
+### Added
+- `/term <a> <b>` composes a side-by-side viewer over several sessions in one window — watch or compare two terminal agents at once
+- Bundled `tmux` skill: session reuse, interactive-program input, and driving other CLI agents such as Claude Code or Codex
+- Discover skills from user-level `~/.claude/skills`, and highlight recognized commands in the composer
+- `@`-mention completion for `~/`, absolute, `../`, and `./` paths
+- Delete sessions from the `/resume` picker
+
+### Changed
+- Replace `/pty` with `/term`: the agent drives durable named tmux sessions through ordinary Bash (namespaced `ante-*`), and `/term <name>` opens a native terminal split/window to watch or type; sessions survive Ante restarts
+- No subprocesses or file writes before the TUI's first frame (faster, quieter startup)
+- Bump the bundled llama.cpp engine to b10107
+
+### Fixed
+- Redact the OAuth callback query from logs
+- Parse model `weight_class` values case-insensitively
+
+## v0.preview.66 - 2026-07-26
+
+### Added
+- Per-category context-window usage reporting over the protocol (`Op::ContextReport`)
+
+### Changed
+- Speed up Grep further by parallelizing the directory walk and search (large-corpus searches 40–70% faster)
+- Update and prune the built-in model catalogs
+
+### Fixed
+- Don't abort OAuth login when stdin closes
+
+## v0.preview.65 - 2026-07-25
+
+### Added
+- Add a `/pty` window that attaches a native terminal side panel
+- Render LaTeX math in the TUI via a delimiter normalizer and TeX→Unicode converter
+- Add an auto compact setting
+
+### Changed
+- `--tools` now sets the base tool set and `--include-tools` adds on top of it
+- Serialize concurrent Edit/Write calls that target the same file instead of only warning
+- Speed up Grep by dropping per-file parallel fan-out (~2× faster)
+- Use catalog keys as provider IDs
+- Cap skill catalog descriptions rendered into the system prompt
+- Extend short-prompt coverage to the system prompt and more tools
+- Harden release publication identity and atomicity
+
+## v0.preview.64 - 2026-07-24
+
+### Added
+- Add an Antix auth login command
+
+### Changed
+- Wrap tool header lines at the viewport edge instead of clipping them
+- Dependency updates
+
+### Fixed
+- Detect when iTerm2 blocks scrollback clearing: purge by default when verified safe, show a notice when blocked
+- Exit the TUI cleanly on broken stdout pipes
+- Omit absent optional arguments from tool call displays
+
 ## v0.preview.63 - 2026-07-21
 
 ### Added

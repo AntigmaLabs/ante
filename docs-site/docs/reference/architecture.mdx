@@ -67,23 +67,26 @@ In this direction, `Session` remains important, but as a container for user inte
 
 ## LLM providers
 
-Ante is provider-agnostic. Each provider implements a common interface for sending prompts and receiving streaming responses.
+Ante is provider-agnostic. Each provider implements a common interface for sending prompts and receiving streaming responses. Transient mid-stream failures reconnect within the turn; a streaming call that produces no usable event within five minutes fails with a timeout instead of hanging indefinitely.
 
 | Provider | Wire Format | Models |
 |---|---|---|
-| Anthropic | Messages API | Claude family (haiku-4-5, sonnet-4-5, sonnet-4-6, opus-4-6) |
+| Anthropic | Messages API | Claude 4.5 and 5 families |
 | Anthropic Subscription | Messages API | Claude family (OAuth) |
 | OpenAI | Responses API | GPT-5 family |
 | OpenAI Compatible | Chat Completions | Custom models |
 | OpenAI Subscription | Responses API | GPT-5 family (OAuth via Codex) |
-| Gemini | Gemini API | Gemini 3.1 family |
-| Vertex AI Gemini | Gemini API | Gemini 3.1 family |
-| Grok (xAI) | Responses API | Grok 4 |
-| Zai | OpenAI-compatible | GLM-5.1 |
-| Open Router | OpenAI-compatible | Multiple providers |
+| Gemini | Gemini API | Gemini 3.x family |
+| Vertex AI Gemini | Gemini API | Gemini 3.x family |
+| Grok (xAI) | Responses API | Grok 4.6 |
+| Zai | OpenAI-compatible | GLM-5.2 |
+| Open Router | OpenAI-compatible | Multi-vendor chat models |
+| Open Router Responses | Responses API | GPT models over OpenRouter |
+| Open Router Anthropic | Messages API | Claude models over OpenRouter |
 | DeepSeek | OpenAI-compatible | DeepSeek V4 family |
 | Ali Coding Plan | Messages API | Qwen, Kimi, GLM, MiniMax via DashScope |
 | Antix | Anthropic Messages | Claude, GPT, Gemini, Qwen, DeepSeek via Antigma |
+| Antix (API key) | Anthropic Messages | Same Antix catalog with API-key auth |
 | Local | OpenAI-compatible | GGUF models via llama.cpp |
 
 Providers are resolved from a catalog at session init time. The user can override via CLI flags (`--provider`, `--model`) or persistent settings.
@@ -115,7 +118,6 @@ pub trait Tool: Send + Sync {
 | `Glob` | File I/O | No | Find files by pattern |
 | `Grep` | File I/O | No | Search file contents with regex |
 | `Bash` | Shell | Yes | Execute shell commands; supports `run_in_background` for long-running processes |
-| `PTY` | Shell | No | Drive a persistent tmux session for interactive programs (opt-in) |
 | `Agent` | Builtin | No | Spawn sub-agent for complex tasks |
 | `TodoWrite` | Builtin | No | Manage task lists |
 | `WebFetch` | Builtin | Yes | Fetch and process web content |
@@ -127,8 +129,9 @@ pub trait Tool: Send + Sync {
 
 Tools can be filtered at session level:
 
-- **Include list** (`--include-tools`) — Only these tools are available
-- **Exclude list** (`--exclude-tools`) — These tools are removed
+- **Base list** (`--tools`) — Replace the default set with exactly these tools
+- **Include list** (`--include-tools`) — Add tools on top of the default or `--tools` base set
+- **Exclude list** (`--exclude-tools`) — Remove tools after the base and include lists are applied
 - Supports ToolMatcher syntax: `Bash(ls -la)`, `Agent(explore)`
 - Names are matched case-insensitively
 - The same selection gates dynamically registered tools (MCP servers), so they cannot bypass the filter

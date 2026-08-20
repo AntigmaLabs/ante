@@ -10,19 +10,36 @@ Ante persists configuration and state on the local filesystem. This page is a re
 | Location | Purpose |
 |---|---|
 | `~/.ante/settings.json` | User preferences (model, provider, theme, MCP servers) |
+| `~/.ante/<name>.settings.json` | Whole-file settings profile selected by `--profile <name>` or `ANTE_PROFILE` |
 | `~/.ante/catalog.json` | Custom provider/model catalog |
+| `~/.ante/auth/` | OAuth credentials and API keys pasted in-app (owner-only; env vars take precedence) |
 | `~/.ante/AGENTS.md` | Global instructions injected into every project session |
 | `~/.ante/skills/` | User-level skills |
 | `~/.ante/agents/` | User-level sub-agents |
+| `~/.ante/.system/` | Bundled skills and sub-agents managed by the installed Ante version |
 | `~/.ante/sessions/<session-id>/` | Persisted sessions (for `/resume` and `--resume`) |
 | `~/.ante/projects/<project-id>/memory/` | Per-project auto-memory |
-| `~/.ante/cache/<project-id>/` | Per-project temporary files |
+| `~/.ante/cache/` | Oversized WebFetch response spill files; entries older than 48 hours are removed at startup |
+| `~/.ante/run/jobs/<proc-id>/` | Background Bash job handles: `status.json`, `stdout.txt`, and `stderr.txt` |
+| `~/.ante/tmp/` | Disposable staging files; entries older than 48 hours are removed at startup |
+| `~/.ante/logs/<YYYY-MM-DD>/` | Application and crash logs, partitioned by UTC date (`ante.<pid>.log` and `ante.<pid>.crash.log`) |
+| `~/.ante/logs/llama-server.log` | Local inference server log |
+| `~/.ante/models/` | Default directory for local GGUF models |
+| `~/.ante/llama.cpp/` | Managed llama.cpp installation |
+| `~/.ante/offline-config.json` | Offline-mode engine, model, and server preferences |
+| `~/.ante/verified_models.json` | Optional user additions and overrides for the verified local-model list |
+| `~/.ante/channels.json` | Slack and Discord gateway configuration |
+| `~/.ante/versions.json` | Cached update check and release-note state |
+| `~/.ante/user_input_history.jsonl` | TUI prompt history |
 | `~/.ante/tip_history.json` | Show history for [spinner tips](/usage/tui#spinner-tips) (delete to reset the rotation) |
+| `~/.ante/installation-id` | Random installation label for [telemetry](/configuration/preference#identity), written only when telemetry is configured (delete to reset the identity) |
 | `AGENTS.md` | Project instructions injected alongside global instructions |
 | `.ante/` | Project-local configuration (skills, sub-agents) |
 | `.agents/`, `.claude/` | Additional project-local skill/sub-agent directories |
 
 `<project-id>` is a sanitized form of the project's absolute path. The `ANTE_HOME` environment variable overrides `~/.ante`.
+
+Background job directories are live process state rather than scratch data. Ante never removes a live job because of age; after a job settles, its directory is retained for 24 hours and then collected on a later startup.
 
 ## `settings.json`
 
@@ -30,7 +47,7 @@ Stores user preferences. All fields are optional.
 
 ```json
 {
-  "model": "claude-sonnet-4-6",
+  "model": "claude-sonnet-5",
   "provider": "anthropic",
   "theme": "default",
   "permission_mode": "strict",
@@ -42,11 +59,11 @@ Stores user preferences. All fields are optional.
   "has_completed_onboarding": true,
   "status_line": ["model-name", "current-dir"],
   "model_effort": {
-    "claude-sonnet-4-6": "medium",
+    "claude-sonnet-5": "medium",
     "gpt-5.4": "high"
   },
   "provider_model": {
-    "anthropic": "claude-sonnet-4-6"
+    "anthropic": "claude-sonnet-5"
   },
   "mcp_servers": {
     "filesystem": {
@@ -57,17 +74,16 @@ Stores user preferences. All fields are optional.
 }
 ```
 
-See [Preferences](/configuration/preference) for the full field reference and the precedence rules between this file, environment variables, and CLI flags.
+Named profile files have the same schema but replace `settings.json` wholesale for that run; they do not inherit missing values from it. See [Preferences](/configuration/preference#named-profiles) for profile behavior and the full field reference.
 
 ## `catalog.json`
 
-Adds or overrides providers and models on top of the built-in catalog. Both top-level keys are optional and keyed by id: a `providers` entry whose key matches a built-in (e.g. `openai`) replaces it, a new key adds a provider, and a `models` entry patches that model's fields wherever it is defined.
+Adds or overrides providers and models on top of the built-in catalog. Both top-level keys are optional. The `my-provider` key is what you pass to `--provider`. An entry whose key matches a built-in (e.g. `openai`) patches that provider field by field, a new key adds a provider, and a `models` entry patches that model's fields wherever it is defined.
 
 ```json
 {
   "providers": {
     "my-provider": {
-      "id": "my-provider",
       "display_name": "My Provider",
       "base_url": "https://api.example.com/v1",
       "wire_style": "OpenAiCompatible",
@@ -75,7 +91,7 @@ Adds or overrides providers and models on top of the built-in catalog. Both top-
     }
   },
   "models": {
-    "claude-sonnet-4-6": { "effort": "high", "max_tokens": 64000 }
+    "claude-sonnet-5": { "effort": "high", "max_tokens": 64000 }
   }
 }
 ```
@@ -97,8 +113,18 @@ See [AGENTS.md](/extend/agents-md) for usage guidance and precedence details.
 ```
 ~/.ante/
 ├── settings.json       # User preferences
+├── <name>.settings.json # Named settings profiles
 ├── catalog.json        # Custom provider/model catalog
+├── auth/               # OAuth credentials and pasted API keys
 ├── AGENTS.md           # Global instructions
+├── installation-id     # Random telemetry installation label
+├── user_input_history.jsonl # TUI prompt history
+├── tip_history.json    # Spinner-tip history
+├── versions.json       # Update cache and release-note state
+├── channels.json       # Gateway configuration
+├── offline-config.json # Offline-mode preferences
+├── verified_models.json # Optional local-model catalog overrides
+├── .system/            # Bundled skills and sub-agents (Ante-managed)
 ├── skills/             # User-level skills
 ├── agents/             # User-level sub-agents
 ├── sessions/           # Persisted sessions (for /resume)
@@ -106,8 +132,16 @@ See [AGENTS.md](/extend/agents-md) for usage guidance and precedence details.
 │   └── <project-id>/
 │       └── memory/
 │           └── MEMORY.md
-└── cache/              # Per-project temporary files
-    └── <project-id>/
+├── cache/              # WebFetch spills (48-hour scratch)
+├── run/
+│   └── jobs/
+│       └── <proc-id>/  # Background Bash status and output
+├── tmp/                # Disposable staging (48-hour scratch)
+├── logs/
+│   ├── <YYYY-MM-DD>/   # ante.<pid>.log and crash logs
+│   └── llama-server.log
+├── models/             # Local GGUF models
+└── llama.cpp/          # Managed local inference engine
 ```
 
 ### Project-local

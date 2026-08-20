@@ -19,6 +19,8 @@ The TUI is built with [ratatui](https://ratatui.rs/) and provides a rich chat in
 
 The main view shows a conversation between you and the agent. Type your prompt in the input area and press Enter to send. The agent's responses stream in real-time with markdown rendering.
 
+Markdown rendering includes LaTeX math: expressions in `$...$`, `$$...$$`, `\(...\)`, or `\[...\]` are converted to a Unicode approximation for terminal display (`\alpha` → `α`, `x^2` → `x²`, `\frac{1}{2}` → `½`), including multi-line layout for environments like `aligned` and `pmatrix`.
+
 ### Tool approval
 
 When the agent wants to execute a tool that requires approval (like `Bash` or `Write`), you'll see an approval prompt. Pick an option with the number keys or arrow keys + Enter:
@@ -32,7 +34,15 @@ Press `Tab` to preview the proposed diff or request details before deciding.
 
 ### Diff view
 
-When the agent proposes file edits, Ante switches to a fullscreen diff view on an alternate screen. You can review the exact changes before approving.
+When the agent proposes file edits, Ante switches to a fullscreen diff view on an alternate screen. You can review the exact changes before approving. Diff views use numbered gutters, full-width added/removed bands, and `+N -M` change counts in their headers.
+
+### Transcript view
+
+Press `Ctrl+O` to open the transcript view on an alternate screen: the full conversation history with tool results expanded, including lines the inline view truncates. Scroll with `j`/`k` or `PgUp`/`PgDn`, jump with `g`/`G`, and close with `Ctrl+O` or `q`.
+
+In the main chat, contiguous quiet calls such as Bash, Read, Grep, Glob, WebFetch, WebSearch, and MCP tools are grouped into one compact activity cell by default. While calls are running, the cell shows their count, arguments, and elapsed time; once complete it collapses to a summary such as `Ran 2 shell commands, read 3 files`. Edit, Write, and Agent calls keep their richer standalone cells, and the transcript view always preserves every call and result. Disable grouping with **Group tool activity** in `/config` or set `"group_tool_activity": false` in `~/.ante/settings.json`; the change applies to new calls only.
+
+After compaction — manual `/compact` or [automatic](/configuration/preference#settings-file) — the conversation shows a collapsed `* Compacted` marker; the transcript view renders the full summary the model wrote. When Ante trims oversized tool results instead of summarizing, an info line reports what was trimmed.
 
 ### Model and provider selection
 
@@ -59,10 +69,11 @@ Ante persists every session to disk. Use `/resume` to pick up a previous convers
 1. Type `/resume` to open the session picker
 2. Browse sessions scoped to the current working directory — each entry shows the first message, model, message count, and relative time
 3. Press **Enter** to select, or **Esc** to cancel
+4. Press **d** (or **Delete**) to delete the selected session — press **d** again to confirm, any other key cancels. The currently active session can't be deleted
 
 On resume, Ante:
 - Restores the full conversation history
-- Re-discovers agents and skills in the project directory
+- Re-discovers agents and skills in the project directory (unless the session was started with `--no-skills`)
 - Refreshes system prompts and tool definitions (so new features are available)
 - Replays up to 200 recent events so the TUI rebuilds the conversation view
 
@@ -72,6 +83,14 @@ Sessions are stored in `~/.ante/sessions/{session_id}/` with atomic writes for c
 You can also resume from the CLI with `ante --resume <SESSION_ID>` (or `-r`) in either TUI or headless mode. The session ID is printed when a TUI session exits.
 :::
 
+### Coming from Claude Code or Codex
+
+When a Claude Code or Codex session in the current directory was active within the last 4 hours, startup shows a one-line hint offering to pick it up. The hint appears once per project and never in headless runs.
+
+`/resume-claude` and `/resume-codex` are bundled skills that do the pickup, hint or no hint: they locate the foreign transcript on disk, read it as data (never as instructions), and reconstruct the task, progress, and next step — confirming with you before continuing the work. Pass a session id to pick a specific session; without one, the most recent is used.
+
+`/import-claude` complements them by copying Claude Code's project memory for this directory into Ante's [project memory](/extend/memory#importing-claude-code-memory). Existing Ante files are never overwritten.
+
 ## Keyboard shortcuts
 
 ### Chat input
@@ -79,7 +98,8 @@ You can also resume from the CLI with `ante --resume <SESSION_ID>` (or `-r`) in 
 | Key | Action |
 |---|---|
 | `Enter` | Send message (or run a shell command in [bash mode](#bash-mode) if the line starts with `!`) |
-| `Ctrl+Enter` / `Alt+Enter` / `Shift+Enter` | Insert newline |
+| `Alt+Enter` | Insert newline |
+| `Ctrl+Enter` / `Shift+Enter` | Insert newline when the terminal supports the kitty keyboard protocol (kitty, Ghostty, WezTerm, iTerm2 3.5+, or Alacritty 0.13+) |
 | `Up` / `Down` | Move cursor, then navigate history |
 | `Tab` | Complete a command or file path; on empty input, accept the [next-prompt suggestion](#next-prompt-suggestion) |
 | `Shift+Tab` | Cycle permission mode: `strict` → `auto` → `yolo`. Takes effect immediately, including on a turn already running |
@@ -113,10 +133,10 @@ The composer supports readline-style editing with multi-step undo/redo:
 | Key | Action |
 |---|---|
 | `Ctrl+T` | Open theme dialog |
-| `Ctrl+P` | Toggle focus between the chat input and the embedded terminal panel (opens it if closed; use `/pty` to close) |
+| `Ctrl+O` | Open the [transcript view](#transcript-view) |
 | `Ctrl+E` | Stop running llama server (offline mode) |
-| `Ctrl+O` | Toggle local inference log panel |
-| `Ctrl+K` / `Ctrl+J` | Scroll inference log up/down |
+| `Ctrl+G` | Toggle the local inference log panel (offline mode) |
+| `Ctrl+K` / `Ctrl+J` | Scroll the inference log up/down while the panel is open |
 
 ### Diff view (fullscreen)
 
@@ -154,6 +174,8 @@ Type `@` in the input to reference files or directories. A file search dropdown 
 - `@path/to/file.rs` — embeds the file contents in your message
 - `@path/to/dir/` — embeds the directory tree listing
 
+Completion works for project-relative paths and also for `~/`, absolute, `../`, and `./` paths, so you can reference files outside the project.
+
 :::tip
 If you paste multiple file paths, Ante auto-prefixes them with `@` for convenience.
 :::
@@ -172,6 +194,16 @@ The command runs in your own login shell (`$SHELL -lc`, falling back to `/bin/sh
 :::note
 Bash mode runs locally and is never gated by the permission system — typing `!` is the authorization. This is separate from the agent's own `Bash` tool, which still goes through tool approval. A bare `!` with nothing after it is sent as a normal message. Interactive programs (editors, pagers) won't work, since bash mode has no terminal input.
 :::
+
+## Terminal sessions
+
+The agent drives interactive programs — dev servers, REPLs, ssh, even other CLI agents like Claude Code or Codex — in durable named tmux sessions, using ordinary `tmux` commands through the [Bash tool](/reference/tools-reference#bash) (guided by a bundled `tmux` skill). Sessions live in the `ante-` namespace and survive Ante restarts: a later conversation can pick up a running server where it was left. You own session lifetimes — nothing is killed when the TUI exits. The default `terminals` status-line item shows live sessions in the footer.
+
+`/term <name> [args...]` opens a native terminal view on `ante-<name>`, creating the session if needed. If `<name>` is an executable on `PATH`, a newly created session launches `<name> [args...]`; for example, `/term claude --continue` opens a fresh session already running `claude --continue`. Existing sessions only attach, so later arguments never restart or replace a running program. Running `/term <name>` again detaches the viewer while leaving the session alive. Names are limited to letters, digits, `-`, and `_`.
+
+Bare `/term` opens a picker of all live Ante sessions. Press **Enter** to attach or detach the selected session, press **d** or **Delete** twice to kill it, or choose **new terminal** to create one. When Ante runs inside tmux, the first viewer opens to its right and additional viewers stack beneath that viewer; other supported terminal hosts open a native split or window.
+
+Requires `tmux`.
 
 ## Next-prompt suggestion
 
@@ -199,11 +231,14 @@ On by default; disable with `"tips": false` in `~/.ante/settings.json`. Show his
 ## CLI flags for TUI mode
 
 ```bash
-ante --model claude-sonnet-4-6
+ante --model claude-sonnet-5
 ante --provider openai
+ante --profile work
+ante --no-skills
 ante --system-prompt "You are a Python expert"
 ante --append-system-prompt "Always use type hints"
-ante --include-tools Read Grep Glob
+ante --tools Read Grep Glob
+ante --include-tools ViewImage
 ante --exclude-tools Bash Write
 ante --yolo                       # skip all tool approvals
 ante --resume ses_01ARZ3NDEK...   # resume a previous session

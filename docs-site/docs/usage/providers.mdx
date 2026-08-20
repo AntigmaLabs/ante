@@ -11,11 +11,11 @@ This page covers the everyday tasks: picking a provider, authenticating, and cus
 
 You can set your provider three ways, in order of precedence:
 
-1. **CLI flag** — `ante --provider anthropic --model claude-sonnet-4-6`
+1. **CLI flag** — `ante --provider anthropic --model claude-sonnet-5`
 2. **Settings file** — set `provider` and `model` in `~/.ante/settings.json`
 3. **Auto-detect** — if you specify neither, Ante uses the first provider you have credentials for (and `local` if none).
 
-Every provider id you can pass to `--provider` is listed in the [Catalog Reference](/reference/catalog-reference#built-in-providers).
+Every provider key you can pass to `--provider` is listed in the [Catalog Reference](/reference/catalog-reference#built-in-providers).
 
 Mid-session, type `/providers` in the TUI: pick a connected provider, then confirm a model (and effort) from its scoped picker. Ante remembers the last model you used on each provider. See [Models, Providers & Effort](/usage/models-and-thinking#switching-providers).
 
@@ -25,10 +25,16 @@ Most providers read an API key from an environment variable:
 
 ```bash
 export ANTHROPIC_API_KEY="sk-ant-..."
-ante --provider anthropic --model claude-sonnet-4-6
+ante --provider anthropic --model claude-sonnet-5
 ```
 
 Each provider's exact auth method (env var name or OAuth) is in the [Catalog Reference](/reference/catalog-reference#built-in-providers).
+
+### Paste an API key
+
+You can also paste a key directly in the onboarding dialog (reopen it any time with `/welcome`): choose **Use API key**, and Ante auto-detects the provider from the key prefix, masks the input, and validates the key against the provider before storing it owner-only under `~/.ante/auth/`. A key set in the environment always takes precedence over a stored one.
+
+With Anthropic selected on the API-key step, press `Tab` to sign in to the Anthropic Console in your browser instead — Ante provisions an API key for you automatically, without the key ever touching the clipboard.
 
 ### Subscription login (OAuth)
 
@@ -54,7 +60,6 @@ Most hosted endpoints are OpenAI-compatible. Register one with `wire_style: "Ope
 {
   "providers": {
     "together": {
-      "id": "together",
       "display_name": "Together AI",
       "base_url": "https://api.together.xyz/v1",
       "wire_style": "OpenAiCompatible",
@@ -86,7 +91,6 @@ Omit `auth` for a provider that needs no key, and leave `preferred_models` off w
 {
   "providers": {
     "ollama": {
-      "id": "ollama",
       "display_name": "Ollama",
       "base_url": "http://localhost:11434/v1",
       "wire_style": "OpenAiCompatible"
@@ -116,6 +120,28 @@ preset value:
 }
 ```
 
+### Send extra request parameters
+
+Gateways and proxies often require a parameter Ante doesn't model. Put it in `extra_body` and it is merged into every chat and streaming request body for that provider:
+
+```json
+{
+  "providers": {
+    "my-gateway": {
+      "display_name": "My Gateway",
+      "base_url": "https://gateway.example.com/v1",
+      "wire_style": "OpenAiCompatible",
+      "auth": { "bearer": { "env_key": "MY_GATEWAY_API_KEY" } },
+      "extra_body": {
+        "service_tier": "priority"
+      }
+    }
+  }
+}
+```
+
+`extra_body` can only add fields — keys Ante already generates for that wire style (`model`, `messages`, `stream`, and friends) are dropped at startup with a notice, and the provider still loads. See [Extra request fields](/reference/catalog-reference#extra-request-fields) for the full reserved list.
+
 ### Override model defaults
 
 The `models` section patches a model by id without redefining it. Each field you set replaces the built-in default; everything else is left alone:
@@ -123,8 +149,8 @@ The `models` section patches a model by id without redefining it. Each field you
 ```json
 {
   "models": {
-    "claude-opus-4-8": { "effort": "max" },
-    "claude-sonnet-4-6": { "effort": "high", "max_tokens": 64000 },
+    "claude-opus-5": { "effort": "max" },
+    "claude-sonnet-5": { "effort": "high", "max_tokens": 64000 },
     "gpt-5.5": { "temperature": 0.2 }
   }
 }

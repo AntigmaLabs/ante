@@ -7,15 +7,22 @@ description: "Settings file, environment variables, and directory structure"
 
 Ante stores user preferences in `~/.ante/settings.json`.
 
-Most of these settings can also be viewed and changed interactively with the `/config` command in the TUI — a searchable settings dialog with in-place toggles (tips, ambient predictions, short prompt, resize reflow, default permission mode, update channel) and shortcuts into the dedicated dialogs (theme, model, provider, status line, MCP servers, offline mode). Changes are persisted to `settings.json` immediately; settings consumed at startup, such as `resize_reflow`, are marked "(next session)" in the dialog and take effect on the next session.
+Most of these settings can also be viewed and changed interactively with the `/config` command in the TUI — a searchable settings dialog with in-place toggles (tips, ambient predictions, grouped tool activity, short prompt, auto compact, resize reflow, default permission mode, update channel) and shortcuts into the dedicated dialogs (theme, model, provider, status line, MCP servers, offline mode). Changes are persisted to `settings.json` immediately; settings consumed at startup, such as `resize_reflow`, are marked "(next session)" in the dialog and take effect on the next session.
 
 An example `settings.json`:
 
 ```json
 {
-  "model": "claude-sonnet-4-6",
+  "model": "claude-sonnet-5",
   "provider": "anthropic",
   "theme": "default",
+  "append_system_prompt": "Prefer small, focused commits.",
+  "tools": ["Read", "Write", "Edit", "Bash"],
+  "auto_memory": true,
+  "skills": true,
+  "include_skills": ["deploy-checklist"],
+  "exclude_skills": ["noisy-skill"],
+  "session_save": true,
   "permission_mode": "auto",
   "permissions": {
     "allow": ["Bash(npm run *)"],
@@ -25,7 +32,9 @@ An example `settings.json`:
   "ambient_prompt_suggestion": true,
   "ambient_thinking_phrase": true,
   "tips": true,
+  "group_tool_activity": true,
   "short_prompt": false,
+  "auto_compact": true,
   "channel": "stable",
   "resize_reflow": "conservative",
   "status_line": ["model-name", "current-dir"],
@@ -35,11 +44,11 @@ An example `settings.json`:
     "refresh_interval": 5
   },
   "model_effort": {
-    "claude-sonnet-4-6": "medium",
+    "claude-sonnet-5": "medium",
     "gpt-5.4": "high"
   },
   "provider_model": {
-    "anthropic": "claude-sonnet-4-6",
+    "anthropic": "claude-sonnet-5",
     "openai": "gpt-5.6-sol"
   },
   "mcp_servers": {
@@ -56,13 +65,23 @@ An example `settings.json`:
 | `model` | Default model name |
 | `provider` | Default API provider |
 | `theme` | TUI color theme |
+| `system_prompt` | Replacement system prompt for fresh sessions. The `--system-prompt` / `--system-prompt-file` CLI flags override it for a run. Persisted prompt text is redacted from `ante rage` bundles |
+| `append_system_prompt` | Extra text appended to the system prompt of fresh sessions. `--append-system-prompt` overrides it for a run |
+| `tools` | Base tool set for fresh sessions, replacing the default set (an empty list selects no tools). `--tools` overrides it for a run; `--include-tools` / `--exclude-tools` still apply on top |
+| `auto_memory` | Whether [auto-memory](/extend/memory) is on. When unset, the launch mode decides: on in the TUI, off in headless runs. `--enable-auto-memory` / `--disable-auto-memory` override it for a run |
+| `skills` | Whether [skills](/extend/skills) are discovered and loaded. On unless set to `false`; `--skills` / `--no-skills` override it for a run |
+| `include_skills` | Skill names equipped on top of the session's base skill set — additive, like `--include-tools` for tools. Names match exactly |
+| `exclude_skills` | Skill names removed from every session's skill set. Wins over `include_skills`; names match exactly. See [Selecting individual skills](/extend/skills#selecting-individual-skills) |
+| `session_save` | Whether session transcripts and resumable snapshots are saved. On unless set to `false`; `--session-save` / `--no-session-save` override it for a run |
 | `permission_mode` | Default permission mode (`strict`, `auto`, or `yolo`). `strict` and `auto` are written automatically when you cycle modes with **Shift+Tab** in the TUI; `yolo` remains session-only. Unrecognized values are ignored rather than failing the whole file |
 | `permissions` | Persistent tool permission rules, grouped by `allow`, `ask`, and `deny` matchers (see [Permissions](/configuration/permission)) |
 | `has_completed_onboarding` | Whether the onboarding flow has been completed |
 | `ambient_prompt_suggestion` | Whether the TUI shows a [next-prompt suggestion](/usage/tui#next-prompt-suggestion) as ghost text after a turn. On unless set to `false` |
 | `ambient_thinking_phrase` | Whether the TUI predicts a [task-specific spinner phrase](/usage/tui#spinner-thinking-phrase) while you type. On unless set to `false` |
 | `tips` | Whether the TUI shows a [tip line](/usage/tui#spinner-tips) under the spinner while the agent works. On unless set to `false` |
-| `short_prompt` | Use shorter built-in tool descriptions to shrink the system prompt, for new and resumed sessions. Off unless set to `true`; the `--short-prompt` CLI flag enables it for a single run |
+| `group_tool_activity` | Collapse contiguous quiet tool calls into a single activity summary in the chat. On unless set to `false`; full per-call details remain in the **Ctrl+O** transcript. Changes apply to new tool activity only |
+| `short_prompt` | Use the compact prompt set — a condensed system prompt and shorter built-in tool descriptions — for new and resumed sessions. Off unless set to `true`; the `--short-prompt` CLI flag enables it for a single run |
+| `auto_compact` | Proactively summarize conversation history as it nears the model's context limit. On unless set to `false`; `/compact` and overflow recovery still work when disabled. Toggling it in `/config` applies to the running session |
 | `channel` | Release channel `ante update` tracks (`stable` or `nightly`). Defaults to `stable`; legacy `latest` values are treated as `stable`. See [Update & Channels](/start/update). |
 | `resize_reflow` | Scrollback strategy on terminal resize: `conservative` (default) or `purge` (see below) |
 | `status_line` | Items to display in the TUI status line footer (see below) |
@@ -71,9 +90,22 @@ An example `settings.json`:
 | `provider_model` | Last model used per provider — a provider switch adopts this before falling back to the provider's default model. Written automatically on every model/provider selection |
 | `mcp_servers` | MCP servers to launch on session start (see [MCP Servers](/extend/mcp)) |
 
+### Named profiles
+
+Use `--profile <name>` to replace `settings.json` with a separate settings file for one TUI or headless run:
+
+```bash
+ante --profile work
+ANTE_PROFILE=review ante -p "review this change"
+```
+
+The profile `work` reads and writes `~/.ante/work.settings.json`. Profiles are whole-file replacements, not layers: values omitted from the profile fall back to Ante defaults, not to `settings.json`. A new name starts from defaults and its file is created on the first saved change. Profile names may contain lowercase ASCII letters, digits, `-`, and `_`. CLI flags still override the selected profile.
+
+The built-in `bare` profile ships with Ante: the first `--profile bare` run seeds `~/.ante/bare.settings.json` with onboarding and ambient UI features disabled, plus `auto_memory`, `skills`, and `session_save` set to `false` (and no MCP servers, since the profile defines none). After that it behaves like any other profile — edit the file or change settings in `/config` and they persist. Explicit run flags such as `--enable-auto-memory` still override it per run.
+
 ### Status line
 
-The `status_line` field controls which items appear in the TUI's footer bar. It accepts an array of item identifiers:
+The `status_line` field controls which items appear in the top row of the TUI footer. Permission mode and live activity appear on a separate row beneath it, so they do not compete with identity items for width. The field accepts an array of item identifiers:
 
 | Item | Description |
 |---|---|
@@ -84,6 +116,7 @@ The `status_line` field controls which items appear in the TUI's footer bar. It 
 | `git-branch` | Current Git branch (omitted when unavailable) |
 | `pr-link` | GitHub pull request link for the current branch (requires `gh`) |
 | `context-used` | Context-window usage, shown as `N% ctx` of the window remaining (omitted until known) |
+| `terminals` | Live `ante-*` tmux sessions, shown by name (omitted when none are running or tmux is unavailable) |
 
 Default: all items, in the order above. Configure via `~/.ante/settings.json` or the `/statusline` command in the TUI.
 
@@ -118,7 +151,7 @@ The JSON input is a compatible subset of [Claude Code's statusline input](https:
   "cwd": "/work/repo",
   "session_id": "ses_...",
   "version": "0.1.0",
-  "model": { "id": "claude-sonnet-4-6", "display_name": "claude-sonnet-4-6" },
+  "model": { "id": "claude-sonnet-5", "display_name": "claude-sonnet-5" },
   "workspace": { "current_dir": "/work/repo", "project_dir": "/work/repo" },
   "thinking": { "enabled": true },
   "pr": { "number": 7, "url": "https://github.com/..." },
@@ -201,10 +234,40 @@ Settings can be overridden per-session via CLI flags.
 | `MODEL_TOP_P` | Override model top_p sampling parameter (float) |
 | `MODEL_MAX_TOKENS` | Override max output tokens (integer) |
 | `MODEL_CONTEXT_LIMIT` | Override max context window size (integer) |
-| `ANTE_LOCAL_PROVIDER_PORT` | Override the local provider port (default: 8080) |
+| `ANTE_LOCAL_PROVIDER_PORT` | Port assumed for the `local` provider when no live model server registration provides one (default: 8080) |
 | `ANTE_HOME` | Override the home config directory (default: `~/.ante`) |
+| `ANTE_PROFILE` | Select a named settings profile for TUI or headless runs; equivalent to `--profile <name>` |
 | `ANTE_INSTALL_DIR` | Installer-only override for the binary install directory (default: `~/.ante/bin`) |
+| `ANTE_OFFLINE_CONTEXT` | Override the local model context-window cap in tokens (see [Offline Mode](/local/offline#environment-variables)) |
 | `ANTE_OPENAI_TRANSPORT` | OpenAI Responses transport: `http_sse` (default) or `websocket_auto` (see [OpenAI transports](/reference/catalog-reference#openai-transports)) |
+| `ANTE_TELEMETRY` | Disable OpenTelemetry export with `off`, `false`, `0`, `disable`, or `disabled` (case-insensitive) |
+| `OTEL_EXPORTER_OTLP_ENDPOINT` | Send application metrics and logs to this OTLP/HTTP base URL; overrides any endpoint embedded in the binary |
+| `OTEL_EXPORTER_OTLP_AUTH` | Optional base64-encoded `user:token` credentials sent as HTTP Basic authentication to the OTLP endpoint |
+| `ANTE_USER` | Optional operator name attached to telemetry as `user.name`; unset by default (see [Identity](#identity)) |
+| `ANTE_USER_ID` | Optional operator-chosen identifier attached to telemetry as `user.id`; unset by default |
+| `ANTE_ENV` | Group telemetry by deployment environment (default: `local`) |
+| `RUST_LOG` | Override the application log filter (release default: `ante=info`); applies to local and exported logs |
+
+### Telemetry
+
+Ante initializes an OpenTelemetry exporter when `OTEL_EXPORTER_OTLP_ENDPOINT` is set or when the binary was built with an embedded endpoint. The exporter sends metrics and application `tracing` logs over OTLP/HTTP. Set `ANTE_TELEMETRY=off` to disable the exporter regardless of how its endpoint was configured; local logs under `~/.ante/logs/` continue to be written.
+
+The metrics cover tool and model call duration and errors, plus token counts when the provider reports usage. Labels are drawn from bounded sets — tool name, model, provider, Ante version, OS/architecture — and none of them names a person or a machine.
+
+#### Identity
+
+Exports are anonymous by default. There is no username fallback, no hostname, no MAC address, no machine id. Two identifiers ride along on their own; two more appear only when you set them:
+
+| Identifier | Source | Purpose |
+|---|---|---|
+| Run id | Random per process, never persisted | Gives each concurrently running Ante its own metric series, which cumulative counters require. Exported as `service.instance.id` on metrics only. |
+| Installation id | A random memorable label such as `clever-otter-x7f2`, stored in `~/.ante/installation-id` | Distinguishes "one machine reported 500 errors" from "500 machines did". Minted at the first startup that has telemetry configured, and word-shaped so you can quote it in a bug report — `ante rage` includes it. The words encode nothing about you, your host, or any account. |
+| `user.name` | `ANTE_USER`, explicit only | Names whoever operates a deployment. CI and eval runners set it; a laptop leaves it unset. |
+| `user.id` | `ANTE_USER_ID`, explicit only | An operator-chosen identifier when a name isn't the right shape. |
+
+Delete `~/.ante/installation-id` to reset to a fresh identity; it is recreated on the next run that has telemetry configured. A home directory Ante cannot read or write simply reports without one. Deployments can also group data with `ANTE_ENV` (default: `local`).
+
+All application tracing records that pass the active `RUST_LOG` filter are exported too. Log *bodies* are not scrubbed, so a message that interpolates a home path or a tool argument still carries it even though no attribute names you — only point `OTEL_EXPORTER_OTLP_ENDPOINT` at a collector you trust.
 
 ## Directory structure
 
@@ -213,9 +276,17 @@ Settings can be overridden per-session via CLI flags.
 ```
 ~/.ante/
 ├── settings.json      # User preferences
+├── <name>.settings.json # Named settings profile selected by --profile
 ├── catalog.json       # Custom provider/model catalog
+├── auth/              # OAuth credentials and pasted API keys
 ├── AGENTS.md          # Global instructions
+├── installation-id    # Random telemetry installation label
 ├── sessions/          # Persisted sessions (for /resume)
+├── projects/          # Per-project auto-memory
+├── cache/             # WebFetch spill files (48-hour scratch)
+├── run/jobs/          # Background Bash status and output
+├── tmp/               # Disposable staging (48-hour scratch)
+├── logs/              # Application logs partitioned by UTC date
 ├── skills/            # User-level skills
 └── agents/            # User-level sub-agents
 ```
@@ -245,7 +316,7 @@ Project instructions are found by walking up from the working directory: in each
 
 ### Project memory (`~/.ante/projects/`)
 
-Project-scoped state — memory, persisted sessions, event logs — lives under `~/.ante/projects/<project-id>/`, where `<project-id>` is a sanitized form of the project's absolute path.
+Project-scoped auto-memory lives under `~/.ante/projects/<project-id>/`, where `<project-id>` is a sanitized form of the project's absolute path. Persisted sessions live separately under `~/.ante/sessions/`.
 
 ```
 ~/.ante/projects/
@@ -254,9 +325,11 @@ Project-scoped state — memory, persisted sessions, event logs — lives under 
         └── MEMORY.md      # Auto-memory for this project
 ```
 
-### Temporary files
+### Runtime and temporary files
 
-Per-project temp files live under `~/.ante/cache/<project-id>/`.
+Oversized WebFetch responses spill into `~/.ante/cache/`, while disposable staging uses `~/.ante/tmp/`; entries in both scratch tiers are removed at startup after 48 hours. Background Bash handles live under `~/.ante/run/jobs/<proc-id>/` and are retained while their process is live, then for 24 hours after it settles. Application logs live under `~/.ante/logs/<YYYY-MM-DD>/`, partitioned by UTC date.
+
+See [Storage Reference](/reference/storage-reference) for the complete layout and file purposes.
 
 ## Precedence
 

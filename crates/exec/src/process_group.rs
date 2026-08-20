@@ -95,3 +95,32 @@ pub fn kill_by_pid(pid: u32) -> io::Result<()> {
 pub fn kill_by_pid(_pid: u32) -> io::Result<()> {
     Ok(())
 }
+
+#[cfg(unix)]
+/// Whether any process remains in the group led by `pgid`, including members
+/// that outlived the leader. Signal 0 runs `killpg`'s existence and permission
+/// checks without delivering anything, so `EPERM` (the group is another user's)
+/// counts as alive. Groups 0 and 1 are rejected rather than probed: to `killpg`
+/// they mean the caller's own group and init's.
+///
+/// Answers about the group id, not about the job that created it: a recycled
+/// pgid reads as alive.
+pub fn process_group_is_alive(pgid: u32) -> bool {
+    if pgid <= 1 {
+        return false;
+    }
+    let Ok(pgid) = libc::pid_t::try_from(pgid) else {
+        return false;
+    };
+    if unsafe { libc::killpg(pgid, 0) } == 0 {
+        return true;
+    }
+    io::Error::last_os_error().raw_os_error() == Some(libc::EPERM)
+}
+
+#[cfg(not(unix))]
+/// No portable existence probe, so this reports every group as alive — callers
+/// fail safe by treating its processes as still running.
+pub fn process_group_is_alive(_pgid: u32) -> bool {
+    true
+}

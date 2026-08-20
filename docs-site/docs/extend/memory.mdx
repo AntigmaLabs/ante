@@ -9,7 +9,7 @@ Ante has a persistent memory system that lets the agent build up knowledge acros
 
 Each project has a memory directory at `~/.ante/projects/<project-id>/memory/`, where `<project-id>` is a sanitized form of the project's absolute path. The key file is `MEMORY.md` — its contents are injected into the system prompt at the start of every conversation.
 
-Auto-memory is enabled by default in the interactive TUI and disabled by default in headless `-p` runs. Use `--enable-auto-memory` to opt a headless run into memory, or `--disable-auto-memory` to turn it off for a TUI session.
+Auto-memory is enabled by default in the interactive TUI and disabled by default in headless `-p` runs. Use `--enable-auto-memory` to opt a headless run into memory, or `--disable-auto-memory` to turn it off for a TUI session. To make either choice persistent, set `auto_memory` in [`settings.json`](/configuration/preference#settings-file).
 
 ### Automatic behavior
 
@@ -83,6 +83,10 @@ The memory system follows these principles:
 - **Semantic** — Organize by topic, not chronologically
 - **Accurate** — Update or remove outdated information
 - **Actionable** — Record what worked, what didn't, and why
+
+## Importing Claude Code memory
+
+`/import-claude` copies Claude Code's project memory for the current directory — the top-level `.md` files under `~/.claude/projects/<project-dir>/memory/` — into Ante's project memory. Existing Ante files are never overwritten, so re-running the command is a clean no-op. The command reports which files were imported and which were skipped because they already existed.
 
 ## Memory is per-project
 

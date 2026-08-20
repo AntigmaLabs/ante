@@ -40,7 +40,7 @@ Only the **stdio** transport is supported — Ante spawns the command, speaks MC
 
 Each tool offered by a server is exposed to the agent as `mcp__<server>__<tool>`. Non-alphanumeric characters in either part are replaced with `_`, so a server keyed `my-server` with a tool named `do.thing` becomes `mcp__my_server__do_thing`.
 
-MCP tools obey the same `--include-tools` / `--exclude-tools` filtering as built-in tools — a restrictive include list that doesn't name them will strip them. To shape what each server exposes regardless of the session filter, use `enabled_tools`:
+MCP tools obey the same `--tools` / `--include-tools` / `--exclude-tools` filtering as built-in tools. A restrictive `--tools` base that doesn't name them will strip them. To shape what each server exposes regardless of the session filter, use `enabled_tools`:
 
 ```json
 {

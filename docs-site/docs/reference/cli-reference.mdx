@@ -14,11 +14,13 @@ ante [OPTIONS] [COMMAND]
 | Command | Description |
 |---|---|
 | `ante` | Start the interactive TUI. If `-p` / `--prompt` is provided, run in headless mode instead. |
+| `ante auth` | Manage provider sign-in without starting an agent session. |
 | `ante serve` | Run a long-lived JSONL or WebSocket protocol server. |
 | `ante gateway` | Run the Slack / Discord channel gateway. |
 | `ante update` | Check for the latest Ante release and install it if available. |
+| `ante offline` | Manage the local inference engine used by offline mode. |
 | `ante rage` | Collect a redacted bug-report bundle (logs + environment) to share with the Ante team. |
-| `ante catalog` | Print the loaded provider/model catalog as JSON. |
+| `ante catalog` | Print the loaded provider catalog as JSON. |
 | `ante doctor` | Run a boot-time self-check and report startup phase timings. |
 
 ## `ante`
@@ -33,22 +35,27 @@ Without `--prompt`, Ante starts the interactive TUI. With `--prompt`, Ante runs 
 |---|---|
 | `-m`, `--model <MODEL>` | Override the default model name. |
 | `--provider <PROVIDER>` | Override the API provider by catalog provider name. |
+| `--profile <NAME>` | Use `~/.ante/<name>.settings.json` as a whole-file replacement for `settings.json` for this run. An unknown name starts from defaults. The built-in `bare` profile (seeded as a real file on first use) disables skills, MCP servers, session saving, auto-memory, and ambient UI features. Can also be set with `ANTE_PROFILE`. |
 | `--effort <LEVEL>` | Override the model's [effort level](/usage/models-and-thinking#effort) for this run: `min`, `low`, `medium`, `high`, `xhigh`, or `max`. |
 | `--yolo` | Skip tool approval prompts for the session. |
 | `--permission-mode <MODE>` | Override the permission mode for this run: `strict`, `auto`, or `yolo`. Conflicts with `--yolo`. |
-| `--system-prompt <PROMPT>` | Replace the default system prompt entirely. Conflicts with `--system-prompt-file`. |
+| `--system-prompt <PROMPT>` | Replace the default system prompt entirely. Conflicts with `--system-prompt-file`. Persist a default with the `system_prompt` [setting](/configuration/preference). |
 | `--system-prompt-file <PATH>` | Read the replacement system prompt from a UTF-8 file. Conflicts with `--system-prompt`. |
-| `--append-system-prompt <TEXT>` | Append content to the default system prompt. |
-| `--short-prompt` | Use shorter built-in tool descriptions for this run, shrinking the system prompt. Persist the default with the `short_prompt` [setting](/configuration/preference). |
-| `--enable-auto-memory` | Enable auto-memory for this run. Conflicts with `--disable-auto-memory`. |
-| `--disable-auto-memory` | Disable auto-memory for this run. Conflicts with `--enable-auto-memory`. |
-| `--include-tools <TOOLS>...` | Only allow these tools. Values are space-separated. `--tools` is a short alias; `--allowed-tools` is a deprecated alias that still works but prints a warning. |
-| `--exclude-tools <TOOLS>...` | Remove these tools from the session. Values are space-separated. `--disallowed-tools` is a deprecated alias that still works but prints a warning. |
+| `--append-system-prompt <TEXT>` | Append content to the default system prompt. Persist a default with the `append_system_prompt` [setting](/configuration/preference). |
+| `--short-prompt` | Use the compact prompt set for this run: a condensed system prompt and shorter built-in tool descriptions. Persist the default with the `short_prompt` [setting](/configuration/preference). |
+| `--skills` | Load skills for this run, overriding the `skills` setting. Conflicts with `--no-skills`. |
+| `--no-skills` | Skip skill discovery for this run, overriding the `skills` setting. No skills are advertised to the model or available as slash commands. |
+| `--enable-auto-memory` | Enable auto-memory for this run, overriding the `auto_memory` setting. Conflicts with `--disable-auto-memory`. |
+| `--disable-auto-memory` | Disable auto-memory for this run, overriding the `auto_memory` setting. Conflicts with `--enable-auto-memory`. |
+| `--tools <TOOLS>...` | Replace the default tool set with exactly these tools. Values are space-separated. Overrides the `tools` setting. Deprecated alias: `--allowed-tools` still works but prints a warning. |
+| `--include-tools <TOOLS>...` | Add tools on top of the default set, or on top of the `--tools` base set. Values are space-separated. |
+| `--exclude-tools <TOOLS>...` | Remove tools from the session after `--tools` and `--include-tools` are applied. Values are space-separated. Deprecated alias: `--disallowed-tools` still works but prints a warning. |
 | `--output-format <FORMAT>` | Headless output format: `json`, `human`, or `minimal`. Defaults to `minimal`. |
 | `-p`, `--prompt <PROMPT>` | Prompt to run in headless mode. Also supports stdin when piped. |
 | `--check` | Run a verification pass after the headless task completes. |
 | `-r`, `--resume <SESSION_ID>` | Resume a previous session by ID. |
-| `--no-session-save` | Do not save the session transcript or resumable snapshot. Conflicts with `--resume`. |
+| `--session-save` | Save the session transcript and resumable snapshot, overriding the `session_save` setting. Conflicts with `--no-session-save`. |
+| `--no-session-save` | Do not save the session transcript or resumable snapshot, overriding the `session_save` setting. Conflicts with `--resume`. |
 | `--offline-model <PATH>` | Path to a local GGUF model file for offline inference. |
 | `-h`, `--help` | Print command help. |
 | `-V`, `--version` | Print the Ante version. |
@@ -61,8 +68,32 @@ ante -p "explain what this project does"
 git diff | ante -p "review this diff for bugs"
 ante --provider openai --model gpt-5.6-sol -p "refactor the database module"
 ante --effort max -p "find the race condition in the scheduler"
+ante --profile work
+ante --profile bare -p "review this repository"
 ante --resume ses_01ARZ3NDEKTSV4RRFFQ69G5FAV -p "now add tests"
 ante -p "summarize this repo" --enable-auto-memory
+```
+
+## `ante auth`
+
+```bash
+ante auth login [PROVIDER] [OPTIONS]
+```
+
+Sign in to an OAuth provider without starting a TUI session. Today the supported provider is `antix`, and it is the default when `[PROVIDER]` is omitted.
+
+| Flag | Description |
+|---|---|
+| `--force` | Re-run browser sign-in even when stored credentials already exist. |
+| `--no-browser` | Print the authorization URL instead of opening a browser. |
+| `-h`, `--help` | Print command help. |
+
+### Examples
+
+```bash
+ante auth login
+ante auth login antix --force
+ante auth login --no-browser
 ```
 
 ## `ante serve`
@@ -76,12 +107,16 @@ Server mode exposes the Ante protocol over stdin/stdout by default, or over WebS
 | Flag | Description |
 |---|---|
 | `--stdio` | Serve the JSONL protocol over stdin/stdout. This is the default transport. |
-| `--ws <ADDR>` | Serve the protocol over WebSocket on the given socket address. Conflicts with `--stdio`. |
+| `--ws <ADDR>` | Serve the protocol over WebSocket on the given loopback socket address. Conflicts with `--stdio`. |
 | `--offline-model <PATH>` | Load a local GGUF model at startup for offline mode. |
 | `-h`, `--help` | Print command help. |
 
 :::note
-`serve` is session-agnostic, so it does not accept the session flags (`--model`, `--provider`, `--yolo`, `--system-prompt`, `--include-tools`, …). The connecting client configures those per session over the protocol.
+`serve` is session-agnostic, so it does not accept the session flags (`--model`, `--provider`, `--yolo`, `--system-prompt`, `--tools`, …). The connecting client configures those per session over the protocol.
+:::
+
+:::caution
+`--ws` accepts loopback addresses only (`127.0.0.0/8`, `::1`). A non-loopback address such as `0.0.0.0:8080` is refused before the listener binds — the protocol is unauthenticated, so exposing it beyond the local machine would hand any reachable client full tool access. To reach the daemon from elsewhere, front it with an SSH tunnel or an authenticating reverse proxy.
 :::
 
 ### Examples
@@ -112,7 +147,7 @@ Gateway mode connects Ante to Slack, Discord, or both using the channels config 
 
 ```bash
 ante gateway
-ante gateway --provider anthropic --model claude-sonnet-4-6
+ante gateway --provider anthropic --model claude-sonnet-5
 ante gateway --config ./channels.json --output-format human
 ```
 
@@ -131,7 +166,7 @@ The update command checks for a newer Ante release and installs it when one is a
 | Flag | Description |
 |---|---|
 | `--channel <CHANNEL>` | Release channel to update from. Equivalent to the positional form. |
-| `--version <VERSION>` | Install an exact release instead of the channel's newest release. Accepts values with or without a leading `v`, such as `v0.preview.33` or `0.preview.33`. Conflicts with channel arguments. |
+| `--version <VERSION>` | Install an exact release instead of the channel's newest release. Accepts values with or without a leading `v`, such as `v0.preview.82` or `0.preview.82`. Conflicts with channel arguments. |
 | `-h`, `--help` | Print command help. |
 
 ### Examples
@@ -140,7 +175,27 @@ The update command checks for a newer Ante release and installs it when one is a
 ante update
 ante update nightly
 ante update --channel stable
-ante update --version v0.preview.33
+ante update --version v0.preview.82
+```
+
+## `ante offline`
+
+```bash
+ante offline <COMMAND>
+```
+
+Manage the local inference engine used by [offline mode](/local/offline), without starting a session.
+
+| Subcommand | Description |
+|---|---|
+| `install` | Download and install Ante's pinned llama.cpp build. |
+
+`install` converges the engine on the pinned build: it is a no-op when the pin is already installed, and replaces a different (or unrecorded) build otherwise, printing progress as it goes. It installs the same pinned, checksum-verified build as the TUI's `/offline-mode` dialog; running an offline model on a machine without the engine fails fast and points here.
+
+### Examples
+
+```bash
+ante offline install
 ```
 
 ## `ante rage`
@@ -157,11 +212,11 @@ The archive contains:
 
 | File | Contents |
 |---|---|
-| `report.md` | Ante version, OS/architecture, shell, git branch, the resolved model/provider, a provider authentication table (present/absent), and a redaction notice. |
+| `report.md` | Ante version, OS/architecture, shell, git branch, the resolved model/provider, a provider authentication table (present/absent), the [telemetry installation id](/configuration/preference#identity) if one exists, and a redaction notice. |
 | `env.txt` | Ante-relevant environment variables. Safe values are shown verbatim; known secrets appear as `<SET>` / `<UNSET>` only. |
-| `settings.redacted.json` | `~/.ante/settings.json` with secrets removed (MCP server credentials are stripped). |
+| `settings.redacted.json` | `~/.ante/settings.json` with secrets removed (MCP server credentials and custom `system_prompt` / `append_system_prompt` text are stripped). |
 | `catalog.redacted.json` | `~/.ante/catalog.json` with secrets removed, included only when a custom catalog exists. |
-| `logs/` | Recent application and crash logs, filtered and scrubbed. `DEBUG`/`TRACE` lines are dropped so request bodies never enter the bundle. |
+| `logs/` | Recent application and crash logs, filtered and scrubbed; each copy is prefixed with its date (`<date>-<name>`). `DEBUG`/`TRACE` lines are dropped so request bodies never enter the bundle. |
 
 By default the newest logs are collected, up to 10 files or 10 MB (crash logs are always prioritized). Use `--since` to collect everything within a time window instead.
 
@@ -188,13 +243,13 @@ ante rage --no-compress
 ante catalog
 ```
 
-Print the merged provider/model catalog (built-in presets plus `~/.ante/catalog.json`) to stdout as JSON, in the same schema the catalog file uses. Warnings for skipped catalog entries go to stderr, so stdout stays a clean JSON document that pipes into `jq`. See the [Catalog Reference](/reference/catalog-reference) for the schema.
+Print the merged provider catalog (built-in presets plus `~/.ante/catalog.json`) to stdout as a JSON document with a single `providers` array, in catalog order. Each provider embeds its preferred models with user model overrides applied, so the output is a published view for consumers; it is not the config-file schema and does not round-trip into `~/.ante/catalog.json`. Warnings for skipped catalog entries go to stderr, so stdout stays a clean JSON document that pipes into `jq`. See the [Catalog Reference](/reference/catalog-reference) for the config-file schema.
 
 ### Examples
 
 ```bash
 ante catalog
-ante catalog | jq '.providers | keys'
+ante catalog | jq '.providers[].id'
 ```
 
 ## `ante doctor`
@@ -205,7 +260,7 @@ ante doctor
 
 Boot the same runtime a real launch uses — load the merged catalog, start a daemon session, and render the first TUI frame — then print a readiness report with per-phase timings. Use it to confirm Ante is installed and configured correctly, or as a CI smoke test ("does Ante boot, does the first frame render").
 
-It needs no TTY and no API key: MCP warm-up is skipped and the session reaches readiness from the catalog alone. The report lists three checks — `catalog` (provider/model counts), `session` (the resolved `provider/model`), and `first frame` (the headless render) — followed by a total. Warnings (such as no authenticated provider, a skipped catalog entry, or a `settings.json` parse notice) are listed below the table without failing the check. `doctor` exits non-zero if any hard check fails, so it works in scripts.
+It needs no TTY and no API key: MCP warm-up is skipped and the session reaches readiness from the catalog alone. The report lists four checks — `home` (the Ante home and input history are writable), `catalog` (provider/model counts), `session` (the resolved `provider/model`), and `first frame` (the headless render) — followed by a total. Warnings (such as no authenticated provider, a skipped catalog entry, or a `settings.json` parse notice) are listed below the table. `doctor` exits non-zero if any hard check fails, including an unwritable Ante home, so it works in scripts.
 
 ### Examples
 

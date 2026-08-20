@@ -234,6 +234,18 @@ code {
   font-weight: 500;
 }
 
+/* Category headers (Added / Changed / Fixed) render as small labels
+   instead of full-size h3s */
+.docs-doc-id-changelog article h3 {
+  margin-top: 1.5rem;
+  margin-bottom: 0.5rem;
+  font-size: 0.8rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--ifm-color-emphasis-600);
+}
+
 .changelog-badge {
   display: inline-flex;
   align-items: center;

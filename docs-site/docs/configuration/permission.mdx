@@ -80,7 +80,6 @@ If no rule matches, the mode decides the fallback: `strict` asks except for know
 | `WebFetch` | Ask |
 | `WebSearch` | Ask |
 | `Browser` | Ask |
-| `PTY` | Allow |
 | `ViewImage` | Allow |
 
 In `strict` mode, read-only shell commands can also be auto-approved as a final fallback after explicit rules are checked. This covers vetted read-only programs — and pipelines or `&&` / `||` / `;` sequences built only from them; anything with redirections, command substitution, or an unrecognized command still prompts.
@@ -95,7 +94,7 @@ At an approval prompt you can approve a call in three ways:
 - **Yes, allow … for this session** — add a temporary grant for the rest of the run. It overrides `ask`/`allow` rules and tool defaults but never a `deny`, and disappears when the session ends.
 - **Yes, always allow … (save to settings)** — also append the matcher to `permissions.allow` in `~/.ante/settings.json` so it applies in future sessions.
 
-The grant is scoped, not blanket. A single approved Bash command generalizes to a **two-token prefix** so the next sibling call doesn't re-prompt — approving `cargo test -p foo` grants `Bash(cargo test *)`. Commands the dangerous classifier flags (e.g. `rm -rf build`), commands whose second token is a flag (`ls -la`), and multi-stage sequences (`git add -A && git commit -m wip`) stay scoped to the **exact command** instead of widening. `Agent`, `Read`, `Edit`, and `Write` scope to their primary argument (sub-agent type or file path); tools without a known primary argument grant by name.
+The grant is scoped, not blanket. A single approved Bash command generalizes to a **two-token prefix** so the next sibling call doesn't re-prompt — approving `cargo test -p foo` grants `Bash(cargo test *)`. Commands the dangerous classifier flags (e.g. `rm -rf build`), commands whose second token is a flag (`ls -la`), and multi-stage sequences (`git add -A && git commit -m wip`) stay scoped to the **exact command** instead of widening. `Agent`, `Read`, `Edit`, and `Write` scope to their primary argument (sub-agent type or file path), and `Grep` and `Glob` scope to the search pattern; tools without a known primary argument grant by name.
 
 Grants are subsumption-aware: a narrower grant already covered by a broader one is dropped, and approving a broader grant absorbs the redundant narrower ones — so repeatedly approving `cargo test …` calls collapses to a single `Bash(cargo test *)` rule rather than piling up.
 
@@ -121,6 +120,8 @@ Bash(npm run *)
 Agent(explore)
 Read(src/**)
 Edit(src/**)
+Grep(*secret*)
+Glob(**/*.rs)
 ```
 
 Only tools with a known primary argument support scoped matchers; any other tool matches by name only.
@@ -132,8 +133,12 @@ Only tools with a known primary argument support scoped matchers; any other tool
 | `Read` | `file_path` (or `path`) |
 | `Edit` | `file_path` |
 | `Write` | `file_path` |
+| `Grep` | `pattern` |
+| `Glob` | `pattern` |
 
 For file tools, Ante normalizes the call-side path before matching permission rules: one layer of wrapping quotes is stripped, `~` is expanded, and lexical `.` / `..` segments are resolved. A rule such as `Deny(Read(/tmp/secret*))` therefore applies to equivalent spellings like `Read("~/../tmp/secret.txt")` after expansion. Rule specifiers are still glob patterns exactly as written; only the tool call argument is normalized.
+
+`Grep` and `Glob` scope to the search pattern, matched as written with no path normalization; the directory being searched is not part of the match.
 
 ### Glob syntax
 
@@ -157,15 +162,14 @@ Malformed permission rules are skipped individually with a warning. Valid siblin
 ## Tool filtering
 
 ```bash
-# Only allow these tools (whitelist)
-ante --include-tools Read Glob Grep "analyze the code"
+# Replace the default tool set with exactly these tools
+ante --tools Read Glob Grep "analyze the code"
 
-# Remove these tools (blacklist)
+# Remove these tools
 ante --exclude-tools Bash Write "read-only analysis"
-
-# Fine-grained: allow Bash only for specific commands
-ante --include-tools Read "Bash(cargo test *)" "Bash(cargo clippy *)" "analyze and test"
 ```
+
+Matcher syntax such as `Bash(cargo test *)` is accepted in these lists but selects by tool name only — it keeps the whole `Bash` tool available. To scope what a tool may run, use `allow`/`ask`/`deny` rules.
 
 :::tip
 Tool filtering and permissions are independent. Filtering controls what tools **exist** in the session; permissions control whether existing tools **require approval**.
@@ -175,4 +179,4 @@ Tool filtering and permissions are independent. Filtering controls what tools **
 
 In **TUI mode**, tools that require approval show an interactive prompt. You can approve or deny each call, grant it for the rest of the session, or save an "always allow" rule (see [Session grants](#session-grants)).
 
-In **headless mode**, `yolo` mode is implied. Use `--include-tools` or `--exclude-tools` to restrict what the agent can do.
+In **headless mode**, `yolo` mode is implied. Use `--tools`, `--include-tools`, or `--exclude-tools` to restrict what the agent can do.
