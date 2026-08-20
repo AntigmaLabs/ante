@@ -1,9 +1,6 @@
 
 <p align="center">
-  <picture>
-    <source media="(prefers-color-scheme: dark)" srcset="docs-site/static/assets/ante-readme-banner-dark-1280x320.png">
-    <img src="docs-site/static/assets/ante-readme-banner-light-1280x320.png" alt="Ante — substrate for self-organizing intelligence">
-  </picture>
+  <img src="docs-site/static/assets/ante-readme-banner-demo2-cinematic-technical-1280x470.png" alt="Ante — One harness to run them all">
 </p>
 
 <p align="center">
