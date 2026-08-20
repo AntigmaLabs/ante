@@ -1,5 +1,23 @@
 # Changelog
 
+## v0.preview.86 - 2026-08-20
+
+### Added
+- `/usage` dialog reporting per-model token usage, accounted client-side
+- Double-click selects a word and triple-click selects a line in the transcript; alt-screen pager views (ctrl+o) copy on select
+
+### Changed
+- Thinking collapses to a pulsing marker while it streams, with the full text kept in the ctrl+o transcript; Anthropic adaptive thinking displays summarized by default
+- Providers accept `stream_idle_timeout_secs` to override the 300-second default used for the first-event, SSE-idle, and WebSocket-idle deadlines
+- Background job files persist until an explicit discard or the startup sweep, and waiting on a job is now a re-budgetable observation — an expired wait window changes nothing and can be extended; abandoning a shell call interrupts the process
+- The experimental Browser tool and its optional Chromium dependency are removed
+- `@agent-<name>` mentions no longer inject an "invoke the agent" reminder; the `@` popup keeps its completion rows as a typing convenience
+- Dependency updates
+
+### Fixed
+- Copying a multi-line selection rejoins soft-wrapped lines instead of inserting hard breaks mid-sentence
+- A permission-mode change (Shift+Tab) made while a turn is settling is no longer reverted when the turn commits
+
 ## v0.preview.85 - 2026-08-19
 
 ### Changed

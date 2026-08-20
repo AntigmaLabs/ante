@@ -97,6 +97,41 @@ pub fn kill_by_pid(_pid: u32) -> io::Result<()> {
 }
 
 #[cfg(unix)]
+/// Send SIGKILL to the process group `pgid` directly — no lookup through the
+/// leader pid. This is the form that still reaches a group's surviving
+/// members after the leader exited and was reaped: [`kill_by_pid`]'s
+/// `getpgid` resolution returns `ESRCH` then and silently spares them. A
+/// fully-gone group reads as success. Groups 0 and 1 are rejected rather
+/// than signalled: to `killpg` they mean the caller's own group and init's.
+///
+/// Signals the group id, not the job that created it: a caller holding a
+/// pgid past its group's death accepts the same theoretical recycled-pgid
+/// exposure as a manual `kill -- -<pgid>`.
+pub fn kill_process_group(pgid: u32) -> io::Result<()> {
+    use std::io::ErrorKind;
+
+    if pgid <= 1 {
+        return Ok(());
+    }
+    let Ok(pgid) = libc::pid_t::try_from(pgid) else {
+        return Ok(());
+    };
+    if unsafe { libc::killpg(pgid, libc::SIGKILL) } == -1 {
+        let err = io::Error::last_os_error();
+        if err.kind() != ErrorKind::NotFound {
+            return Err(err);
+        }
+    }
+    Ok(())
+}
+
+#[cfg(not(unix))]
+/// No-op on non-Unix platforms.
+pub fn kill_process_group(_pgid: u32) -> io::Result<()> {
+    Ok(())
+}
+
+#[cfg(unix)]
 /// Whether any process remains in the group led by `pgid`, including members
 /// that outlived the leader. Signal 0 runs `killpg`'s existence and permission
 /// checks without delivering anything, so `EPERM` (the group is another user's)
