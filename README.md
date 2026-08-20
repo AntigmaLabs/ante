@@ -33,17 +33,15 @@ Ante makes this declarative: [one settings profile](#one-binary-many-agents) can
 
 [![Watch the Ante film (1 min)](docs-site/static/assets/one-harness-poster.jpg)](https://download.ante.run/media/one-harness.mp4)
 
-Every agent claims to be good. Here are numbers you can check:
-
 ### 🥇 Continuously evaluated and evolved in public
 
 We evaluate Ante as a harness across different model families instead of coupling it to one hero model. Ante runs [Terminal-Bench 2.1](https://antigma.ai/eval) continuously under official leaderboard constraints: 89 tasks, 5 trials each. Each result pins the exact Ante build you can download and links the raw Harbor run for independent audit. Latest full run: **82.7%** with open-weight **DeepSeek V4 Flash 0731** (368/445 trials, Ante 0.preview.71, about $68 of inference). DeepSeek [reports](https://deepseek.ai/blog/deepseek-v4-flash-ga-agent-benchmarks) the same 82.7 for this model, measured with its unreleased DeepSeek Harness in minimal mode.
 
 #### Same model, different harness
 
-[![Benchmark summary for five agent harness configurations running the same DeepSeek model](https://antigma.ai/assets/images/cover-ac93f637abafa845417866bf434ac53d.png)](https://antigma.ai/blog/2026/08/04/harness-matter)
+[![Benchmark summary for five agent harness configurations running the same DeepSeek model](https://antigma.ai/assets/files/overview-heatmap-86c979b50b72aef4b29d368c5684cecf.png)](https://antigma.ai/blog/2026/08/04/harness-matter)
 
-**[Live cross-model results →](https://antigma.ai/eval)** · [Methodology →](https://docs.antigma.ai/benchmarks/eval)
+**[Live cross-model results →](https://antigma.ai/eval)** · [Same-model harness comparison →](https://antigma.ai/blog/2026/08/04/harness-matter) · [Methodology →](https://docs.antigma.ai/benchmarks/eval)
 
 ### 🪶 A fraction of the footprint
 
