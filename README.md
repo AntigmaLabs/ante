@@ -15,17 +15,8 @@
 
 # Ante
 
-> **Alpha preview**: expect breaking changes and incomplete functionality. macOS and Linux only; on Windows we suggest [WSL](https://learn.microsoft.com/windows/wsl/install).
-
-## Read this first
-
-Two things many people ask about:
-
-**Where is the source?** The core harness currently ships as a prebuilt binary; this repo holds the docs, protocol, SDK, and eval pipeline ([details](#whats-in-this-repo)). We are working out a way to ship the source code along with the binary, to address security and privacy concerns first, while taking the time to figure out how open source should work in the agentic era. Progress and discussion: [issue #21](https://github.com/AntigmaLabs/ante/issues/21). If you have concerns today, run Ante in a sandbox: it is a single self-contained binary, built to be easy to deploy in a container or on a remote machine.
-
-**Is there telemetry?** Yes, and it is opt-out: set `ANTE_TELEMETRY=off` to disable export entirely. What it sends is anonymous — a random installation label you can delete and re-mint, never your username, hostname, or machine id. The `RUST_LOG` filter also applies to exported logs, a convenience carried over from the Rust ecosystem. A better UX is in the works. [Details →](https://docs.antigma.ai/configuration/preference#telemetry)
-
----
+> [!WARNING]
+> **Beta preview:** Expect breaking changes and incomplete functionality. macOS and Linux only; on Windows, we suggest [WSL](https://learn.microsoft.com/windows/wsl/install).
 
 **A ghost in your shell.** Ante is a self-contained coding agent that lives in your terminal and self-organizes. One ~15MB compressed download from [Antigma Labs](https://antigma.ai) that expands to a single Rust executable with zero runtime dependencies, built to get the most out of any model.
 
@@ -36,15 +27,7 @@ curl -fsSL https://ante.run/install.sh | bash
 ante
 ```
 
-### One harness to run them all
-
-We care about **the harness, not a co-trained model or a secret prompt**. The harness and the model are a dynamic duo: they should evolve together but not be bound together. Prompts belong to the user.
-
-Ante makes this declarative: [one settings profile](#one-binary-many-agents) can define the whole agent, replacement system prompt included.
-
-[![One harness to run them all, and in the darkness unbind them — the Ante film](docs-site/static/assets/one-harness-poster.jpg)](https://download.ante.run/media/one-harness.mp4)
-
-**[▶ Watch the film (1 min)](https://download.ante.run/media/one-harness.mp4)**
+[![Watch the Ante film (1 min)](docs-site/static/assets/one-harness-poster.jpg)](https://download.ante.run/media/one-harness.mp4)
 
 Every agent claims to be good. Here are numbers you can check:
 
