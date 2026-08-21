@@ -67,7 +67,7 @@ In this direction, `Session` remains important, but as a container for user inte
 
 ## LLM providers
 
-Ante is provider-agnostic. Each provider implements a common interface for sending prompts and receiving streaming responses. Transient mid-stream failures reconnect within the turn; a streaming call that produces no usable event within five minutes fails with a timeout instead of hanging indefinitely.
+Ante is provider-agnostic. Each provider implements a common interface for sending prompts and receiving streaming responses. Transient mid-stream failures reconnect within the turn; a streaming call that produces no usable event within five minutes fails with a timeout instead of hanging indefinitely. That window is per provider — override it with [`stream_idle_timeout_secs`](/reference/catalog-reference#provider-fields).
 
 | Provider | Wire Format | Models |
 |---|---|---|
@@ -123,7 +123,6 @@ pub trait Tool: Send + Sync {
 | `WebFetch` | Builtin | Yes | Fetch and process web content |
 | `WebSearch` | Builtin | Yes | Search the web (auto-enabled on web-search-capable providers) |
 | `ViewImage` | Builtin | No | Read and analyze images (opt-in) |
-| `Browser` | Web | Yes | Drive Chromium via CDP (requires `browser` cargo feature) |
 
 ### Tool filtering
 

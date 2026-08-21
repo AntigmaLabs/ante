@@ -79,7 +79,6 @@ If no rule matches, the mode decides the fallback: `strict` asks except for know
 | `TodoWrite` | Allow |
 | `WebFetch` | Ask |
 | `WebSearch` | Ask |
-| `Browser` | Ask |
 | `ViewImage` | Allow |
 
 In `strict` mode, read-only shell commands can also be auto-approved as a final fallback after explicit rules are checked. This covers vetted read-only programs — and pipelines or `&&` / `||` / `;` sequences built only from them; anything with redirections, command substitution, or an unrecognized command still prompts.
@@ -157,7 +156,7 @@ The glob `safe-cmd:*` does **not** match `safe-cmd --flag`. Use `safe-cmd *` (wi
 A single-command wildcard does **not** vouch for a multi-stage command. `Bash(npm run *)` matches `npm run build`, but **not** `npm run build && rm -rf /` or `npm run build | sh` — every stage of a `&&` / `||` / `;` / pipe sequence must match the rule on its own, so an allowed prefix can't smuggle an unapproved stage past it.
 :::
 
-Malformed permission rules are skipped individually with a warning. Valid sibling rules and other settings still load.
+Malformed permission rules are skipped individually, each reported in the session as `Skipping invalid permission rule ...`. Valid sibling rules and other settings still load, so one bad rule never quarantines the file.
 
 ## Tool filtering
 
