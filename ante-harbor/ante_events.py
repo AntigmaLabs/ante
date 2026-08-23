@@ -493,19 +493,13 @@ def _usage_totals(events: Iterable[dict[str, Any]]) -> Any | None:
         return None
 
     cache_creation = totals["n_cache_creation_tokens"]
-    saw_cache_creation = any(
-        isinstance((usage := usage_from_event(event)), dict)
-        and isinstance(usage.get("cache_creation_tokens"), int)
-        and not isinstance(usage.get("cache_creation_tokens"), bool)
-        for event in events
-    )
 
     return FinalMetrics(
         total_prompt_tokens=totals["n_input_tokens"],
         total_completion_tokens=totals["n_output_tokens"],
         total_cached_tokens=totals["n_cache_tokens"],
         extra={"total_cache_creation_tokens": cache_creation}
-        if saw_cache_creation
+        if cache_creation is not None
         else None,
     )
 
