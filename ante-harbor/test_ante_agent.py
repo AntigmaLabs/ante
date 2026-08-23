@@ -1,3 +1,4 @@
+"""Dependency-free contract tests for the adapter published to AntigmaLabs/ante."""
 from __future__ import annotations
 
 import importlib
@@ -87,38 +88,51 @@ ante_agent = importlib.import_module("ante_agent")
 
 
 class ShellCommandTests(unittest.TestCase):
-    def run_shell(self, command: str, *, path: Path | None = None) -> subprocess.CompletedProcess:
+    def run_shell(
+        self, command: str, *, path: Path | None = None
+    ) -> subprocess.CompletedProcess:
         env = os.environ.copy()
         if path is not None:
             env["PATH"] = f"{path}{os.pathsep}{env['PATH']}"
-        return subprocess.run(["sh", "-c", command], text=True, capture_output=True, env=env)
+        return subprocess.run(
+            ["bash", "-c", command], text=True, capture_output=True, env=env
+        )
 
-    def test_tee_command_preserves_command_failure(self):
+    def test_setup_log_command_overwrites_setup_log(self):
         with tempfile.TemporaryDirectory() as directory:
-            log = Path(directory) / "command.log"
-            command = ante_agent._tee_command("printf 'failed output\\n'; exit 23", log, append=False)
+            log = Path(directory) / "setup" / "stdout.txt"
+            with patch.object(ante_agent, "_SETUP_LOG", log):
+                command = ante_agent.setup_log_command(
+                    "printf 'fresh setup output\\n'", append=False
+                )
+
             result = self.run_shell(command)
 
-            self.assertEqual(result.returncode, 23)
-            self.assertEqual(log.read_text(), "failed output\n")
+            self.assertEqual(result.returncode, 0)
+            self.assertEqual(log.read_text(), "fresh setup output\n")
 
-    def test_tee_command_preserves_tee_failure(self):
+    def test_setup_log_command_appends_to_setup_log(self):
         with tempfile.TemporaryDirectory() as directory:
-            root = Path(directory)
-            tee = root / "tee"
-            tee.write_text("#!/bin/sh\ncat >/dev/null\nexit 31\n")
-            tee.chmod(0o755)
-            log = root / "command.log"
-            command = ante_agent._tee_command("exit 0", log, append=False)
-            result = self.run_shell(command, path=root)
+            log = Path(directory) / "setup" / "stdout.txt"
+            log.parent.mkdir()
+            log.write_text("earlier setup output\n")
+            with patch.object(ante_agent, "_SETUP_LOG", log):
+                command = ante_agent.setup_log_command("printf 'next setup output\\n'")
 
-            self.assertEqual(result.returncode, 31)
+            result = self.run_shell(command)
+
+            self.assertEqual(result.returncode, 0)
+            self.assertEqual(
+                log.read_text(), "earlier setup output\nnext setup output\n"
+            )
 
     def test_ante_command_preserves_agent_failure(self):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
             binary = root / "ante"
-            binary.write_text("#!/bin/sh\ncat >/dev/null\nprintf 'agent output\\n'\nexit 19\n")
+            binary.write_text(
+                "#!/usr/bin/env bash\ncat >/dev/null\nprintf 'agent output\\n'\nexit 19\n"
+            )
             binary.chmod(0o755)
             instruction = root / "instruction.md"
             instruction.write_text("test instruction")

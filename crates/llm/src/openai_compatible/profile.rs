@@ -17,6 +17,7 @@ pub enum ThinkingDialect {
     ReasoningEffort,
     OpenRouterHighXHigh,
     ThinkingObject,
+    Glm53ReasoningEffort { native_thinking: bool },
     KimiThinkingObject,
     KimiK3ReasoningEffort,
     MuseSparkReasoningEffort,
@@ -130,6 +131,12 @@ impl OpenAiCompatProfile {
             ThinkingDialect::ThinkingObject => ThinkingParams {
                 reasoning_effort: None,
                 thinking: Some(thinking_object(thinking_on(requested))),
+                enable_thinking: None,
+                thinking_budget: None,
+            },
+            ThinkingDialect::Glm53ReasoningEffort { native_thinking } => ThinkingParams {
+                reasoning_effort: requested.map(|r| effort::resolve(GLM_53_RUNGS, r)),
+                thinking: native_thinking.then(|| thinking_object(true)),
                 enable_thinking: None,
                 thinking_budget: None,
             },
@@ -251,6 +258,9 @@ impl OpenAiCompatFamily {
             Self::DeepSeek => ThinkingDialect::DeepSeek {
                 max_reasoning_effort: deepseek_max_reasoning_effort(provider_id, model_id),
             },
+            Self::Glm if is_glm53(model_id) => ThinkingDialect::Glm53ReasoningEffort {
+                native_thinking: !provider_id.eq_ignore_ascii_case("openrouter"),
+            },
             Self::Glm if provider_id.eq_ignore_ascii_case("openrouter") => {
                 ThinkingDialect::OpenRouterHighXHigh
             }
@@ -359,6 +369,15 @@ fn openrouter_web_search_extra_body() -> Map<String, Value> {
 /// to on, matching each dialect's historical behavior.
 const ON_OFF_RUNGS: &[(Effort, bool)] = &[(Effort::Min, false), (Effort::Low, true)];
 
+/// GLM 5.3 always reasons and accepts three named effort levels. Requests
+/// below `low` take the mandatory floor, while intermediate internal levels
+/// round down to the nearest accepted value.
+const GLM_53_RUNGS: &[(Effort, ReasoningEffort)] = &[
+    (Effort::Low, ReasoningEffort::Low),
+    (Effort::High, ReasoningEffort::High),
+    (Effort::Max, ReasoningEffort::Max),
+];
+
 /// Kimi K3 always reasons and currently accepts only the top-level `max`
 /// reasoning effort. A one-rung ladder also keeps lower internal requests on
 /// that mandatory floor until Moonshot exposes more levels.
@@ -449,6 +468,7 @@ pub fn effort_levels(provider_id: &str, model_id: &str) -> Vec<Effort> {
         ThinkingDialect::ThinkingObject
         | ThinkingDialect::KimiThinkingObject
         | ThinkingDialect::QwenEnableThinking => effort::levels(ON_OFF_RUNGS),
+        ThinkingDialect::Glm53ReasoningEffort { .. } => effort::levels(GLM_53_RUNGS),
         ThinkingDialect::Qwen38ReasoningEffort => effort::levels(QWEN38_RUNGS),
         ThinkingDialect::KimiK3ReasoningEffort => effort::levels(KIMI_K3_RUNGS),
         ThinkingDialect::MuseSparkReasoningEffort => effort::levels(MUSE_SPARK_RUNGS),
@@ -465,6 +485,15 @@ fn is_qwen38(model_id: &str) -> bool {
     let model = model_id.to_ascii_lowercase();
     let name = model.split_once('/').map_or(model.as_str(), |(_, name)| name);
     let Some(rest) = name.strip_prefix("qwen3.8") else {
+        return false;
+    };
+    rest.is_empty() || rest.chars().next().is_some_and(|c| matches!(c, '-' | '_' | ':' | '.'))
+}
+
+fn is_glm53(model_id: &str) -> bool {
+    let model = model_id.to_ascii_lowercase();
+    let name = model.split_once('/').map_or(model.as_str(), |(_, name)| name);
+    let Some(rest) = name.strip_prefix("glm-5.3") else {
         return false;
     };
     rest.is_empty() || rest.chars().next().is_some_and(|c| matches!(c, '-' | '_' | ':' | '.'))
@@ -521,6 +550,18 @@ mod tests {
 
         let openrouter_glm = profile("openrouter", "z-ai/glm-5.2");
         assert_eq!(openrouter_glm.thinking_dialect, ThinkingDialect::OpenRouterHighXHigh);
+
+        let direct_glm_53 = profile("zai", "glm-5.3");
+        assert_eq!(
+            direct_glm_53.thinking_dialect,
+            ThinkingDialect::Glm53ReasoningEffort { native_thinking: true }
+        );
+
+        let openrouter_glm_53 = profile("openrouter", "z-ai/glm-5.3");
+        assert_eq!(
+            openrouter_glm_53.thinking_dialect,
+            ThinkingDialect::Glm53ReasoningEffort { native_thinking: false }
+        );
 
         let kimi = profile("openai-compatible", "moonshotai/kimi-k2.6");
         assert_eq!(kimi.thinking_dialect, ThinkingDialect::KimiThinkingObject);
@@ -695,6 +736,39 @@ mod tests {
     }
 
     #[test]
+    fn glm_53_maps_its_mandatory_reasoning_scale() {
+        let cases = [
+            (Effort::Min, ReasoningEffort::Low),
+            (Effort::Low, ReasoningEffort::Low),
+            (Effort::Medium, ReasoningEffort::Low),
+            (Effort::High, ReasoningEffort::High),
+            (Effort::XHigh, ReasoningEffort::High),
+            (Effort::Max, ReasoningEffort::Max),
+        ];
+        for (requested, expected) in cases {
+            let direct = profile("zai", "glm-5.3").thinking_params(Some(requested));
+            assert_eq!(direct.reasoning_effort, Some(expected), "direct GLM 5.3 {requested}");
+            assert_eq!(direct.thinking.unwrap().thinking_type(), "enabled");
+
+            let openrouter = profile("openrouter", "z-ai/glm-5.3").thinking_params(Some(requested));
+            assert_eq!(
+                openrouter.reasoning_effort,
+                Some(expected),
+                "OpenRouter GLM 5.3 {requested}"
+            );
+            assert!(openrouter.thinking.is_none());
+        }
+
+        let direct_unset = profile("zai", "glm-5.3").thinking_params(None);
+        assert!(direct_unset.reasoning_effort.is_none());
+        assert_eq!(direct_unset.thinking.unwrap().thinking_type(), "enabled");
+
+        let openrouter_unset = profile("openrouter", "z-ai/glm-5.3").thinking_params(None);
+        assert!(openrouter_unset.reasoning_effort.is_none());
+        assert!(openrouter_unset.thinking.is_none());
+    }
+
+    #[test]
     fn muse_spark_maps_its_mandatory_reasoning_scale() {
         let cases = [
             (Effort::Min, ReasoningEffort::Minimal),
@@ -728,6 +802,11 @@ mod tests {
         assert_eq!(
             effort_levels("openrouter", "z-ai/glm-5.2"),
             vec![Effort::Min, Effort::Low, Effort::Medium, Effort::High, Effort::XHigh],
+        );
+        assert_eq!(effort_levels("zai", "glm-5.3"), vec![Effort::Low, Effort::High, Effort::Max],);
+        assert_eq!(
+            effort_levels("openrouter", "z-ai/glm-5.3"),
+            vec![Effort::Low, Effort::High, Effort::Max],
         );
         assert_eq!(
             effort_levels("openrouter", "meta/muse-spark-1.2"),

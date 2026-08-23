@@ -31,7 +31,7 @@ pub enum Op {
     Steer(String),
     ApprovalResponse {
         turn_id: Id,
-        responses: Vec<(String, ReviewDecision)>,
+        responses: Vec<ToolDecision>,
     },
     SlashCommand {
         name: String,
@@ -266,14 +266,24 @@ pub struct ToolEnd {
     pub result_json: serde_json::Value,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub enum ReviewDecision {
     Accept,
-    Skip,
+    Deny,
     AcceptForSession,
     /// Approve and persist an allow rule to settings.json so the same call is
     /// auto-approved across future sessions ("always allow").
     AcceptAlways,
+}
+
+/// A decision for one requested tool call.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct ToolDecision {
+    pub tool_use_id: String,
+    pub decision: ReviewDecision,
+    /// Optional user feedback returned to the agent with a denial.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub message: Option<String>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -408,19 +418,26 @@ pub struct SessionOverrides {
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct MalformedToolArgs {
-    /// Exact argument text emitted by the model before JSON decoding failed.
+    /// Exact argument text emitted by the model for the undecodable call.
     pub raw: String,
-    /// JSON decoder diagnostic. This must not contain the raw argument text.
+    /// Decode diagnostic. This must not contain the raw argument text.
     pub error: String,
 }
+
+/// Sentinel [`ToolUse::name`] for a call whose stream never delivered a
+/// function name; always paired with `malformed_args`.
+pub const MISSING_TOOL_NAME: &str = "missing_function_name";
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct ToolUse {
     pub id: String,
     pub name: String,
     pub args: serde_json::Value,
-    /// Present when `args` could not be decoded from the model's raw JSON.
-    /// Such a call is non-executable and must be returned as an error result.
+    /// Present when the model's raw call could not be decoded into an
+    /// executable call: `args` that were not valid JSON, or a stream that
+    /// never delivered the function name (`name` is then
+    /// [`MISSING_TOOL_NAME`]). Such a call is non-executable and must be
+    /// returned as an error result.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub malformed_args: Option<MalformedToolArgs>,
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -685,8 +702,8 @@ pub enum Scope {
 #[cfg(test)]
 mod tests {
     use super::{
-        Evt, ExtensionRefreshed, Id, ModelSpec, Op, PermissionMode, ProviderSpec,
-        SessionInitialized, SessionUpdate, ToolUse, Usage, WeightClass,
+        Evt, ExtensionRefreshed, Id, ModelSpec, Op, PermissionMode, ProviderSpec, ReviewDecision,
+        SessionInitialized, SessionUpdate, ToolDecision, ToolUse, Usage, WeightClass,
     };
     use std::path::PathBuf;
 
@@ -952,6 +969,41 @@ mod tests {
                 if model.id == "gpt-5.4"
                     && model.temperature == Some(0.2)
                     && model.effort == Some(super::Effort::High)
+        ));
+    }
+
+    #[test]
+    fn approval_response_uses_named_tool_decisions() {
+        let turn_id = Id::new("turn");
+        let op = Op::ApprovalResponse {
+            turn_id,
+            responses: vec![ToolDecision {
+                tool_use_id: "call-1".to_string(),
+                decision: ReviewDecision::Deny,
+                message: Some("use the read-only endpoint".to_string()),
+            }],
+        };
+
+        let json = serde_json::to_value(&op).expect("serialize ApprovalResponse");
+        assert_eq!(
+            json["ApprovalResponse"]["responses"],
+            serde_json::json!([{
+                "tool_use_id": "call-1",
+                "decision": "Deny",
+                "message": "use the read-only endpoint"
+            }])
+        );
+
+        let decoded = serde_json::from_value::<Op>(json).expect("deserialize ApprovalResponse");
+        assert!(matches!(
+            decoded,
+            Op::ApprovalResponse { turn_id: id, responses }
+                if id == turn_id
+                    && responses == vec![ToolDecision {
+                        tool_use_id: "call-1".to_string(),
+                        decision: ReviewDecision::Deny,
+                        message: Some("use the read-only endpoint".to_string()),
+                    }]
         ));
     }
 
