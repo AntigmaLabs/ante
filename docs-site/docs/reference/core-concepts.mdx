@@ -52,7 +52,7 @@ Operations (`Op`) are sent from the client to the daemon, wrapped in an `OpMsg` 
 | `ResumeSession` | `session_id` | Resume a previously persisted session |
 | `UserInput` | `String` | Submit a user prompt |
 | `Steer` | `String` | Additional user guidance for the active turn |
-| `ApprovalResponse` | `turn_id`, `responses: [(tool_id, ReviewDecision)]` | Respond to tool approval requests |
+| `ApprovalResponse` | `turn_id`, `responses: [ToolDecision]` | Respond to tool approval requests; a `Deny` may carry a `message` back to the model |
 | `SlashCommand` | `name`, `args` | Invoke a skill by name |
 | `RegisterLocalProvider` | `port`, `model?` | Register a running local llama-server as the `local` provider |
 | `RestoreLocalProvider` | — | Restore the previously registered local provider |

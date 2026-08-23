@@ -110,13 +110,21 @@ The `status_line` field controls which items appear in the top row of the TUI fo
 | Item | Description |
 |---|---|
 | `model-name` | Current model name |
-| `effort` | Current [effort level](/usage/models-and-thinking#effort) (omitted when thinking is disabled) |
+| `effort` | Current [effort level](/usage/models-and-thinking#effort). On its own it reads `effort: high` and is omitted at `min` |
 | `provider` | Current provider |
 | `current-dir` | Current working directory |
-| `git-branch` | Current Git branch (omitted when unavailable) |
+| `git-branch` | Current Git branch, as `⑂ main` (omitted when unavailable) |
 | `pr-link` | GitHub pull request link for the current branch (requires `gh`) |
 | `context-used` | Context-window usage, shown as `N% ctx` of the window remaining (omitted until known) |
 | `terminals` | Live `ante-*` tmux sessions, shown by name (omitted when none are running or tmux is unavailable) |
+
+Two pairs collapse into one compound item when both halves are enabled: effort folds into the model name as `gpt-5.6(high)` (every level, `min` included), and the branch folds into the directory as `project(⑂ main)`. So the default footer reads:
+
+```
+gpt-5.6(high) · openai · project(⑂ main) · 42% ctx
+```
+
+Each half stays an independent toggle — turn `model-name` off and `effort` goes back to its own `effort: high` item.
 
 Default: all items, in the order above. Configure via `~/.ante/settings.json` or the `/statusline` command in the TUI.
 
@@ -239,6 +247,7 @@ Settings can be overridden per-session via CLI flags.
 | `ANTE_PROFILE` | Select a named settings profile for TUI or headless runs; equivalent to `--profile <name>` |
 | `ANTE_INSTALL_DIR` | Installer-only override for the binary install directory (default: `~/.ante/bin`) |
 | `ANTE_OFFLINE_CONTEXT` | Override the local model context-window cap in tokens (see [Offline Mode](/local/offline#environment-variables)) |
+| `ANTE_MCP_TOOL_TIMEOUT` | MCP `tools/call` deadline in whole seconds. Defaults to `600`; zero or invalid values keep the default (see [MCP tool-call timeout](/extend/mcp#tool-call-timeout)) |
 | `ANTE_OPENAI_TRANSPORT` | OpenAI Responses transport: `http_sse` (default) or `websocket_auto` (see [OpenAI transports](/reference/catalog-reference#openai-transports)) |
 | `ANTE_TELEMETRY` | Disable OpenTelemetry export with `off`, `false`, `0`, `disable`, or `disabled` (case-insensitive) |
 | `OTEL_EXPORTER_OTLP_ENDPOINT` | Send application metrics and logs to this OTLP/HTTP base URL; overrides any endpoint embedded in the binary |

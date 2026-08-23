@@ -17,7 +17,7 @@ Type `/` in the [interactive TUI](/usage/tui) to run built-in commands for commo
 | `/theme` | Open theme selection dialog |
 | `/diff` | Show git diff (including untracked files) |
 | `/connect` | Sign in with OAuth (API keys are detected automatically) |
-| `/models` | Select a model and effort level for the current provider |
+| `/models [model_id]` | With no argument, open the model and effort picker for the current provider; with a model id, switch to it directly — including ids the catalog does not list |
 | `/providers` | Select an available provider for the current session |
 | `/offline-mode` | Run a local model with the built-in inference engine |
 | `/term [name [args...]]` | With no name, open the terminal-session picker; with a name, attach or detach that tmux session, launching a same-named command plus arguments when the session is new — see [Terminal sessions](/usage/tui#terminal-sessions) |
