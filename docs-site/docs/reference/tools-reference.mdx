@@ -37,7 +37,7 @@ Search file contents with regular expressions.
 
 ### Bash
 
-Execute shell commands. Each call runs in a fresh non-interactive process — shell state does not persist between calls. Long-running commands (servers, watchers, slow builds) can be launched in the background; the agent gets back a handle under `~/.ante/run/jobs/<proc-id>/` with `status.json`, `stdout.txt`, and `stderr.txt`, and can stop the process by its pid. Live handles survive Ante restarts; settled handles are collected after 24 hours. A trailing `&` on a background command is redundant and is stripped automatically. Cancelling a foreground Bash call terminates its whole process group, including child and grandchild processes. Requires approval.
+Execute shell commands. Each call runs in a fresh non-interactive process — shell state does not persist between calls. Long-running commands (servers, watchers, slow builds) can be launched in the background; the agent gets back a handle under `~/.ante/run/jobs/<proc-id>/` with `status.json`, `stdout.txt`, and `stderr.txt`, and can stop the process by its pid. Live handles survive Ante restarts and are never collected at any age; a settled job's handle is collected at a later Ante startup, once its directory has sat unchanged for 24 hours. A trailing `&` on a background command is redundant and is stripped automatically. Cancelling a foreground Bash call terminates its whole process group, including child and grandchild processes. Requires approval.
 
 For interactive programs and persistent shells, the agent drives durable named tmux sessions (`ante-*`) through ordinary Bash calls, guided by a bundled `tmux` skill — every keystroke it sends goes through normal Bash permission checks. Watch or type in any of those sessions with [`/term <name>`](/usage/tui#terminal-sessions).
 
@@ -67,17 +67,13 @@ These are not enabled by default. Turn them on with `--include-tools`.
 
 Read and analyze an image with a natural-language instruction.
 
-### Browser
-
-Drive a Chromium browser for navigation, content extraction, and automation. The agent typically takes a snapshot of the page to find interactive elements, then clicks or types into them. Requires approval, and only available when Ante is built with the `browser` cargo feature.
-
 ## MCP tools
 
 Tools provided by configured [MCP servers](/extend/mcp) are exposed to the agent as `mcp__<server>__<tool>`. They appear alongside built-in tools and behave identically from the agent's perspective. MCP tools obey the same `--tools`/`--include-tools`/`--exclude-tools` filtering as built-in tools, so a restrictive `--tools` base that doesn't name them will strip them; filter per server with `enabled_tools` instead.
 
 ## Default tool set
 
-By default Ante enables `Read`, `Bash`, `Grep`, `Glob`, `TodoWrite`, `WebFetch`, `Edit`, `Write`, and `Agent`. `Browser` is also included when Ante is built with the `browser` feature. `WebSearch` is added automatically when the session's provider supports native web search.
+By default Ante enables `Read`, `Bash`, `Grep`, `Glob`, `TodoWrite`, `WebFetch`, `Edit`, `Write`, and `Agent`. `WebSearch` is added automatically when the session's provider supports native web search.
 
 `ViewImage` is opt-in.
 

@@ -15,17 +15,8 @@
 
 # Ante
 
-> **Alpha preview**: expect breaking changes and incomplete functionality. macOS and Linux only; on Windows we suggest [WSL](https://learn.microsoft.com/windows/wsl/install).
-
-## Read this first
-
-Two things many people ask about:
-
-**Where is the source?** The core harness currently ships as a prebuilt binary; this repo holds the docs, protocol, SDK, and eval pipeline ([details](#whats-in-this-repo)). We are working out a way to ship the source code along with the binary, to address security and privacy concerns first, while taking the time to figure out how open source should work in the agentic era. Progress and discussion: [issue #21](https://github.com/AntigmaLabs/ante/issues/21). If you have concerns today, run Ante in a sandbox: it is a single self-contained binary, built to be easy to deploy in a container or on a remote machine.
-
-**Is there telemetry?** Yes, and it is opt-out: set `ANTE_TELEMETRY=off` to disable export entirely. What it sends is anonymous — a random installation label you can delete and re-mint, never your username, hostname, or machine id. The `RUST_LOG` filter also applies to exported logs, a convenience carried over from the Rust ecosystem. A better UX is in the works. [Details →](https://docs.antigma.ai/configuration/preference#telemetry)
-
----
+> [!WARNING]
+> **Beta preview:** Expect breaking changes and incomplete functionality. macOS and Linux only; on Windows, we suggest [WSL](https://learn.microsoft.com/windows/wsl/install).
 
 **A ghost in your shell.** Ante is a self-contained coding agent that lives in your terminal and self-organizes. One ~15MB compressed download from [Antigma Labs](https://antigma.ai) that expands to a single Rust executable with zero runtime dependencies, built to get the most out of any model.
 
@@ -36,23 +27,23 @@ curl -fsSL https://ante.run/install.sh | bash
 ante
 ```
 
-### One harness to run them all
-
 We care about **the harness, not a co-trained model or a secret prompt**. The harness and the model are a dynamic duo: they should evolve together but not be bound together. Prompts belong to the user.
 
 Ante makes this declarative: [one settings profile](#one-binary-many-agents) can define the whole agent, replacement system prompt included.
 
-[![One harness to run them all, and in the darkness unbind them — the Ante film](docs-site/static/assets/one-harness-poster.jpg)](https://download.ante.run/media/one-harness.mp4)
+<p align="center">
+  <a href="https://download.ante.run/media/one-harness.mp4">
+    <img src="docs-site/static/assets/one-harness-poster-play.jpg" alt="Watch the Ante film (1 min)" width="640">
+  </a>
+</p>
 
-**[▶ Watch the film (1 min)](https://download.ante.run/media/one-harness.mp4)**
-
-Every agent claims to be good. Here are numbers you can check:
-
-### 🥇 Continuously evaled and evolved, in public
+### 🥇 Continuously evaluated and evolved in public
 
 We evaluate Ante as a harness across different model families instead of coupling it to one hero model. Ante runs [Terminal-Bench 2.1](https://antigma.ai/eval) continuously under official leaderboard constraints: 89 tasks, 5 trials each. Each result pins the exact Ante build you can download and links the raw Harbor run for independent audit. Latest full run: **82.7%** with open-weight **DeepSeek V4 Flash 0731** (368/445 trials, Ante 0.preview.71, about $68 of inference). DeepSeek [reports](https://deepseek.ai/blog/deepseek-v4-flash-ga-agent-benchmarks) the same 82.7 for this model, measured with its unreleased DeepSeek Harness in minimal mode.
 
-We also isolate the harness itself: in a controlled test using the same DeepSeek model slug, tasks, and sandbox across five harness configurations, Ante passed **10/10**, Ante with its short prompt passed **9/10**, and Pi, OpenCode, and Hermes each passed **7/10**. Ten tasks are an early signal, not a definitive ranking, but they show that fixing the model does not fix the outcome.
+#### Same model, different harness
+
+[![Benchmark summary for five agent harness configurations running the same DeepSeek model](https://antigma.ai/assets/files/overview-heatmap-86c979b50b72aef4b29d368c5684cecf.png)](https://antigma.ai/blog/2026/08/04/harness-matter)
 
 **[Live cross-model results →](https://antigma.ai/eval)** · [Same-model harness comparison →](https://antigma.ai/blog/2026/08/04/harness-matter) · [Methodology →](https://docs.antigma.ai/benchmarks/eval)
 

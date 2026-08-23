@@ -21,6 +21,14 @@ The main view shows a conversation between you and the agent. Type your prompt i
 
 Markdown rendering includes LaTeX math: expressions in `$...$`, `$$...$$`, `\(...\)`, or `\[...\]` are converted to a Unicode approximation for terminal display (`\alpha` → `α`, `x^2` → `x²`, `\frac{1}{2}` → `½`), including multi-line layout for environments like `aligned` and `pmatrix`.
 
+Reasoning stays collapsed in the chat. However long the model thinks, the turn shows a single line:
+
+```
+✻ Thinking… (ctrl+o expand)
+```
+
+The glyph pulses while the reasoning is still arriving and goes static once the segment ends. A turn that thinks, calls a tool, then thinks again shows one marker per segment. The full monologue is in the [transcript view](#transcript-view), live while it streams.
+
 ### Tool approval
 
 When the agent wants to execute a tool that requires approval (like `Bash` or `Write`), you'll see an approval prompt. Pick an option with the number keys or arrow keys + Enter:
@@ -44,6 +52,14 @@ In the main chat, contiguous quiet calls such as Bash, Read, Grep, Glob, WebFetc
 
 After compaction — manual `/compact` or [automatic](/configuration/preference#settings-file) — the conversation shows a collapsed `* Compacted` marker; the transcript view renders the full summary the model wrote. When Ante trims oversized tool results instead of summarizing, an info line reports what was trimmed.
 
+### Selecting and copying text
+
+The fullscreen views — the transcript, the [diff view](#diff-view), and `/diff` output — capture the mouse for wheel scrolling, so they handle selection themselves instead of leaving it to the terminal. Drag across the text and it copies on release; the footer confirms with `copied N lines`. Double-click selects a word, counting `_-./~+@#$%&=:` as word characters so a path or URL comes out whole, and triple-click selects the logical line. Dragging on the top or bottom row scrolls and keeps extending the selection past the viewport.
+
+Copies rejoin soft-wrapped rows into the lines they came from, so a wrapped command or URL pastes back intact. Tool output, code blocks, tables, and diffs copy as displayed. Copies go to the OS clipboard and also as an OSC 52 escape, so they work over SSH and inside tmux; selections above 100 KB skip the OSC 52 channel. Clicking outside the content clears the selection, and a whitespace-only grab never touches the clipboard.
+
+The inline chat view is unchanged. It does not capture the mouse, so your terminal's own selection still applies there.
+
 ### Model and provider selection
 
 Use the built-in selectors to switch models or providers during a session without restarting.
@@ -55,6 +71,23 @@ Ante includes a theme system for consistent styling. Choose a theme through the 
 ## Slash commands
 
 Type `/` to run built-in commands like `/models`, `/resume`, and `/compact`. See the full list in [Slash Commands](/usage/slash-commands).
+
+## Session usage
+
+`/usage` opens a dialog with what the session has spent: a row per model, then the session-wide cache hit rate and the turn and model-call counts.
+
+```
+Usage by model:
+  claude-opus-5:  5.0k input, 3.2k output, 1.1m cache read, 45.0k cache write
+  gpt-5.1:  900 input, 80 output
+
+Cache hit rate:  95%
+Turns: 12 · Model calls: 2
+```
+
+Each row splits into four buckets: `input` counts only the uncached part of the prompt, with the cached part reported separately as cache reads and cache writes. The hit rate is cache reads as a share of the gross input across every model.
+
+The TUI counts these itself, from the usage each response reports, so they cover only what reaches the client. Spend that never emits a usage event is missing: sub-agent sessions, failed calls, and the goal judge. `/clear` starts the count over, and a resumed session counts only the part of its event log that replays. Treat it as a read on the session and your provider's dashboard as the billing record.
 
 ## Goal-driven sessions
 

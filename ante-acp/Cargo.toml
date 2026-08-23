@@ -1,0 +1,11 @@
+[package]
+name = "ante-acp"
+version = "0.1.0"
+edition = "2024"
+description = "Agent Client Protocol support for Ante"
+license = "Apache-2.0"
+documentation = "https://docs.rs/ante-acp"
+homepage = "https://antigma.ai"
+repository = "https://github.com/AntigmaLabs/ante"
+
+[dependencies]
