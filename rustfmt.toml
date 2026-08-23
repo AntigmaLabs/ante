@@ -1,0 +1,2 @@
+# Match the compact formatting of crates synced from Ante's internal workspace.
+use_small_heuristics = "Max"
