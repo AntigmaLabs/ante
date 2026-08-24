@@ -14,6 +14,8 @@ Ante lets you switch between models, providers, and effort levels mid-session �
 
 Type `/models` in the TUI to open the model selector. It lists the current provider's models (the title shows the scope, e.g. *Switch Model — Anthropic*). Use the arrow keys to pick a model, adjust the effort slider, and press Enter to confirm.
 
+`/models <model_id>` skips the dialog and switches straight to that model on the current provider. The id does not have to appear in the picker — anything the provider serves works, so this is how you reach an [Open Router](/reference/catalog-reference#open-router) model the catalog does not carry. The model starts at its catalog default effort; reopen `/models` with no argument to move the slider. With no provider selected yet, the id picks the provider the same way `--model` does on the CLI.
+
 Press `Tab` to hand off to the provider selector when you want to switch providers instead.
 
 ## Switching providers

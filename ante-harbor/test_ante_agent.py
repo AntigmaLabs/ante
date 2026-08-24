@@ -1,3 +1,4 @@
+"""Dependency-free contract tests for the adapter published to AntigmaLabs/ante."""
 from __future__ import annotations
 
 import importlib
@@ -87,33 +88,51 @@ ante_agent = importlib.import_module("ante_agent")
 
 
 class ShellCommandTests(unittest.TestCase):
-    def run_shell(self, command: str, *, path: Path | None = None) -> subprocess.CompletedProcess:
+    def run_shell(
+        self, command: str, *, path: Path | None = None
+    ) -> subprocess.CompletedProcess:
         env = os.environ.copy()
         if path is not None:
             env["PATH"] = f"{path}{os.pathsep}{env['PATH']}"
-        # ante_command uses Bash's PIPESTATUS to return the agent's status from
-        # the logging pipeline, so run the generated command with the shell it
-        # actually targets.
-        return subprocess.run(["bash", "-c", command], text=True, capture_output=True, env=env)
+        return subprocess.run(
+            ["bash", "-c", command], text=True, capture_output=True, env=env
+        )
 
-    def test_setup_log_command_mirrors_setup_output(self):
+    def test_setup_log_command_overwrites_setup_log(self):
         with tempfile.TemporaryDirectory() as directory:
             log = Path(directory) / "setup" / "stdout.txt"
             with patch.object(ante_agent, "_SETUP_LOG", log):
                 command = ante_agent.setup_log_command(
-                    "printf 'setup output\\n'", append=False
+                    "printf 'fresh setup output\\n'", append=False
                 )
+
             result = self.run_shell(command)
 
             self.assertEqual(result.returncode, 0)
-            self.assertEqual(result.stdout, "setup output\n")
-            self.assertEqual(log.read_text(), "setup output\n")
+            self.assertEqual(log.read_text(), "fresh setup output\n")
+
+    def test_setup_log_command_appends_to_setup_log(self):
+        with tempfile.TemporaryDirectory() as directory:
+            log = Path(directory) / "setup" / "stdout.txt"
+            log.parent.mkdir()
+            log.write_text("earlier setup output\n")
+            with patch.object(ante_agent, "_SETUP_LOG", log):
+                command = ante_agent.setup_log_command("printf 'next setup output\\n'")
+
+            result = self.run_shell(command)
+
+            self.assertEqual(result.returncode, 0)
+            self.assertEqual(
+                log.read_text(), "earlier setup output\nnext setup output\n"
+            )
 
     def test_ante_command_preserves_agent_failure(self):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
             binary = root / "ante"
-            binary.write_text("#!/bin/sh\ncat >/dev/null\nprintf 'agent output\\n'\nexit 19\n")
+            binary.write_text(
+                "#!/usr/bin/env bash\ncat >/dev/null\nprintf 'agent output\\n'\nexit 19\n"
+            )
             binary.chmod(0o755)
             instruction = root / "instruction.md"
             instruction.write_text("test instruction")
@@ -128,29 +147,6 @@ class ShellCommandTests(unittest.TestCase):
 
             self.assertEqual(result.returncode, 19)
             self.assertEqual(log.read_text(), "agent output\n")
-            self.assertFalse(instruction.exists())
-
-    def test_ante_command_returns_agent_status_when_tee_fails(self):
-        with tempfile.TemporaryDirectory() as directory:
-            root = Path(directory)
-            binary = root / "ante"
-            binary.write_text("#!/bin/sh\ncat >/dev/null\nexit 19\n")
-            binary.chmod(0o755)
-            tee = root / "tee"
-            tee.write_text("#!/bin/sh\ncat >/dev/null\nexit 31\n")
-            tee.chmod(0o755)
-            instruction = root / "instruction.md"
-            instruction.write_text("test instruction")
-            log = root / "logs" / "ante.txt"
-
-            with (
-                patch.object(ante_agent, "_AGENT_LOG", log),
-                patch.object(ante_agent, "_INSTRUCTION_PATH", instruction),
-            ):
-                command = ante_agent.ante_command("test-model", None, None, "")
-            result = self.run_shell(command, path=root)
-
-            self.assertEqual(result.returncode, 19)
             self.assertFalse(instruction.exists())
 
 

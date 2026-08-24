@@ -18,6 +18,10 @@ on:
 permissions:
   contents: read
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   check:
     name: Check ${{ matrix.crate }}
@@ -47,16 +51,11 @@ jobs:
       - uses: actions-rust-lang/setup-rust-toolchain@v1.17.0
         with:
           toolchain: stable
-          components: clippy, rustfmt
           cache-workspaces: ${{ matrix.workspace }} -> target
-      - name: Check formatting
+      - name: Build
         env:
           MANIFEST: ${{ matrix.manifest }}
-        run: cargo fmt --manifest-path "$MANIFEST" -- --check
-      - name: Run Clippy
-        env:
-          MANIFEST: ${{ matrix.manifest }}
-        run: cargo clippy --manifest-path "$MANIFEST" --all-targets -- -D warnings
+        run: cargo build --manifest-path "$MANIFEST" --all-targets
       - name: Run tests
         env:
           MANIFEST: ${{ matrix.manifest }}

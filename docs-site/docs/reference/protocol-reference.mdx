@@ -169,8 +169,12 @@ Respond to a tool approval request (sent after receiving a `TurnPause` event wit
     "ApprovalResponse": {
       "turn_id": "step_01ARZ...",
       "responses": [
-        ["tool_use_abc123", "Accept"],
-        ["tool_use_def456", "Skip"]
+        { "tool_use_id": "tool_use_abc123", "decision": "Accept" },
+        {
+          "tool_use_id": "tool_use_def456",
+          "decision": "Deny",
+          "message": "use the read-only endpoint"
+        }
       ]
     }
   },
@@ -178,12 +182,20 @@ Respond to a tool approval request (sent after receiving a `TurnPause` event wit
 }
 ```
 
+**ToolDecision fields:**
+
+| Field | Type | Description |
+|---|---|---|
+| `tool_use_id` | `string` | Tool call being decided (matches `ToolStart.id`) |
+| `decision` | `ReviewDecision` | One of the values below |
+| `message` | `string?` | Feedback returned with a denial. Omit for every other decision |
+
 **ReviewDecision values:**
 
 | Decision | Description |
 |---|---|
 | `Accept` | Allow this tool call |
-| `Skip` | Skip this tool call |
+| `Deny` | Deny this tool call. The agent receives a failed tool result — `Tool call denied by user: <message>` when a `message` is present, otherwise `Tool call denied by user and was not executed.` |
 | `AcceptForSession` | Grant this call for the rest of the session (scoped — see [Session grants](/configuration/permission#session-grants)) |
 | `AcceptAlways` | Grant for the session and persist an allow rule to `settings.json` ("always allow") |
 

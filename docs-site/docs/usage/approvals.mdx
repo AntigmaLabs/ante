@@ -17,7 +17,7 @@ Each tool call shows what the agent wants to do. Use the arrow keys to pick your
 | Key | Action |
 |-----|--------|
 | `↑` / `↓` | Navigate between the options |
-| `1` / `2` / `3` / `4` | Pick an option directly |
+| `1` – `5` | Pick an option directly |
 | `y` / `Enter` | Confirm the highlighted option |
 | `Esc` | Reject the tool call |
 | `Tab` | Preview the proposed diff or request details |
@@ -26,8 +26,15 @@ Each tool call shows what the agent wants to do. Use the arrow keys to pick your
 - **Yes, allow … for this session** — grant it for the rest of the session. The grant is [scoped](/configuration/permission#session-grants) — a Bash command generalizes to a safe prefix (approving `cargo test -p foo` covers `cargo test *`), so sibling calls don't re-prompt
 - **Yes, always allow … (save to settings)** — also persist an allow rule to `settings.json` so it applies in future sessions
 - **No** — reject the tool call; the agent will adjust its approach
+- **No, and tell Ante what to do differently** — reject and send the agent a reason (see below)
 
 Press `Tab` to open a diff view and inspect exact line-by-line changes before committing.
+
+## Rejecting with feedback
+
+The last option opens a one-line field under the prompt. Type what the agent should do instead and press **Enter** to send it; **Esc** goes back to the choice list and **Ctrl+C** clears the field without interrupting the turn. An empty field never submits, and the field caps at 2,000 characters. Standard readline editing keys work — `Ctrl+A`/`Ctrl+E`, `Ctrl+W`, `Ctrl+K`/`Ctrl+U`, and `Ctrl+Y` to yank back what you killed.
+
+Your reason reaches the model as the tool call's failed result, `Tool call denied by user: use the read-only endpoint`, in place of the bare `Tool call denied by user and was not executed.` that a plain **No** sends. In the transcript the denied call shows a red `Failed` header with the reason as its child row.
 
 :::tip
 If you trust the agent for a particular task, use `ante --yolo` to skip all approval prompts. You can also fine-tune which tools require approval in the [permissions configuration](/configuration/permission).

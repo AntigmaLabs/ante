@@ -79,7 +79,7 @@ Ante is provider-agnostic. Each provider implements a common interface for sendi
 | Gemini | Gemini API | Gemini 3.x family |
 | Vertex AI Gemini | Gemini API | Gemini 3.x family |
 | Grok (xAI) | Responses API | Grok 4.6 |
-| Zai | OpenAI-compatible | GLM-5.2 |
+| Zai | OpenAI-compatible | GLM-5.3 |
 | Open Router | OpenAI-compatible | Multi-vendor chat models |
 | Open Router Responses | Responses API | GPT models over OpenRouter |
 | Open Router Anthropic | Messages API | Claude models over OpenRouter |
@@ -117,7 +117,7 @@ pub trait Tool: Send + Sync {
 | `Edit` | File I/O | Yes | Exact string replacement in files |
 | `Glob` | File I/O | No | Find files by pattern |
 | `Grep` | File I/O | No | Search file contents with regex |
-| `Bash` | Shell | Yes | Execute shell commands; supports `run_in_background` for long-running processes |
+| `Bash` | Shell | Yes | Execute shell commands; returns a durable handle when a command outlives its `max_wait_ms` window |
 | `Agent` | Builtin | No | Spawn sub-agent for complex tasks |
 | `TodoWrite` | Builtin | No | Manage task lists |
 | `WebFetch` | Builtin | Yes | Fetch and process web content |

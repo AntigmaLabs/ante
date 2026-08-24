@@ -1,5 +1,26 @@
 # Changelog
 
+## v0.preview.87 - 2026-08-23
+
+### Added
+- GLM 5.3 on Z.ai and OpenRouter, with graded low/high/max reasoning effort (Antix keeps GLM 5.2 until its catalog exposes 5.3)
+- `/models <model_id>` selects a model directly on the current provider, including IDs not in the catalog listing
+- Denying a tool call can carry a feedback message: the reason reaches the model as the failed tool result and is shown in the transcript under the decision line
+- `/term` opens a native split inside Ghostty 1.3+
+
+### Changed
+- Successful file reads render as a compact one-liner (`Read (path) ·110 lines`) and failed calls carry a red `Failed` suffix with the error as a dim child row; grouped runs list reads and failures per call instead of folding them into the neutral counts summary
+- The default status line renders `model(effort)` and `cwd(⑂ branch)` as compound items, with the same independent `/statusline` toggles
+- Markdown blockquotes use the muted theme foreground instead of bright green, so quoted lines read as asides
+- The chat input, diff approval, credential entry, and model settings share an in-house grapheme-aware text buffer; combining marks, skin tones, ZWJ emoji, and wide glyphs now wrap and move the cursor correctly (removes the `tui-input`, `ratatui-macros`, and `critical-section` dependencies)
+
+### Fixed
+- A mid-turn compaction (context-overflow retry) no longer ends the turn by printing the summary as the answer — the summary is re-entered as a user-role continuation so the model resumes the task
+- Launching the TUI with a redirected stdout fails fast with an actionable message instead of hanging two seconds and dying with a cursor-position error
+- A persistently empty provider response fails the turn after three retries instead of resubmitting the same prompt up to the step limit, and tool calls whose stream never delivered a name are failed back to the model instead of being silently dropped
+- Queued keystrokes can no longer approve a tool approval prompt that was just swapped in
+- The public repository's adapter tests are kept in sync with the source of record, which previously failed deterministically in the published checkout
+
 ## v0.preview.86 - 2026-08-20
 
 ### Added

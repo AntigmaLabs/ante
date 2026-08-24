@@ -48,7 +48,7 @@ When the agent proposes file edits, Ante switches to a fullscreen diff view on a
 
 Press `Ctrl+O` to open the transcript view on an alternate screen: the full conversation history with tool results expanded, including lines the inline view truncates. Scroll with `j`/`k` or `PgUp`/`PgDn`, jump with `g`/`G`, and close with `Ctrl+O` or `q`.
 
-In the main chat, contiguous quiet calls such as Bash, Read, Grep, Glob, WebFetch, WebSearch, and MCP tools are grouped into one compact activity cell by default. While calls are running, the cell shows their count, arguments, and elapsed time; once complete it collapses to a summary such as `Ran 2 shell commands, read 3 files`. Edit, Write, and Agent calls keep their richer standalone cells, and the transcript view always preserves every call and result. Disable grouping with **Group tool activity** in `/config` or set `"group_tool_activity": false` in `~/.ante/settings.json`; the change applies to new calls only.
+In the main chat, contiguous quiet calls such as Bash, Read, Grep, Glob, WebFetch, WebSearch, and MCP tools are grouped into one compact activity cell by default. While calls are running, the cell shows their count, arguments, and elapsed time; once complete it collapses to a summary such as `Ran 2 shell commands, searched for 3 patterns`. Successful file reads and failed calls break out of that summary onto their own rows beneath it — a read as `Read (src/main.rs) ·110 lines`, a failure as a red `Failed` header with its error on a dim row under it. Edit, Write, and Agent calls keep their richer standalone cells, and the transcript view always preserves every call and result. Disable grouping with **Group tool activity** in `/config` or set `"group_tool_activity": false` in `~/.ante/settings.json`; the change applies to new calls only.
 
 After compaction — manual `/compact` or [automatic](/configuration/preference#settings-file) — the conversation shows a collapsed `* Compacted` marker; the transcript view renders the full summary the model wrote. When Ante trims oversized tool results instead of summarizing, an info line reports what was trimmed.
 
@@ -234,7 +234,9 @@ The agent drives interactive programs — dev servers, REPLs, ssh, even other CL
 
 `/term <name> [args...]` opens a native terminal view on `ante-<name>`, creating the session if needed. If `<name>` is an executable on `PATH`, a newly created session launches `<name> [args...]`; for example, `/term claude --continue` opens a fresh session already running `claude --continue`. Existing sessions only attach, so later arguments never restart or replace a running program. Running `/term <name>` again detaches the viewer while leaving the session alive. Names are limited to letters, digits, `-`, and `_`.
 
-Bare `/term` opens a picker of all live Ante sessions. Press **Enter** to attach or detach the selected session, press **d** or **Delete** twice to kill it, or choose **new terminal** to create one. When Ante runs inside tmux, the first viewer opens to its right and additional viewers stack beneath that viewer; other supported terminal hosts open a native split or window.
+Bare `/term` opens a picker of all live Ante sessions. Press **Enter** to attach or detach the selected session, press **d** or **Delete** twice to kill it, or choose **new terminal** to create one.
+
+A viewer prefers a native split of whatever Ante is already running in: tmux, zellij, WezTerm, kitty, Ghostty 1.3+, or iTerm2. Inside tmux the first viewer opens to the right and later ones stack beneath it. Ghostty and iTerm2 splits go through AppleScript, so an older version or a machine with AppleScript turned off falls back to a window. Failing a split, Ante opens a new OS window in the first terminal it finds — kitty, WezTerm, Ghostty, iTerm2, gnome-terminal, or Terminal.app.
 
 Requires `tmux`.
 

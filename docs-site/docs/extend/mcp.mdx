@@ -56,10 +56,10 @@ MCP tools obey the same `--tools` / `--include-tools` / `--exclude-tools` filter
 
 ## Lifecycle
 
-MCP warm-up runs **lazily** in the background so the daemon stays responsive. When a session starts:
+In the interactive TUI, MCP warm-up runs **lazily** in the background so the daemon stays responsive. When a session starts:
 
 1. `SessionStart` and the initial `ExtensionRefreshed` fire immediately — the input is usable right away.
-2. A background task connects to all configured servers in parallel (30-second handshake timeout each).
+2. A background task connects to all configured servers in parallel. Each server gets a 15-second initialization deadline and a separate 15-second tool-list deadline.
 3. As each server's tools are discovered they are added to the live tool registry; tools that come online become callable on the **next turn** (in-flight turns hold a frozen snapshot).
 4. A second `ExtensionRefreshed` is emitted once warm-up finishes so the `/mcp` panel populates with each server's discovered tool list.
 
@@ -71,6 +71,18 @@ Progress is surfaced to the user via a grouped notification (an `InfoBlockStart`
 ```
 
 Servers that fail to connect (or fail to list their tools) are logged, skipped, and reported as a child line under the warm-up block. Server processes are kept alive for the duration of the session and terminated when the daemon exits.
+
+Headless runs (`ante -p`) block before their first prompt until MCP warm-up finishes. A turn's tool schema is frozen when that turn starts, so this ensures configured MCP tools are present for a one-turn headless task. `ante doctor` skips MCP warm-up entirely.
+
+### Tool-call timeout
+
+Each MCP tool call has a 10-minute deadline so a hung server cannot pin a turn indefinitely. Set `ANTE_MCP_TOOL_TIMEOUT` to a positive number of whole seconds to change it for all MCP calls in the process:
+
+```bash
+ANTE_MCP_TOOL_TIMEOUT=120 ante
+```
+
+Zero, negative, or unparseable values keep the 600-second default. This setting covers `tools/call`; it does not change the initialization or tool-list deadlines above.
 
 ## The `/mcp` command
 

@@ -35,6 +35,8 @@ echo "function add(a, b) { return a + b }" | ante -p "add TypeScript types"
 
 When both stdin and a prompt argument are provided, they are concatenated (stdin first, then the prompt).
 
+Redirected stdout is headless-only. Plain `ante > out.txt` with no prompt refuses to start, because the TUI draws to stdout and boots by asking the terminal where the cursor is. Pass a prompt, or pipe one in, to capture output to a file.
+
 ## CLI reference
 
 ```
