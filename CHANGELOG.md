@@ -1,5 +1,20 @@
 # Changelog
 
+## v0.preview.88 - 2026-08-25
+
+### Added
+- `ante <name>` runs an external `ante-<name>` executable, resolved from `~/.ante/bin` then `$PATH`; built-in subcommands always take precedence, and an unrecognized name still gets a did-you-mean suggestion
+- Antix OAuth catalog refresh: Gemini 3.7 Flash, Claude Sonnet 5, Claude Opus 5, and GLM 5.3 replace Gemini 3.5 Flash, Sonnet 4.6, Opus 4.8, and GLM 5.2
+
+### Changed
+- `ante --help` and usage errors no longer create a log file or boot telemetry — the CLI now parses before the async runtime, logging, and crash hook are initialized
+- The bundled `skill-creator` skill is model-invocable only and no longer appears as a user-facing command
+
+### Fixed
+- The "no provider is configured" error names the credential environment variables Ante actually reads and points at `ante auth login` and offline mode
+- A terminal that never answers the cursor-position query now explains that the inline UI query went unanswered and suggests launching outside the current wrapper or multiplexer, instead of reporting a bare crossterm timeout
+- MCP tool schemas no longer carry `pattern` onto the wire, so an unsupported regex construct (such as lookaround) in one server's schema can no longer make a provider reject the entire tool set; non-regex guidance like `format: email` is preserved
+
 ## v0.preview.87 - 2026-08-23
 
 ### Added

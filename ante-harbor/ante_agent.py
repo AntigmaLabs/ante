@@ -15,6 +15,7 @@ from ante_events import (
     events_from_text,
     final_turn_failure,
     has_reported_usage,
+    has_turn_end,
     is_number,
     read_event_log_text,
     resolved_model_effort_from_events,
@@ -326,14 +327,23 @@ class AnteAgent(BaseInstalledAgent):
         return text
 
     def _classify_exec_error(self, command: str, result: Any) -> NonZeroAgentExitCodeError:
-        """Classify a failed Ante process from its final structured turn only.
+        """Classify a failed Ante process from its final structured turn.
 
         Harbor calls this hook only after an exec returns nonzero. Exceptions
         raised by Harbor's own timeout/cancellation boundary bypass it.
+
+        A final ``TurnEnd(Error)`` is authoritative and maps through Ante's kind
+        table. A run whose final ``TurnEnd`` completed failed for a reason the
+        model did not report, so it stays a plain exit-code error rather than
+        letting recovered-turn text drive classification. Only output with no
+        ``TurnEnd`` at all defers to Harbor's maintained free-text patterns.
         """
         output = f"{result.stdout or ''}\n{result.stderr or ''}"
-        failure = final_turn_failure(events_from_text(output))
+        events = events_from_text(output)
+        failure = final_turn_failure(events)
         if failure is None:
+            if not has_turn_end(events):
+                return super()._classify_exec_error(command, result)
             detail = (
                 f"Command failed (exit {result.return_code}): {command}\n"
                 f"stdout: {self._truncate_output(result.stdout)}\n"
