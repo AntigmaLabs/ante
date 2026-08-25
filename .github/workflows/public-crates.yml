@@ -1,0 +1,62 @@
+name: Public Crates
+
+on:
+  pull_request:
+    paths:
+      - 'crates/**'
+      - 'ante-acp/**'
+      - 'rustfmt.toml'
+      - '.github/workflows/public-crates.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'crates/**'
+      - 'ante-acp/**'
+      - 'rustfmt.toml'
+      - '.github/workflows/public-crates.yml'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  check:
+    name: Check ${{ matrix.crate }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - crate: protocol-shape
+            manifest: crates/protocol-shape/Cargo.toml
+            workspace: crates/protocol-shape
+          - crate: exec
+            manifest: crates/exec/Cargo.toml
+            workspace: crates/exec
+          - crate: agent-sdk
+            manifest: crates/agent-sdk/Cargo.toml
+            workspace: crates/agent-sdk
+          - crate: llm
+            manifest: crates/llm/Cargo.toml
+            workspace: crates/llm
+          - crate: ante-acp
+            manifest: ante-acp/Cargo.toml
+            workspace: ante-acp
+
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions-rust-lang/setup-rust-toolchain@v1.17.0
+        with:
+          toolchain: stable
+          cache-workspaces: ${{ matrix.workspace }} -> target
+      - name: Build
+        env:
+          MANIFEST: ${{ matrix.manifest }}
+        run: cargo build --manifest-path "$MANIFEST" --all-targets
+      - name: Run tests
+        env:
+          MANIFEST: ${{ matrix.manifest }}
+        run: cargo test --manifest-path "$MANIFEST"
