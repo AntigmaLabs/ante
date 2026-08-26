@@ -1,3 +1,5 @@
+//! Newline-delimited JSON transport for child processes.
+
 use std::collections::BTreeMap;
 use std::path::PathBuf;
 use std::process::{ExitStatus, Stdio as ProcessStdio};

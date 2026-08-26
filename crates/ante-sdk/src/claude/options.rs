@@ -1,3 +1,5 @@
+//! Claude Code process and session options.
+
 use std::collections::BTreeMap;
 use std::path::PathBuf;
 

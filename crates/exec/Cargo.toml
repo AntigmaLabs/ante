@@ -2,16 +2,19 @@
 name = "ante-exec"
 version = "0.1.0"
 edition = "2024"
+rust-version = "1.88"
 description = "Standalone process execution utilities for Ante"
 license = "Apache-2.0"
+repository = "https://github.com/AntigmaLabs/ante"
+readme = "README.md"
 
 [dependencies]
-anyhow = "1"
-tokio = { version = "1", features = ["process", "sync", "time", "rt", "macros", "io-util", "fs"] }
+anyhow = "1.0"
+tokio = { version = "1.0", features = ["process", "sync", "time", "rt", "macros", "io-util", "fs"] }
 
 [target.'cfg(unix)'.dependencies]
 libc = "0.2"
 
 [dev-dependencies]
-pretty_assertions = "1"
-tempfile = "3"
+pretty_assertions = "1.0"
+tempfile = "3.0"

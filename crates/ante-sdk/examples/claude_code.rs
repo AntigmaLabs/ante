@@ -10,7 +10,7 @@
 use std::io::{self, Write};
 use std::path::PathBuf;
 
-use agent_sdk::claude::{
+use ante_sdk::claude::{
     AssistantMessage, Claude, ClaudeMessage, ClaudeOptions, ContentBlock, ControlRequestMessage,
     ControlResponseMessage, PermissionMode, ResultMessage, StreamEventMessage, SystemMessage,
     UserMessage,

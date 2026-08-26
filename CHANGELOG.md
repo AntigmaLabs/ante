@@ -1,5 +1,20 @@
 # Changelog
 
+## v0.preview.89 - 2026-08-26
+
+### Added
+- GLM 5.3 Flash on Z.ai (`glm-5.3-flash`) and OpenRouter (`z-ai/glm-5.3-flash`), with multimodal input, a 1M context window, and graded low/high/max reasoning effort; GLM 5.3 remains the default Z.ai model
+
+### Changed
+- Run arguments supplied alongside a subcommand are now rejected instead of silently ignored (`ante --model X catalog` errors)
+- Tool filters take one value per occurrence — `--tools Read,Write` or a repeated flag; space-separated lists now error, and `--allowed-tools` is removed in favor of `--tools`
+- `--profile` is process-scoped: it rides before or after any subcommand, and `serve`, `gateway`, `doctor`, `update`, `rage`, and external apps honor it instead of reading default settings; an unknown profile name falls back to `settings.json` rather than creating one
+- WebFetch drops its unused `prompt` argument — Ante has no extraction sub-model, so the interface is URL-only
+
+### Fixed
+- WebFetch identifies itself with an `ante/<version>` User-Agent — GitHub's API rejects UA-less requests with an opaque 403 — and a failed request now carries up to 2KB of the response body instead of a bare status line
+- `ante serve` handles a client that closes stdout as a logged disconnect instead of hanging, stops reading stdin after an explicit `Shutdown`, and bounds runtime teardown
+
 ## v0.preview.88 - 2026-08-25
 
 ### Added

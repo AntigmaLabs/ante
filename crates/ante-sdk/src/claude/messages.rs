@@ -1,3 +1,5 @@
+//! Typed messages from Claude Code's streaming protocol.
+
 use serde_json::Value;
 
 #[derive(Debug, Clone, PartialEq)]

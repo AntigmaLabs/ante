@@ -1,0 +1,19 @@
+[package]
+name = "ante-sdk"
+version = "0.1.0"
+edition = "2024"
+rust-version = "1.88"
+description = "Rust SDK for long-lived external agent runtimes"
+license = "Apache-2.0"
+repository = "https://github.com/AntigmaLabs/ante"
+readme = "README.md"
+
+[dependencies]
+serde = "1.0"
+serde_json = "1.0"
+thiserror = "2.0"
+tokio = { version = "1.52", features = ["io-util", "macros", "process", "rt-multi-thread"] }
+which = "8.0"
+
+[dev-dependencies]
+clap = { version = "4.6", features = ["derive"] }

@@ -1,5 +1,8 @@
 from __future__ import annotations
 
+import base64
+import binascii
+import hashlib
 import json
 from collections.abc import Iterable
 from dataclasses import dataclass
@@ -450,6 +453,101 @@ def _stringify(value: Any) -> str:
         return json.dumps(value, ensure_ascii=False)
     except TypeError:
         return str(value)
+
+
+_BINARY_MIME_FIELDS = ("mime_type", "media_type", "mimeType")
+
+
+def redact_binary_payloads(value: Any) -> int:
+    """Replace typed base64 blobs in a JSON value with forensic metadata.
+
+    The operation is deliberately shape-gated: only ``base64_data`` or ``data``
+    fields with a sibling MIME type are candidates, and malformed base64 is left
+    untouched. Returns the number of payloads replaced in place.
+    """
+    if isinstance(value, list):
+        return sum(redact_binary_payloads(item) for item in value)
+    if not isinstance(value, dict):
+        return 0
+
+    redacted = sum(redact_binary_payloads(item) for item in value.values())
+    mime_type = next(
+        (
+            value.get(field)
+            for field in _BINARY_MIME_FIELDS
+            if isinstance(value.get(field), str) and value.get(field)
+        ),
+        None,
+    )
+    if mime_type is None:
+        return redacted
+
+    for field in ("base64_data", "data"):
+        payload = value.get(field)
+        if not isinstance(payload, str) or not payload:
+            continue
+        try:
+            decoded = base64.b64decode(payload, validate=True)
+        except (binascii.Error, ValueError):
+            continue
+        value[field] = {
+            "redacted": True,
+            "mime_type": mime_type,
+            "decoded_bytes": len(decoded),
+            "sha256": hashlib.sha256(decoded).hexdigest(),
+        }
+        redacted += 1
+
+    return redacted
+
+
+def redact_event_log_text(output: str) -> tuple[str, int]:
+    """Redact typed binary payloads from copied Ante JSONL event logs."""
+    lines = []
+    redacted = 0
+    for line in output.splitlines(keepends=True):
+        body = line.rstrip("\r\n")
+        ending = line[len(body) :]
+        event_msg = event_from_line(body)
+        if (
+            event_msg is None
+            and body.lstrip().startswith("{")
+            and any(f'"{field}"' in body for field in ("base64_data", "data"))
+            and any(f'"{field}"' in body for field in _BINARY_MIME_FIELDS)
+        ):
+            raise ValueError("Could not safely redact a binary event-log line")
+        count = redact_binary_payloads(event_msg) if event_msg is not None else 0
+        if count:
+            line = json.dumps(event_msg, ensure_ascii=False, separators=(",", ":")) + ending
+            redacted += count
+        lines.append(line)
+    return "".join(lines), redacted
+
+
+def redact_trajectory_payloads(trajectory: Any) -> int:
+    """Redact binary blobs, including JSON-string observations, from ATIF."""
+    redacted = redact_binary_payloads(trajectory)
+    if not isinstance(trajectory, dict):
+        return redacted
+
+    for step in trajectory.get("steps") or []:
+        if not isinstance(step, dict):
+            continue
+        observation = step.get("observation")
+        if not isinstance(observation, dict):
+            continue
+        for result in observation.get("results") or []:
+            if not isinstance(result, dict) or not isinstance(result.get("content"), str):
+                continue
+            try:
+                content = json.loads(result["content"])
+            except json.JSONDecodeError:
+                continue
+            count = redact_binary_payloads(content)
+            if count:
+                result["content"] = _stringify(content)
+                redacted += count
+    return redacted
 
 
 def _spec_label(value: Any) -> str | None:

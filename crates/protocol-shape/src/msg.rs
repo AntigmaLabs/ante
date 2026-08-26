@@ -473,6 +473,12 @@ pub struct ModelSpec {
     pub context_limit: Option<u32>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub effort: Option<Effort>,
+    /// The distinct effort levels the model supports on its provider,
+    /// ascending. Empty when the model takes no effort knob on that
+    /// provider's wire. Filled in during model resolution; clients read it
+    /// and leave it empty on input — a value sent here is ignored.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub effort_options: Vec<Effort>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub support_vision: Option<bool>,
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -719,6 +725,7 @@ mod tests {
             stop_sequences: None,
             context_limit: None,
             effort: None,
+            effort_options: Vec::new(),
             support_vision: None,
             weight_class: None,
         }
