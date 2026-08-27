@@ -36,9 +36,9 @@ jobs:
           - crate: exec
             manifest: crates/exec/Cargo.toml
             workspace: crates/exec
-          - crate: agent-sdk
-            manifest: crates/agent-sdk/Cargo.toml
-            workspace: crates/agent-sdk
+          - crate: ante-sdk
+            manifest: crates/ante-sdk/Cargo.toml
+            workspace: crates/ante-sdk
           - crate: llm
             manifest: crates/llm/Cargo.toml
             workspace: crates/llm
