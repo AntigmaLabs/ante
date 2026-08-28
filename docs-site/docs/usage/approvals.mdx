@@ -30,6 +30,17 @@ Each tool call shows what the agent wants to do. Use the arrow keys to pick your
 
 Press `Tab` to open a diff view and inspect exact line-by-line changes before committing.
 
+## Auto and Yolo modes
+
+Press `Shift+Tab` to cycle the permission mode at any time: `strict` → `auto` → `yolo`. The change takes effect immediately, including for a turn that is already running.
+
+- **Auto** honors your permission rules, then allows unmatched tool calls automatically. Bash commands that Ante classifies as dangerous still ask for approval.
+- **Yolo** skips approval prompts and permission rules for the current session. You can also start directly in this mode with `ante --yolo`.
+
+<img src="/assets/cookbook/automode.gif" alt="Switching Ante permission modes and running in Auto mode" style={{width: '100%', borderRadius: '8px', margin: '16px 0'}} />
+
+See [Permissions](/configuration/permission) for mode defaults and rule configuration.
+
 ## Rejecting with feedback
 
 The last option opens a one-line field under the prompt. Type what the agent should do instead and press **Enter** to send it; **Esc** goes back to the choice list and **Ctrl+C** clears the field without interrupting the turn. An empty field never submits, and the field caps at 2,000 characters. Standard readline editing keys work — `Ctrl+A`/`Ctrl+E`, `Ctrl+W`, `Ctrl+K`/`Ctrl+U`, and `Ctrl+Y` to yank back what you killed.
