@@ -46,7 +46,12 @@ pub enum Op {
     },
     RestoreLocalProvider,
     /// Manually trigger conversation compaction on the active session.
-    Compact,
+    /// `instructions` optionally steer the replacement summary — what to
+    /// emphasize or preserve. Ignored when the reduction needs no summary.
+    Compact {
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        instructions: Option<String>,
+    },
     /// Request a per-category breakdown of the active session's context-window
     /// occupancy. Answered with [`Evt::ContextReport`].
     ContextReport,
@@ -908,6 +913,26 @@ mod tests {
             serde_json::from_str::<Evt>(r#"{"CompactEnd":{}}"#)
                 .expect("deserialize CompactEnd without summary"),
             Evt::CompactEnd { summary: None }
+        ));
+    }
+
+    #[test]
+    fn compact_op_serde_roundtrip() {
+        let plain = serde_json::to_string(&Op::Compact { instructions: None })
+            .expect("serialize bare Compact");
+        assert_eq!(plain, r#"{"Compact":{}}"#);
+        assert!(matches!(
+            serde_json::from_str::<Op>(&plain).expect("deserialize bare Compact"),
+            Op::Compact { instructions: None }
+        ));
+
+        let steered =
+            serde_json::to_string(&Op::Compact { instructions: Some("keep dates".to_string()) })
+                .expect("serialize steered Compact");
+        assert_eq!(steered, r#"{"Compact":{"instructions":"keep dates"}}"#);
+        assert!(matches!(
+            serde_json::from_str::<Op>(&steered).expect("deserialize steered Compact"),
+            Op::Compact { instructions: Some(text) } if text == "keep dates"
         ));
     }
 

@@ -1,5 +1,19 @@
 # Changelog
 
+## v0.preview.90 - 2026-08-27
+
+### Added
+- `/compact` accepts instructions that steer the handoff summary — `/compact focus on the API changes` passes trailing arguments into the fold prompt
+
+### Changed
+- Redesigned compaction: one reducer with graded decay — aged tool results are evicted before anything is summarized, the newest slice of the dialog and your own messages survive verbatim, and the summary covers only what the model can no longer see. Compaction is decided at one point in the turn instead of several, so it is more consistent and no longer costs the model its working state
+- Bash results lead with the exit status as plain text instead of JSON-escaped output: stdout and stderr stay separate, empty sections are omitted, background handles are named, and signal-terminated jobs report the shell's `128 + signal` convention
+- The offline llama engine tracks the official llama.app artifact matrices, pinned at `b10612` (was `b10217`): curated ARM and x86 CPU/Vulkan feature tiers with the strongest compatible tier selected at install time, CUDA-first GPU selection with Vulkan fallback, and every mirrored artifact dependency-audited before upload
+- Dependency updates
+
+### Wire
+- `Op::Compact` changes from a unit variant to a struct variant carrying optional `instructions`. External clients on the old shape (sending bare `"Compact"`) need a coordinated bump
+
 ## v0.preview.89 - 2026-08-26
 
 ### Added
