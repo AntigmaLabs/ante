@@ -31,12 +31,6 @@ We care about **the harness, not a co-trained model or a secret prompt**. The ha
 
 Ante makes this declarative: [one settings profile](#one-binary-many-agents) can define the whole agent, replacement system prompt included.
 
-<p align="center">
-  <a href="https://download.ante.run/media/one-harness.mp4">
-    <img src="docs-site/static/assets/one-harness-poster-play.jpg" alt="Watch the Ante film (1 min)" width="640">
-  </a>
-</p>
-
 ### 🥇 Continuously evaluated and evolved in public
 
 We evaluate Ante as a harness across different model families instead of coupling it to one hero model. Ante runs [Terminal-Bench 2.1](https://antigma.ai/eval) continuously under official leaderboard constraints: 89 tasks, 5 trials each. Each result pins the exact Ante build you can download and links the raw Harbor run for independent audit. Latest full run: **82.7%** with open-weight **DeepSeek V4 Flash 0731** (368/445 trials, Ante 0.preview.71, about $68 of inference). DeepSeek [reports](https://deepseek.ai/blog/deepseek-v4-flash-ga-agent-benchmarks) the same 82.7 for this model, measured with its unreleased DeepSeek Harness in minimal mode.
