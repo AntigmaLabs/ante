@@ -135,7 +135,10 @@ impl OpenAiCompatProfile {
                 thinking_budget: None,
             },
             ThinkingDialect::Glm53ReasoningEffort { native_thinking } => ThinkingParams {
-                reasoning_effort: requested.map(|r| effort::resolve(GLM_53_RUNGS, r)),
+                reasoning_effort: Some(effort::resolve(
+                    GLM_53_RUNGS,
+                    requested.unwrap_or(Effort::Max),
+                )),
                 thinking: native_thinking.then(|| thinking_object(true)),
                 enable_thinking: None,
                 thinking_budget: None,
@@ -760,11 +763,11 @@ mod tests {
         }
 
         let direct_unset = profile("zai", "glm-5.3").thinking_params(None);
-        assert!(direct_unset.reasoning_effort.is_none());
+        assert_eq!(direct_unset.reasoning_effort, Some(ReasoningEffort::Max));
         assert_eq!(direct_unset.thinking.unwrap().thinking_type(), "enabled");
 
         let openrouter_unset = profile("openrouter", "z-ai/glm-5.3").thinking_params(None);
-        assert!(openrouter_unset.reasoning_effort.is_none());
+        assert_eq!(openrouter_unset.reasoning_effort, Some(ReasoningEffort::Max));
         assert!(openrouter_unset.thinking.is_none());
     }
 
