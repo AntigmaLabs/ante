@@ -19,6 +19,7 @@ Type `/` in the [interactive TUI](/usage/tui) to run built-in commands for commo
 | `/connect` | Sign in with OAuth (API keys are detected automatically) |
 | `/models [model_id]` | With no argument, open the model and effort picker for the current provider; with a model id, switch to it directly — including ids the catalog does not list |
 | `/providers` | Select an available provider for the current session |
+| `/add-provider` | Set up a custom provider in `catalog.json` — discovers the endpoint's models and can probe which effort levels each accepts (see [Custom catalog](/usage/providers#custom-catalog)) |
 | `/offline-mode` | Run a local model with the built-in inference engine |
 | `/term [name [args...]]` | With no name, open the terminal-session picker; with a name, attach or detach that tmux session, launching a same-named command plus arguments when the session is new — see [Terminal sessions](/usage/tui#terminal-sessions) |
 | `/update [skip \| cancel]` | Schedule the pending update for installation on exit; `skip` dismisses that version and `cancel` unschedules an accepted update |
