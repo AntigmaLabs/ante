@@ -50,7 +50,7 @@ When using third-party providers, make sure the model supports tool use (functio
 
 ## Custom catalog
 
-Create `~/.ante/catalog.json` to add a provider Ante doesn't ship, patch a built-in one, or tweak a model's defaults. It is merged on top of the built-in presets at startup, so you only specify what you want to add or change. The examples below are the common cases; see the [Catalog Reference](/reference/catalog-reference#catalogjson-schema) for the full schema, authentication forms, and resolution rules.
+Create `~/.ante/catalog.json` to add a provider Ante doesn't ship, patch a built-in one, or tweak a model's defaults. It is merged on top of the built-in presets at startup, so you only specify what you want to add or change. Prefer not to write it by hand? Run `/add-provider` in the TUI: Ante discovers the endpoint's models, can probe which effort levels each one accepts, and writes the entry for you (restart to load it). The examples below are the common cases; see the [Catalog Reference](/reference/catalog-reference#catalogjson-schema) for the full schema, authentication forms, and resolution rules.
 
 ### Add a hosted provider
 
@@ -82,6 +82,22 @@ Most hosted endpoints are OpenAI-compatible. Register one with `wire_style: "Ope
 export TOGETHER_API_KEY="..."
 ante --provider together --model moonshotai/Kimi-K2-Instruct
 ```
+
+### Declare the effort levels a model accepts
+
+The [effort slider](/usage/models-and-thinking#effort)'s ladder is built in per provider and model family, so a model on a custom endpoint may get a ladder that doesn't match what the endpoint really accepts. Declare the true set with `supported_efforts` — the slider then shows exactly those levels, and OpenAI-compatible providers send the selected level as the same-named `reasoning_effort`:
+
+```json
+"preferred_models": [
+  {
+    "id": "kimi-k3",
+    "effort": "high",
+    "supported_efforts": ["low", "medium", "high"]
+  }
+]
+```
+
+An empty list (`"supported_efforts": []`) declares that the model takes no effort setting at all. There is no API that reports supported levels, so when in doubt let `/add-provider` probe the endpoint for you.
 
 ### Add a local provider with no auth
 

@@ -301,7 +301,8 @@ A `providers` entry whose key matches a built-in (e.g. `openai`) patches that pr
           "description": "My fine-tuned model",
           "max_tokens": 32000,
           "context_limit": 200000,
-          "effort": "medium"
+          "effort": "medium",
+          "supported_efforts": ["low", "medium", "high"]
         }
       ]
     }
@@ -397,6 +398,7 @@ The same fields describe a model fully inside a provider's `preferred_models` (w
 | `stop_sequences` | List of strings that end generation. |
 | `context_limit` | Context window size, in tokens. |
 | `effort` | Default [effort level](/usage/models-and-thinking#effort) — `min`, `low`, `medium`, `high`, `xhigh`, or `max`. Omit for models with no reasoning knob (Ante then sends no effort parameter and hides the effort slider). |
+| `supported_efforts` | The effort levels this model accepts on this provider, ascending (same values as `effort`). Replaces the built-in ladder: the effort slider shows exactly these levels, and OpenAI-compatible providers send the selected level as the same-named `reasoning_effort` (`min` is sent as `minimal`). An empty list declares that the model takes no effort setting. Omit to keep the built-in ladder. |
 | `weight_class` | Size/cost tier — `Feather`, `Middle`, or `Heavy`. Drives automatic default and auxiliary model selection (see [Weight classes](#weight-classes)). |
 | `support_vision` | Whether the model accepts image input. When omitted, Ante infers it from the model id; an image read against a model with no vision support returns the image's metadata instead of its pixels. |
 

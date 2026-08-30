@@ -36,6 +36,8 @@ min · low · medium · high · xhigh · max
 
 In `/models`, effort is a slider under the model list with one tick per level the selected model actually supports — a model with four native levels shows four ticks, one with all six shows six. Models with no reasoning knob show no slider.
 
+The ladder is built in per provider and model family. For custom providers you can declare it yourself with `supported_efforts` on the model's catalog entry (see the [Catalog Reference](/reference/catalog-reference#model-fields)) — or run `/add-provider`, which probes the endpoint and writes the declaration for you.
+
 :::note
 Anthropic's API requires `temperature: 1` whenever thinking is active. If you've set a different `temperature` for a Claude model in your [catalog](/reference/catalog-reference#model-fields) or via `MODEL_TEMPERATURE`, turns with thinking on fail with a message saying so — clear the override to fix it.
 :::
