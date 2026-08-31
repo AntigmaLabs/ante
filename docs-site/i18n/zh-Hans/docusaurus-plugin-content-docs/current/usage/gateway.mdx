@@ -4,21 +4,19 @@ sidebar_label: "网关模式"
 description: "将 Ante 作为长寿命机器人接入 Slack 或 Discord"
 ---
 
-# 网关模式（Gateway Mode）
+网关模式（Gateway mode）允许将 Ante 作为长寿命机器人运行，可从 Slack、Discord 或同时从两者接入访问。每一次对话 —— 频道中的讨论串（thread）或私聊（DM）—— 都会分配到独立的智能体会话，使得多用户和多团队可以并发与 Ante 协作而互不干扰状态。
 
-网关模式（Gateway Mode）允许将 Ante 作为长寿命机器人运行，并接入 Slack、Discord 或同时接入两者。每一次对话 —— 频道中的 Thread 线程或私聊 DM —— 都会分配到独立的 Agent 会话，多个用户和团队可以并发与 Ante 协作而互不干扰。
-
-## 基础启动
+## 基础用法（Basic usage） {#basic-usage}
 
 ```bash
 ante gateway
 ```
 
-此命令将读取 `~/.ante/channels.json` 配置，连接已启用的各平台并开始监听消息。
+此命令将读取 `~/.ante/channels.json`，连接您启用的所有平台，并开始监听消息。
 
-## 配置文件
+## 配置文件（Configuration） {#configuration}
 
-创建或修改 `~/.ante/channels.json`。可以单独启用 Slack、Discord，或同时启用：
+创建 `~/.ante/channels.json`。您可以仅启用 Slack、仅启用 Discord 或两者同时启用。
 
 ```json
 {
@@ -36,65 +34,107 @@ ante gateway
 }
 ```
 
-以 `env:` 开头的值会在启动时从环境变量中读取，避免将敏感 Token 明文写入磁盘文件。
+以 `env:` 开头的值会在启动时从环境变量中读取，避免将敏感 Token 明文保存在文件中。
 
-### 访问控制
+### 访问控制（Access control） {#access-control}
 
-`allow_from` 字段控制谁有权限与机器人交互：
+`allow_from` 字段决定机器人会响应谁的消息：
 
-| 取值 | 允许访问的受众 |
+| 取值 | 允许与机器人对话的受众 |
 | --- | --- |
 | `"open"` | 工作区或服务器内的所有成员 |
 | `["U123", "U456"]` | 仅限列表中的具体用户 ID |
 | *(省略)* | 拒绝所有访问（安全的默认策略） |
 
-## 配置 Slack
+## 配置 Slack（Setting up Slack） {#setting-up-slack}
 
-1. 访问 [api.slack.com/apps](https://api.slack.com/apps) → 点击 **From scratch** 创建应用。
-2. **Settings → Socket Mode**：开启 Socket Mode 并创建一个拥有 `connections:write` 权限的 App-Level Token。复制该 `xapp-…` Token —— 作为 `app_token`。
-3. **Features → OAuth & Permissions → Bot Token Scopes**：添加权限 `chat:write`、`app_mentions:read`、`channels:history`、`im:history`、`im:write`。
-4. **Features → Event Subscriptions**：启用 Events 并订阅 `message.channels` 与 `message.im`。
+1. 访问 [api.slack.com/apps](https://api.slack.com/apps) → **From scratch** 创建应用。
+2. **Settings → Socket Mode**：开启 Socket Mode 并创建一个拥有 `connections:write` 权限的 App-Level Token。复制 `xapp-…` Token —— 作为 `app_token`。
+3. **Features → OAuth & Permissions → Bot Token Scopes**：添加 `chat:write`、`app_mentions:read`、`channels:history`、`im:history`、`im:write` 权限。
+4. **Features → Event Subscriptions**：开启事件订阅并订阅 `message.channels` 和 `message.im`。
 5. **Features → App Home**：启用 Messages Tab 并允许用户直接发送消息。
 6. **Settings → OAuth & Permissions → Install to Workspace**。复制生成的 `xoxb-…` Bot User OAuth Token —— 作为 `bot_token`。
-7. 在需要机器人的频道中运行：`/invite @your-bot-name`。
+7. 在每个需要机器人的频道中运行：`/invite @your-bot-name`。
 
 ```bash
 export SLACK_BOT_TOKEN="xoxb-..."
 export SLACK_APP_TOKEN="xapp-..."
 ```
 
-**在 Slack 中与机器人交互：** 在频道中 `@机器人` 或发起直接私信。机器人的回复将自动汇集在对应的 Thread 讨论串中。
+**在 Slack 中使用机器人：** 在频道中 `@提及` 机器人，或直接发送私聊 DM。机器人的回复始终汇总在讨论串（thread）中。
 
 :::note
-任何时候修改了 Scopes 权限或事件订阅后，必须点击 **Reinstall to Workspace** 重新安装生效。
+任何时候修改了权限（Scopes）或事件订阅后，必须点击 **Reinstall to Workspace** 重新安装才能生效。
 :::
 
-## 配置 Discord
+## 配置 Discord（Setting up Discord） {#setting-up-discord}
 
-1. 访问 [discord.com/developers/applications](https://discord.com/developers/applications) → 点击 **New Application**。
+1. 访问 [discord.com/developers/applications](https://discord.com/developers/applications) → **New Application** 创建应用。
 2. **Bot**：复制 Token —— 作为 `bot_token`。在 **Privileged Gateway Intents** 下开启 **Message Content Intent**（必选）。
-3. **OAuth2 → URL Generator**：在 **Scopes** 中勾选 `bot`；在 **Bot Permissions** 中勾选 `Send Messages`、`Read Message History`、`View Channels`。打开生成的链接将 Bot 邀请到您的服务器中。
+3. **OAuth2 → URL Generator**：在 **Scopes** 中勾选 `bot`；在 **Bot Permissions** 中勾选 `Send Messages`、`Read Message History`、`View Channels`。打开生成的 URL 将机器人邀请到您的服务器。
 
 ```bash
 export DISCORD_BOT_TOKEN="..."
 ```
 
-**在 Discord 中与机器人交互：** 在服务器频道中 `@机器人` 或发送私聊 DM。机器人会通过引用回复（Reply）你的消息 —— 直接回复 Bot 的消息即可继续上下文。
+**在 Discord 中使用机器人：** 在服务器频道中 `@提及` 机器人，或发送私聊 DM。机器人会通过引用回复你的消息 —— 直接回复机器人的消息即可继续对话。
 
-## 交互指令与权限审批
+## 与机器人交互（Talking to the bot） {#talking-to-the-bot}
 
-当机器人部署在工作区且 Gateway 正在运行时，你可以像与同事交流一样与 Ante 对话。部分特定回复具有特殊含义：
+当机器人加入工作区或服务器且网关正在运行后，您可以像与普通机器人一样与其交谈。部分特定回复具有特殊含义。
+
+您可以随时通过发送以下指令中断机器人：
 
 | 指令 | 效果 |
 | --- | --- |
-| `stop` | 随时取消当前正在运行的任务（类似于 TUI 中的 Ctrl+C） |
+| `stop` | 取消当前任务（类似于 TUI 中的 Ctrl+C） |
 
-当机器人发起工具执行确认请求时，可直接回复以下关键词：
+当机器人请求执行工具的权限时，回复以下内容之一：
 
 | 回复 | 效果 |
 | --- | --- |
-| `yes`（或 `y`） | 批准本次单次工具调用 |
+| `yes`（或 `y`） | 批准本次工具调用 |
 | `no`（或 `n`） | 拒绝本次工具调用 |
 | `always` | 批准并在当前会话的后续调用中始终允许该工具 |
 
-更多细节参见[命令审查与工具授权](/usage/approvals)。
+更多关于工具审批流程的说明，请参见[授权与审批](/usage/approvals)。
+
+## 命令行参数参考（CLI reference） {#cli-reference}
+
+```bash
+ante gateway [--config PATH] [--model MODEL] [--provider PROVIDER] [--output-format FORMAT] [--offline-model PATH]
+```
+
+| 参数标识 | 默认值 | 说明 |
+| --- | --- | --- |
+| `--config` | `~/.ante/channels.json` | 渠道配置文件的路径 |
+| `--model` | `local` | 所有会话使用的大语言模型 |
+| `--provider` | `local` | 所选模型的提供商 |
+| `--output-format` | `minimal` | 网关 stdout 输出格式：`minimal`、`human` 或 `json` |
+| `--offline-model` | — | 本地 GGUF 文件路径。在接受消息前拉起共享的 llama-server 并将所有对话路由至该服务（强制使用 `--provider local --model local`） |
+
+:::tip
+默认配置假定使用本地 llama-server。若需使用云端托管提供商，请显式传入 `--provider` 和 `--model`（例如 `ante gateway --provider anthropic --model claude-sonnet-5`）。
+:::
+
+### 输出格式（Output formats） {#output-formats}
+
+| 格式 | 显示内容 |
+| --- | --- |
+| `minimal` | 仅输出智能体回复消息、通知信息与错误 |
+| `human` | 彩色格式化输出所有事件（适用于调试） |
+| `json` | 逐行输出 JSON Lines 格式的所有事件（适用于通过管道传递给其他工具） |
+
+## 常见问题排查（Troubleshooting） {#troubleshooting}
+
+**Slack 提示："Sending messages to this app has been turned off"**
+在 **App Home** 下启用 Messages Tab 并允许用户发送消息，随后重新点击 Reinstall to Workspace。
+
+**Slack 中机器人在频道被 `@提及` 时无响应**
+确保机器人已被邀请加入该频道（`/invite @bot-name`），且 `message.channels` 已添加在 Event Subscriptions 中。修改事件或权限后请重新安装应用。
+
+**Discord 中机器人无响应**
+确认机器人已开启 **Message Content Intent**，且在频道中拥有 `Send Messages` 和 `Read Message History` 权限。
+
+**网关收到消息后未输出任何内容**
+使用 `--output-format human` 运行以查看所有事件，并检查 `~/.ante/logs/` 中的详细错误信息。

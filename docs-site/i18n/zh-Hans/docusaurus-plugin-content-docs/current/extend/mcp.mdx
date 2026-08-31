@@ -10,9 +10,9 @@ Ante 支持连接至 [Model Context Protocol (MCP)](https://modelcontextprotocol
 
 <img src="/assets/mcp-demo.gif" alt="在 Ante TUI 中查看 MCP 服务并调用工具" style={{width: '100%', borderRadius: '8px', margin: '16px 0'}} />
 
-## 配置
+## 配置（Configuration） {#configuration}
 
-MCP 服务在 `~/.ante/settings.json` 的 `mcp_servers` 字典中声明。Key 为本地服务标识，Value 为启动配置：
+MCP 服务器在 `~/.ante/settings.json` 的 `mcp_servers` 映射表中声明。Key 为本地服务标识；Value 描述如何启动该服务。
 
 ```json
 {
@@ -37,33 +37,62 @@ MCP 服务在 `~/.ante/settings.json` 的 `mcp_servers` 字典中声明。Key �
 | `env` | 否 | 注入给服务进程的环境变量 |
 | `enabled_tools` | 否 | 显式白名单工具列表。若为空或省略，则默认暴露该服务的所有工具 |
 
-目前仅支持 **stdio** 传输方式 —— Ante 启动子进程，通过其 stdin/stdout 进行 MCP 协议通信，并将 stderr 转发至日志。
+目前仅支持 **stdio** 传输方式 —— Ante 启动命令子进程，通过其 stdin/stdout 进行 MCP 协议通信，并将 stderr 转发至日志。
 
-## 工具命名规范
+## 工具命名规范（Tool naming） {#tool-naming}
 
-MCP 服务提供的工具在智能体中会统一命名为 `mcp__<server>__<tool>`。非字母数字字符会自动替换为下划线 `_`。例如名为 `my-server` 的服务中名为 `do.thing` 的工具将暴露为 `mcp__my_server__do_thing`。
+由服务端提供的每个工具在智能体中会统一命名为 `mcp__<server>__<tool>`。非字母数字字符会自动替换为下划线 `_`。例如名为 `my-server` 的服务中名为 `do.thing` 的工具将暴露为 `mcp__my_server__do_thing`。
 
-MCP 工具同样遵循 `--tools` / `--include-tools` / `--exclude-tools` 命令行过滤。
+MCP 工具同样遵循 `--tools` / `--include-tools` / `--exclude-tools` 命令行过滤。若基础 `--tools` 未声明 MCP 工具则会被剔除。若想独立控制每个服务暴露哪些工具而不受会话过滤影响，请使用 `enabled_tools`：
 
-## 生命周期与异步预热
+```json
+{
+  "mcp_servers": {
+    "filesystem": {
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-filesystem", "/tmp"],
+      "enabled_tools": ["read_text_file", "write_file"]
+    }
+  }
+}
+```
 
-在交互式 TUI 中，MCP 服务的初始化在后台**异步惰性（Lazily）**进行，避免阻塞终端交互：
+## 生命周期与异步预热（Lifecycle） {#lifecycle}
 
-1. 会话立即就绪，输入框可立即使用。
-2. 后台任务并发连接所有配置的 MCP 服务端（每个服务具有 15 秒初始化超时及 15 秒获取工具列表超时）。
-3. 发现工具后动态注册进运行注册表，新就绪的工具在**下一轮 Turn** 中即可调用。
-4. 预热完成后通知 `/mcp` 面板刷新展示。
+在交互式 TUI 中，MCP 服务的初始化在后台**异步惰性（lazily）**进行，确保守护进程保持即时响应。当会话启动时：
 
-在无头单次运行（`ante -p`）中，首个提示词会等待 MCP 预热完成后再启动，确保单轮任务即可调用 MCP 工具。
+1. `SessionStart` 与初始的 `ExtensionRefreshed` 会立即触发 —— 输入框可即时使用。
+2. 后台任务并发连接所有配置的 MCP 服务端。每个服务具有 15 秒初始化超时及 15 秒获取工具列表超时。
+3. 发现工具后动态注册进运行工具注册表，新上线的工具在**下一轮 Turn** 中即可调用（当前正在运行的轮次保持工具 Schema 冻结快照）。
+4. 预热完成后触发第二次 `ExtensionRefreshed`，使得 `/mcp` 面板填充展示每个服务发现的工具列表。
 
-### 工具调用超时
+进度通过分组信息通知展示给用户（`InfoBlockStart` 加上后续的 `InfoBlockAppend` 事件 —— 参见[协议参考手册](/reference/protocol-reference#infoblockstart)）：
 
-每个 MCP 工具调用默认设有 10 分钟（600 秒）超时上限，防止外部服务卡死导致会话挂起。可通过环境变量 `ANTE_MCP_TOOL_TIMEOUT` 自定义超时秒数：
+```
+* Warming up 4 MCP servers in the background — tools will become available as they connect.
+  └ MCP ready: 4/4 servers connected, 60 tools registered.
+```
+
+连接失败（或获取工具列表失败）的服务端会被记录到日志并跳过，作为预热通知块下的子行提示。服务进程在整个会话期间保持存活，并在守护进程退出时终止。
+
+无头单次运行（`ante -p`）会在首个提示词前阻塞等待直至 MCP 预热完成。轮次的工具 Schema 在轮次开始时冻结，以此确保配置的 MCP 工具在单轮无头任务中立即可用。`ante doctor` 完全跳过 MCP 预热。
+
+### 工具调用超时（Tool-call timeout） {#tool-call-timeout}
+
+每个 MCP 工具调用设有 10 分钟截止时间，防止外部服务卡死导致轮次无限挂起。设置环境变量 `ANTE_MCP_TOOL_TIMEOUT` 为正整数秒数可修改该超时：
 
 ```bash
 ANTE_MCP_TOOL_TIMEOUT=120 ante
 ```
 
-## /mcp 命令面板
+零、负数或无法解析的值保持 600 秒默认值。该配置仅针对 `tools/call`；不改变上述的初始化或工具列表获取超时。
 
-在 TUI 中输入 `/mcp` 可查看已配置的所有 MCP 服务及其连接状态、工具数量与启动命令。在服务上按 `Enter` 可查看工具详情（参数与说明），按 `d` 可从配置中移除该服务。
+## `/mcp` 命令面板（The /mcp command） {#the-mcp-command}
+
+在 TUI 中输入 `/mcp` 可查看已配置的所有 MCP 服务。选择器列出每个服务的连接状态、暴露工具数量与启动命令。在服务上按 `Enter` 可查看工具详情（说明与参数），按 `d` 可从 `settings.json` 中移除该服务。
+
+新增服务需直接编辑 `~/.ante/settings.json`；当前选择器暂不包含在 TUI 内新增的流程。
+
+## 权限审批（Approval） {#approval}
+
+MCP 工具默认不需要审批确认。若需管控特定工具，请使用 `--exclude-tools` 或权限规则。

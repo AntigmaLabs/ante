@@ -1,23 +1,23 @@
 ---
-title: "基准评测"
+title: "基准评测（Benchmarks）"
 sidebar_label: "Terminal-Bench 评测"
 description: "公开发布版本的真实可复现基准评测 — 实时结果展示于 antigma.ai/eval"
 ---
 
-# 基准评测
+# 基准评测（Benchmarks）
 
-## 评测真实发布版本
+## 评测真实分发版本（We benchmark what we ship） {#we-benchmark-what-we-ship}
 
-我们的评测原则以可检验为核心：
+我们的基准评测以可检验为核心设计：
 
 - **评测真实分发的构建版本。** 每次评测均基于固定且公开可下载的 Ante 发行版运行，与 `ante update` 安装的二进制完全一致（例如 `0.preview.43`）。没有专用于评测的分支，也没有针对 Benchmark 定制的专用提示词。
-- **运行过程完全可审计。** 每个评测得分均附带对应 [Harbor](https://github.com/harbor-framework/harbor) 原始运行记录的链接，任何人都可以审阅每个 Trial 运行过程。
+- **运行记录完全可审计。** 每个结果均链接其原始 [Harbor](https://github.com/harbor-framework/harbor) 运行记录，任何人都可以审阅每个 Trial 运行过程。
 - **遵循官方严格限制。** 所有评测均采用与 Terminal-Bench 官方排行榜相同的参数：89 个任务、每个任务 5 次试验，并严格限制超时时间与硬件资源。
 - **结果实时持续发布。** 我们持续在 [antigma.ai/eval](https://antigma.ai/eval) 公布最新的评测数据。
 
-## Terminal-Bench 2.1：统一 Harness 评测各模型能力
+## Terminal-Bench 2.1：统一 Harness 评测各模型（Terminal-Bench 2.1: one harness, any model） {#terminal-bench-21-one-harness-any-model}
 
-我们评测的是 **Agent Harness 底座能力**，而非仅仅评测大模型本身。因此，我们公布了 Ante 搭配不同模型时的综合表现。在**所有参与评测的模型中，Ante 均取得了同模型 Agent 排名第一（#1 same-model agent）**：在相同模型下，没有其他 Harness 跑出比 Ante 更高的准确率。
+我们评测的是 **Agent Harness 底座能力**，而非仅仅评测大模型本身。因此，我们公布了 Ante 搭配不同模型时的综合表现。在**所有参与评测的模型中，Ante 均取得了同模型智能体排名第一（#1 same-model agent）**：在相同模型下，没有其他 Harness 跑出比 Ante 更高的准确率。
 
 实时看板重点数据（截至 2026 年 6 月）：
 
@@ -38,7 +38,7 @@ description: "公开发布版本的真实可复现基准评测 — 实时结果�
 
 **[查看实时评测结果 →](https://antigma.ai/eval)**
 
-## 历史战绩
+## 历史战绩（Track record） {#track-record}
 
 - Terminal Bench 1.0 排行榜第一名（2025 年）
 - Terminal Bench 2.0 验证 Agent 排行榜第一名 —— 且在基于 Gemini 的 Agent 中位列第一（2026 年 2 月）
@@ -71,16 +71,16 @@ description: "公开发布版本的真实可复现基准评测 — 实时结果�
 - **严谨规范。** 任务规格明确，尽可能采用确定性评分，且在隔离环境中执行。
 - **聚焦核心编码能力。** 智能体能否在真实的 Shell 环境中完成实际任务？读取上下文、推理、行动、验证 —— 这正是 Ante 围绕其构建的核心闭环。
 
-## 资源占用分析
+## 资源占用分析（Resource footprint） {#resource-footprint}
 
 能力表现只是其中一方面；运行成本是另一大关键。请查阅[资源占用对比](/benchmarks/compare_table)，查看在 Docker 严格限制下 20 个并行任务的 CPU、内存和磁盘占用实测（Ante vs Claude Code vs Opencode）。
 
-## 评测原则
+## 评测原则（Evaluation principles） {#evaluation-principles}
 
 智能体的大部分智慧源于模型 —— 但 Agent Harness 是连接人类与 AI 之间的关键底座。
 
 > 我们评测的是 **Agent 底座** 激发并转化模型能力的效果 —— 而非仅仅评测模型自身。
 
-**优化 Harness 底座，而非优化单次 Prompt。** 当评测得分需要提升时，我们专注于优化智能体运行底座 —— 运行时架构、调度编排、可靠性系统 —— 而非针对特定 Benchmark 调整提示词。通过系统底层优化带来的性能提升具有持久性，而仅靠调优提示词则容易脆弱失效。
+**优化 Harness 底座，而非优化特定提示词。** 当评测得分需要提升时，我们专注于优化智能体运行底座 —— 运行时架构、调度编排、可靠性系统 —— 而非针对特定 Benchmark 调整提示词。通过系统底层优化带来的性能提升具有持久性，而仅靠调优提示词则容易脆弱失效。
 **尽早评测，从简出发。** 基于真实失败案例提炼出的精简评测集，远胜于人工构造的庞大测试用例。
 **隔离与可复现。** 每次评测均在干净环境下启动。当得分下降时，能够准确发现真实的回归问题。

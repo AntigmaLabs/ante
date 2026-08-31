@@ -1,50 +1,50 @@
 ---
 title: Ante
 sidebar_label: 概览
-description: "Ante — 驻留在终端中的轻量级自组织编码智能体，公开透明的基准评测"
+description: "Ante — 驻留在终端中的自包含、自组织编码智能体，公开透明的基准评测"
 slug: /
 ---
 
 # Ante
 
-**驻留在终端中的智能体。** Ante 是一个独立的终端编码智能体（Coding Agent），具备自组织能力。由 [Antigma Labs](https://antigma.ai) 打造，单个压缩包仅 ~15MB，解压后即为单 Rust 可执行文件，零外部运行时依赖，旨在充分发挥各类模型的最大潜力。
+**驻留在终端中的智能体（A ghost in your shell）。** Ante 是一个独立的终端编码智能体（Coding Agent），具备自组织能力。由 [Antigma Labs](https://antigma.ai) 打造，单个压缩包仅 ~15MB，解压后即为单 Rust 可执行文件，零外部运行时依赖，旨在充分发挥各类模型的最大潜力。
 
-它的工作方式类似于 Claude Code 或 Codex，但没有任何繁重的依赖或模型限制。它还可以作为构建[自定义 Harness 底座](/usage/serve)和高性能助手的核心引擎。
+它的工作方式类似于 Claude Code 或 Codex，但没有任何繁重的依赖或模型约束。它还可以作为构建[自定义 Harness 底座](/usage/serve)和高性能助手的核心引擎。
 
 <CardGroup cols={3}>
   <Card title="持续公开评测" icon="chart-line" href="https://antigma.ai/eval">
-    Terminal-Bench 2.1 同模型 Agent 排名第一：在所有运行的模型中，没有其他 Harness 在相同模型下得分高于 Ante。每个评测结果均固定对应可下载的发行版本，并附带公开的原始 Harbor 运行记录。实时看板位于 antigma.ai/eval。
+    Terminal-Bench 2.1 同模型智能体排名第一：在所有运行的模型中，没有其他 Harness 在相同模型下得分高于 Ante。每个评测结果均固定对应可下载的发行版本，并附带公开的原始 Harbor 运行记录。实时看板位于 antigma.ai/eval。
   </Card>
   <Card title="极低的资源占用" icon="feather" href="/benchmarks/compare_table">
     在相同的 20 个并行任务负载中，Ante 相比 Claude Code 峰值内存占用减少约 7 倍，平均 CPU 占用减少约 9 倍，磁盘 I/O 减少约 5 倍。
   </Card>
   <Card title="原生支持离线与本地模型" icon="wifi-slash" href="/local/overview">
-    内置推理引擎，原生支持本地运行 GGUF 模型。无需 API 密钥，无需注册账号，所有模型调用均在本地机器完成。
+    内置推理引擎，原生支持本地运行 GGUF 模型。无需 API 密钥，无需注册账号，所有模型调用均留在本地机器上。
   </Card>
 </CardGroup>
 
-这三点归结为一个核心设计理念：一个可验证、低开销且能随处运行的智能体，轻量到可以**成千上万个并发运行**，成为自组织智能的基础底座。详见[设计哲学](/start/philosophy)。
+这三点归结为一个核心设计理念：一个可验证、可负担且能随处运行的智能体，轻量到可以**成千上万个并发运行**：成为自组织智能的基础底座。参见[设计哲学](/start/philosophy)。
 
-### 核心亮点
+### 核心亮点（Beyond the headline numbers） {#beyond-the-headline-numbers}
 
-- **零供应商锁定。** 支持自带 API 密钥（BYOK）、订阅或本地模型。可在 12+ 家提供商之间自由切换 — Anthropic、OpenAI、Gemini、Grok、Open Router 等。无需注册账号，无遥测围墙，无封闭生态。
-- **[多智能体协作与编排](/experimental/agent-org)。** 协同多个智能体针对复杂任务进行自组织与并行分工。
-- **高可扩展性。** 支持自定义 [Skills 技能](/extend/skills)、[Sub-agents 子智能体](/extend/subagents)、[MCP 协议](/extend/mcp) 以及跨会话的持久化[记忆（Memory）](/extend/memory)。
-- **追求极简与高品质。** 在充满复杂度的工具生态中，保持极简、高效与高可靠性至关重要。
+- **零供应商锁定。** 支持自带 API 密钥（BYOK）、订阅或本地模型。可在 12+ 家提供商之间自由切换 — Anthropic、OpenAI、Gemini、Grok、Open Router 等。无需注册账号，无遥测围墙（no telemetry gate），无封闭花园。甚至包括我们自己的平台。
+- **[多智能体协同编排](/experimental/agent-org)。** 协同多个智能体针对复杂任务进行自组织。
+- **可扩展。** 自定义 [Skills 技能](/extend/skills)、[Sub-agents 子智能体](/extend/subagents)、[MCP](/extend/mcp) 以及跨会话持久化[记忆（Memory）](/extend/memory)。
+- **追求极简与高品质。** 在充满复杂度的生态中，保持极简、高品质与高信任度比以往任何时候都更有价值。
 
-### 工作原理
+### 工作原理（How it works） {#how-it-works}
 
-Ante 采用客户端-守护进程（Client-Daemon）架构。守护进程管理结构化的 Turn 生命周期 — 提示词解析、工具调用、确认授权、执行控制 — 驱动模型在安全、可预测的闭环中工作。客户端可以是交互式 TUI、无头 CLI、外部进程，或通过 `ante gateway` 接入的消息渠道机器人。
+Ante 采用客户端-守护进程（Client-Daemon）架构。守护进程管理结构化的 Turn 生命周期 — 提示词、工具调用、确认授权、执行控制 — 驱动模型在安全、可预测的闭环中工作。客户端可以是交互式 TUI、无头 CLI、外部进程，或通过 `ante gateway` 接入的消息渠道机器人。
 
 在架构层面，Ante 正在迈向以智能体为中心的运行时（Agent-Centric Runtime）：长寿命智能体通过消息传递进行协同 — 采用分层监管、状态隔离和资源所有权明确的 Actor 模型。
 
 Ante 还可以作为长寿命服务器运行（`ante serve`），外部客户端通过结构化的 JSONL 协议与其通信 — 非常适合构建编辑器插件、Web UI 和自定义集成。
 
 :::warning
-Ante 目前处于 **Preview 预览阶段** 并处于活跃开发中。部分功能和配置可能会发生变化。目前支持 **macOS** 和 **Linux**。
+Ante 目前处于 **Preview 预览阶段** 并处于活跃开发中。部分功能和配置可能会发生变化。目前仅支持 **macOS** 和 **Linux**。
 :::
 
-## 下一步
+## 下一步（Next steps） {#next-steps}
 
 <CardGroup cols={2}>
   <Card title="快速入门" icon="bolt" href="/start/quickstart">
@@ -60,22 +60,22 @@ Ante 目前处于 **Preview 预览阶段** 并处于活跃开发中。部分功�
     学习使用功能丰富的终端交互界面。
   </Card>
   <Card title="本地模型" icon="wifi-slash" href="/local/overview">
-    原生运行本地模型，支持完全独立的离线运行。
+    原生运行本地模型，从单个提供商到完全自包含。
   </Card>
-  <Card title="Server 服务模式" icon="server" href="/usage/serve">
+  <Card title="服务模式" icon="server" href="/usage/serve">
     通过 stdio 或 WebSocket 以编程方式驱动 Ante。
   </Card>
-  <Card title="Gateway 网关模式" icon="message-square" href="/usage/gateway">
+  <Card title="网关模式" icon="message-square" href="/usage/gateway">
     将 Ante 作为 Slack 或 Discord 机器人运行。
   </Card>
   <Card title="常用工作流技巧" icon="book-marked" href="/usage/providing-context">
-    TUI 交互中的上下文提供、文件引用等常用指南。
+    TUI 交互中的常见指南。
   </Card>
   <Card title="模型提供商" icon="plug" href="/usage/providers">
-    选择并配置所支持的模型提供商与密钥。
+    选择并配置模型提供商。
   </Card>
   <Card title="核心概念" icon="shapes" href="/reference/core-concepts">
-    深入了解 Session 会话、Task 任务、Turn 轮次与协议机制。
+    深入了解会话、任务、轮次与协议机制。
   </Card>
   <Card title="智能体组织" icon="sitemap" href="/experimental/agent-org">
     Ante 如何针对复杂任务自组织协调多个智能体。

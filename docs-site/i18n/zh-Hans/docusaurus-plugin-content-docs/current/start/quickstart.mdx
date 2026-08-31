@@ -1,13 +1,14 @@
 ---
-title: 快速入门
+title: 快速入门（Quickstart）
+sidebar_label: "快速入门"
 description: "在一分钟内安装 Ante 并开始使用"
 ---
 
-## 前置准备
+## 前置准备（Prerequisites） {#prerequisites}
 
-- 至少一家大语言模型提供商的 API 密钥或订阅（Anthropic、OpenAI、Gemini 等）—— 或者使用[离线模式](/local/offline)无需任何 API 密钥
+- 至少一家大语言模型提供商（Anthropic、OpenAI 等）的 API 密钥或订阅 —— 或者使用[离线模式](/local/offline)无需任何 API 密钥
 
-## 安装
+## 安装（Installation） {#installation}
 
 Ante 作为单一独立的二进制文件分发，没有任何外部运行时依赖 —— 下载即可直接运行。
 
@@ -15,89 +16,89 @@ Ante 作为单一独立的二进制文件分发，没有任何外部运行时依
 curl -fsSL https://ante.run/install.sh | bash
 ```
 
-默认情况下会安装至 `~/.ante/bin`。若想安装到其他目录，可设置环境变量 `ANTE_INSTALL_DIR`：
+默认情况下会安装至 `~/.ante/bin`。若想安装到其他目录，可设置 `ANTE_INSTALL_DIR` 环境变量：
 
 ```sh
 curl -fsSL https://ante.run/install.sh | ANTE_INSTALL_DIR=/usr/local/bin bash
 ```
 
-请以普通用户身份运行默认安装脚本，不要使用 `sudo`。若使用 sudo 安装到用户目录会导致 `~/.ante` 归属于 root 用户，从而阻止 Ante 正常保存配置与历史记录，因此安装脚本会拒绝该组合。
+请以普通用户身份运行默认安装脚本，不要使用 `sudo`。若使用 sudo 安装到用户主目录会导致 `~/.ante` 归属于 root 用户，从而阻止 Ante 正常保存设置和输入历史，因此安装脚本会拒绝该组合。
 
 macOS 平台的发布二进制文件已经过 Apple 开发者证书签名与公证（Notarized），Gatekeeper 安全检查会自动放行。
 
-## 快速示例
+## 快速示例（Quick examples） {#quick-examples}
 
-### 交互式终端会话（TUI）
+### 交互式会话（Interactive session） {#interactive-session}
 
 ```bash
-# 启动 TUI 交互界面 — 与智能体对话、审查并批准工具调用、查看代码 Diff
+# 启动 TUI — 与智能体对话、批准工具调用、查看 diff
 ante
 ```
 
-### 单次执行（无头模式）
+### 单次执行（无头模式）（Headless one-shot） {#headless-one-shot}
 
 ```bash
-# 执行单个任务后自动退出
-ante -p "为 src/main.rs 添加错误处理逻辑"
+# 运行单个任务并退出
+ante -p "add error handling to src/main.rs"
 ```
 
-### 通过管道从标准输入传递内容
+### 从标准输入通过管道传递输入（Pipe input from stdin） {#pipe-input-from-stdin}
 
 ```bash
 # 传递文件内容进行分析
-cat src/lib.rs | ante -p "审查这段代码中的潜在 Bug"
+cat src/lib.rs | ante -p "review this code for bugs"
 ```
 
-### 切换模型提供商
+### 切换模型提供商（Use a different provider） {#use-a-different-provider}
 
 ```bash
-# 指定提供商与模型
-ante --provider openai --model gpt-5.6-sol -p "重构这个函数"
+# 覆盖模型和提供商
+ante --provider openai --model gpt-5.6-sol -p "refactor this function"
 ```
 
-### 自动确认工具调用（免审批模式）
+### 跳过工具审批（Skip tool approvals） {#skip-tool-approvals}
 
 ```bash
 # YOLO 模式 — 自动批准所有工具调用
-ante --yolo -p "修复所有的 clippy 警告"
+ante --yolo -p "fix all clippy warnings"
 ```
 
-### 作为服务端运行
+### 作为服务端运行（Run as a server） {#run-as-a-server}
 
 ```bash
-# 启动长寿命守护进程，供外部程序以编程方式调用
+# 启动长寿命守护进程以进行编程集成
 ante serve
 ```
 
-### 更新到最新版本
+### 更新到最新版本（Update to the latest version） {#update-to-the-latest-version}
 
 ```bash
 # 检查新版本并安装
 ante update
 
-# 尝试开发通道（nightly）
+# 尝试开发通道单次更新
 ante update nightly
 
 # 回滚或锁定到指定发布版本
 ante update --version v0.preview.86
 ```
 
-## 下一步探索
+## 下一步（What's next?） {#whats-next}
 
 <CardGroup cols={2}>
   <Card title="常用工作流技巧" icon="book-marked" href="/usage/providing-context">
-    涵盖模型配置、文件引用、工具授权等常见终端交互指南。
+    涵盖模型、文件、工具授权等常见 TUI 交互指南。
   </Card>
   <Card title="TUI 终端界面指南" icon="terminal" href="/usage/tui">
-    熟练掌握丰富的终端交互界面操作与快捷键。
+    熟练掌握交互式终端界面的全部操作。
   </Card>
-  <Card title="无头命令行模式" icon="code" href="/usage/headless">
-    了解 CLI 命令行参数、管道交互与输出格式。
+  <Card title="无头模式" icon="code" href="/usage/headless">
+    了解 CLI 命令行参数与输出格式。
   </Card>
-  <Card title="本地与离线模型" icon="wifi-slash" href="/local/overview">
-    在本地硬件上直接运行 GGUF 模型。
+  <Card title="本地模型" icon="wifi-slash" href="/local/overview">
+    在自有硬件上直接运行模型。
   </Card>
-  <Card title="Server 服务模式" icon="server" href="/usage/serve">
+  <Card title="服务模式" icon="server" href="/usage/serve">
     通过 JSONL 协议以编程方式驱动 Ante。
   </Card>
   <Card title="Skills 技能系统" icon="scroll" href="/extend/skills">

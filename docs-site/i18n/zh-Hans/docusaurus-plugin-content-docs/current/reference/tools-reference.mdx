@@ -4,87 +4,95 @@ sidebar_label: "工具参考"
 description: "Ante 会话中可供智能体调用的完整工具集及权限说明"
 ---
 
-# 工具系统参考手册（Tool Reference）
+工具是智能体在会话中用于感知环境并执行操作的底层能力。部分工具静默运行；除非权限规则另有声明，涉及修改系统的工具默认需要人工确认审批。
 
-工具（Tools）是智能体在会话中用于感知环境并执行操作的底层能力。部分工具静默执行；涉及修改系统的工具默认需要人工确认审批。
+## 文件 I/O（File I/O） {#file-io}
 
-## 文件系统 I/O
-
-### Read（读取文件）
+### Read {#read}
 
 读取文本文件、图片和 PDF。长行内容完整返回而不截断。
 
-PDF 在客户端本地完成页面渲染与文本提取，无需网络往返，支持按页码范围分批阅读大文档。当模型不支持视觉多模态时，读取图片会自动返回元数据（格式与分辨率），方便代码化分析。
+PDF 在客户端本地完成页面渲染与内嵌文本提取，无需网络往返，且支持按页码范围限制读取，以便大文档分块阅读。
 
-### Write（写入文件）
+当当前模型不支持视觉多模态时，读取图片会自动返回元数据（格式类型与分辨率）而非图片像素本身，以便智能体感知文件存在并进行代码化检查。
 
-创建新文件或完整覆盖现有文件。默认需要审批确认。
+### Write {#write}
 
-### Edit（修改文件）
+创建新文件或完整覆盖现有文件。需要审批。
 
-在文件中执行精确字符串替换。默认需要审批确认。
+### Edit {#edit}
 
-当智能体在同一次批量调用中针对同一文件发出多个 `Edit`/`Write` 时，Ante 会按顺序串行执行，确保后序编辑基于前序结果进行；针对不同文件的调用仍保持并发执行。
+在文件中执行精确字符串替换。需要审批。
 
-### Glob（文件模式匹配）
+当智能体在单批次调用中针对同一文件发出多个 `Edit`/`Write` 调用时，Ante 会按调用顺序串行依次执行，确保后序编辑始终基于前序修改结果进行。针对不同文件的调用仍保持并发执行。
 
-使用 Glob 通配符快速查找和遍历匹配的文件路径。
+### Glob {#glob}
 
-### Grep（内容正则搜索）
+根据 Glob 通配符模式查找匹配的文件路径。
 
-基于正则表达式快速搜索文件内容。
+### Grep {#grep}
 
-## 终端与 Shell
+基于正则表达式搜索文件内容。
 
-### Bash（执行命令）
+## 终端与 Shell（Shell） {#shell}
 
-执行 Shell 命令。每次调用均在独立的非交互子进程中运行 —— 进程状态不跨调用持久。
+### Bash {#bash}
 
-可选参数 `max_wait_ms` 控制等待命令在内联返回的时长（默认 `10000`ms，限制在 `250`–`600000`ms）。超时不会杀死命令，而是返回后台任务句柄（在 `~/.ante/run/jobs/<proc-id>/` 下输出 `status.json`、`stdout.txt`、`stderr.txt`）。默认需要审批确认。
+执行 Shell 命令。每次调用均在独立的非交互子进程中运行 —— 进程状态不跨调用持久化。可选的 `max_wait_ms` 字段控制 Ante 在内联等待命令完成的时长（默认 `10000`ms，限制在 `250`–`600000`ms 之间）。超出该等待窗口**绝不会**杀死命令或触发超时：Ante 会返回位于 `~/.ante/run/jobs/<proc-id>/` 下的后台任务句柄，包含 pid、部分输出以及持续追加写入的 `status.json`、`stdout.txt` 和 `stderr.txt` 文件。对于服务或监听进程建议传入如 `250` 的短窗口；请勿附加 `&`（属于多余符号且会被自动剥离）。
 
-针对常驻交互式程序，智能体可通过内置的 `tmux` 技能驱动命名 tmux 会话（`ante-*`），并通过 `/term <name>` 在 TUI 中随时挂载查看。
+若命令在等待窗口内执行完毕，Ante 会直接在内联返回输出并显式清理句柄文件。一旦返回后台句柄，该任务在 Ante 重启后依然存活且活跃期间绝不被回收；任务结束后，其目录在闲置保留 24 小时后会在后续启动时统一回收。在返回句柄前中断 Bash 调用会终止整个进程组（包含子进程与孙进程）。要停止已经转入后台运行的任务，请使用 `kill -- -<pid>` 向其进程组发送信号。需要审批。
 
-## 内置核心工具
+针对交互式程序和持久 Shell，智能体通过内置的 `tmux` 技能在常规 Bash 调用中驱动命名 tmux 会话（`ante-*`）—— 发送的每个击键均经过正常的 Bash 权限检查。可通过 [`/term <name>`](/usage/tui#terminal-sessions) 随时查看或在会话中键入内容。
 
-### Agent（子智能体派生）
+## 内置核心工具（Builtin） {#builtin}
 
-动态派生专属子智能体自主处理复杂子任务。
+### Agent {#agent}
 
-### TodoWrite（任务清单管理）
+派生子智能体以自主处理复杂任务。智能体根据任务特征自动挑选委派的子智能体。
 
-维护多步骤任务列表，实时跟踪执行进度与状态。
+### TodoWrite {#todowrite}
 
-### WebFetch（抓取网页内容）
+通过任务清单维护多步骤工作的执行进度。
 
-获取指定 URL 网页并自动转换为 Markdown，超长内容会自动保存为本地缓存供分片阅读。默认需要审批。
+### WebFetch {#webfetch}
 
-### WebSearch（网络搜索）
+获取指定 URL 网页，自动转换为 Markdown，并调用轻量模型提炼关键信息。超长响应会自动转存到本地缓存文件中供智能体分片读取，而非生硬截断。需要审批。
 
-通过模型提供商的原生搜索能力检索互联网内容并返回带引用的搜索结果。支持 Anthropic、OpenAI、Gemini、Grok、OpenRouter、Antix、Ali Coding Plan 等提供商。默认需要审批。
+### WebSearch {#websearch}
 
-## 可选工具（Opt-in）
+检索互联网并返回带引用的搜索结果。需要审批。使用模型提供商的原生网络搜索能力，因此仅在声明了 `supports_web_search` 的提供商（Anthropic、OpenAI、Gemini、Grok、OpenRouter、Antix 和 Ali Coding Plan）下可用，并在这些提供商上自动加入工具集；其他提供商不提供该工具。单次搜索设有 90 秒上限 —— 超时报错并建议使用更窄的查询词，避免挂起整个工具调用批次。
 
-### ViewImage
+## 可选工具（Opt-in tools） {#opt-in-tools}
 
-通过自然语言指令针对图片进行分析解读（可通过 `--include-tools ViewImage` 启用）。
+这些工具默认未开启。可通过 `--include-tools` 显式启用。
 
-## MCP 工具（Model Context Protocol）
+### ViewImage {#viewimage}
 
-通过配置的 [MCP 服务器](/extend/mcp) 注入的工具会自动命名为 `mcp__<server>__<tool>`，调用体验与内置工具完全一致。
+根据自然语言指令读取并分析图片内容。
 
-## 默认工具集与命令行过滤
+## MCP 工具（MCP tools） {#mcp-tools}
 
-默认启用的工具集包括：`Read`、`Bash`、`Grep`、`Glob`、`TodoWrite`、`WebFetch`、`Edit`、`Write`、`Agent`，以及在支持的提供商下自动追加的 `WebSearch`。
+由配置的 [MCP 服务器](/extend/mcp) 提供的工具会以 `mcp__<server>__<tool>` 形式暴露给智能体。它们与内置工具并列展示，从智能体的角度看行为完全相同。MCP 工具同样受 `--tools`/`--include-tools`/`--exclude-tools` 命令行过滤约束；若需按服务精确过滤，请使用 `enabled_tools` 配置项。
 
-通过参数自定义工具集：
+## 默认工具集（Default tool set） {#default-tool-set}
+
+Ante 默认启用 `Read`、`Bash`、`Grep`、`Glob`、`TodoWrite`、`WebFetch`、`Edit`、`Write` 和 `Agent`。当会话的提供商支持原生网络搜索时，会自动追加 `WebSearch`。
+
+`ViewImage` 为可选启用工具。
+
+## 工具过滤控制（Tool filtering） {#tool-filtering}
+
+在会话中控制可用工具：
 
 ```bash
 # 精确指定工具集
-ante --tools Read Glob Grep "仅分析代码"
+ante --tools Read Glob Grep "分析代码"
 
-# 引入可选工具
-ante --include-tools ViewImage "分析截图"
+# 在默认集基础上引入可选工具
+ante --include-tools ViewImage "描述 assets/ 中的截图"
 
-# 排除指定工具
-ante --exclude-tools Bash Write "纯只读代码审查"
+# 剔除指定工具
+ante --exclude-tools Bash Write "纯只读分析"
 ```
+
+在这些参数中传入匹配器语法（如 `Bash(cargo test *)`）仅会按工具名进行过滤 —— 仍保留整个 `Bash` 工具可用。若要限制工具*允许执行的具体操作*，请配合使用[权限规则](/configuration/permission#tool-matchers)。

@@ -1,55 +1,57 @@
 ---
-title: "AGENTS.md 指引文件"
-sidebar_label: "AGENTS.md"
-description: "在每个 Ante 会话中自动加载的项目级与全局智能体行为指引规范"
+title: "AGENTS.md"
+description: "加载到每个 Ante 会话中的项目级与全局行为指引"
 ---
 
-# AGENTS.md 指引文件
+# AGENTS.md
 
-`AGENTS.md` 文件为 Ante 提供了独立于自动记忆之外的持久化行为规则指引。适用于团队为智能体定制在当前项目中工作时必须遵守的稳定规则。
+`AGENTS.md` 文件为 Ante 提供了独立于自动记忆之外的持久化行为规则指引。适用于制定智能体每次在项目中工作时都应遵循的稳定规则。
 
-## 文件路径与作用域
+## 文件位置（Locations） {#locations}
 
-当会话中提交首条用户消息时，Ante 会自动读取以下两处指引文件：
+当会话中提交首条用户消息时，Ante 会读取两个指引文件：
 
 | 位置 | 作用域 |
 |---|---|
-| `~/.ante/AGENTS.md` | 适用于所有项目的用户级全局指引 |
-| `<project>/AGENTS.md` | 纳入代码版本控制的项目专属指引 |
+| `~/.ante/AGENTS.md` | 适用于所有项目的全局指引 |
+| `<project>/AGENTS.md` | 随代码库进行版本控制的项目指引 |
 
-全局路径遵循 `ANTE_HOME` 环境变量配置。
+全局路径遵循 `ANTE_HOME` 环境变量；若设置 `ANTE_HOME=/path/to/ante-home`，则全局文件为 `/path/to/ante-home/AGENTS.md`。
 
-### 兼容 CLAUDE.md
+### CLAUDE.md 兼容回退（CLAUDE.md fallback） {#claudemd-fallback}
 
-为了保持与 Claude Code 的无缝兼容，在不存在 `AGENTS.md` 时会自动回退读取 `CLAUDE.md`：
+为了实现与 Claude Code 的零迁移兼容，当不存在 `AGENTS.md` 时，每个层级均会回退至 `CLAUDE.md` —— 每个层级仅读取一个文件，绝不同时读取两者：
 
-- **项目级**：Ante 从当前工作目录向上递归查找；在每个父级目录中优先检查 `AGENTS.md`，其次检查 `CLAUDE.md`。首次找到的目录胜出；若同一目录下两者并存，仅读取 `AGENTS.md`。
-- **全局级**：优先读取 `~/.ante/AGENTS.md`，仅当该文件不存在时才回退读取 `~/.claude/CLAUDE.md`。
+- **项目级**：Ante 从当前工作目录向上查找；在每个父级目录中优先检查 `AGENTS.md`，其次检查 `CLAUDE.md`。首个包含任一文件的目录胜出，若同级目录下两者并存，仅读取 `AGENTS.md`。
+- **全局级**：`~/.ante/AGENTS.md`，仅当该文件不存在时才回退至 `~/.claude/CLAUDE.md`。存在（即使为空）的 `~/.ante/AGENTS.md` 会阻止该回退。
 
-## 指引注入机制
+## Ante 如何注入指引（How Ante applies instructions） {#how-ante-applies-instructions}
 
-若全局和项目指引同时存在，Ante 会将其合并为一个提示词提醒块（全局规则在前，项目规则在后）注入系统提示词。空文件会被自动忽略。
+若两个文件均存在，Ante 会将它们合并为一个提示词提醒块（全局文件在前，项目文件在后）。空文件会被自动忽略。若全局和项目路径解析为同一文件，Ante 仅包含一次。
 
-项目指引适用于仓库专属的构建命令、代码规范与架构设计约束；全局指引更适合配置跨项目的个人偏好（如回复风格、语言偏好等）。
+项目指引适用于代码仓库特定的规则（如构建命令、代码风格规范、架构约束）；全局指引更适合配置通用的个人偏好（如回复格式或语言风格）。
 
-## 配置示例
+## 示例（Example） {#example}
 
 ```markdown title="~/.ante/AGENTS.md"
-# 全局偏好
+# Global preferences
 
-- 保持回复简洁精炼。
-- 优先提供可直接执行的操作与结论，减少不必要的背景铺垫。
+- Keep responses concise.
+- Prefer actionable explanations over background.
 ```
 
 ```markdown title="AGENTS.md"
-# 项目规则
+# Project rules
 
-- 修改 Rust 代码前先运行 `cargo test --workspace` 确保基线测试通过。
-- 保证公共协议变动的向后兼容性。
-- 新增或调整 CLI 参数与配置项时同步更新对应文档。
+- Run `cargo test --workspace` before changing Rust code.
+- Keep public protocol changes backward compatible.
+- Update docs when CLI flags or config files change.
 ```
 
-## AGENTS.md 与 MEMORY.md 的区别
+## AGENTS.md 与 MEMORY.md 的区别（AGENTS.md vs MEMORY.md） {#agentsmd-vs-memorymd}
 
-- `AGENTS.md` 是**人工编写的规则规范**。Ante 将其视为必须严格遵守的强制性行为准则。
-- `MEMORY.md` 是**智能体自动生成的记忆**。Ante 用其记录跨会话学习到的经验与上下文。
+`AGENTS.md` 是**人工编写的规则指引**。Ante 将其读取为必须遵守的行动准则。
+
+`MEMORY.md` 是**自动生成的项目记忆**。Ante 用其跨会话记录学习到的经验与上下文。
+
+使用 `AGENTS.md` 约束您希望强制执行的规则。使用记忆记录随着智能体熟悉代码库而可能动态演进的经验总结。

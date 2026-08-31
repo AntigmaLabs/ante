@@ -1,14 +1,14 @@
 ---
-title: 提供商与认证配置
+title: 提供商与认证配置（Providers）
 sidebar_label: "模型提供商"
 description: "选择模型提供商、完成身份认证并自定义模型目录"
 ---
 
-Ante 具备跨提供商无关性。每个提供商均实现了统一的提示词发送与流式响应接口，在会话启动时根据目录（Catalog）解析提供商与模型。
+Ante 具备跨提供商无关性。每个提供商均实现了统一的提示词发送与流式响应接口，在会话启动时根据目录解析提供商与模型。
 
 本页介绍日常使用场景：选择提供商、完成认证以及自定义模型目录。关于内置提供商的完整列表、各模型参数以及 `catalog.json` 的完整规范，请参阅[目录参考手册](/reference/catalog-reference)。
 
-## 选择提供商
+## 选择提供商（Selecting a provider） {#selecting-a-provider}
 
 可以通过三种方式指定提供商（优先级由高到低）：
 
@@ -18,26 +18,26 @@ Ante 具备跨提供商无关性。每个提供商均实现了统一的提示词
 
 支持传入 `--provider` 的所有键名均在[目录参考手册](/reference/catalog-reference#built-in-providers)中列出。
 
-在 TUI 会话进行中，输入 `/providers`：选择已连接的提供商，然后确认选择模型与思考深度。Ante 会自动记住每个提供商上次使用的模型。详见[模型、提供商与思考深度](/usage/models-and-thinking#switching-providers)。
+在 TUI 会话进行中，输入 `/providers`：选择已连接的提供商，然后确认选择模型（与思考深度）。Ante 会自动记住每个提供商上次使用的模型。参见[模型选择、提供商与思考深度](/usage/models-and-thinking#switching-providers)。
 
-## 身份认证
+## 身份认证（Authentication） {#authentication}
 
-大部分云端提供商直接从环境变量中读取 API 密钥：
+大部分提供商直接从环境变量中读取 API 密钥：
 
 ```bash
 export ANTHROPIC_API_KEY="sk-ant-..."
 ante --provider anthropic --model claude-sonnet-5
 ```
 
-各提供商具体支持的认证环境变量或 OAuth 机制可查阅[目录参考手册](/reference/catalog-reference#built-in-providers)。
+各提供商具体支持的认证方式（环境变量或 OAuth）可查阅[目录参考手册](/reference/catalog-reference#built-in-providers)。
 
-### 粘贴 API 密钥
+### 粘贴 API 密钥（Paste an API key） {#paste-an-api-key}
 
-也可以在引导欢迎弹窗中直接粘贴密钥（随时可通过 `/welcome` 重新打开）：选择 **Use API key**，Ante 会根据密钥前缀自动识别提供商、掩码输入，并在通过提供商有效性校验后安全保存在 `~/.ante/auth/`（仅当前用户可读权限）。环境变量中配置的密钥优先级始终高于本地存储的密钥。
+也可以在引导欢迎弹窗中直接粘贴密钥（随时可通过 `/welcome` 重新打开）：选择 **Use API key**，Ante 会根据密钥前缀自动识别提供商、掩码输入，并在通过提供商有效性校验后保存在 `~/.ante/auth/`（仅当前用户可读权限）。环境变量中配置的密钥优先级始终高于本地存储的密钥。
 
 在配置 Anthropic 密钥步骤时，按 `Tab` 键可直接在浏览器中打开 Anthropic Console 进行授权 —— Ante 会自动为您预配 API 密钥，且密钥无需经过系统剪贴板。
 
-### 订阅登录（OAuth）
+### 订阅登录 OAuth（Subscription login (OAuth)） {#subscription-login-oauth}
 
 支持订阅方案的提供商（Anthropic、OpenAI、Antix 等）可以通过 OAuth 授权直接登录，复用已有的订阅而无需管理 API 密钥。在 TUI 中输入 `/connect` 打开提供商登录向导。Ante 会自动拉起默认浏览器进行认证，完成后自动绑定当前会话。
 
@@ -46,16 +46,16 @@ ante --provider anthropic --model claude-sonnet-5
 连接成功后，Ante 会为后续会话持久化保存凭证，无需每次重复登录。
 
 :::tip
-使用第三方提供商时，请确保所选模型支持工具调用（Function Calling）—— Ante 依赖该能力实现 Agent 闭环。如果效果不佳，建议切换为更大参数规模或能力更强的模型。
+使用第三方提供商时，请确保所选模型支持工具调用（Function Calling）—— Ante 依赖该能力实现智能体闭环。如果效果不佳，建议切换为更大参数规模或能力更强的模型。
 :::
 
-## 自定义模型目录（Custom Catalog）
+## 自定义模型目录（Custom catalog） {#custom-catalog}
 
-通过创建 `~/.ante/catalog.json`，可以添加 Ante 未内置的第三方提供商、修改内置提供商属性或调整模型的默认参数。该文件在启动时会合并覆盖到内置预设之上，因此只需声明新增或修改的部分。常见示例如下；完整 Schema 请查阅[目录参考手册](/reference/catalog-reference#catalogjson-schema)。
+创建 `~/.ante/catalog.json` 以添加 Ante 未内置的提供商、修改内置提供商属性或微调模型默认参数。该文件在启动时会合并覆盖到内置预设之上，因此只需声明新增或修改的部分。常见示例如下；完整 Schema 请查阅[目录参考手册](/reference/catalog-reference#catalogjson-schema)。
 
-### 添加托管型提供商
+### 添加托管型提供商（Add a hosted provider） {#add-a-hosted-provider}
 
-大部分托管推理服务均兼容 OpenAI 协议。配置 `wire_style: "OpenAiCompatible"`，指定 `base_url` 并列出希望在选择器中展示的模型：
+大多数托管端点均兼容 OpenAI 协议。配置 `wire_style: "OpenAiCompatible"`，指定 `base_url` 并列出希望在选择器中展示的模型：
 
 ```json
 {
@@ -84,7 +84,7 @@ export TOGETHER_API_KEY="..."
 ante --provider together --model moonshotai/Kimi-K2-Instruct
 ```
 
-### 添加无需认证的本地服务
+### 添加无需认证的本地服务（Add a local provider with no auth） {#add-a-local-provider-with-no-auth}
 
 对于无需 API 密钥的本地服务可省略 `auth`，若提供商模型变动频繁（如 Ollama）也可省略 `preferred_models`。您仍可以通过 `--provider` 与 `--model` 显式调用任意模型 ID：
 
@@ -104,7 +104,7 @@ ante --provider together --model moonshotai/Kimi-K2-Instruct
 ante --provider ollama --model qwen2.5-coder:7b
 ```
 
-### 覆盖内置提供商配置
+### 覆盖内置提供商配置（Patch a built-in provider） {#patch-a-built-in-provider}
 
 当配置中的 key 匹配内置提供商时，仅会修改指定的字段。将可选字段（如 `auth` 或 `http_headers`）设置为 `null` 可清除预设值：
 
@@ -119,7 +119,7 @@ ante --provider ollama --model qwen2.5-coder:7b
 }
 ```
 
-### 传递额外自定义请求体参数
+### 传递额外自定义请求体参数（Send extra request parameters） {#send-extra-request-parameters}
 
 网关或自定义代理服务经常需要特定请求参数。将其配置在 `extra_body` 中，会自动合并到该提供商的所有 Chat 和 Streaming 请求体中：
 
@@ -139,7 +139,9 @@ ante --provider ollama --model qwen2.5-coder:7b
 }
 ```
 
-### 覆盖模型默认参数
+`extra_body` 只能追加新字段 —— Ante 为选定 wire style 生成的保留键（`model`、`messages`、`stream` 等）在启动时会被自动丢弃并打印提示，提供商仍会正常加载。参见[保留关键字列表](/reference/catalog-reference#extra-request-fields)。
+
+### 覆盖模型默认参数（Override model defaults） {#override-model-defaults}
 
 在 `models` 部分可以按模型 ID 针对性调整参数而无需重新定义提供商：
 
@@ -153,21 +155,21 @@ ante --provider ollama --model qwen2.5-coder:7b
 }
 ```
 
-## 第三方提供商接入
+## 第三方提供商接入（Third-party providers） {#third-party-providers}
 
-### 使用 Open Router
+### 使用 Open Router（Using Open Router） {#using-open-router}
 
-1. 在 [openrouter.ai](https://openrouter.ai/) 注册并生成 API Key。
+1. 在 [openrouter.ai](https://openrouter.ai/) 注册并生成 API 密钥。
 2. 配置环境变量：
    ```bash
    export OPENROUTER_API_KEY="sk-or-..."
    ```
-3. 调用 [Open Router 上的任意模型](https://openrouter.ai/models)：
+3. 调用 [Open Router 模型列表](https://openrouter.ai/models) 中的任意模型：
    ```bash
    ante --provider openrouter --model deepseek/deepseek-reasoner
    ```
 
-### 兼容 OpenAI 格式的提供商
+### 兼容 OpenAI 格式的提供商（OpenAI-compatible providers） {#openai-compatible-providers}
 
 许多提供商均提供 OpenAI 兼容的 API（如 Together AI、Fireworks、Groq Cloud、Perplexity 等）。临时调用时可直接利用内置的 `openai-compatible` 提供商而无需编辑 catalog 文件：
 
@@ -175,7 +177,7 @@ ante --provider ollama --model qwen2.5-coder:7b
    ```bash
    export OPENAI_COMPATIBLE_BASE_URL="https://api.together.xyz/v1"
    ```
-2. 设置 API Key：
+2. 设置 API 密钥：
    ```bash
    export OPENAI_COMPATIBLE_API_KEY="your-provider-api-key"
    ```

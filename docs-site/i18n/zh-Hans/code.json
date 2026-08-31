@@ -360,5 +360,50 @@
   "theme.tags.tagsPageTitle": {
     "message": "标签",
     "description": "The title of the tag list page"
+  },
+  "theme.navbar.item.label.Antix": {
+    "message": "Antix"
+  },
+  "theme.navbar.item.label.Live Eval": {
+    "message": "实时评测"
+  },
+  "theme.navbar.item.label.Home": {
+    "message": "官网"
+  },
+  "theme.footer.title.Docs": {
+    "message": "文档"
+  },
+  "theme.footer.title.Community": {
+    "message": "社区"
+  },
+  "theme.footer.title.Company": {
+    "message": "关于我们"
+  },
+  "theme.footer.link.Overview": {
+    "message": "概览"
+  },
+  "theme.footer.link.Quickstart": {
+    "message": "快速入门"
+  },
+  "theme.footer.link.Benchmarks": {
+    "message": "基准评测"
+  },
+  "theme.footer.link.Local Models": {
+    "message": "本地模型"
+  },
+  "theme.footer.link.Providers": {
+    "message": "模型提供商"
+  },
+  "theme.footer.link.Home": {
+    "message": "官网"
+  },
+  "theme.footer.link.Live Eval": {
+    "message": "实时评测"
+  },
+  "theme.footer.link.Discord": {
+    "message": "Discord"
+  },
+  "theme.footer.link.GitHub": {
+    "message": "GitHub"
   }
 }

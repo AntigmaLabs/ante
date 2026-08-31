@@ -1,30 +1,30 @@
 ---
-title: 模型选择、提供商与思考深度
+title: 模型选择、提供商与思考深度（Models, Providers & Effort）
 sidebar_label: "模型与思考深度"
-description: "在会话中随时切换大语言模型、切换提供商并动态调节思考深度（Effort）"
+description: "在会话中随时切换模型、切换提供商并动态调节思考深度（Effort）"
 ---
 
-# 模型选择、提供商与思考深度
+# 模型选择、提供商与思考深度（Models, Providers & Effort）
 
-Ante 允许在会话进行中随时无缝切换模型、提供商和思考深度（Effort）—— 完全无需重启会话。两个命令各司其职：`/models` 用于在当前提供商内细化选择模型和思考深度，而 `/providers` 用于在不同的提供商之间切换。
+Ante 允许在会话进行中随时无缝切换模型、提供商和思考深度（Effort）—— 完全无需重启会话。两个弹窗面板各司其职：`/models` 用于在当前提供商内细化选择模型和思考深度，而 `/providers` 用于在不同的提供商之间切换。
 
 <img src="/assets/cookbook/providers.gif" alt="使用 /providers 切换提供商、模型与思考深度" style={{width: '100%', borderRadius: '8px', margin: '16px 0'}} />
 
-## 选择模型
+## 选择模型（Selecting a model） {#selecting-a-model}
 
-在 TUI 终端中输入 `/models` 即可打开模型选择器面板。面板会列出当前提供商支持的模型列表（标题展示作用域，如 *Switch Model — Anthropic*）。使用方向键浏览模型，调节下方思考深度滑块，按 Enter 回车确认。
+在 TUI 终端中输入 `/models` 即可打开模型选择器面板。面板会列出当前提供商支持的模型（标题展示作用域，如 *Switch Model — Anthropic*）。使用方向键浏览模型，调节下方思考深度滑块，按 Enter 回车确认。
 
-输入 `/models <model_id>` 可跳过弹窗直接切换至指定模型。该 ID 不必局限于弹窗预设列表 —— 只要提供商接口支持即可（例如在 [Open Router](/reference/catalog-reference#open-router) 上调用未收录在预设目录中的模型）。直接传入 ID 时会采用目录默认的思考深度；后续可随时输入不带参数的 `/models` 调整滑块。若当前尚未选择提供商，传入模型 ID 会自动推导并选择提供商（与 CLI 中的 `--model` 行为一致）。
+输入 `/models <model_id>` 可跳过弹窗直接切换至当前提供商下的指定模型。该 ID 不必局限于弹窗预设列表 —— 只要提供商端点支持即可（例如在 [Open Router](/reference/catalog-reference#open-router) 上调用目录未收录的模型）。模型启动时采用其目录默认的思考深度；后续可随时输入不带参数的 `/models` 调整滑块。若当前尚未选择提供商，传入模型 ID 会自动推导并选择提供商（与 CLI 中的 `--model` 行为一致）。
 
 在选择器中按 `Tab` 键可直接跳转至提供商选择面板。
 
-## 切换提供商
+## 切换提供商（Switching providers） {#switching-providers}
 
-输入 `/providers` 可列出所有已配置的提供商及其连接认证状态。在已连接的提供商上按 Enter 即可展开其专属的模型选择面板 —— 自动默认高亮您上次在该提供商中使用的模型。按 Enter 确认生效，按 `Esc` 可随时返回上级列表。在未连接的提供商上按 Enter 将直接触发登录认证流程（详见[提供商认证](/usage/providers#authentication)）。
+输入 `/providers` 可列出所有提供商及其连接认证状态。在已连接的提供商上按 Enter 即可展开其专属的模型选择面板 —— 包含相同的模型列表与思考深度滑块，且自动默认高亮您上次在该提供商中使用的模型。仅在按 Enter 确认后才正式生效；按 `Esc` 可随时返回提供商列表。在未连接的提供商上按 Enter 将直接触发登录认证流程（参见[模型提供商](/usage/providers#authentication)）。
 
 Ante 会自动记忆每个提供商最后使用的模型，在不同提供商之间切换时能自动还原工作状态。
 
-## 思考深度（Effort）
+## 思考深度（Effort） {#effort}
 
 思考深度（Effort）是 Ante 控制模型在生成回答前进行深度推理（Reasoning / Thinking）的统一调节旋钮，分为六个级别：
 
@@ -33,7 +33,7 @@ min · low · medium · high · xhigh · max
 ```
 
 - `min` 为模型支持的最低档位 —— 支持关闭思考的模型会彻底禁用思考；始终开启思考的模型则限制为其最低推理深度。
-- Ante 会自动将该等级映射到各提供商的原生 thinking/reasoning 参数；若提供商原生支持的档位较少，Ante 会自动向下取整映射到最接近的支持档位。
+- 每个提供商会自动将该等级映射到其原生的 thinking/reasoning 参数；若提供商原生支持的档位较少，Ante 会自动向下取整映射到最接近的支持档位。
 
 在 `/models` 弹窗中，思考深度表现为模型列表下方的滑块，刻度数量根据当前模型实际支持的原生档位动态展示（例如支持 4 档的模型显示 4 个刻度，支持全部 6 档的显示 6 个刻度）。不支持调节推理深度的模型则不会显示滑块。
 
@@ -48,7 +48,7 @@ ante --effort high
 ```
 
 :::tip
-也可以通过命令行参数指定默认模型与提供商：`ante --provider openai --model gpt-5.6-sol`，或在[偏好配置](/configuration/preference)中设置全局默认值。
+也可以通过命令行参数指定默认模型与提供商：`ante --provider openai --model gpt-5.6-sol`，或在[偏好设置](/configuration/preference)中配置全局默认值。
 :::
 
-如果选择提供商时未指定具体模型，Ante 会自动默认启用该提供商最强大的主力模型，并在后台摘要网页等辅助任务中静默调用更轻量廉价的辅助模型 —— 参见[模型权重等级（Weight Classes）](/reference/catalog-reference#weight-classes)。多模态视觉（Vision）模型会自动识别，您可以直接将图片拖拽粘贴到终端中进行分析。
+如果选择提供商时未指定具体模型，Ante 会自动默认启用该提供商最强大的主力模型，并在后台摘要网页等辅助任务中静默调用更轻量廉价的辅助模型 —— 参见[权重等级](/reference/catalog-reference#weight-classes)。多模态视觉（Vision）模型会自动识别，您可以直接将图片拖拽粘贴到终端中进行分析。

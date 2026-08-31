@@ -1,36 +1,36 @@
 ---
-title: 中断与实时引导
+title: 中断与实时引导（Interrupting & Steering）
 sidebar_label: "实时引导"
 description: "在智能体生成过程中及时调整方向，节省时间与 Token 开销"
 ---
 
-# 中断与实时引导
+# 中断与实时引导（Interrupting & Steering）
 
-无需等待智能体在错误的方向上完成整轮执行。Ante 支持在执行过程中随时中断或实时引导。
+无需等待智能体在错误的方向上完成整轮执行。Ante 支持在执行过程中随时中断并重新定向。
 
-## 中断执行
+## 中断执行（Interrupting） {#interrupting}
 
-在智能体思考或输出过程中，按 `Ctrl+C` 可立即终止当前 Turn。在没有弹出菜单时按 `Escape` 同样可以中断。智能体会完整保留截至中断前的所有上下文，方便您直接发送后续消息纠正方向 —— 无需从头重新开始。
+在智能体生成内容期间按 `Ctrl+C` 可立即终止当前 Turn。在没有弹出菜单时按 `Escape` 同样可以中断。智能体会完整保留截至该时刻的所有上下文，方便您直接发送后续消息纠正方向 —— 无需从头重新开始。
 
-<img src="/assets/cookbook/interrupt.gif" alt="中断智能体执行" style={{width: '100%', borderRadius: '8px', margin: '16px 0'}} />
+<img src="/assets/cookbook/interrupt.gif" alt="中断智能体" style={{width: '100%', borderRadius: '8px', margin: '16px 0'}} />
 
-在发现智能体刚开始理解有偏差时及时中断，能显著节省开发时间并减少 Token 消耗。
+在及早发现智能体出现偏差时及时中断，能显著节省开发时间并减少 Token 消耗。
 
-## 不中断执行的实时引导（Steering）
+## 不中断执行的实时引导（Steering without interrupting） {#steering-without-interrupting}
 
-您无需强行中断当前轮次也可以调整其执行。在智能体工作期间直接在输入框中输入消息并按 `Enter` —— 消息不会发起新的 Turn，而是进入**排队（Queued）**状态。随后：
+您无需强行停止当前轮次也可以调整其方向。在智能体工作期间键入消息并按 `Enter` —— 消息不会发起新轮次，而是处于**排队（queued）**状态。随后：
 
-- 按 `Ctrl+S` 进行**实时引导（Steer）**：将排队的消息即时注入正在运行的 Turn 中作为补充指引，且不会打断当前执行进度。
-- 或者不做任何操作 —— 排队的消息会在当前轮次执行完毕后自动提交。
+- 按 `Ctrl+S` 进行**实时引导（steer）**：将排队的消息即时注入正在运行的轮次中作为实时指引，且不会打断当前执行。
+- 或者不做任何操作 —— 排队的消息会在当前轮次结束后自动提交。
 
 <img src="/assets/cookbook/steering.gif" alt="通过排队指引实时引导正在运行的 Ante 轮次" style={{width: '100%', borderRadius: '8px', margin: '16px 0'}} />
 
-实时引导可以在不破坏智能体执行连贯性的同时微调方向，特别适合在思路正确但遗漏细节时（例如“顺便更新对应的单元测试”、“复用现有的 helper 函数”）提供补充。
+实时引导可以在不破坏智能体执行连贯性的同时微调方向，特别适合在思路正确但遗漏细节时（如“顺便更新对应的测试”、“复用现有的 helper 函数”）提供补充。
 
-## 历史命令与搜索
+## 历史提示词（Command history） {#command-history}
 
-在输入区按键盘 `↑`（向上方向键）可以循环调出之前发送的提示词，便于在中断后微调并重新发送。
+在输入区按键盘 `Up`（向上方向键）可以循环浏览之前的提示词，便于在中断后快速重新发送或微调。
 
 :::tip
-还可以按 `Ctrl+R` 使用反向增量搜索（Reverse-i-search）检索历史会话中的提示词。
+还可以按 `Ctrl+R` 使用反向增量搜索（reverse-i-search）检索完整的提示词历史 —— 便于查找会话早期的输入。
 :::

@@ -4,15 +4,13 @@ sidebar_label: "模型与提供商目录"
 description: "内置提供商列表、预设模型清单以及 catalog.json Schema 规范"
 ---
 
-# 模型与提供商目录参考手册（Catalog Reference）
+Ante 根据**目录（Catalog）**解析每个提供商与模型：包括本文档中记录的内置预设，以及在启动时合并覆盖的 [`~/.ante/catalog.json`](#catalogjson-schema)。目录在每个进程启动时读取一次 —— 修改后请重启 Ante 以生效。
 
-Ante 根据**目录（Catalog）**解析每个提供商与模型：包括本文档中记录的内置预设，以及在启动时合并覆盖的 [`~/.ante/catalog.json`](#catalogjson-schema)。目录在进程启动时读取一次。
+本页面为详尽的参考手册。关于日常选择提供商的流程与可直接复制的配置范例，请参阅[模型提供商](/usage/providers)。
 
-日常选择提供商与配置指南请参阅[提供商与认证配置](/usage/providers)。
+## 内置提供商列表（Built-in providers） {#built-in-providers}
 
-## 内置提供商列表
-
-| 提供商 | Key 标识 | 通信协议格式 (Wire Style) | 认证方式 |
+| 提供商 | key | 通信协议格式 (Wire style) | 身份认证 |
 |---|---|---|---|
 | Anthropic | `anthropic` | `AnthropicMessage` | `ANTHROPIC_API_KEY` |
 | Anthropic Subscription | `anthropic-subscription` | `AnthropicMessage` | OAuth |
@@ -30,92 +28,412 @@ Ante 根据**目录（Catalog）**解析每个提供商与模型：包括本文�
 | Ali Coding Plan | `ali-coding-plan` | `AnthropicMessage` | `ALI_CODING_PLAN_API_KEY` |
 | Antix | `antix` | `AnthropicMessage` | OAuth |
 | Antix (API key) | `antix-api-key` | `AnthropicMessage` | `ANTIX_API_KEY` |
-| Local | `local` | `OpenAiCompatible` | 无需认证 |
+| Local | `local` | `OpenAiCompatible` | 无 |
 
-`Key 标识` 列即为传递给 `--provider` 的参数值。
+`key` 列即为传递给 `--provider` 的参数值。通过 OAuth 认证的提供商（`anthropic-subscription`、`openai-subscription`、`antix`）在 TUI 中通过交互式向导登录；其余提供商从列出的环境变量中读取 API 密钥。
 
-## 各提供商的主力模型
+## 各提供商的模型清单（Models by provider） {#models-by-provider}
 
-### Anthropic
+每个提供商均预设了一组 `preferred_models` —— 即在模型选择器中展示的模型 ID。当您选择提供商而未显式指定模型时，Ante 默认选用其**权重等级最高（heaviest-weight）**的模型（参见[权重等级](#weight-classes)），而非简单地选择列表第一项。显式指定的提供商具有最高权威性：若传入了 `--provider`，即使该模型 ID 未列在 `preferred_models` 中，Ante 也会将该模型 ID 发送给该提供商（参见[解析规则](#how-a-model-and-provider-are-chosen)）。
 
-`anthropic` 与 `anthropic-subscription` 支持相同模型族：
+### Anthropic {#anthropic}
+
+`anthropic` 与 `anthropic-subscription` 提供相同的模型：
 
 | 模型 ID | 说明 | 上下文大小 |
 |---|---|---|
 | `claude-haiku-4-5` | 极速响应，接近前沿智能水平 | 200K |
 | `claude-sonnet-5` | 速度与智能的最佳平衡 | 1M |
-| `claude-opus-5` | 复杂 Agent 级编码与企业级重构 | 1M |
-| `claude-fable-5` | 针对严苛深度推理的最强能力 | 1M |
+| `claude-opus-5` | 复杂智能体编码与企业级任务 | 1M |
+| `claude-fable-5` | 针对高要求推理的最强能力 | 1M |
 
 ```bash
 ante --provider anthropic --model claude-sonnet-5
 ```
 
-### OpenAI
+### OpenAI {#openai}
 
 | 模型 ID | 说明 | 上下文大小 |
 |---|---|---|
 | `gpt-5.6-sol` | GPT-5.6 旗舰模型，擅长复杂推理与系统级编码 | 1.05M |
-| `gpt-5.6-terra` | 智能水平与 Token 成本的极佳平衡 | 1.05M |
-| `gpt-5.6-luna` | 面向大规模高吞吐任务的高效模型 | 1.05M |
-| `gpt-5.5-pro` | 复杂任务上的超高稳定性 | 400K |
-| `gpt-5.4-pro` | GPT-5.4 系列高可靠主力 | 400K |
+| `gpt-5.6-terra` | GPT-5.6 智能水平与 Token 成本的极佳平衡 | 1.05M |
+| `gpt-5.6-luna` | 面向高效、大规模高吞吐任务的 GPT-5.6 模型 | 1.05M |
+| `gpt-5.5-pro` | 复杂问题上的最高稳定性 | 400K |
+| `gpt-5.4-pro` | GPT-5.4 系列中可靠性最高的主力 | 400K |
 | `gpt-5.3-codex` | 前沿代码专精模型 | 400K |
-| `gpt-5.4-mini` | 更快、更经济的 GPT-5.4 版本 | 400K |
+| `gpt-5.4-mini` | 更快、更经济的 GPT-5.4 模型 | 400K |
+| `gpt-5.4-nano` | GPT-5.4 家族最小轻量模型 | 400K |
 
 ```bash
 ante --provider openai --model gpt-5.6-sol
 ```
 
-### DeepSeek
+`openai-subscription` 提供商（ChatGPT/Codex OAuth）支持 `gpt-5.6-sol`、`gpt-5.6-terra` 和 `gpt-5.6-luna`（272K 上下文），以及 `gpt-5.5`、`gpt-5.4` 和 `gpt-5.4-mini`（400K 上下文）。
+
+#### OpenAI 传输协议（OpenAI transports） {#openai-transports}
+
+`openai` 与 `openai-subscription` 提供商支持两种流式响应传输方式：
+
+| 传输协议 | 端点地址 | 默认状态 |
+|---|---|---|
+| `http_sse` (HTTP + SSE) | `https://api.openai.com/v1/responses`（或订阅对应端点） | ✅ |
+| `websocket_auto` (持久化 WebSocket) | `wss://.../v1/responses` | 可选启用 |
+
+WebSocket 模式在每个会话中保持单条长连接，并通过 `previous_response_id` 仅传递新增输入项以继续下一轮 Turn。在长链路的智能体工具调用循环中，这能显著消除每轮往返的网络建立延迟。协议细节可参考 OpenAI 的 [WebSocket 模式指南](https://developers.openai.com/api/docs/guides/websocket-mode)。
+
+通过进程级环境变量启用（默认为 `http_sse`）：
+
+```bash
+ANTE_OPENAI_TRANSPORT=websocket_auto ante --provider openai --model gpt-5.4-mini
+```
+
+支持的值：`http_sse`、`websocket_auto`。未识别的值会打印警告并回退至 `http_sse`。
+
+注意事项：
+- WebSocket 仅在流式轮次（TUI 会话）中启用。无头 `--prompt` 模式使用非流式 `chat()` 并按设计跳过 WS。
+- 任何临时的 WS 故障（连接超时、网络抖动）会在该轮次中自动回退至 HTTP/SSE —— 用户绝不会因为传输协议选型而遭遇硬错误。认证失败（`401`/`403`）会将整个会话在其生命周期内永久切换至 HTTP/SSE。
+- 同时适用于 `api.openai.com`（API Key）与 ChatGPT 订阅后端 `chatgpt.com/backend-api/codex`。
+- 验证当前激活的传输方式：在调试构建中按 `Ctrl+L` 打开调试面板查看 **Info** 选项卡中的 `OpenAI Transport:` 行；或在日志中检索 `transport selected`：
+
+  ```bash
+  grep "transport selected" ~/.ante/logs/*/ante.*.log
+  ```
+
+### Gemini {#gemini}
+
+`gemini` 与 `vertex-gemini` 提供相同的模型：
 
 | 模型 ID | 说明 | 上下文大小 |
 |---|---|---|
-| `deepseek-chat` | DeepSeek-V4 通用主力模型 | 128K |
-| `deepseek-reasoner` | DeepSeek-R1 深度思考推理模型 | 128K |
+| `gemini-3.7-flash` | Gemini 3.7 Flash，适用于快速智能体与多模态工作流 | 1.05M |
+| `gemini-3.6-flash` | Gemini 3.6 Flash，适用于智能体与多模态工作流 | 1M |
+| `gemini-3.1-pro-preview` | 具备深度思考能力的 Gemini 3.1 Pro | 1M |
+| `gemini-3.1-pro-preview-customtools` | 针对自定义工具调用优化的 Gemini 3.1 Pro | 1M |
+| `gemini-3.5-flash-lite` | 最快、成本最低的 Gemini 3.5 模型，适用于高吞吐量任务 | 1M |
 
-### Ali Coding Plan（阿里代码计划）
+```bash
+ante --provider gemini --model gemini-3.1-pro-preview
+```
 
-支持通过 DashScope 调用 Qwen、Kimi、GLM、MiniMax 等优质国产大模型：
+### Grok (xAI) {#grok-xai}
 
-| 模型 ID | 说明 |
-|---|---|
-| `qwen3.5-plus` | 通义千问 3.5 Plus 主力代码模型 |
-| `qwen3.5-max` | 通义千问 3.5 Max 最强旗舰模型 |
-| `kimi-k2.5` | 月之暗面 Kimi K2.5 |
-| `glm-5-turbo` | 智谱 GLM-5 Turbo |
-| `minimax-m2.5` | MiniMax M2.5 |
+| 模型 ID | 说明 | 上下文大小 |
+|---|---|---|
+| `grok-4.6` | Grok 4.6 旗舰推理模型 | 500K |
+
+```bash
+ante --provider xai --model grok-4.6
+```
+
+### Zai（智谱） {#zai}
+
+| 模型 ID | 说明 | 上下文大小 |
+|---|---|---|
+| `glm-5.3` | 最新 GLM-5.3 模型，适用于编程与智能体任务 | 1M |
+
+```bash
+ante --provider zai --model glm-5.3
+```
+
+### Open Router {#open-router}
+
+Open Router 拆分为共享同一 API 密钥的三个提供商（按协议方言划分）：`openrouter`（兼容 OpenAI Chat Completions）、`openrouter-responses`（OpenAI Responses）与 `openrouter-anthropic`（Anthropic Messages）。
+
+`openrouter` 预设模型：
+
+| 模型 ID | 说明 | 上下文大小 |
+|---|---|---|
+| `deepseek/deepseek-v4-flash-0731` | DeepSeek V4 Flash 0731 | 1.05M |
+| `google/gemini-3.7-flash` | Gemini 3.7 Flash 快速多模态智能体工作流 | 1.05M |
+| `x-ai/grok-4.6` | 通过 OpenRouter 调用的 Grok 4.6 旗舰推理模型 | 500K |
+| `qwen/qwen3.8-max` | 通义千问 3.8 旗舰多模态推理模型 | 1M |
+| `qwen/qwen3.7-plus` | 高性价比且支持视觉的通义千问 3.7 模型 | 1M |
+| `qwen/qwen3.7-flash` | 超低成本通义千问 3.7 多模态推理模型 | 1M |
+| `meta/muse-spark-1.2` | Muse Spark 1.2 多模态智能体推理模型 | 1.05M |
+| `tencent/hy3` | 腾讯混元 Hy3 智能体推理模型 | 262K |
+| `xiaomi/mimo-v2.5-pro` | 小米 MiMo-V2.5-Pro 旗舰智能体模型 | 1.05M |
+| `xiaomi/mimo-v2.5` | 小米 MiMo-V2.5 全模态模型 | 1.05M |
+| `z-ai/glm-5.3` | 通过 OpenRouter 调用的 GLM 5.3 编程与智能体推理模型 | 1.05M |
+| `moonshotai/kimi-k3` | 月之暗面 Kimi K3 旗舰多模态推理模型 | 1.05M |
+| `moonshotai/kimi-k2.7-code` | 支持视觉的 Kimi K2.7 Code 代码推理模型 | 262K |
+| `minimax/minimax-m3` | MiniMax M3 多模态模型 | 512K |
+| `deepseek/deepseek-v4-pro-0813` | DeepSeek V4 Pro 0813 正式版 | 1.05M |
+
+`openrouter-responses` 提供 `openai/gpt-5.6-sol`、`openai/gpt-5.6-sol-pro`、`openai/gpt-5.6-terra`、`openai/gpt-5.6-terra-pro`、`openai/gpt-5.6-luna` 和 `openai/gpt-5.6-luna-pro`（1.05M 上下文），以及 `openai/gpt-5.3-codex`（400K 上下文）。带有 `-pro` 后缀的 ID 会走 OpenRouter 的专业推理路由。
+
+`openrouter-anthropic` 通过 Anthropic Messages 协议提供 Claude 家族：`anthropic/claude-haiku-4.5`（200K 上下文），以及 `anthropic/claude-sonnet-5`、`anthropic/claude-opus-5`、`anthropic/claude-opus-5-fast`、`anthropic/claude-fable-5`（1M 上下文）。
+
+每个提供商还可以通过完整 ID 调用 [Open Router 模型列表](https://openrouter.ai/models) 中的任意模型，只要其符合该提供商的协议格式即可。
+
+```bash
+ante --provider openrouter --model deepseek/deepseek-v4-pro-0813
+ante --provider openrouter-responses --model openai/gpt-5.6-sol
+ante --provider openrouter-anthropic --model anthropic/claude-fable-5
+```
+
+### DeepSeek {#deepseek}
+
+| 模型 ID | 说明 | 上下文大小 |
+|---|---|---|
+| `deepseek-v4-flash` | DeepSeek V4 Flash 快速模型 | 1M |
+| `deepseek-v4-pro` | DeepSeek V4 Pro 旗舰深度思考模型 | 1M |
+
+```bash
+ante --provider deepseek --model deepseek-v4-flash
+```
+
+需配置环境变量 `DEEPSEEK_API_KEY`，可选配置 `DEEPSEEK_BASE_URL`。
+
+### Ali Coding Plan（阿里代码计划） {#ali-coding-plan}
+
+| 模型 ID | 说明 | 上下文大小 |
+|---|---|---|
+| `qwen3.5-plus` | 支持视觉的 Qwen 3.5 Plus | 1M |
+| `qwen3.6-plus` | 最新的 Qwen 3.6 Plus（带视觉） | 1M |
+| `glm-5.1` | GLM-5.1 模型 | 200K |
+| `MiniMax-M2.5` | MiniMax M2.5 模型 | 205K |
+| `qwen3-max-2026-01-23` | Qwen 3 Max 快照版本 | 1M |
+| `qwen3-coder-next` | Qwen 3 Coder Next 代码模型 | 1M |
+| `qwen3-coder-plus` | Qwen 3 Coder Plus 代码模型 | 1M |
+| `qwen-plus` | 快速且高能力 | 1M |
 
 ```bash
 ante --provider ali-coding-plan --model qwen3.5-plus
 ```
 
-## `catalog.json` Schema 配置规范
+需要开通[阿里云百炼代码计划订阅](https://help.aliyun.com/zh/model-studio/coding-plan)并获取 API 密钥（格式如：`sk-sp-xxxxx`）。内置提供商采用 Anthropic 协议端点。部分模型仅在 OpenAI 兼容端点提供 —— 可通过自定义目录项添加接入：
+
+```json
+{
+  "providers": {
+    "ali-coding-plan-oai": {
+      "display_name": "Ali Coding Plan (OpenAI)",
+      "base_url": "https://coding.dashscope.aliyuncs.com/v1",
+      "auth": { "bearer": { "env_key": "ALI_CODING_PLAN_API_KEY" } },
+      "wire_style": "OpenAiCompatible",
+      "http_headers": {
+        "User-Agent": "ante-cli/1.0.0",
+        "X-DashScope-UserAgent": "coding-agent"
+      }
+    }
+  }
+}
+```
+
+### Antix {#antix}
+
+`antix`（OAuth）与 `antix-api-key`（API Key）通过 Antigma 平台提供相同模型：
+
+| 模型 ID | 说明 | 上下文大小 |
+|---|---|---|
+| `gemini-3.5-flash` | Gemini 3.5 Flash，适用于智能体工作流 | 1M |
+| `grok-4.5` | Grok 4.5，xAI 专为代码与智能体打造的旗舰 | 500K |
+| `grok-4.6` | Grok 4.6 旗舰推理模型 | 500K |
+| `kimi-k3` | Kimi K3 旗舰多模态推理模型 | 1M |
+| `qwen3.7-max` | 最新 Qwen 3.7 Max | 1M |
+| `qwen3.7-plus` | 最新 Qwen 3.7 Plus | 1M |
+| `gemini-3.1-pro-preview` | 具备深度思考的 Gemini 3.1 Pro | 1M |
+| `claude-haiku-4-5` | 快速且高能力 | 200K |
+| `claude-sonnet-4-6` | 快速且高能力 | 200K |
+| `claude-opus-4-8` | 最强能力，推理深入 | 200K |
+| `claude-fable-5` | 最强大的 Claude 模型 | 1M |
+| `gpt-5.3-codex` | 针对代码深度优化的 Codex 模型 | — |
+| `deepseek-v4-flash` | 高速 DeepSeek V4 Flash | 1M |
+| `deepseek-v4-pro` | 具备深度思考的 DeepSeek V4 Pro | 1M |
+| `glm-5.2` | 最新 GLM-5.2 模型 | 1M |
+
+```bash
+ante --provider antix --model claude-sonnet-4-6        # OAuth
+ante --provider antix-api-key --model claude-sonnet-4-6 # ANTIX_API_KEY
+```
+
+### Local（本地模型） {#local}
+
+通过内置的 llama.cpp 引擎在本地运行 GGUF 模型 —— 无需 API 密钥。`local` 是通配提供商；其可用模型取决于离线服务端当前加载的模型，且仅在有活跃服务注册时才存在于目录中。在未启动服务时选择 `local` 会弹出提示通知。详见[离线模式](/local/offline)。
+
+```bash
+ante --provider local
+```
+
+## `catalog.json` 配置规范（catalog.json schema） {#catalogjson-schema}
+
+启动时，`~/.ante/catalog.json` 会合并覆盖在内置预设之上。包含两个可选的顶层键：
+
+```json
+{
+  "providers": { /* 添加或覆盖提供商 */ },
+  "models":    { /* 覆盖现有模型的字段属性 */ }
+}
+```
+
+在 `providers` 中，若 key 匹配内置提供商（如 `openai`），则逐字段修改该预设；若为新 key 则添加新提供商。Map 的 key 即为传递给 `--provider` 的名称。内部的 `id`（或历史 `name`）字段会被忽略。
+
+:::note
+`~/.ante` 目录可通过环境变量 `ANTE_HOME` 重定向；目录配置文件路径始终为 `$ANTE_HOME/catalog.json`。
+:::
+
+### 提供商字段（Provider fields） {#provider-fields}
+
+| 字段 | 必填 | 说明 |
+|---|---|---|
+| `display_name` | 新增提供商：可选 | 在 TUI 中展示的友好名称。省略时默认使用 map key |
+| `base_url` | 新增提供商：✅ | API 基础 URL |
+| `wire_style` | 新增提供商：✅ | Ante 通信采用的 API 方言 —— `AnthropicMessage`、`OpenAiCompatible`、`OpenAiResponse` 或 `Gemini` |
+| `auth` | — | 认证方式（参见[身份认证](#authentication)）。无需密钥的提供商可省略 |
+| `http_headers` | — | 随每次请求发送的额外自定义 HTTP Header 映射表（string→string） |
+| `extra_body` | — | 合并到每个 Chat 和 Streaming 请求体顶层的专属 JSON 字段（参见[额外请求字段](#extra-request-fields)） |
+| `supports_web_search` | — | 该提供商是否提供原生网络搜索功能。为 `true` 时自动向该提供商的会话添加 `WebSearch` 工具；为 `false`（默认）时不提供 |
+| `preferred_models` | — | 在选择器中展示并作为默认模型的推荐列表（参见[模型字段](#model-fields)）。对于内置提供商，匹配的模型 ID 会被合并修改，新 ID 会被追加；省略时保持内置列表不变 |
+| `stream_idle_timeout_secs` | — | 流式调用在超时报错前允许的最长无可用事件时间（秒）。涵盖等待首个事件和后续事件间隔，跨 SSE 和 WebSocket 均有效。默认 `300` 秒。慢速本地模型或代理端点可适当调大 |
 
 ```json
 {
   "providers": {
     "my-provider": {
-      "display_name": "My Custom Provider",
+      "display_name": "My Provider",
       "base_url": "https://api.example.com/v1",
       "wire_style": "OpenAiCompatible",
       "auth": { "bearer": { "env_key": "MY_PROVIDER_API_KEY" } },
+      "http_headers": { "X-Org": "my-team" },
       "preferred_models": [
         {
-          "id": "my-model-id",
-          "description": "Custom model",
-          "context_limit": 128000,
-          "max_tokens": 8192,
+          "id": "my-model",
+          "description": "My fine-tuned model",
+          "max_tokens": 32000,
+          "context_limit": 200000,
           "effort": "medium"
         }
       ]
     }
-  },
-  "models": {
-    "claude-sonnet-5": {
-      "effort": "high",
-      "max_tokens": 64000
+  }
+}
+```
+
+针对内置提供商，仅需填写希望修改的字段。将可选字段设置为 `null` 可清除预设值：
+
+```json
+{
+  "providers": {
+    "openai": {
+      "base_url": "http://localhost:8080/v1",
+      "auth": null,
+      "http_headers": null
     }
   }
 }
 ```
+
+### 额外请求字段（Extra request fields） {#extra-request-fields}
+
+部分网关或代理需要 Ante 原生未建模的特定参数（服务等级、路由提示、厂商专属 Beta 字段）。`extra_body` 是一个 JSON 对象，会直接合并到发送给该提供商的每个请求体顶层：
+
+```json
+{
+  "providers": {
+    "my-gateway": {
+      "base_url": "https://gateway.example.com/v1",
+      "wire_style": "OpenAiCompatible",
+      "auth": { "bearer": { "env_key": "MY_GATEWAY_API_KEY" } },
+      "extra_body": {
+        "service_tier": "priority",
+        "routing": { "region": "us-east" }
+      }
+    }
+  }
+}
+```
+
+`extra_body` 只能追加新字段，**绝不能**覆盖 Ante 为选定 `wire_style` 生成的保留关键字：
+
+| `wire_style` | 保留关键字列表 |
+|---|---|
+| `AnthropicMessage` | `model`, `max_tokens`, `messages`, `system`, `temperature`, `tools`, `stream`, `thinking`, `stop_sequences`, `output_config`, `cache_control` |
+| `OpenAiCompatible` | `model`, `messages`, `reasoning_effort`, `max_tokens`, `stream`, `stream_options`, `temperature`, `top_p`, `top_k`, `stop`, `tools`, `tool_choice`, `thinking`, `enable_thinking`, `thinking_budget`, `enable_search`, `search_options` |
+| `OpenAiResponse` | `model`, `instructions`, `input`, `tools`, `tool_choice`, `parallel_tool_calls`, `max_output_tokens`, `temperature`, `reasoning`, `stream`, `include`, `store` |
+| `Gemini` | `contents`, `systemInstruction`, `generationConfig`, `tools`, `toolConfig` |
+
+保留关键字在加载目录时会被自动忽略并在启动提示中告警，其余字段仍正常加载。若想修改这些参数，请使用[模型字段](#model-fields)或[环境变量覆盖](#environment-overrides)。
+
+### 身份认证配置（Authentication） {#authentication}
+
+`auth` 是一个带标签的对象：标签指定凭据传递位置，凭据可以为环境变量（`env_key`）或 Ante 内置的 OAuth 流程（`oauth_preset`）。
+
+| 形式 | JSON 声明 | 实际网络发送 |
+|---|---|---|
+| Bearer Token | `{ "bearer": { "env_key": "MY_KEY" } }` | `Authorization: Bearer <token>` |
+| 自定义 Header | `{ "header": { "name": "x-api-key", "env_key": "MY_KEY" } }` | `<name>: <token>` |
+| Query URL 参数 | `{ "query": { "name": "api_key", "env_key": "MY_KEY" } }` | `?<name>=<token>` |
+
+使用 `oauth_preset` 接入内置 OAuth 流程（`anthropic`、`openai` 或 `antix`）：
+
+```json
+"auth": { "bearer": { "oauth_preset": "anthropic" } }
+```
+
+### 模型字段（Model fields） {#model-fields}
+
+这些字段既可在提供商的 `preferred_models` 中完整声明模型（此时 `id` 必填），也可在顶层 `models` 下部分覆盖已有模型（此时由 map key 提供 id）。除 ID 以外的所有字段均为可选：
+
+| 字段 | 说明 |
+|---|---|
+| `id` | 模型 ID。在 `preferred_models` 中必填（兼容历史别名 `name`）；在 `models` 下由 key 提供 |
+| `display_name` | 友好展示名称 |
+| `description` | 在模型选择器中展示的简短说明 |
+| `temperature` | 采样温度。在 `AnthropicMessage` 提供商上，开启思考推理时必须为 `1` |
+| `top_p` | Nucleus 采样截断阈值 |
+| `top_k` | Top-k 采样截断阈值 |
+| `max_tokens` | 单轮最大输出 Token 数。在需要显式思考预算的 `AnthropicMessage` 提供商上，设置思考等级时必须大于 1024 |
+| `stop_sequences` | 停止生成的标记字符串列表 |
+| `context_limit` | 上下文窗口上限（Token 数） |
+| `effort` | 默认[思考深度等级](/usage/models-and-thinking#effort) —— `min`、`low`、`medium`、`high`、`xhigh` 或 `max`。不支持推理调节的模型请省略（Ante 不会发送 effort 参数并隐藏滑块） |
+| `weight_class` | 规模/成本等级 —— `Feather`（轻量/快速/低成本）、`Middle`（中等）或 `Heavy`（最大/能力最强）。驱动默认模型与辅助模型选取（参见[权重等级](#weight-classes)） |
+| `support_vision` | 是否支持图片输入。省略时 Ante 根据模型 ID 自动推断 |
+
+顶层 `models` 可在解析阶段原地打补丁：
+
+```json
+{
+  "models": {
+    "claude-sonnet-5": { "effort": "high", "max_tokens": 64000 }
+  }
+}
+```
+
+### 权重等级（Weight classes） {#weight-classes}
+
+每个内置模型均带有 `weight_class`（`Feather`、`Middle` 或 `Heavy`），Ante 根据此属性自动进行智能选择：
+
+- **默认模型** — 选择提供商但未指明具体模型时，默认选用其 **Heavy** 旗舰模型。
+- **辅助任务调用** — 网页内容摘要（`WebFetch`）等轻量内部任务自动选用该提供商的 **Feather** 经济模型。
+
+### 模型与提供商的解析仲裁规则（How a model and provider are chosen） {#how-a-model-and-provider-are-chosen}
+
+解析模型 ID 时分层覆盖（后生效者胜出）：
+
+1. **规范声明（Canonical spec）** — 目录中首个在其 `preferred_models` 中列出该 ID 的提供商。未知 ID 回退为纯基础默认规格。
+2. **`models` 覆盖** — 用户在 `models` 中对该 ID 的局部配置。
+3. **环境变量覆盖** — 进程环境变量优先级高于一切。
+
+当仅传入 `--model` 时，Ante 寻找已认证且包含该模型的提供商，其次回退至无需模型列表的已认证提供商，最后回退至默认提供商。
+
+当同时传入 `--provider` 与 `--model` 时，显式指定的提供商只要通过认证即优先胜出。
+
+当均未指定时，Ante 自动按目录顺序选用第一个已认证提供商的 Heavy 旗舰模型（若均未认证则回退到 `local`）。
+
+## 环境变量覆盖（Environment overrides） {#environment-overrides}
+
+无需编辑文件即可覆盖会话级目录参数：
+
+| 环境变量 | 覆盖目标字段 |
+|---|---|
+| `MODEL_BASE_URL` | 所有提供商的基础 URL（专属变量如 `ANTHROPIC_BASE_URL` 优先级更高） |
+| `MODEL_TEMPERATURE` | `temperature` |
+| `MODEL_TOP_P` | `top_p` |
+| `MODEL_MAX_TOKENS` | `max_tokens` |
+| `MODEL_CONTEXT_LIMIT` | `context_limit` |
+
+思考深度（Effort）无通用环境变量 —— 请通过命令行参数 [`--effort`](/reference/cli-reference#ante) 或配置文件中的 `effort` 字段指定。
+
+## 容错处理（Error handling） {#error-handling}
+
+单个无效条目不会破坏整个配置文件。Ante 对 `catalog.json` 进行宽容反序列化：无法解析的条目会被跳过并打印启动提示，其余合法条目仍正常生效。仅当文件本身不是合法 JSON 时才会整体拒绝。若缺少 `catalog.json`，Ante 直接使用内置预设。

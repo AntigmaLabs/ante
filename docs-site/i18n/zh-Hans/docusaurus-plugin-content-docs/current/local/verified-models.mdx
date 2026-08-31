@@ -4,14 +4,14 @@ sidebar_label: "推荐验证模型"
 description: "经过 Ante 严格测试与基准评测的精选本地 GGUF 模型列表"
 ---
 
-# 推荐验证模型（Verified Models）
+在[离线模式](/local/offline)选择器中的 **Verified models（推荐验证模型）** 列表经过严格筛选：均经过 Ante 智能体闭环测试，可直接从 Hugging Face 下载，并预先获知内存/显存需求。每个模型具有以下两种状态之一：
 
-在[离线模式](/local/offline)选择器中的 **Verified models（推荐验证模型）** 列表经过严格筛选：均经过 Ante 智能体闭环测试，可直接从 Hugging Face 下载，并预先计算好了内存/显存开销。每个模型具有以下两种状态之一：
+- **Evaled（已评测）** — 运行了完整的公开基准评测：与[云端前沿模型结果](/benchmarks/eval)完全相同的 Terminal-Bench 2.1 Harness、固定构建与公开 Harbor 审计记录。实时得分展示于 [antigma.ai/eval](https://antigma.ai/eval)。
+- **Verified（已验证）** — 经过端到端兼容性测试：模型能够顺利加载、对话模板解析正确，且在 Ante 智能体闭环中支持稳定的工具调用。尚未完成全部评测。
 
-- **Evaled（已完成完整评测）** — 运行了完整的公开基准评测：与[云端前沿模型评测](/benchmarks/eval)完全相同的 Terminal-Bench 2.1 Harness、固定构建与公开 Harbor 审计记录。实时得分展示于 [antigma.ai/eval](https://antigma.ai/eval)。
-- **Verified（已通过兼容性验证）** — 经过端到端兼容性测试：模型能够顺利加载、对话模板解析正确，且在 Ante 智能体闭环中支持稳定的工具调用。尚未完成全部 445 次 Trial 评测。
+随着基准评测运行完成，模型会从 Verified 逐步升级为 Evaled。
 
-## 当前推荐模型列表
+## 当前推荐模型列表（Current list） {#current-list}
 
 | 模型 | 量化格式 | 下载大小 | 最大上下文 | 评测状态 |
 |---|---|---|---|---|
@@ -26,11 +26,13 @@ description: "经过 Ante 严格测试与基准评测的精选本地 GGUF 模型
 | Qwen3.5 9B | Q4_K_M | 5.7 GB | 256K | Verified |
 | Gemma 4 E4B-it | Q4_K_M | 4.7 GB | 128K | Verified |
 
-“最大上下文”为模型底层架构支持的上限；Ante 默认将初始上下文窗口设置为 32K 以保持内存占用可预测，您可以在[偏好设置](/local/offline#model-preferences)中针对各模型调大，或通过环境变量 `ANTE_OFFLINE_CONTEXT` 全局覆盖。
+“最大上下文”为模型底层架构支持的上限；Ante 默认将初始上下文窗口设置为 32K 以保持内存占用可预测，您可以在[偏好设置](/local/offline#model-preferences)中针对各模型调大，或通过 `ANTE_OFFLINE_CONTEXT` 环境变量覆盖。
 
-## 自定义添加验证模型
+迄今为止的一项完整评测：Qwen3.6 27B 在 89 个 Terminal-Bench 2.1 任务（共 445 次 Trial）中取得了 **56.2%** 的准确率 —— 单个 17 GB 的本地模型在我们用于前沿模型的同一基准测试上展现出扎实实力。
 
-Ante 在启动时会自动将 `~/.ante/verified_models.json` 合并到内置推荐列表中。`filename` 相同的条目将覆盖内置预设，新条目会自动追加。
+## 自定义添加验证模型（Add your own） {#add-your-own}
+
+Ante 在启动时会自动将 `~/.ante/verified_models.json` 合并到内置推荐列表中。`filename` 匹配内置条目的条目将覆盖内置预设；新文件名会自动追加。
 
 ```json
 {
@@ -47,3 +49,13 @@ Ante 在启动时会自动将 `~/.ante/verified_models.json` 合并到内置推�
   ]
 }
 ```
+
+| 字段 | 说明 |
+|---|---|
+| `name` | 在模型选择器中展示的名称 |
+| `repo` | 文件下载来源的 Hugging Face 仓库 |
+| `filename` | 仓库内的 GGUF 文件名（同时也是合并匹配的 Key） |
+| `context_window` | 模型支持的最大上下文（Token 数） |
+| `file_size_mb` | 下载大小，用于内存估算 |
+| `kv_cache_bytes_per_token` | 每个上下文 Token 的 KV 缓存增长量，用于内存估算 |
+| `support_vision` | 模型是否支持图片输入（可选） |

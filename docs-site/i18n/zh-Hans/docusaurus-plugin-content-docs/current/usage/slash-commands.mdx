@@ -1,52 +1,52 @@
 ---
 title: 斜杠命令（Slash Commands）
 sidebar_label: "斜杠命令"
-description: "在交互式 TUI 终端中用于常用操作的内置斜杠命令"
+description: "在交互式 TUI 终端中用于常用操作的内置命令"
 ---
 
 # 斜杠命令（Slash Commands）
 
-在[交互式 TUI 终端](/usage/tui)中输入 `/` 即可快速触发用于常见操作的内置斜杠命令：
+在[交互式 TUI](/usage/tui) 中输入 `/` 即可运行用于常见操作的内置命令：
 
 | 命令 | 说明 |
 |---|---|
-| `/clear` | 清空当前对话历史 |
-| `/init` | 自动分析当前项目并生成 `AGENTS.md` 智能体指引规范 |
+| `/clear` | 清空对话历史 |
+| `/init` | 分析项目并创建 `AGENTS.md` 文件 |
 | `/exit` | 退出 Ante |
-| `/compact` | 压缩与总结历史对话，释放上下文窗口空间 |
-| `/config` | 打开设置对话面板 —— 搜索、开关并跳转至主题、模型、提供商、状态栏、MCP 和离线设置（详见[偏好配置](/configuration/preference#settings-file)） |
-| `/theme` | 打开主题切换弹窗 |
-| `/diff` | 查看 Git 改动 Diff（包含未跟踪的新增文件） |
-| `/connect` | 通过 OAuth 登录授权（API 密钥会自动检测） |
-| `/models [model_id]` | 不带参数时打开当前提供商的模型与思考深度选择器；带参数时直接切换至指定模型（包括目录未列出的模型 ID） |
-| `/providers` | 查看并切换当前会话生效的模型提供商 |
-| `/offline-mode` | 通过内置推理引擎运行本地 GGUF 模型 |
-| `/term [name [args...]]` | 不带参数时打开终端会话选择器；带名称时附加/分离对应的 tmux 会话（新会话时自动拉起同名命令）—— 详见[终端会话管理](/usage/tui#terminal-sessions) |
-| `/update [skip \| cancel]` | 安排在退出时自动安装待更新的版本；`skip` 永久忽略该版本，`cancel` 取消计划安装 |
+| `/compact` | 总结对话历史以释放上下文窗口 |
+| `/config` | 打开设置对话框 —— 搜索、开关并跳转至主题、模型、提供商、状态栏、MCP 及离线设置（参见[偏好设置](/configuration/preference#settings-file)） |
+| `/theme` | 打开主题选择对话框 |
+| `/diff` | 展示 Git 改动 diff（包含未跟踪的文件） |
+| `/connect` | 通过 OAuth 登录（API 密钥会自动检测） |
+| `/models [model_id]` | 不带参数时，打开当前提供商的模型与思考深度选择器；带模型 ID 时，直接切换至该模型 —— 包含目录未列出的 ID |
+| `/providers` | 为当前会话选择可用的提供商 |
+| `/offline-mode` | 通过内置推理引擎运行本地模型 |
+| `/term [name [args...]]` | 不带名称时，打开终端会话选择器；带名称时，附加或分离该 tmux 会话，当会话为新建时拉起同名命令及参数 —— 参见[终端会话](/usage/tui#terminal-sessions) |
+| `/update [skip \| cancel]` | 安排在退出时安装待更新的版本；`skip` 永久忽略该版本，`cancel` 取消已安排的更新 |
 | `/context` | 以彩色色块网格形式可视化当前上下文 Token 占用分布（按类别分解） |
-| `/usage` | 查看当前会话累计的 Token 消耗、各模型调用量、缓存命中率与 Turn 轮次统计（详见[会话消耗统计](/usage/tui#session-usage)） |
-| `/welcome` | 重新打开欢迎与引导配置弹窗 |
-| `/resume` | 恢复当前工作目录中此前保存的历史会话 |
-| `/resume-claude [id]` | 在当前目录中继续接管最近的 Claude Code 会话（内置 Skill —— 详见[从 Claude Code 或 Codex 迁移](/usage/tui#coming-from-claude-code-or-codex)） |
-| `/resume-codex [id]` | 在当前目录中接管最近的 Codex 会话（内置 Skill） |
-| `/skill-creator` | 创建、改进与评测自定义 [Skills 技能](/extend/skills)（内置 Skill） |
-| `/import-claude` | 将当前目录下的 Claude Code 项目记忆导入至 Ante 的[项目记忆库](/extend/memory#importing-claude-code-memory) |
-| `/statusline` | 配置与自定义底部状态栏项 |
+| `/usage` | 查看当前会话累计的 Token 消耗 —— 各模型 Token 计数、缓存命中率与轮次统计（参见[会话消耗统计](/usage/tui#session-usage)） |
+| `/welcome` | 显示欢迎/引导配置对话框 |
+| `/resume` | 恢复当前目录下此前保存的会话 |
+| `/resume-claude [id]` | 在当前目录中继续接管最近的 Claude Code 会话（内置技能 —— 参见[从 Claude Code 或 Codex 迁移](/usage/tui#coming-from-claude-code-or-codex)） |
+| `/resume-codex [id]` | 在当前目录中接管最近的 Codex 会话（内置技能） |
+| `/skill-creator` | 创建、改进与评测[技能](/extend/skills)（内置技能） |
+| `/import-claude` | 将当前目录下的 Claude Code 项目记忆复制到 Ante 的[项目记忆库](/extend/memory#importing-claude-code-memory) |
+| `/statusline` | 配置状态栏 |
 | `/mcp` | 检查并管理已配置的 [MCP 服务器](/extend/mcp) |
-| `/goal [<condition> \| clear]` | 开启目标导向会话直至满足验收条件，或清除当前目标/查看状态 |
+| `/goal [<condition> \| clear]` | 持续工作直至满足条件、清除活跃目标或展示目标状态 |
 
 :::note
-部分命令是“可见”命令（操作记录会保留在对话流中），另一些则是“静默”命令（执行后不计入对话流）。其中 `/clear`、`/init`、`/exit`、`/compact`、`/context`、`/usage` 和 `/goal` 会在对话历史中留痕；其余命令均为静默执行。
+部分命令是“可见”命令（记录在对话历史中），另一些则是“静默”命令（执行后不计入历史记录）。其中 `/clear`、`/init`、`/exit`、`/compact`、`/context`、`/usage` 和 `/goal` 是可见命令；其余均为静默命令。
 :::
 
-## Skills 技能作为斜杠命令
+## 技能作为斜杠命令（Skills as slash commands） {#skills-as-slash-commands}
 
-配置的 [Skills 技能](/extend/skills) 也会自动作为斜杠命令出现在菜单中，并带有作用域标记：`[p]` 代表项目级技能（Project），`[u]` 代表用户级全局技能（User），`[s]` 代表内置系统技能（System）。
+[Skills 技能](/extend/skills) 也会作为斜杠命令出现，并带有作用域标记：`[p]` 表示项目级、`[u]` 表示用户级、`[s]` 表示系统级技能。
 
-在输入时，匹配已知命令或技能的词条会在输入框中高亮显示，方便在发送前即时确认。
+在键入时，匹配已知命令或技能名称的词条会在输入框中高亮显示，方便在发送前确认命令已被识别。
 
-## 相关章节
+## 相关章节（Related） {#related}
 
-- `/models` 与 `/providers` 相互协同；请参见[模型选择、提供商与思考深度](/usage/models-and-thinking)。
-- `/goal` 驱动[目标导向型会话](/usage/goal-sessions)：持续自主工作直至达成目标。
-- `/resume` 恢复历史对话；请参见[会话恢复](/usage/tui#session-resume)。
+- `/models` 与 `/providers` 相互协同；参见[模型选择、提供商与思考深度](/usage/models-and-thinking)。
+- `/goal` 驱动[目标导向型会话](/usage/goal-sessions)：持续工作直至满足成功条件。
+- `/resume` 恢复历史对话；参见[会话恢复](/usage/tui#session-resume)。

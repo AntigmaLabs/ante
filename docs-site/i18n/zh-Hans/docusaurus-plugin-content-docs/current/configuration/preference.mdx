@@ -1,16 +1,16 @@
 ---
-title: "偏好配置与设置"
+title: "偏好设置与环境配置（Preferences）"
 sidebar_label: "偏好设置"
-description: "Ante 配置文件、环境变量与目录结构详解"
+description: "配置文件、环境变量、遥测机制与目录结构详解"
 ---
 
-## 配置文件
+## 配置文件（Settings file） {#settings-file}
 
-Ante 将用户偏好配置保存在 `~/.ante/settings.json` 中。
+Ante 将用户偏好设置保存在 `~/.ante/settings.json` 中。
 
-大部分设置都可以通过 TUI 中的 `/config` 命令进行可视化查看与修改 —— 该交互式设置面板支持实时开关（使用技巧、智能预测提示、紧凑工具折叠、短提示词、自动压缩、重绘策略、默认权限模式、更新通道等），并提供直达主题、模型、提供商、状态栏、MCP 和离线模式的快捷入口。修改会即时持久化到 `settings.json`。部分在启动阶段读取的参数（如 `resize_reflow`）会在面板中标记为 "(next session)" 并在下次启动时生效。
+大部分设置都可以通过 TUI 中的 `/config` 命令进行可视化查看与修改 —— 该交互式设置面板支持原地开关切换（技巧提示、环境感知预测、紧凑工具折叠、短提示词、自动压缩、重排策略、默认权限模式、更新通道），并提供直达主题、模型、提供商、状态栏、MCP 服务器及离线模式的专属弹窗入口。修改会即时持久化到 `settings.json` 中；在启动阶段读取的参数（如 `resize_reflow`）会在面板中标记为 "(next session)" 并在下次会话中生效。
 
-配置文件 `settings.json` 示例：
+`settings.json` 示例：
 
 ```json
 {
@@ -64,66 +64,74 @@ Ante 将用户偏好配置保存在 `~/.ante/settings.json` 中。
 | 字段 | 说明 |
 |---|---|
 | `model` | 默认模型名称 |
-| `provider` | 默认 API 提供商 |
+| `provider` | 默认 API 模型提供商 |
 | `theme` | TUI 配色主题 |
-| `system_prompt` | 新会话的替换系统提示词（CLI `--system-prompt` / `--system-prompt-file` 优先级更高） |
-| `append_system_prompt` | 向新会话系统提示词末尾追加的内容（CLI `--append-system-prompt` 优先级更高） |
-| `tools` | 新会话的基础工具集，替换默认内置工具集（CLI `--tools` 优先级更高） |
-| `auto_memory` | 是否启用[自动记忆（Auto Memory）](/extend/memory)（TUI 默认开启，无头模式默认关闭） |
-| `skills` | 是否发现并加载 [Skills 技能](/extend/skills)（默认 `true`） |
-| `include_skills` | 在基础技能集之上额外加载的指定技能列表 |
-| `exclude_skills` | 从所有会话中排除的技能列表（优先级高于 `include_skills`） |
-| `session_save` | 是否持久化保存会话记录与可恢复快照（默认 `true`） |
-| `permission_mode` | 默认权限模式（`strict`、`auto` 或 `yolo`） |
-| `permissions` | 持久化工具权限规则，分为 `allow`、`ask` 和 `deny` 匹配器（详见[权限控制](/configuration/permission)） |
-| `has_completed_onboarding` | 是否已完成首次启动欢迎引导 |
-| `ambient_prompt_suggestion` | 是否在轮次结束后以虚字显示[下一轮提示词预测建议](/usage/tui#next-prompt-suggestion) |
-| `ambient_thinking_phrase` | 是否在键入长提示词时后台预测[任务专属加载状态语](/usage/tui#spinner-thinking-phrase) |
-| `tips` | 是否在智能体思考动画下方展示[功能技巧提示](/usage/tui#spinner-tips) |
-| `group_tool_activity` | 是否将连续的静默工具调用折叠为紧凑汇总块（Ctrl+O 完整记录视图中仍保留全部细节） |
-| `short_prompt` | 是否启用紧凑精简版系统提示词和简短工具描述 |
-| `auto_compact` | 是否在接近模型上下文上限时主动自动压缩历史对话（默认开启） |
-| `channel` | `ante update` 跟踪的发布通道（`stable` 或 `nightly`） |
-| `resize_reflow` | 终端缩放时的回滚历史重绘策略：`conservative`（保守，默认）或 `purge`（清除重放） |
-| `status_line` | TUI 底部状态栏展示项列表（详见下文） |
-| `status_line_command` | 执行自定义 Shell 脚本渲染自定义状态栏（优先级高于 `status_line`） |
-| `model_effort` | 各模型的[思考深度（Effort）](/usage/models-and-thinking#effort)覆盖映射 |
-| `provider_model` | 各提供商最后选用的模型记录 |
-| `mcp_servers` | 会话启动时拉起的 MCP 服务配置（详见 [MCP 服务器](/extend/mcp)） |
+| `system_prompt` | 全新会话的替换系统提示词。CLI 参数 `--system-prompt` / `--system-prompt-file` 可临时覆盖。持久化的提示词在 `ante rage` 打包时会被自动脱敏 |
+| `append_system_prompt` | 向全新会话系统提示词末尾追加的内容。`--append-system-prompt` 可临时覆盖 |
+| `tools` | 全新会话的基础工具集，替换默认工具集（空列表表示不选任何工具）。`--tools` 可临时覆盖；`--include-tools` / `--exclude-tools` 仍在此基础上叠加生效 |
+| `auto_memory` | 是否启用[自动记忆（auto-memory）](/extend/memory)。未设置时由启动模式决定：TUI 默认开启，无头模式默认关闭。`--enable-auto-memory` / `--disable-auto-memory` 可临时覆盖 |
+| `skills` | 是否发现并加载 [Skills 技能](/extend/skills)。除非设为 `false` 否则默认开启；`--skills` / `--no-skills` 可临时覆盖 |
+| `include_skills` | 在会话基础技能集之上额外配备的技能名称列表 —— 增量加载，类似 `--include-tools`。名称需精确匹配 |
+| `exclude_skills` | 从所有会话的技能集中排除的技能名称列表。优先级高于 `include_skills`；名称需精确匹配。参见[按需选择特定技能](/extend/skills#selecting-individual-skills) |
+| `session_save` | 是否持久化保存会话记录与可恢复快照。除非设为 `false` 否则默认开启；`--session-save` / `--no-session-save` 可临时覆盖 |
+| `permission_mode` | 默认权限模式（`strict`、`auto` 或 `yolo`）。在 TUI 中按 **Shift+Tab** 切换为 `strict` 或 `auto` 时会自动回写此配置；`yolo` 仅在当前会话生效。未识别的值会被忽略而不会导致整个文件加载失败 |
+| `permissions` | 持久化工具权限规则，分为 `allow`、`ask` 和 `deny` 匹配器（参见[权限控制](/configuration/permission)） |
+| `has_completed_onboarding` | 是否已完成首次启动欢迎引导流程 |
+| `ambient_prompt_suggestion` | TUI 是否在轮次结束后以半透明虚字显示[下一轮提示词预测建议](/usage/tui#next-prompt-suggestion)。除非设为 `false` 否则默认开启 |
+| `ambient_thinking_phrase` | TUI 是否在您键入长提示词时后台预测[任务专属加载状态语](/usage/tui#spinner-thinking-phrase)。除非设为 `false` 否则默认开启 |
+| `tips` | TUI 是否在智能体思考动画下方展示[功能技巧提示行](/usage/tui#spinner-tips)。除非设为 `false` 否则默认开启 |
+| `group_tool_activity` | 是否将连续的静默工具调用折叠为聊天视图中的单个紧凑汇总摘要。除非设为 `false` 否则默认开启；**Ctrl+O** 完整记录视图中始终保留逐次调用的全部细节。修改仅对新调用生效 |
+| `short_prompt` | 是否为新会话和恢复会话启用紧凑提示词集（精简系统提示词和更短的内置工具描述）。除非设为 `true` 否则默认关闭；`--short-prompt` 可临时启用 |
+| `auto_compact` | 是否在接近模型上下文上限时主动自动对历史对话生成摘要。除非设为 `false` 否则默认开启；禁用时手动 `/compact` 和溢出恢复机制依然可用。在 `/config` 中切换可直接作用于当前会话 |
+| `channel` | `ante update` 跟踪的发布通道（`stable` 或 `nightly`）。默认为 `stable`；历史 `latest` 值会被视为 `stable`。参见[版本更新与通道](/start/update) |
+| `resize_reflow` | 终端窗口大小调整时的滚屏历史/回滚缓冲区（Scrollback）重排策略：`conservative`（保守，默认）或 `purge`（清除重放，见下文） |
+| `status_line` | TUI 底部状态栏顶部一行展示的元素列表（见下文） |
+| `status_line_command` | 执行 Shell 脚本以渲染完全自定义状态栏（见下文）。设置后优先级高于 `status_line` |
+| `model_effort` | 各模型的[思考深度（Effort）](/usage/models-and-thinking#effort)覆盖映射 —— 键为模型名，值为 `min` / `low` / `medium` / `high` / `xhigh` / `max`。在 `/models` 中拖动滑块时自动写入 |
+| `provider_model` | 各提供商最后选用的模型记录 —— 切换提供商时优先采用此记录，其次回退至该提供商的默认模型。每次选择模型/提供商时自动写入 |
+| `mcp_servers` | 会话启动时拉起的 MCP 服务器配置（参见 [MCP 服务器](/extend/mcp)） |
 
-### 命名配置 Profile
+### 命名 Profile 配置文件（Named profiles） {#named-profiles}
 
-使用 `--profile <name>` 可在单次 TUI 或无头运行时指定独立的配置文件：
+使用 `--profile <name>` 可为单次 TUI 或无头运行使用独立的配置文件全量替换 `settings.json`：
 
 ```bash
 ante --profile work
-ANTE_PROFILE=review ante -p "审查本次代码改动"
+ANTE_PROFILE=review ante -p "审查本次改动"
 ```
 
-名为 `work` 的 Profile 会读写 `~/.ante/work.settings.json`。Profile 是完整替换而非层叠继承：Profile 中未指定的项会回退到 Ante 系统默认值，而非读取 `settings.json`。
+名为 `work` 的 Profile 会读写 `~/.ante/work.settings.json`。Profile 是**整文件替换（whole-file replacements）**而非分层叠加：Profile 中未指定的字段会回退到 Ante 系统默认值，而不会从 `settings.json` 继承。新名称从默认值开始，其文件会在首次保存更改时自动创建。Profile 名称可包含小写 ASCII 字母、数字、`-` 和 `_`。命令行参数优先级高于选定的 Profile。
 
-内置的 `bare` Profile 提供最纯净的基础环境：首次运行 `--profile bare` 会生成 `~/.ante/bare.settings.json`，自动禁用引导与环境感知功能，并将 `auto_memory`、`skills`、`session_save` 均置为 `false`。
+内置的 `bare` Profile 随 Ante 提供：首次运行 `--profile bare` 会生成 `~/.ante/bare.settings.json`，默认禁用欢迎引导与环境感知 UI 功能，并将 `auto_memory`、`skills` 和 `session_save` 设为 `false`（且不包含任何 MCP 服务）。此后其行为与其他 Profile 完全一致 —— 编辑文件或在 `/config` 中修改均可持久化。显式传入的命令行参数（如 `--enable-auto-memory`）仍可在运行时覆盖。
 
-### 状态栏项配置（Status Line）
+### 状态栏项配置（Status line） {#status-line}
 
-`status_line` 字段控制 TUI 底部状态栏顶部一行的展示内容：
+`status_line` 字段控制 TUI 底部状态栏顶部一行显示的条目。权限模式与当前动态活动显示在下方独立行，避免与身份标识竞争宽度。该字段接受条目标识符数组：
 
-| 项 | 说明 |
+| 标识符 | 说明 |
 |---|---|
 | `model-name` | 当前模型名称 |
-| `effort` | 当前[思考深度等级](/usage/models-and-thinking#effort)（单独显示时为 `effort: high`） |
+| `effort` | 当前[思考深度等级](/usage/models-and-thinking#effort)。单独显示时为 `effort: high`，在 `min` 时省略 |
 | `provider` | 当前模型提供商 |
 | `current-dir` | 当前工作目录 |
-| `git-branch` | 当前 Git 分支（如 `⑂ main`） |
-| `pr-link` | 当前分支关联的 GitHub PR 链接（依赖 `gh`） |
-| `context-used` | 上下文窗口剩余百分比（如 `42% ctx`） |
-| `terminals` | 正在运行的 `ante-*` tmux 会话列表 |
+| `git-branch` | 当前 Git 分支，显示为 `⑂ main`（不可用时省略） |
+| `pr-link` | 当前分支关联的 GitHub PR 链接（需要系统安装 `gh`） |
+| `context-used` | 上下文窗口使用情况，显示为窗口剩余百分比 `N% ctx`（未知时省略） |
+| `terminals` | 活跃的 `ante-*` tmux 会话名称（无运行中会话或 tmux 不可用时省略） |
 
-当 `effort` 与 `model-name` 同时启用时会自动合并为 `gpt-5.6(high)`；分支与目录同时启用时合并为 `project(⑂ main)`。
+当两对条目同时启用时，它们会自动折叠为复合项：思考深度折叠进模型名（如 `gpt-5.6(high)`，包含 `min` 在内的所有级别），Git 分支折叠进目录名（如 `project(⑂ main)`）。因此默认底部状态栏显示为：
 
-### 自定义命令状态栏（status_line_command）
+```
+gpt-5.6(high) · openai · project(⑂ main) · 42% ctx
+```
 
-通过 `status_line_command` 执行自定义脚本渲染个性化状态栏：
+每部分仍保持独立开关 —— 关闭 `model-name` 后，`effort` 会恢复为独立的 `effort: high` 项。
+
+默认值：按上述顺序展示全部条目。可通过 `~/.ante/settings.json` 或 TUI 中的 `/statusline` 命令配置。
+
+### 脚本自定义状态栏（Command-based status line） {#command-based-status-line}
+
+若需完全自定义，`status_line_command` 可运行您指定的 Shell 命令并将其输出渲染为状态栏，替换基于条目的默认状态栏：
 
 ```json
 {
@@ -135,9 +143,79 @@ ANTE_PROFILE=review ante -p "审查本次代码改动"
 }
 ```
 
-Ante 会将当前会话的上下文快照 JSON 传递给脚本的 stdin，并将 stdout 输出逐行（最多 8 行）渲染为状态栏，原生支持 ANSI 彩色和 OSC 8 超链接。JSON 数据格式与 Claude Code statusline 保持高度兼容。
+简写格式直接接受字符串：`"status_line_command": "echo hello"`。
 
-## 环境变量参考
+| 字段 | 说明 |
+|---|---|
+| `command` | 脚本路径或内联 Shell 命令，通过 `sh -c` 执行（必填） |
+| `padding` | 额外的水平内边距列数（默认：`0`） |
+| `refresh_interval` | 每隔 N 秒重新运行一次（最小为 1）。适用于时钟或外部动态数据。省略时仅在会话事件触发时运行 |
+
+**工作原理：** Ante 将会话的上下文快照 JSON 传递给命令的 stdin，并将命令输出到 stdout 的内容展示在状态栏中。在每条助手消息生成后，以及模型、提供商、思考深度、PR、工作目录或终端窗口大小发生变化时，命令会自动重新执行（防抖时间 300ms）。执行上限为 5 秒，新发起的执行会自动取消正在运行的前序执行。
+
+JSON 输入是 [Claude Code statusline 输入](https://code.claude.com/docs/en/statusline)的兼容子集，因此现有的 Claude Code 状态栏脚本可直接复用：
+
+```json
+{
+  "cwd": "/work/repo",
+  "session_id": "ses_...",
+  "version": "0.1.0",
+  "model": { "id": "claude-sonnet-5", "display_name": "claude-sonnet-5" },
+  "workspace": { "current_dir": "/work/repo", "project_dir": "/work/repo" },
+  "thinking": { "enabled": true },
+  "pr": { "number": 7, "url": "https://github.com/..." },
+  "provider": "anthropic",
+  "context_window": {
+    "context_window_size": 200000,
+    "total_input_tokens": 36000,
+    "used_percentage": 18,
+    "remaining_percentage": 82
+  }
+}
+```
+
+`pr` 仅在检测到当前分支关联的活跃 Pull Request 时存在；`context_window` 在首条回复后且已知模型上下文限制时存在，采用与 Claude Code 相同的字段名上报原始窗口大小及已用/剩余百分比。`provider` 为 Ante 扩展字段。即使 Ante 的控制维度是 [effort 思考深度](/usage/models-and-thinking#effort)，`thinking` 字段依然保持 Claude Code 的 Schema：只要会话思考深度高于 `min`，`enabled` 即为 `true`。命令的环境变量中还会注入 `COLUMNS` 和 `LINES`（当前终端尺寸）以及 `ANTE_PROJECT_DIR`（最近的包含 `.git` 的祖先目录）。
+
+**输出渲染：** stdout 的每一行成为一行底部状态栏（最多 8 行）。支持 ANSI 彩色和 OSC 8 超链接；颜色状态跨行继承。空行会被自动剔除。
+
+示例脚本：
+
+```bash
+#!/bin/sh
+input=$(cat)
+model=$(echo "$input" | jq -r '.model.display_name')
+dir=$(basename "$(echo "$input" | jq -r '.workspace.current_dir')")
+printf '\033[36m[%s]\033[0m %s' "$model" "$dir"
+```
+
+在将 `command` 指向脚本前请赋予执行权限（`chmod +x`）。若命令执行失败（无执行权限、非零退出码或超时），底部会根据 stderr 显示单行诊断提示（如 `status line: sh: …: Permission denied`）。
+
+### 终端缩放重排（Resize reflow） {#resize-reflow}
+
+当终端窗口大小发生变化时，Ante 会在新的尺寸下重建展示。`resize_reflow` 字段控制如何处理可视屏幕上方的滚屏历史/回滚缓冲区（Scrollback history）：
+
+| 取值 | 行为说明 |
+|---|---|
+| `conservative`（保守，默认） | 绝不重写已经打印到滚屏历史中的内容。在所有终端上均安全；在剧烈的窗口拖拽缩放后，缩放点附近的少数几行可能会保留旧的折行。 |
+| `purge`（清除重放） | 清除终端的滚屏缓冲区，并按新宽度重新回放最近的历史记录 —— 缩放后会话看起来就像从最终大小启动一样。 |
+
+```json
+{ "resize_reflow": "purge" }
+```
+
+`purge` 属于显式启用项而非默认行为，因为它需要终端支持清除滚屏历史的转义序列（`CSI 3 J`，terminfo `E3` 功能）—— 且 Ante 无法在运行时主动探知该支持：在忽略 `3 J` 的终端上启用 `purge` 反而会导致滚屏历史重复。大多数现代终端均支持该特性，但 iTerm2 有一项高级设置 —— "Prevent CSI 3 J from clearing scrollback history" —— 会拦截该序列。检查您的终端是否支持：
+
+```bash
+seq 1 200; printf '\033[2J\033[3J\033[H'
+```
+
+随后向上滚动 —— 若数字已被清除，说明您的终端支持 `3 J`，可以安全启用 `purge`。
+
+在 iTerm2 中，该功能可在 **Settings → Advanced** 中配置：搜索 "3 J"，将 **"Prevent CSI 3 J from clearing scrollback history"** 设为 **No** 即可允许（启用 `purge` 所需），设为 **Yes** 则为阻止。修改即时生效。
+
+`purge` 的权衡：首次缩放会清空该标签页的全部滚屏历史（包括启动 Ante 前的 Shell 输出），且缩放时仅重放最近 2000 行记录。在 tmux 或 zellij 内部，Ante 始终使用 purge 策略，因为两者均稳定支持 `3 J`。
+
+## 环境变量参考（Environment variables） {#environment-variables}
 
 | 环境变量 | 说明 |
 |---|---|
@@ -161,13 +239,110 @@ Ante 会将当前会话的上下文快照 JSON 传递给脚本的 stdin，并将
 | `ANTIX_BASE_URL` | 覆盖 Antix 基础地址 |
 | `MODEL_TEMPERATURE` | 覆盖模型采样温度（浮点数） |
 | `MODEL_TOP_P` | 覆盖模型 Top-P 采样参数（浮点数） |
-| `MODEL_MAX_TOKENS` | 覆盖模型最大输出 Token 数 |
-| `MODEL_CONTEXT_LIMIT` | 覆盖模型最大上下文窗口上限 |
+| `MODEL_MAX_TOKENS` | 覆盖模型最大输出 Token 数（整数） |
+| `MODEL_CONTEXT_LIMIT` | 覆盖模型最大上下文窗口上限（整数） |
+| `ANTE_LOCAL_PROVIDER_PORT` | 当无活跃模型服务器注册信息时，`local` 提供商默认采用的端口号（默认：8080） |
 | `ANTE_HOME` | 覆盖 Ante 主配置目录（默认：`~/.ante`） |
-| `ANTE_PROFILE` | 指定生效的设置 Profile（等同于 `--profile <name>`） |
-| `ANTE_INSTALL_DIR` | 安装脚本的目标二进制目录（默认：`~/.ante/bin`） |
-| `ANTE_OFFLINE_CONTEXT` | 覆盖本地 GGUF 模型的上下文窗口 Token 上限 |
-| `ANTE_MCP_TOOL_TIMEOUT` | MCP 工具调用的超时时间（秒，默认 600） |
-| `ANTE_OPENAI_TRANSPORT` | OpenAI 传输协议：`http_sse`（默认）或 `websocket_auto` |
-| `ANTE_TELEMETRY` | 禁用遥测（设为 `off`、`false`、`0` 或 `disabled`） |
-| `RUST_LOG` | 覆盖日志过滤级别（生产默认：`ante=info`） |
+| `ANTE_PROFILE` | 指定生效的设置 Profile 名称（等同于 `--profile <name>`） |
+| `ANTE_INSTALL_DIR` | 安装脚本专用的二进制目标目录（默认：`~/.ante/bin`） |
+| `ANTE_OFFLINE_CONTEXT` | 覆盖本地模型上下文窗口 Token 上限（参见[离线模式](/local/offline#environment-variables)） |
+| `ANTE_MCP_TOOL_TIMEOUT` | MCP `tools/call` 超时截止时间（秒，默认 600；参见[MCP 工具调用超时](/extend/mcp#tool-call-timeout)） |
+| `ANTE_OPENAI_TRANSPORT` | OpenAI Responses 传输协议：`http_sse`（默认）或 `websocket_auto`（参见 [OpenAI 传输协议](/reference/catalog-reference#openai-transports)） |
+| `ANTE_TELEMETRY` | 禁用 OpenTelemetry 导出（可设为 `off`、`false`、`0`、`disable` 或 `disabled`，不区分大小写） |
+| `OTEL_EXPORTER_OTLP_ENDPOINT` | 将应用程序指标与日志发送至该 OTLP/HTTP 基础 URL；覆盖二进制中内嵌的任何端点 |
+| `OTEL_EXPORTER_OTLP_AUTH` | 可选的 base64 编码 `user:token` 凭据，作为 HTTP Basic 认证发送至 OTLP 端点 |
+| `ANTE_USER` | 可选的操作者名称，作为 `user.name` 附加到遥测中；默认未设置（参见[身份标识](#identity)） |
+| `ANTE_USER_ID` | 可选的操作者自定义标识符，作为 `user.id` 附加到遥测中；默认未设置 |
+| `ANTE_ENV` | 按部署环境对遥测数据进行分组（默认：`local`） |
+| `RUST_LOG` | 覆盖应用程序日志过滤级别（发布版默认：`ante=info`）；同时作用于本地和导出的日志 |
+
+### 遥测机制（Telemetry） {#telemetry}
+
+当设置了 `OTEL_EXPORTER_OTLP_ENDPOINT` 或二进制构建时内嵌了端点时，Ante 会初始化 OpenTelemetry 导出器。导出器通过 OTLP/HTTP 发送指标和应用程序 `tracing` 日志。无论端点如何配置，设置 `ANTE_TELEMETRY=off` 均会完全禁用导出器；`~/.ante/logs/` 下的本地日志文件不受影响，继续正常记录。
+
+指标涵盖工具与模型调用的耗时与错误统计，以及提供商上报用量时的 Token 计数。标签均来自严格受限的有界集合 —— 工具名、模型、提供商、Ante 版本、操作系统/硬件架构 —— 绝不包含任何个人或机器名称。
+
+#### 身份标识（Identity） {#identity}
+
+数据导出默认完全匿名。没有用户名回退，没有主机名，没有 MAC 地址，也没有机器 ID。仅自动携带两个内部标识；另外两个仅在您显式配置时才会出现：
+
+| 标识符 | 来源 | 用途说明 |
+|---|---|---|
+| Run id（运行 ID） | 每个进程随机生成，绝不持久化 | 为每个并发运行的 Ante 赋予独立的指标序列（累加计数器所需）。仅在指标中作为 `service.instance.id` 导出。 |
+| Installation id（安装 ID） | 随机生成的助记短语（如 `clever-otter-x7f2`），保存在 `~/.ante/installation-id` | 用于区分“单台机器上报了 500 次错误”与“500 台机器各上报了 1 次错误”。在首次配置了遥测的启动时生成，采用单词短语格式以便在 Issue 中引用 —— `ante rage` 会包含它。该短语不编码任何关于您、主机或账号的信息。 |
+| `user.name` | `ANTE_USER`，仅显式配置 | 标识部署的运维方。CI 和评测集群可配置；个人电脑建议留空。 |
+| `user.id` | `ANTE_USER_ID`，仅显式配置 | 当名称不适用时由操作者指定的标识符。 |
+
+删除 `~/.ante/installation-id` 可重置为全新身份；若 Ante 无法读写主目录，则直接在无安装 ID 的状态下上报。通过 `ANTE_ENV` 可对数据按环境分组（默认：`local`）。
+
+所有通过 `RUST_LOG` 过滤规则的应用追踪记录也会一并导出。日志**正文内容（Bodies）**不会被脱敏处理，因此包含路径或工具参数的消息会如实记录 —— 请仅将 `OTEL_EXPORTER_OTLP_ENDPOINT` 指向您完全信任的收集端。
+
+## 目录结构（Directory structure） {#directory-structure}
+
+### 用户级目录（`~/.ante/`） {#user-level-ante}
+
+```
+~/.ante/
+├── settings.json      # 用户偏好设置
+├── <name>.settings.json # 通过 --profile 选定的命名 Profile
+├── catalog.json       # 自定义提供商/模型目录
+├── auth/              # OAuth 凭证与粘贴的 API 密钥
+├── AGENTS.md          # 全局指引
+├── installation-id    # 随机遥测安装标识
+├── sessions/          # 持久化会话（供 /resume 使用）
+├── projects/          # 各项目自动记忆
+├── cache/             # WebFetch 响应溢出文件（48 小时暂存）
+├── run/jobs/          # 后台 Bash 状态与输出
+├── tmp/               # 一次性暂存目录（48 小时暂存）
+├── logs/              # 按 UTC 日期归档的应用日志
+├── skills/            # 用户级技能
+└── agents/            # 用户级子智能体
+```
+
+当 `~/.ante/AGENTS.md` 不存在时，Ante 会回退读取 `~/.claude/CLAUDE.md` 作为全局指引，实现零迁移成本兼容 Claude Code。每次仅读取一个文件 —— 只要存在 `AGENTS.md`（即使为空文件），就绝不回退。
+
+### 项目级目录（Project-level） {#project-level}
+
+```
+AGENTS.md              # 项目指引规范
+CLAUDE.md              # 项目指引规范（无 AGENTS.md 时的兼容回退）
+
+.ante/
+├── skills/            # 项目专属技能
+└── agents/            # 项目专属子智能体
+
+.agents/
+├── skills/            # 项目专属技能
+└── agents/            # 项目专属子智能体
+
+.claude/
+├── skills/            # 项目专属技能（Claude Code 兼容）
+└── agents/            # 项目专属子智能体（Claude Code 兼容）
+```
+
+项目指引通过从当前工作目录向上递归查找：在每个父级目录中 Ante 优先检查 `AGENTS.md`，其次检查 `CLAUDE.md`，首个包含任一文件的目录胜出。若同级下两者并存，仅读取 `AGENTS.md` —— `CLAUDE.md` 仅作为回退备用，绝不会合并读取。
+
+### 项目记忆库（`~/.ante/projects/`） {#project-memory-anteprojects}
+
+项目作用域的自动记忆存储在 `~/.ante/projects/<project-id>/` 下（`<project-id>` 为项目绝对路径的规范化清理形式）。持久化会话独立存放在 `~/.ante/sessions/` 中。
+
+```
+~/.ante/projects/
+└── <project-id>/
+    └── memory/
+        └── MEMORY.md      # 本项目的自动记忆
+```
+
+### 运行时与临时文件（Runtime and temporary files） {#runtime-and-temporary-files}
+
+超大的 WebFetch 响应存放在 `~/.ante/cache/` 中，一次性暂存文件位于 `~/.ante/tmp/`；两处暂存目录中超过 48 小时的条目会在启动时自动清理。后台 Bash 任务句柄位于 `~/.ante/run/jobs/<proc-id>/` 下，在进程存活期间持续保留，进程结束后保留 24 小时。应用日志位于 `~/.ante/logs/<YYYY-MM-DD>/`，按 UTC 日期归档。
+
+完整文件用途请参阅[存储与目录结构参考手册](/reference/storage-reference)。
+
+## 配置优先级（Precedence） {#precedence}
+
+配置按以下顺序解析生效（后生效者覆盖前者）：
+
+1. 内置默认值
+2. `~/.ante/settings.json`
+3. 命令行参数（`--model`、`--provider` 等）
