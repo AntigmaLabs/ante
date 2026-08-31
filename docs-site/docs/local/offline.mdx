@@ -15,7 +15,7 @@ Offline mode is under active development. Expect rough edges and rapid iteration
 
 When you select offline mode, Ante:
 
-1. Checks for llama.cpp and offers to install or upgrade it: a pinned, checksum-verified official build matched to your hardware (Metal on Apple silicon; CUDA, Vulkan, or CPU on Linux)
+1. Checks for llama.cpp and offers to install or upgrade it: a pinned, checksum-verified official build matched to your hardware. macOS uses Metal; Linux chooses the strongest compatible CPU/Vulkan feature tier, prefers a CUDA build matched to the NVIDIA compute capability, and falls back to Vulkan when the pinned release has no compatible CUDA artifact
 2. Discovers GGUF models on your system
 3. Detects llama servers already running on local ports
 4. Estimates memory requirements from model size and context window

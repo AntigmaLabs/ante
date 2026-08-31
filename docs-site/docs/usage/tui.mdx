@@ -27,7 +27,7 @@ Reasoning stays collapsed in the chat. However long the model thinks, the turn s
 ✻ Thinking… (ctrl+o expand)
 ```
 
-The glyph pulses while the reasoning is still arriving and goes static once the segment ends. A turn that thinks, calls a tool, then thinks again shows one marker per segment. The full monologue is in the [transcript view](#transcript-view), live while it streams.
+The glyph pulses while reasoning is still arriving. Once the segment ends, the marker becomes static and reports its duration, such as `Thought for 12.3s (ctrl+o expand)`. Durations come from protocol event timestamps, so replayed sessions show the same value. A turn that thinks, calls a tool, then thinks again shows one marker per segment. The full monologue is in the [transcript view](#transcript-view), live while it streams.
 
 ### Tool approval
 
@@ -50,7 +50,7 @@ Press `Ctrl+O` to open the transcript view on an alternate screen: the full conv
 
 In the main chat, contiguous quiet calls such as Bash, Read, Grep, Glob, WebFetch, WebSearch, and MCP tools are grouped into one compact activity cell by default. While calls are running, the cell shows their count, arguments, and elapsed time; once complete it collapses to a summary such as `Ran 2 shell commands, searched for 3 patterns`. Successful file reads and failed calls break out of that summary onto their own rows beneath it — a read as `Read (src/main.rs) ·110 lines`, a failure as a red `Failed` header with its error on a dim row under it. Edit, Write, and Agent calls keep their richer standalone cells, and the transcript view always preserves every call and result. Disable grouping with **Group tool activity** in `/config` or set `"group_tool_activity": false` in `~/.ante/settings.json`; the change applies to new calls only.
 
-After compaction — manual `/compact` or [automatic](/configuration/preference#settings-file) — the conversation shows a collapsed `* Compacted` marker; the transcript view renders the full summary the model wrote. When Ante trims oversized tool results instead of summarizing, an info line reports what was trimmed.
+After compaction — manual `/compact` or [automatic](/configuration/preference#settings-file) — the conversation shows a collapsed `* Compacted` marker; the transcript view renders the full summary the model wrote. Ante evicts aged tool results before summarizing, keeps the newest slice and your messages verbatim, and summarizes only the older context the model will no longer see. Manual compaction targets a tighter working set than the automatic trigger, so it normally folds more history; repeating it immediately is a no-op rather than re-folding the fresh summary. Add instructions when the handoff should preserve a particular thread, for example `/compact focus on the API changes`. When no summary is needed, the instructions have nothing to steer; an info line reports trimmed tool results instead.
 
 ### Selecting and copying text
 
@@ -272,9 +272,9 @@ ante --profile work
 ante --no-skills
 ante --system-prompt "You are a Python expert"
 ante --append-system-prompt "Always use type hints"
-ante --tools Read Grep Glob
+ante --tools Read,Grep,Glob
 ante --include-tools ViewImage
-ante --exclude-tools Bash Write
+ante --exclude-tools Bash,Write
 ante --yolo                       # skip all tool approvals
 ante --resume ses_01ARZ3NDEK...   # resume a previous session
 ```

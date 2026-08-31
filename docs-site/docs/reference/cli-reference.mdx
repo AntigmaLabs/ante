@@ -22,6 +22,17 @@ ante [OPTIONS] [COMMAND]
 | `ante rage` | Collect a redacted bug-report bundle (logs + environment) to share with the Ante team. |
 | `ante catalog` | Print the loaded provider catalog as JSON. |
 | `ante doctor` | Run a boot-time self-check and report startup phase timings. |
+| `ante <name>` | Run an external `ante-<name>` application. |
+
+## Global option
+
+`--profile <NAME>` selects an existing `~/.ante/<name>.settings.json` as the settings file for the whole process, reads and writes alike. It can appear before or after any subcommand, and `ANTE_PROFILE` is equivalent. An unknown profile warns and falls back to `~/.ante/settings.json` rather than creating a new file. The bundled `bare` profile is seeded as a real file on first use and disables skills, MCP servers, session saving, auto-memory, and ambient UI features.
+
+```bash
+ante --profile work
+ante update --profile work
+ANTE_PROFILE=work ante doctor
+```
 
 ## `ante`
 
@@ -37,7 +48,6 @@ The TUI needs stdout attached to a terminal. Redirecting or piping it (`ante > l
 |---|---|
 | `-m`, `--model <MODEL>` | Override the default model name. |
 | `--provider <PROVIDER>` | Override the API provider by catalog provider name. |
-| `--profile <NAME>` | Use `~/.ante/<name>.settings.json` as a whole-file replacement for `settings.json` for this run. An unknown name starts from defaults. The built-in `bare` profile (seeded as a real file on first use) disables skills, MCP servers, session saving, auto-memory, and ambient UI features. Can also be set with `ANTE_PROFILE`. |
 | `--effort <LEVEL>` | Override the model's [effort level](/usage/models-and-thinking#effort) for this run: `min`, `low`, `medium`, `high`, `xhigh`, or `max`. |
 | `--yolo` | Skip tool approval prompts for the session. |
 | `--permission-mode <MODE>` | Override the permission mode for this run: `strict`, `auto`, or `yolo`. Conflicts with `--yolo`. |
@@ -49,9 +59,9 @@ The TUI needs stdout attached to a terminal. Redirecting or piping it (`ante > l
 | `--no-skills` | Skip skill discovery for this run, overriding the `skills` setting. No skills are advertised to the model or available as slash commands. |
 | `--enable-auto-memory` | Enable auto-memory for this run, overriding the `auto_memory` setting. Conflicts with `--disable-auto-memory`. |
 | `--disable-auto-memory` | Disable auto-memory for this run, overriding the `auto_memory` setting. Conflicts with `--enable-auto-memory`. |
-| `--tools <TOOLS>...` | Replace the default tool set with exactly these tools. Values are space-separated. Overrides the `tools` setting. Deprecated alias: `--allowed-tools` still works but prints a warning. |
-| `--include-tools <TOOLS>...` | Add tools on top of the default set, or on top of the `--tools` base set. Values are space-separated. |
-| `--exclude-tools <TOOLS>...` | Remove tools from the session after `--tools` and `--include-tools` are applied. Values are space-separated. Deprecated alias: `--disallowed-tools` still works but prints a warning. |
+| `--tools <TOOLS>` | Replace the default tool set with exactly these tools. Pass a comma-separated value or repeat the flag; a space-separated list is rejected. Overrides the `tools` setting. The old `--allowed-tools` name has been removed. |
+| `--include-tools <TOOLS>` | Add tools on top of the default set, or on top of the `--tools` base set. Pass a comma-separated value or repeat the flag. |
+| `--exclude-tools <TOOLS>` | Remove tools after `--tools` and `--include-tools` are applied. Pass a comma-separated value or repeat the flag. The deprecated `--disallowed-tools` alias remains accepted. |
 | `--output-format <FORMAT>` | Headless output format: `json`, `human`, or `minimal`. Defaults to `minimal`. |
 | `-p`, `--prompt <PROMPT>` | Prompt to run in headless mode. Also supports stdin when piped. |
 | `--check` | Run a verification pass after the headless task completes. |
@@ -61,6 +71,8 @@ The TUI needs stdout attached to a terminal. Redirecting or piping it (`ante > l
 | `--offline-model <PATH>` | Path to a local GGUF model file for offline inference. |
 | `-h`, `--help` | Print command help. |
 | `-V`, `--version` | Print the Ante version. |
+
+The session flags in this table configure the default TUI/headless run. Supplying one alongside a subcommand is an error rather than a silently ignored option; the process-wide `--profile` flag above is the exception.
 
 ### Examples
 
@@ -115,6 +127,8 @@ Server mode exposes the Ante protocol over stdin/stdout by default, or over WebS
 
 :::note
 `serve` is session-agnostic, so it does not accept the session flags (`--model`, `--provider`, `--yolo`, `--system-prompt`, `--tools`, …). The connecting client configures those per session over the protocol.
+
+The global `--profile` flag remains accepted and selects the settings file used by the server process.
 :::
 
 :::caution
@@ -159,7 +173,7 @@ ante gateway --config ./channels.json --output-format human
 ante update [OPTIONS] [CHANNEL]
 ```
 
-The update command checks for a newer Ante release and installs it when one is available. Without arguments, it follows the channel stored in `~/.ante/settings.json` (defaults to `stable`). Passing a channel — either as a positional argument or via `--channel` — overrides the tracked channel for this run only. See [Update & Channels](/start/update) for the full list of channels.
+The update command checks for a newer Ante release and installs it when one is available. Without arguments, it follows the channel in the active settings file (defaults to `stable`); select a named settings file with the global `--profile` flag. Passing a channel — either as a positional argument or via `--channel` — overrides the tracked channel for this run only. See [Update & Channels](/start/update) for the full list of channels.
 
 | Argument | Description |
 |---|---|
@@ -168,7 +182,7 @@ The update command checks for a newer Ante release and installs it when one is a
 | Flag | Description |
 |---|---|
 | `--channel <CHANNEL>` | Release channel to update from. Equivalent to the positional form. |
-| `--version <VERSION>` | Install an exact release instead of the channel's newest release. Accepts values with or without a leading `v`, such as `v0.preview.86` or `0.preview.86`. Conflicts with channel arguments. |
+| `--version <VERSION>` | Install an exact release instead of the channel's newest release. Accepts values with or without a leading `v`, such as `v0.preview.91` or `0.preview.91`. Conflicts with channel arguments. |
 | `-h`, `--help` | Print command help. |
 
 ### Examples
@@ -177,7 +191,8 @@ The update command checks for a newer Ante release and installs it when one is a
 ante update
 ante update nightly
 ante update --channel stable
-ante update --version v0.preview.86
+ante update --version v0.preview.91
+ante --profile work update
 ```
 
 ## `ante offline`
@@ -270,6 +285,19 @@ It needs no TTY and no API key: MCP warm-up is skipped and the session reaches r
 ante doctor
 ante doctor || echo "ante is not healthy"
 ```
+
+## External applications
+
+An unrecognized command name dispatches to an executable named `ante-<name>`, following the same convention as `git` subcommands:
+
+```bash
+# Runs ~/.ante/bin/ante-deploy or ante-deploy from PATH
+ante deploy --target production
+```
+
+Ante searches `~/.ante/bin` before `PATH`, passes remaining arguments through unchanged, and mirrors the application's exit status. Built-in subcommands always win, so an external executable cannot shadow `ante update` or another built-in. If no executable is found, Ante reports exit status `127` and still suggests a similarly named built-in for likely typos.
+
+External applications receive `ANTE` (the absolute path to the Ante binary), `ANTE_APP` (the resolved app name), and the selected `ANTE_PROFILE` when one is active. Like help and usage errors, dispatch occurs before Ante starts its runtime, logging, telemetry, or crash hook.
 
 ## Output Formats
 

@@ -48,7 +48,7 @@ ante [OPTIONS] [--prompt <PROMPT>]
 | `-p`, `--prompt <PROMPT>` | The prompt to run |
 | `-m`, `--model <MODEL>` | Override the model name |
 | `--provider <PROVIDER>` | Override the API provider (e.g. `anthropic`, `openai`, `gemini`, `xai`, `openrouter`, `local`) |
-| `--profile <NAME>` | Use `~/.ante/<name>.settings.json` instead of `settings.json`; `ANTE_PROFILE` is equivalent, and the built-in `bare` profile disables ambient features, skills, MCP servers, session saving, and auto-memory |
+| `--profile <NAME>` | Process-wide selection of an existing `~/.ante/<name>.settings.json`; `ANTE_PROFILE` is equivalent, an unknown name falls back to `settings.json`, and the built-in `bare` profile disables ambient features, skills, MCP servers, session saving, and auto-memory |
 | `--effort <LEVEL>` | Override the model's [effort level](/usage/models-and-thinking#effort): `min`, `low`, `medium`, `high`, `xhigh`, or `max` |
 | `--yolo` | Skip all tool approval prompts |
 | `--permission-mode <MODE>` | Accepted for CLI compatibility, but headless runs always use `yolo` because there is no interactive approval prompt |
@@ -59,9 +59,9 @@ ante [OPTIONS] [--prompt <PROMPT>]
 | `--short-prompt` | Use the compact prompt set: a condensed system prompt and shorter built-in tool descriptions |
 | `--skills` / `--no-skills` | Load or skip skill discovery, overriding the `skills` setting. With `--no-skills`, no skills are advertised or invocable |
 | `--enable-auto-memory` / `--disable-auto-memory` | Turn [auto-memory](/extend/memory) on or off, overriding the `auto_memory` setting (headless default: off) |
-| `--tools <TOOLS>...` | Replace the default tool set with exactly these tools. Deprecated alias: `--allowed-tools` still works but prints a warning |
-| `--include-tools <TOOLS>...` | Add tools on top of the default set, or on top of the `--tools` base set |
-| `--exclude-tools <TOOLS>...` | Remove tools after `--tools` and `--include-tools` are applied. Deprecated alias: `--disallowed-tools` still works but prints a warning |
+| `--tools <TOOLS>` | Replace the default tool set with exactly these tools. Use a comma-separated value or repeat the flag; the removed `--allowed-tools` name is rejected |
+| `--include-tools <TOOLS>` | Add tools on top of the default set, or on top of the `--tools` base set. Use a comma-separated value or repeat the flag |
+| `--exclude-tools <TOOLS>` | Remove tools after `--tools` and `--include-tools` are applied. Use a comma-separated value or repeat the flag; the deprecated `--disallowed-tools` alias remains accepted |
 | `-r`, `--resume <SESSION_ID>` | Resume a previously saved session by its ID |
 | `--session-save` / `--no-session-save` | Save or skip session persistence, overriding the `session_save` setting. With `--no-session-save`, no transcript or resumable snapshot is written; conflicts with `--resume` |
 | `--check` | Run a verification pass after the main task completes |
@@ -148,7 +148,7 @@ ante --model claude-sonnet-5 --check \
 
 ```bash
 # Read-only analysis — no file writes or shell access
-ante --tools Read Glob Grep \
+ante --tools Read,Glob,Grep \
   -p "analyze the codebase architecture and summarize it"
 ```
 

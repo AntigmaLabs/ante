@@ -209,11 +209,14 @@ Invoke a skill by name.
 
 ### Compact
 
-Manually trigger conversation compaction on the active session (what `/compact` sends). The daemon emits `CompactStart` and `CompactEnd` around the summarization.
+Manually trigger conversation compaction on the active session (what `/compact` sends). Optional `instructions` steer what the replacement summary emphasizes or preserves; they are ignored when the reducer can reclaim enough context without writing a summary. The daemon emits `CompactStart` and `CompactEnd` around the operation.
 
 ```json
-{ "op": "Compact", "id": "op_..." }
+{ "op": { "Compact": {} }, "id": "op_..." }
+{ "op": { "Compact": { "instructions": "focus on the API changes" } }, "id": "op_..." }
 ```
+
+`Compact` is a struct variant in `v0.preview.90`; clients must send the empty object form when they have no instructions rather than the older bare string form.
 
 ### ContextReport
 

@@ -47,15 +47,21 @@ Operations (`Op`) are sent from the client to the daemon, wrapped in an `OpMsg` 
 
 | Op | Payload | Description |
 |---|---|---|
-| `StartSession` | `SessionConfig` | Initialize a new session with model, provider, policy, and options |
+| `StartSession` | `SessionOverrides` | Initialize a new session with model, provider, policy, and options |
 | `UpdateSession` | `SessionUpdate` | Update the active session (e.g. switch models) without restarting |
 | `ResumeSession` | `session_id` | Resume a previously persisted session |
 | `UserInput` | `String` | Submit a user prompt |
+| `ShellInput` | `String` | Run a daemon-side shell command without starting an agent turn |
 | `Steer` | `String` | Additional user guidance for the active turn |
 | `ApprovalResponse` | `turn_id`, `responses: [ToolDecision]` | Respond to tool approval requests; a `Deny` may carry a `message` back to the model |
 | `SlashCommand` | `name`, `args` | Invoke a skill by name |
 | `RegisterLocalProvider` | `port`, `model?` | Register a running local llama-server as the `local` provider |
 | `RestoreLocalProvider` | — | Restore the previously registered local provider |
+| `Compact` | `instructions?` | Compact older conversation history, optionally steering the handoff summary |
+| `ContextReport` | — | Request a per-category context-window usage report |
+| `Goal` | `GoalCommand` | Set, clear, or inspect the goal-driven execution loop |
+| `AmbientPhrase` | `draft`, `req_id` | Request a best-effort spinner phrase for the current draft |
+| `AmbientSuggestion` | `recent_user`, `recent_agent`, `req_id` | Request a best-effort next-prompt suggestion |
 | `Interrupt` | — | Abort the current running operation |
 | `Shutdown` | — | Graceful shutdown |
 
@@ -80,8 +86,8 @@ Events (`Evt`) are sent from the daemon to the client, wrapped in an `EventMsg` 
 | `ToolEnd` | `tool_use_id`, `status`, `result_json`, `is_error` | Tool execution completed |
 | `UsageUpdate` | `usage` | Token usage statistics |
 | `CompactStart` | — | Dialog compaction started |
-| `CompactEnd` | — | Dialog compaction completed |
-| `ExtensionRefreshed` | `skills`, `subagents` | Skills and subagents refreshed |
+| `CompactEnd` | `summary?` | Dialog compaction completed; the replacement summary is absent when none was produced |
+| `ExtensionRefreshed` | `session_id`, `skills`, `subagents`, `mcp_servers` | Skills, subagents, and MCP server state refreshed |
 | `UserInput` | `String` | Replayed only — appears in resumed sessions, not live turns |
 | `Info` | `String` | Informational message |
 | `Error` | `String` | Error message |
@@ -197,8 +203,8 @@ sequenceDiagram
 Ante automatically manages context windows:
 
 - **Token budget** — Each turn tracks token usage against the model's context limit
-- **Auto-compaction** — When the dialog approaches the context limit, Ante uses the LLM to summarize the conversation history, preserving important context while freeing tokens. On by default; disable with the `auto_compact` [setting](/configuration/preference#settings-file) (manual `/compact` and overflow recovery remain available)
-- **Tool result trimming** — Large tool outputs are automatically trimmed to fit within budget
+- **Auto-compaction** — When the dialog approaches the context limit, Ante evicts aged tool results first, preserves the newest slice and user messages verbatim, and summarizes only the older prefix the model will no longer see. Manual `/compact` uses a tighter target and usually folds more history. On by default; disable with the `auto_compact` [setting](/configuration/preference#settings-file) (manual `/compact` and overflow recovery remain available)
+- **Tool result trimming** — Large tool outputs are trimmed to fit within budget, including a single result too large for a provider request, and older results decay before conversational messages are summarized. Overflow retries stop when another reduction makes no progress
 
 ## Permissions
 

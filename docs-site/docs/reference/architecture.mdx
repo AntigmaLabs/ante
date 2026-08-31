@@ -143,4 +143,4 @@ Tools can be filtered at session level:
 4. User sends `Op::UserInput` to start a task
 5. Session spawns a `Turn` which communicates with the LLM
 6. Turn executes tools, requests approvals, and eventually completes
-7. When the context budget nears the limit, auto-compaction summarizes the history
+7. When the context budget nears the limit, auto-compaction evicts aged tool results and summarizes only the older prefix while preserving the recent working state; manual compaction uses a tighter target

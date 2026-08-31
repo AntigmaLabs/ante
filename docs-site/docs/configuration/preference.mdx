@@ -81,7 +81,7 @@ An example `settings.json`:
 | `tips` | Whether the TUI shows a [tip line](/usage/tui#spinner-tips) under the spinner while the agent works. On unless set to `false` |
 | `group_tool_activity` | Collapse contiguous quiet tool calls into a single activity summary in the chat. On unless set to `false`; full per-call details remain in the **Ctrl+O** transcript. Changes apply to new tool activity only |
 | `short_prompt` | Use the compact prompt set — a condensed system prompt and shorter built-in tool descriptions — for new and resumed sessions. Off unless set to `true`; the `--short-prompt` CLI flag enables it for a single run |
-| `auto_compact` | Proactively summarize conversation history as it nears the model's context limit. On unless set to `false`; `/compact` and overflow recovery still work when disabled. Toggling it in `/config` applies to the running session |
+| `auto_compact` | Proactively reduce older history as the dialog nears the context limit: aged tool results are evicted first, then only the older prefix the model will no longer see is summarized. Manual `/compact` targets a tighter working set than this automatic path. On unless set to `false`; `/compact` and overflow recovery still work when disabled. Toggling it in `/config` applies to the running session |
 | `channel` | Release channel `ante update` tracks (`stable` or `nightly`). Defaults to `stable`; legacy `latest` values are treated as `stable`. See [Update & Channels](/start/update). |
 | `resize_reflow` | Scrollback strategy on terminal resize: `conservative` (default) or `purge` (see below) |
 | `status_line` | Items to display in the TUI status line footer (see below) |
@@ -92,14 +92,15 @@ An example `settings.json`:
 
 ### Named profiles
 
-Use `--profile <name>` to replace `settings.json` with a separate settings file for one TUI or headless run:
+Use the process-wide `--profile <name>` option to replace `settings.json` with a separate settings file. It works with TUI and headless runs as well as subcommands:
 
 ```bash
 ante --profile work
 ANTE_PROFILE=review ante -p "review this change"
+ante update --profile work
 ```
 
-The profile `work` reads and writes `~/.ante/work.settings.json`. Profiles are whole-file replacements, not layers: values omitted from the profile fall back to Ante defaults, not to `settings.json`. A new name starts from defaults and its file is created on the first saved change. Profile names may contain lowercase ASCII letters, digits, `-`, and `_`. CLI flags still override the selected profile.
+The profile `work` reads and writes `~/.ante/work.settings.json`. Profiles are whole-file replacements, not layers: values omitted from an existing profile fall back to Ante defaults, not to `settings.json`. The file must already exist or be a bundled template; an unknown name prints a warning and uses `settings.json` instead of creating a profile. To create one, write or copy `~/.ante/<name>.settings.json` before launching Ante. Profile names may contain lowercase ASCII letters, digits, `-`, and `_`. CLI flags still override the selected profile.
 
 The built-in `bare` profile ships with Ante: the first `--profile bare` run seeds `~/.ante/bare.settings.json` with onboarding and ambient UI features disabled, plus `auto_memory`, `skills`, and `session_save` set to `false` (and no MCP servers, since the profile defines none). After that it behaves like any other profile — edit the file or change settings in `/config` and they persist. Explicit run flags such as `--enable-auto-memory` still override it per run.
 
@@ -244,14 +245,14 @@ Settings can be overridden per-session via CLI flags.
 | `MODEL_CONTEXT_LIMIT` | Override max context window size (integer) |
 | `ANTE_LOCAL_PROVIDER_PORT` | Port assumed for the `local` provider when no live model server registration provides one (default: 8080) |
 | `ANTE_HOME` | Override the home config directory (default: `~/.ante`) |
-| `ANTE_PROFILE` | Select a named settings profile for TUI or headless runs; equivalent to `--profile <name>` |
+| `ANTE_PROFILE` | Select a named settings profile for the whole process, including subcommands and external applications; equivalent to `--profile <name>` |
 | `ANTE_INSTALL_DIR` | Installer-only override for the binary install directory (default: `~/.ante/bin`) |
 | `ANTE_OFFLINE_CONTEXT` | Override the local model context-window cap in tokens (see [Offline Mode](/local/offline#environment-variables)) |
 | `ANTE_MCP_TOOL_TIMEOUT` | MCP `tools/call` deadline in whole seconds. Defaults to `600`; zero or invalid values keep the default (see [MCP tool-call timeout](/extend/mcp#tool-call-timeout)) |
 | `ANTE_OPENAI_TRANSPORT` | OpenAI Responses transport: `http_sse` (default) or `websocket_auto` (see [OpenAI transports](/reference/catalog-reference#openai-transports)) |
 | `ANTE_TELEMETRY` | Disable OpenTelemetry export with `off`, `false`, `0`, `disable`, or `disabled` (case-insensitive) |
 | `OTEL_EXPORTER_OTLP_ENDPOINT` | Send application metrics and logs to this OTLP/HTTP base URL; overrides any endpoint embedded in the binary |
-| `OTEL_EXPORTER_OTLP_AUTH` | Optional base64-encoded `user:token` credentials sent as HTTP Basic authentication to the OTLP endpoint |
+| `OTEL_EXPORTER_OTLP_HEADERS` | Standard comma-separated OTLP headers as `name=value` pairs. Percent-encode spaces, for example `Authorization=Basic%20<base64>` |
 | `ANTE_USER` | Optional operator name attached to telemetry as `user.name`; unset by default (see [Identity](#identity)) |
 | `ANTE_USER_ID` | Optional operator-chosen identifier attached to telemetry as `user.id`; unset by default |
 | `ANTE_ENV` | Group telemetry by deployment environment (default: `local`) |
@@ -259,7 +260,7 @@ Settings can be overridden per-session via CLI flags.
 
 ### Telemetry
 
-Ante initializes an OpenTelemetry exporter when `OTEL_EXPORTER_OTLP_ENDPOINT` is set or when the binary was built with an embedded endpoint. The exporter sends metrics and application `tracing` logs over OTLP/HTTP. Set `ANTE_TELEMETRY=off` to disable the exporter regardless of how its endpoint was configured; local logs under `~/.ante/logs/` continue to be written.
+Ante initializes an OpenTelemetry exporter when `OTEL_EXPORTER_OTLP_ENDPOINT` is set or when the binary was built with an embedded endpoint. The exporter sends metrics and application `tracing` logs over OTLP/HTTP. Set `OTEL_EXPORTER_OTLP_HEADERS` when the collector needs authentication or tenant headers; a runtime endpoint and headers replace any embedded values. A configured headers string with no usable `name=value` entry disables telemetry with a startup diagnostic. Set `ANTE_TELEMETRY=off` to disable the exporter regardless of how its endpoint was configured; local logs under `~/.ante/logs/` continue to be written.
 
 The metrics cover tool and model call duration and errors, plus token counts when the provider reports usage. Labels are drawn from bounded sets — tool name, model, provider, Ante version, OS/architecture — and none of them names a person or a machine.
 

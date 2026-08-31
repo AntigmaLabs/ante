@@ -38,6 +38,8 @@ In `/models`, effort is a slider under the model list with one tick per level th
 
 The ladder is built in per provider and model family. For custom providers you can declare it yourself with `supported_efforts` on the model's catalog entry (see the [Catalog Reference](/reference/catalog-reference#model-fields)) — or run `/add-provider`, which probes the endpoint and writes the declaration for you.
 
+Anthropic exposes `xhigh` on Claude Sonnet 5 and Opus 5, Opus 4.7/4.8, and the always-thinking Fable/Mythos 5 family. Opus and Sonnet 4.6 retain their four active adaptive levels (`low` through `high`, then `max`) plus the `min` off position.
+
 :::note
 Anthropic's API requires `temperature: 1` whenever thinking is active. If you've set a different `temperature` for a Claude model in your [catalog](/reference/catalog-reference#model-fields) or via `MODEL_TEMPERATURE`, turns with thinking on fail with a message saying so — clear the override to fix it.
 :::
@@ -52,4 +54,4 @@ ante --effort high
 You can also set your default model and provider via CLI flags: `ante --provider openai --model gpt-5.6-sol`, or configure defaults in your [preferences](/configuration/preference).
 :::
 
-If you pick a provider without naming a model, Ante starts you on that provider's most capable model and quietly uses a lighter, cheaper one for background work like summarizing fetched web pages — see [weight classes](/reference/catalog-reference#weight-classes). Vision-capable models are detected automatically, so you can drop images straight into the chat.
+If you pick a provider without naming a model, Ante starts you on that provider's most capable model and may use a lighter, cheaper one for ambient UI hints such as the spinner's thinking phrase and the next-prompt suggestion — see [weight classes](/reference/catalog-reference#weight-classes). WebFetch itself returns page content to the active session model; it does not invoke a helper model. Vision-capable models are detected automatically, so you can drop images straight into the chat.

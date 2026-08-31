@@ -41,6 +41,8 @@ Execute shell commands. Each call runs in a fresh non-interactive process — sh
 
 If the command finishes inside the window, Ante returns its output inline and explicitly discards the handle files. After a background handle has been returned, the job survives Ante restarts and is never collected while live; once settled, its directory is collected on a later startup after sitting unchanged for 24 hours. Interrupting a Bash call before it returns a handle terminates the whole process group, including child and grandchild processes. To stop an already-backgrounded job, send a signal to its process group with `kill -- -<pid>`. Requires approval.
 
+Results begin with `status: exited` and an explicit `exit_code`, followed by separate `stdout` and `stderr` sections when those streams are non-empty. A background result instead begins with `status: running` and names its process id and handle files. Signal-terminated commands use the shell convention `128 + signal` for the exit code.
+
 For interactive programs and persistent shells, the agent drives durable named tmux sessions (`ante-*`) through ordinary Bash calls, guided by a bundled `tmux` skill — every keystroke it sends goes through normal Bash permission checks. Watch or type in any of those sessions with [`/term <name>`](/usage/tui#terminal-sessions).
 
 ## Builtin
@@ -55,7 +57,7 @@ Track progress on multi-step work with a task list.
 
 ### WebFetch
 
-Fetch a URL, convert it to markdown, and have a small model extract what's relevant. An oversized response is spilled to a local cache file the agent can read in slices, instead of being truncated. Requires approval.
+Fetch a URL and return its contents directly for the active model to analyze, converting HTML to markdown. The input is URL-only; WebFetch does not run a second extraction model. Oversized responses spill to a local cache file the agent can read in slices instead of being truncated. Requests identify themselves as `ante/<version>`, and an unsuccessful HTTP response includes up to 2 KB of textual response-body detail when available. Requires approval.
 
 ### WebSearch
 
@@ -85,13 +87,15 @@ Control which tools are available in a session:
 
 ```bash
 # Replace the default tool set with exactly these tools
-ante --tools Read Glob Grep "analyze the code"
+ante --tools Read,Glob,Grep -p "analyze the code"
 
 # Add opt-in tools on top of the default set
-ante --include-tools ViewImage "describe the screenshots in assets/"
+ante --include-tools ViewImage -p "describe the screenshots in assets/"
 
 # Remove these tools
-ante --exclude-tools Bash Write "read-only analysis"
+ante --exclude-tools Bash,Write -p "read-only analysis"
 ```
+
+Each flag takes one comma-separated value per occurrence and may be repeated. Space-separated lists are rejected, and the former `--allowed-tools` name is no longer accepted (`--disallowed-tools` remains a deprecated alias for `--exclude-tools`).
 
 Matcher syntax such as `Bash(cargo test *)` is accepted in these lists but selects by tool name only — it keeps the whole `Bash` tool available. To scope *what* a tool may run, use [permission rules](/configuration/permission#tool-matchers) alongside filtering.

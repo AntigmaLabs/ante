@@ -12,7 +12,7 @@ Type `/` in the [interactive TUI](/usage/tui) to run built-in commands for commo
 | `/clear` | Clear conversation history |
 | `/init` | Analyze the project and create an `AGENTS.md` file |
 | `/exit` | Exit Ante |
-| `/compact` | Summarize conversation history to free up the context window |
+| `/compact [instructions]` | Free context by compacting older history; optional instructions steer what the handoff summary emphasizes or preserves |
 | `/config` | Open the settings dialog — search, toggle, and jump into the theme, model, provider, status line, MCP, and offline dialogs (see [Preferences](/configuration/preference#settings-file)) |
 | `/theme` | Open theme selection dialog |
 | `/diff` | Show git diff (including untracked files) |
@@ -29,7 +29,6 @@ Type `/` in the [interactive TUI](/usage/tui) to run built-in commands for commo
 | `/resume` | Resume a previous session in this directory |
 | `/resume-claude [id]` | Continue a recent Claude Code session in this directory (a bundled skill — see [Coming from Claude Code or Codex](/usage/tui#coming-from-claude-code-or-codex)) |
 | `/resume-codex [id]` | Continue a recent Codex session in this directory (a bundled skill) |
-| `/skill-creator` | Create, improve, and evaluate [skills](/extend/skills) (a bundled skill) |
 | `/import-claude` | Copy Claude Code's project memory for this directory into Ante's [project memory](/extend/memory#importing-claude-code-memory) |
 | `/statusline` | Configure the status line |
 | `/mcp` | Inspect and manage configured [MCP servers](/extend/mcp) |

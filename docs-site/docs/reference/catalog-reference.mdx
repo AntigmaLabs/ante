@@ -130,6 +130,7 @@ ante --provider xai --model grok-4.6
 | Model | Description | Context |
 |---|---|---|
 | `glm-5.3` | Latest GLM-5.3 model for coding and agentic tasks | 1M |
+| `glm-5.3-flash` | Fast, cost-efficient GLM-5.3 multimodal model | 1M |
 
 ```bash
 ante --provider zai --model glm-5.3
@@ -154,6 +155,7 @@ Open Router ships as three providers sharing one API key, split by wire style: `
 | `xiaomi/mimo-v2.5-pro` | MiMo-V2.5-Pro flagship agentic model | 1.05M |
 | `xiaomi/mimo-v2.5` | MiMo-V2.5 omnimodal model with vision | 1.05M |
 | `z-ai/glm-5.3` | GLM 5.3 coding and agentic reasoning model via OpenRouter | 1.05M |
+| `z-ai/glm-5.3-flash` | Fast, cost-efficient GLM 5.3 multimodal model via OpenRouter | 1.05M |
 | `moonshotai/kimi-k3` | Kimi K3 flagship multimodal reasoning model | 1.05M |
 | `moonshotai/kimi-k2.7-code` | Kimi K2.7 Code reasoning model with vision | 262K |
 | `minimax/minimax-m3` | MiniMax M3 multimodal model | 512K |
@@ -226,7 +228,7 @@ Requires a [Coding Plan subscription](https://help.aliyun.com/zh/model-studio/co
 
 | Model | Description | Context |
 |---|---|---|
-| `gemini-3.5-flash` | Gemini 3.5 Flash, agentic workflows | 1M |
+| `gemini-3.7-flash` | Gemini 3.7 Flash for fast agentic and multimodal workflows | 1M |
 | `grok-4.5` | Grok 4.5, xAI flagship for code and agentic work | 500K |
 | `grok-4.6` | Grok 4.6 flagship reasoning model | 500K |
 | `kimi-k3` | Kimi K3 flagship reasoning model with vision | 1M |
@@ -234,17 +236,20 @@ Requires a [Coding Plan subscription](https://help.aliyun.com/zh/model-studio/co
 | `qwen3.7-plus` | Latest Qwen 3.7 Plus | 1M |
 | `gemini-3.1-pro-preview` | Gemini 3.1 Pro with deep thinking | 1M |
 | `claude-haiku-4-5` | Fast and capable | 200K |
-| `claude-sonnet-4-6` | Fast and capable | 200K |
-| `claude-opus-4-8` | Most capable, slower | 200K |
+| `claude-sonnet-5` | Best combination of speed and intelligence | 1M |
+| `claude-opus-5` | Complex agentic coding and enterprise work | 1M |
 | `claude-fable-5` | Most capable Claude model | 1M |
 | `gpt-5.3-codex` | Coding-optimized Codex model | — |
+| `gpt-5.4-mini` | Faster, cheaper GPT-5.4 model | 400K |
+| `gpt-5.4-nano` | Smallest GPT-5.4 model | 400K |
 | `deepseek-v4-flash` | Fast DeepSeek V4 Flash | 1M |
 | `deepseek-v4-pro` | DeepSeek V4 Pro with deep thinking | 1M |
-| `glm-5.2` | Latest GLM-5.2 model | 1M |
+| `glm-5.3` | Latest GLM-5.3 model for coding and agentic tasks | 1M |
+| `glm-5.3-flash` | Fast GLM-5.3 Flash for coding and agentic tasks | 1M |
 
 ```bash
-ante --provider antix --model claude-sonnet-4-6        # OAuth
-ante --provider antix-api-key --model claude-sonnet-4-6 # ANTIX_API_KEY
+ante --provider antix --model claude-sonnet-5         # OAuth
+ante --provider antix-api-key --model claude-sonnet-5 # ANTIX_API_KEY
 ```
 
 ### Local
@@ -417,7 +422,7 @@ The `models` section patches a model by id wherever it is defined, layering on t
 Every built-in model carries a `weight_class` — `Feather` (small/fast/cheap), `Middle`, or `Heavy` (largest/most capable). Ante uses it to pick models without you naming one:
 
 - **Default model** — selecting a provider with no explicit model resolves to its **heaviest** model.
-- **Auxiliary calls** — cheap internal work such as `WebFetch` page summarization uses the provider's **lightest** model.
+- **Ambient UI calls** — cosmetic thinking phrases and next-prompt suggestions use the provider's **lightest** model when it is classified as Feather or Middle. WebFetch returns page content directly to the active session model and does not use this path.
 
 Models with no `weight_class` set fall back to catalog order. Set `weight_class` on a custom model to steer these choices.
 

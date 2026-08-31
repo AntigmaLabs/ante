@@ -162,11 +162,13 @@ Malformed permission rules are skipped individually, each reported in the sessio
 
 ```bash
 # Replace the default tool set with exactly these tools
-ante --tools Read Glob Grep "analyze the code"
+ante --tools Read,Glob,Grep -p "analyze the code"
 
 # Remove these tools
-ante --exclude-tools Bash Write "read-only analysis"
+ante --exclude-tools Bash,Write -p "read-only analysis"
 ```
+
+Each filter flag consumes one comma-separated value per occurrence. Repeat the flag when that reads better; a space-separated list such as `--tools Read Glob` is not accepted.
 
 Matcher syntax such as `Bash(cargo test *)` is accepted in these lists but selects by tool name only — it keeps the whole `Bash` tool available. To scope what a tool may run, use `allow`/`ask`/`deny` rules.
 
