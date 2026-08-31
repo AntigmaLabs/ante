@@ -1,5 +1,5 @@
 ---
-title: "模型与提供商目录参考手册（Catalog Reference）"
+title: "模型与提供商目录参考手册"
 sidebar_label: "模型与提供商目录"
 description: "内置提供商列表、预设模型清单以及 catalog.json Schema 规范"
 ---
@@ -8,7 +8,7 @@ Ante 根据**目录（Catalog）**解析每个提供商与模型：包括本文�
 
 本页面为详尽的参考手册。关于日常选择提供商的流程与可直接复制的配置范例，请参阅[模型提供商](/usage/providers)。
 
-## 内置提供商列表（Built-in providers） {#built-in-providers}
+## 内置提供商列表 {#built-in-providers}
 
 | 提供商 | key | 通信协议格式 (Wire style) | 身份认证 |
 |---|---|---|---|
@@ -32,7 +32,7 @@ Ante 根据**目录（Catalog）**解析每个提供商与模型：包括本文�
 
 `key` 列即为传递给 `--provider` 的参数值。通过 OAuth 认证的提供商（`anthropic-subscription`、`openai-subscription`、`antix`）在 TUI 中通过交互式向导登录；其余提供商从列出的环境变量中读取 API 密钥。
 
-## 各提供商的模型清单（Models by provider） {#models-by-provider}
+## 各提供商的模型清单 {#models-by-provider}
 
 每个提供商均预设了一组 `preferred_models` —— 即在模型选择器中展示的模型 ID。当您选择提供商而未显式指定模型时，Ante 默认选用其**权重等级最高（heaviest-weight）**的模型（参见[权重等级](#weight-classes)），而非简单地选择列表第一项。显式指定的提供商具有最高权威性：若传入了 `--provider`，即使该模型 ID 未列在 `preferred_models` 中，Ante 也会将该模型 ID 发送给该提供商（参见[解析规则](#how-a-model-and-provider-are-chosen)）。
 
@@ -70,7 +70,7 @@ ante --provider openai --model gpt-5.6-sol
 
 `openai-subscription` 提供商（ChatGPT/Codex OAuth）支持 `gpt-5.6-sol`、`gpt-5.6-terra` 和 `gpt-5.6-luna`（272K 上下文），以及 `gpt-5.5`、`gpt-5.4` 和 `gpt-5.4-mini`（400K 上下文）。
 
-#### OpenAI 传输协议（OpenAI transports） {#openai-transports}
+#### OpenAI 传输协议 {#openai-transports}
 
 `openai` 与 `openai-subscription` 提供商支持两种流式响应传输方式：
 
@@ -255,7 +255,7 @@ ante --provider antix-api-key --model claude-sonnet-4-6 # ANTIX_API_KEY
 ante --provider local
 ```
 
-## `catalog.json` 配置规范（catalog.json schema） {#catalogjson-schema}
+## `catalog.json` 配置规范 {#catalogjson-schema}
 
 启动时，`~/.ante/catalog.json` 会合并覆盖在内置预设之上。包含两个可选的顶层键：
 
@@ -272,7 +272,7 @@ ante --provider local
 `~/.ante` 目录可通过环境变量 `ANTE_HOME` 重定向；目录配置文件路径始终为 `$ANTE_HOME/catalog.json`。
 :::
 
-### 提供商字段（Provider fields） {#provider-fields}
+### 提供商字段 {#provider-fields}
 
 | 字段 | 必填 | 说明 |
 |---|---|---|
@@ -323,7 +323,7 @@ ante --provider local
 }
 ```
 
-### 额外请求字段（Extra request fields） {#extra-request-fields}
+### 额外请求字段 {#extra-request-fields}
 
 部分网关或代理需要 Ante 原生未建模的特定参数（服务等级、路由提示、厂商专属 Beta 字段）。`extra_body` 是一个 JSON 对象，会直接合并到发送给该提供商的每个请求体顶层：
 
@@ -361,7 +361,7 @@ Skipped 1 entry in ~/.ante/catalog.json:
   - providers.my-gateway.extra_body: ignoring Ante-owned request field(s): model
 ```
 
-### 身份认证配置（Authentication） {#authentication}
+### 身份认证配置 {#authentication}
 
 `auth` 是一个带标签的对象：标签指定凭据传递位置，凭据可以为环境变量（`env_key`）或 Ante 内置的 OAuth 流程（`oauth_preset`）。
 
@@ -379,7 +379,7 @@ Skipped 1 entry in ~/.ante/catalog.json:
 
 提供商在凭据存在时即被视为已认证 —— 环境变量已设置且非空，或磁盘上存在 OAuth Token。没有 `auth` 块的提供商始终被视为已认证。未认证的提供商在自动检测过程中会被跳过，并在选择器中排在最后。
 
-### 模型字段（Model fields） {#model-fields}
+### 模型字段 {#model-fields}
 
 这些字段既可在提供商的 `preferred_models` 中完整声明模型（此时 `id` 必填），也可在顶层 `models` 下部分覆盖已有模型（此时由 map key 提供 id）。除 ID 以外的所有字段均为可选：
 
@@ -408,7 +408,7 @@ Skipped 1 entry in ~/.ante/catalog.json:
 }
 ```
 
-### 权重等级（Weight classes） {#weight-classes}
+### 权重等级 {#weight-classes}
 
 每个内置模型均带有 `weight_class`（`Feather`、`Middle` 或 `Heavy`），Ante 根据此属性自动进行智能选择：
 
@@ -417,7 +417,7 @@ Skipped 1 entry in ~/.ante/catalog.json:
 
 未设置 `weight_class` 的模型回退到目录声明顺序。在自定义模型上设置 `weight_class` 可以精确引导这些自动化选择。
 
-## 模型与提供商的解析仲裁规则（How a model and provider are chosen） {#how-a-model-and-provider-are-chosen}
+## 模型与提供商的解析仲裁规则 {#how-a-model-and-provider-are-chosen}
 
 解析模型 ID 时分层覆盖（后生效者覆盖前者）：
 
@@ -432,7 +432,7 @@ Skipped 1 entry in ~/.ante/catalog.json:
 
 当未传入 `--model` / `--provider` 时，Ante 执行自动检测：按目录顺序选用第一个已认证提供商的最高权重模型（参见[权重等级](#weight-classes)），若均未认证则回退到 `local`。
 
-## 环境变量覆盖（Environment overrides） {#environment-overrides}
+## 环境变量覆盖 {#environment-overrides}
 
 无需编辑文件即可覆盖会话级目录参数：
 
@@ -448,7 +448,7 @@ Skipped 1 entry in ~/.ante/catalog.json:
 
 多个预设也支持专属的 base-URL 环境变量，且优先级高于 `MODEL_BASE_URL`：`ANTHROPIC_BASE_URL`、`OPENAI_BASE_URL`、`OPENAI_COMPATIBLE_BASE_URL`、`OPENROUTER_BASE_URL`、`DEEPSEEK_BASE_URL`。
 
-## 容错处理（Error handling） {#error-handling}
+## 容错处理 {#error-handling}
 
 单个无效条目不会破坏整个配置文件。Ante 对 `catalog.json` 进行宽容解析：任何反序列化失败的提供商或模型条目会被跳过，其余条目仍正常加载。跳过的条目会在启动时报告，例如：
 
@@ -459,7 +459,7 @@ Skipped 1 entry in ~/.ante/catalog.json:
 
 仅当文件**根本不是一个 JSON 对象（isn't a JSON object at all）**时才会被整体拒绝。缺少 `catalog.json` 完全正常 —— Ante 会直接使用内置预设。
 
-## 相关章节（Related） {#related}
+## 相关章节 {#related}
 
 - [模型提供商](/usage/providers) — 选择提供商与自定义配置配方
 - [存储与目录结构参考手册](/reference/storage-reference) — `catalog.json` 在磁盘上的位置

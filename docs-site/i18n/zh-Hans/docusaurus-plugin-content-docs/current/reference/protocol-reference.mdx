@@ -1,19 +1,19 @@
 ---
-title: "通信协议参考手册（Protocol Reference）"
+title: "通信协议参考手册"
 sidebar_label: "通信协议"
 description: "Ante 客户端与守护进程之间的消息协议、报文传输格式与类型定义的完整参考手册"
 ---
 
 Ante 在客户端（Client）与守护进程（Daemon）之间采用强类型的消息传递协议。在同进程内（In-Process）通过有界异步通道交换消息，外部客户端则通过标准输入输出（stdin/stdout）上的 JSON Lines 格式进行通信。
 
-## 传输协议格式（Wire format） {#wire-format}
+## 传输协议格式 {#wire-format}
 
 外部客户端使用 **JSON Lines** (JSONL) 与守护进程通信 —— 通过 stdin/stdout 每行传输一个 JSON 对象。
 
 - **客户端 → 守护进程（Client → Daemon）**：向 stdin 写入 `OpMsg` 对象（每行一个 JSON）
 - **守护进程 → 客户端（Daemon → Client）**：从 stdout 读取 `EventMsg` 对象（每行一个 JSON）
 
-### OpMsg 消息封装（OpMsg envelope） {#opmsg-envelope}
+### OpMsg 消息封装 {#opmsg-envelope}
 
 每个操作指令均封装在 `OpMsg` 中：
 
@@ -24,7 +24,7 @@ Ante 在客户端（Client）与守护进程（Daemon）之间采用强类型的
 }
 ```
 
-### EventMsg 消息封装（EventMsg envelope） {#eventmsg-envelope}
+### EventMsg 消息封装 {#eventmsg-envelope}
 
 每个状态事件均封装在 `EventMsg` 中：
 
@@ -39,7 +39,7 @@ Ante 在客户端（Client）与守护进程（Daemon）之间采用强类型的
 
 `parent` 字段用于关联触发该事件的操作指令 ID。在不适用时为 `null`。
 
-## 消息 ID（Message IDs） {#message-ids}
+## 消息 ID {#message-ids}
 
 每个消息都拥有强类型的 `Id`，由前缀（最多 4 字节）与 [ULID](https://github.com/ulid/spec) 组成。字符串格式为 `{prefix}_{ulid}`。
 
@@ -52,7 +52,7 @@ Ante 在客户端（Client）与守护进程（Daemon）之间采用强类型的
 
 示例：`op_01J5A3B7C9D0E1F2G3H4J5K6M7`
 
-## 操作指令（Operations，客户端 → 守护进程） {#operations-client--daemon}
+## 操作指令（客户端 → 守护进程） {#operations-client--daemon}
 
 ### StartSession {#startsession}
 
@@ -288,9 +288,9 @@ Ante 在客户端（Client）与守护进程（Daemon）之间采用强类型的
 { "op": "RestoreLocalProvider", "id": "op_..." }
 ```
 
-## 状态事件（Events，守护进程 → 客户端） {#events-daemon--client}
+## 状态事件（守护进程 → 客户端） {#events-daemon--client}
 
-### 会话事件（Session events） {#session-events}
+### 会话事件 {#session-events}
 
 #### SessionStart {#sessionstart}
 
@@ -379,7 +379,7 @@ Ante 在客户端（Client）与守护进程（Daemon）之间采用强类型的
 | `Replaced` | 会话被新的或恢复的会话所替换 |
 | `Shutdown` | 守护进程正在关闭退出 |
 
-### 轮次生命周期事件（Turn lifecycle events） {#turn-lifecycle-events}
+### 轮次生命周期事件 {#turn-lifecycle-events}
 
 #### TurnStart {#turnstart}
 
@@ -441,7 +441,7 @@ Ante 在客户端（Client）与守护进程（Daemon）之间采用强类型的
 | `Interrupted` | `reason?: string` | 轮次被中断 |
 | `Error` | `kind?: string`, `headline: string`, `details: string[]` | 轮次异常结束。`kind` 为机器可读的稳定 LLM 错误类型（如 `"oauth"` 表示提供商登录缺失、过期或被撤销）。`headline` 为单行摘要；`details` 为详细错误原因行 |
 
-### 消息流式事件（Message streaming events） {#message-streaming-events}
+### 消息流式事件 {#message-streaming-events}
 
 #### AgentMessage {#agentmessage}
 
@@ -475,7 +475,7 @@ Ante 在客户端（Client）与守护进程（Daemon）之间采用强类型的
 { "event": { "ThinkingDelta": "让我" } }
 ```
 
-### 工具事件（Tool events） {#tool-events}
+### 工具事件 {#tool-events}
 
 #### ToolStart {#toolstart}
 
@@ -541,7 +541,7 @@ Ante 在客户端（Client）与守护进程（Daemon）之间采用强类型的
 | `Denied` | 工具调用被用户拒绝 |
 | `Failed` | 工具执行发生错误失败 |
 
-### 上下文压缩事件（Compaction events） {#compaction-events}
+### 上下文压缩事件 {#compaction-events}
 
 #### CompactStart {#compactstart}
 
@@ -559,7 +559,7 @@ Ante 在客户端（Client）与守护进程（Daemon）之间采用强类型的
 { "event": { "CompactEnd": { "summary": "用户要求进行..." } } }
 ```
 
-### 扩展事件（Extension events） {#extension-events}
+### 扩展事件 {#extension-events}
 
 #### ExtensionRefreshed {#extensionrefreshed}
 
@@ -600,7 +600,7 @@ Skills 技能、子智能体或 MCP 服务器刷新时触发。在正常会话�
 
 `mcp_servers` 中的每个条目都反映了实际启动并发现的内容：对于连接失败的服务端，`tools` 列表为空，而 `qualified_name` 是智能体调用该工具时使用的 `mcp__<server>__<tool>` 形式。
 
-### 提示与信息事件（Informational events） {#informational-events}
+### 提示与信息事件 {#informational-events}
 
 #### UsageUpdate {#usageupdate}
 
@@ -739,15 +739,15 @@ Skills 技能、子智能体或 MCP 服务器刷新时触发。在正常会话�
 { "event": { "Ambient": { "kind": "PromptSuggestion", "req_id": 7, "text": "运行测试" } } }
 ```
 
-### 离线模式与协议边界（Offline mode and the protocol） {#offline-mode-and-the-protocol}
+### 离线模式与协议边界 {#offline-mode-and-the-protocol}
 
 本地模型管理（引擎安装、模型发现、llama-server 生命周期）属于**客户端侧职责**。它是通过进程内的 `OfflineSubsystem` API 驱动的，而非通过守护进程协议。离线模式面向守护进程的唯一接口是 `RegisterLocalProvider` / `RestoreLocalProvider` —— 客户端自行启动 llama-server，随后向守护进程注册其端口号（及可选的 `ModelSpec`）。
 
 关于面向用户的工作流及 `--offline-model` CLI 参数，请参阅[离线模式](/local/offline)。
 
-## 传输层（Transport） {#transport}
+## 传输层 {#transport}
 
-### 进程内通道（In-process channels） {#in-process-channels}
+### 进程内通道 {#in-process-channels}
 
 当客户端与守护进程运行在同一进程内（TUI 或无头模式）时，通过 Tokio 有界异步 mpsc 通道通信：
 

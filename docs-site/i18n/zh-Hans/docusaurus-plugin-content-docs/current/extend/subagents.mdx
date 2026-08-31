@@ -8,7 +8,7 @@ description: "将复杂多步骤任务委托给专门的子智能体处理"
 
 Sub-Agents（子智能体）是主智能体在处理复杂、多步骤任务时派生出的专业智能体。每个子智能体在专属的提示词、工具集以及可选的独立模型配置下运行。
 
-## 内置子智能体（Built-in sub-agents） {#built-in-sub-agents}
+## 内置子智能体 {#built-in-sub-agents}
 
 Ante 内置了两个开箱即用的子智能体：
 
@@ -22,7 +22,7 @@ Ante 内置了两个开箱即用的子智能体：
 
 关于 Ante 自身的问题由内置的 `ante-guide` [技能](/extend/skills#bundled-skills)处理，而非子智能体。
 
-## 创建自定义子智能体（Creating custom sub-agents） {#creating-custom-sub-agents}
+## 创建自定义子智能体 {#creating-custom-sub-agents}
 
 在 `~/.ante/agents/`（用户级）或以下任何项目级位置创建带有 YAML Frontmatter 的 Markdown 文件：
 
@@ -47,7 +47,7 @@ You are a security-focused code reviewer. Analyze the provided code for:
 Provide findings with severity ratings and remediation steps.
 ```
 
-### Frontmatter 字段说明（Frontmatter fields） {#frontmatter-fields}
+### Frontmatter 字段说明 {#frontmatter-fields}
 
 | 字段 | 必填 | 说明 |
 |---|---|---|
@@ -58,7 +58,7 @@ Provide findings with severity ratings and remediation steps.
 
 Frontmatter 的读取规则与[技能 Frontmatter](/extend/skills#creating-a-skill)完全一致：常见的未加引号标量错误在无歧义时会自动修复，配置块上限为 16 KB 和 32 层嵌套。超出限制或遇到无法修复的 YAML 时会显式报错退出。
 
-## 协同工作机制（How sub-agents work） {#how-sub-agents-work}
+## 协同工作机制 {#how-sub-agents-work}
 
 当主智能体遇到匹配子智能体描述的任务时，会通过内置的 `Agent` 工具拉起子智能体：
 
@@ -81,7 +81,7 @@ Frontmatter 的读取规则与[技能 Frontmatter](/extend/skills#creating-a-ski
 └────────────┘    返回结果     └──────────────┘
 ```
 
-## 智能体发现优先级（Discovery） {#discovery}
+## 智能体发现优先级 {#discovery}
 
 子智能体按以下优先级顺序发现（同名智能体后者覆盖前者）：
 

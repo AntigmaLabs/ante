@@ -1,14 +1,14 @@
 ---
-title: 命令审查与工具授权（Reviewing & Approving Commands）
+title: 命令审查与工具授权
 sidebar_label: "授权与审批"
 description: "了解 Ante 的审批授权流程，掌握接受、拒绝、反馈与预览工具调用的方法"
 ---
 
-# 命令审查与工具授权（Reviewing & Approving Commands）
+# 命令审查与工具授权
 
 Ante 绝不会在未经您明确授权的情况下执行潜在危险的操作。当智能体尝试执行可能修改系统的工具（如运行 Shell 命令或写入文件）时，终端中会显示交互式审批提示。
 
-## 审批流程（The approval flow） {#the-approval-flow}
+## 审批流程 {#the-approval-flow}
 
 每次工具调用都会清晰展示智能体希望执行的操作。使用方向键选择响应并按 Enter 确认，或直接按下对应编号：
 
@@ -30,7 +30,7 @@ Ante 绝不会在未经您明确授权的情况下执行潜在危险的操作。
 
 按 `Tab` 键可展开 Diff 视图，逐行审查代码变动后再决定是否确认。
 
-## Auto 自动模式与 Yolo 极速模式（Auto and Yolo modes） {#auto-and-yolo-modes}
+## Auto 自动模式与 Yolo 极速模式 {#auto-and-yolo-modes}
 
 在 TUI 界面中随时按 `Shift+Tab` 可循环切换权限模式：`strict`（严格） → `auto`（自动） → `yolo`（极速）。该修改即时生效，适用于当前正在运行的 Turn。
 
@@ -41,7 +41,7 @@ Ante 绝不会在未经您明确授权的情况下执行潜在危险的操作。
 
 关于权限模式默认值及规则配置，请参见[权限控制](/configuration/permission)。
 
-## 拒绝并提供反馈（Rejecting with feedback） {#rejecting-with-feedback}
+## 拒绝并提供反馈 {#rejecting-with-feedback}
 
 选择拒绝并说明理由后，输入框下方会弹出一行文本输入区。输入希望智能体采取的替代方案并按 **Enter** 发送；按 **Esc** 返回选项列表，按 **Ctrl+C** 清空输入内容而不打断轮次。空内容绝不会提交，输入上限为 2000 个字符。支持标准 Readline 快捷键（`Ctrl+A`/`Ctrl+E`、`Ctrl+W`、`Ctrl+K`/`Ctrl+U`、`Ctrl+Y`）。
 

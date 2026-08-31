@@ -25,14 +25,14 @@ slug: /
 
 这三点归结为一个核心设计理念：一个可验证、可负担且能随处运行的智能体，轻量到可以**成千上万个并发运行**：成为自组织智能的基础底座。参见[设计哲学](/start/philosophy)。
 
-### 核心亮点（Beyond the headline numbers） {#beyond-the-headline-numbers}
+### 核心亮点 {#beyond-the-headline-numbers}
 
 - **零供应商锁定。** 支持自带 API 密钥（BYOK）、订阅或本地模型。可在 12+ 家提供商之间自由切换 — Anthropic、OpenAI、Gemini、Grok、Open Router 等。无需注册账号，不以遥测作为使用门槛（no telemetry gate），无封闭花园。甚至包括我们自己的平台。
 - **[多智能体协同编排](/experimental/agent-org)。** 协同多个智能体针对复杂任务进行自组织。
 - **可扩展。** 自定义 [Skills 技能](/extend/skills)、[Sub-agents 子智能体](/extend/subagents)、[MCP](/extend/mcp) 以及跨会话持久化[记忆（Memory）](/extend/memory)。
 - **追求极简与高品质。** 在充满复杂度的生态中，保持极简、高品质与高信任度比以往任何时候都更有价值。
 
-### 工作原理（How it works） {#how-it-works}
+### 工作原理 {#how-it-works}
 
 Ante 采用客户端-守护进程（Client-Daemon）架构。守护进程管理结构化的 Turn 生命周期 — 提示词、工具调用、确认授权、执行控制 — 驱动模型在安全、可预测的闭环中工作。客户端可以是交互式 TUI、无头 CLI、外部进程，或通过 `ante gateway` 接入的消息渠道机器人。
 
@@ -44,7 +44,7 @@ Ante 还可以作为长寿命服务器运行（`ante serve`），外部客户端
 Ante 目前处于 **Preview 预览阶段** 并处于活跃开发中。部分功能和配置可能会发生变化。目前仅支持 **macOS** 和 **Linux**。
 :::
 
-## 下一步（Next steps） {#next-steps}
+## 下一步 {#next-steps}
 
 <CardGroup cols={2}>
   <Card title="快速入门" icon="bolt" href="/start/quickstart">

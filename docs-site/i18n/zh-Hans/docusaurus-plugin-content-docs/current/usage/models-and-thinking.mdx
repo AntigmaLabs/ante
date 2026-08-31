@@ -1,16 +1,16 @@
 ---
-title: 模型选择、提供商与思考深度（Models, Providers & Effort）
+title: 模型选择、提供商与思考深度
 sidebar_label: "模型与思考深度"
 description: "在会话中随时切换模型、切换提供商并动态调节思考深度（Effort）"
 ---
 
-# 模型选择、提供商与思考深度（Models, Providers & Effort）
+# 模型选择、提供商与思考深度
 
 Ante 允许在会话进行中随时无缝切换模型、提供商和思考深度（Effort）—— 完全无需重启会话。两个弹窗面板各司其职：`/models` 用于在当前提供商内细化选择模型和思考深度，而 `/providers` 用于在不同的提供商之间切换。
 
 <img src="/assets/cookbook/providers.gif" alt="使用 /providers 切换提供商、模型与思考深度" style={{width: '100%', borderRadius: '8px', margin: '16px 0'}} />
 
-## 选择模型（Selecting a model） {#selecting-a-model}
+## 选择模型 {#selecting-a-model}
 
 在 TUI 终端中输入 `/models` 即可打开模型选择器面板。面板会列出当前提供商支持的模型（标题展示作用域，如 *Switch Model — Anthropic*）。使用方向键浏览模型，调节下方思考深度滑块，按 Enter 回车确认。
 
@@ -18,7 +18,7 @@ Ante 允许在会话进行中随时无缝切换模型、提供商和思考深度
 
 在选择器中按 `Tab` 键可直接跳转至提供商选择面板。
 
-## 切换提供商（Switching providers） {#switching-providers}
+## 切换提供商 {#switching-providers}
 
 输入 `/providers` 可列出所有提供商及其连接认证状态。在已连接的提供商上按 Enter 即可展开其专属的模型选择面板 —— 包含相同的模型列表与思考深度滑块，且自动默认高亮您上次在该提供商中使用的模型。仅在按 Enter 确认后才正式生效；按 `Esc` 可随时返回提供商列表。在未连接的提供商上按 Enter 将直接触发登录认证流程（参见[模型提供商](/usage/providers#authentication)）。
 

@@ -1,5 +1,5 @@
 ---
-title: 交互式终端用户界面（Interactive TUI）
+title: 交互式终端用户界面（TUI）
 sidebar_label: "TUI 交互界面"
 description: "掌握 Ante 丰富的终端交互界面（TUI）功能与操作技巧"
 ---
@@ -10,13 +10,13 @@ description: "掌握 Ante 丰富的终端交互界面（TUI）功能与操作技
 ante
 ```
 
-## 概览（Overview） {#overview}
+## 概览 {#overview}
 
 Ante 的 TUI 基于 [ratatui](https://ratatui.rs/) 构建，在终端中直接提供现代化的富文本对话界面。采用内联渲染（最多 24 行）并以约 100fps 的防抖帧率渲染，确保极致流畅的交互体验。
 
-## 核心特性（Key features） {#key-features}
+## 核心特性 {#key-features}
 
-### 聊天交互界面（Chat interface） {#chat-interface}
+### 聊天交互界面 {#chat-interface}
 
 主视图显示您与智能体之间的实时对话。在底部输入框中键入提示词并按 Enter 发送。智能体的回复以流式 Markdown 实时呈现。
 
@@ -28,9 +28,9 @@ Markdown 渲染原生支持 LaTeX 数学公式：`$...$`、`$$...$$`、`\(...\)`
 ✻ Thinking… (ctrl+o expand)
 ```
 
-当思考内容正在流式接收时，符号会呈现动态呼吸动画；流式结束后变为静态。如果同一轮次中经历了“思考 → 调用工具 → 再次思考”，则会为每个片段显示对应标记。完整的思考独白可随时在[完整记录视图（Transcript View）](#transcript-view)中实时查看。
+当思考内容正在流式接收时，符号会呈现动态呼吸动画；流式结束后变为静态。如果同一轮次中经历了“思考 → 调用工具 → 再次思考”，则会为每个片段显示对应标记。完整的思考独白可随时在[完整记录视图](#transcript-view)中实时查看。
 
-### 工具审批（Tool approval） {#tool-approval}
+### 工具审批 {#tool-approval}
 
 当智能体尝试调用需要授权的工具（如 `Bash` 或 `Write`）时，界面会弹出交互式审批提示。使用数字键或方向键 + Enter 进行确认：
 
@@ -41,11 +41,11 @@ Markdown 渲染原生支持 LaTeX 数学公式：`$...$`、`$$...$$`、`\(...\)`
 
 在决定前按 `Tab` 键可预览生成的代码 Diff 或请求详细参数。
 
-### 全屏 Diff 代码审查视图（Diff view） {#diff-view}
+### 全屏 Diff 代码审查视图 {#diff-view}
 
 当智能体提议修改文件时，Ante 会切换至全屏 Diff 视图（在终端 Alternate 备用屏幕上渲染）。您可以在批准前逐行审查变动。Diff 视图提供行号槽、全宽增删背景色块以及顶部的 `+N -M` 改动统计。
 
-### 完整记录视图（Transcript view） {#transcript-view}
+### 完整记录视图 {#transcript-view}
 
 按 `Ctrl+O` 打开全屏完整记录视图：展示完整的历史对话记录以及展开的工具调用输出（包含主聊天视图中被截断的长文本）。使用 `j`/`k` 或 `PgUp`/`PgDn` 滚动，使用 `g`/`G` 快速跳转到顶部/底部，按 `Ctrl+O` 或 `q` 退出。
 
@@ -53,7 +53,7 @@ Markdown 渲染原生支持 LaTeX 数学公式：`$...$`、`$$...$$`、`\(...\)`
 
 在执行会话压缩后（通过手动 `/compact` 或[自动压缩](/configuration/preference#settings-file)），主视图显示折叠的 `* Compacted` 标记；完整记录视图则展示模型生成的完整上下文摘要。当 Ante 对过长工具输出进行裁剪而非摘要时，会显示一行通知提示裁剪范围。
 
-### 文本选择与复制（Selecting and copying text） {#selecting-and-copying-text}
+### 文本选择与复制 {#selecting-and-copying-text}
 
 全屏视图（包括完整记录视图、[Diff 视图](#diff-view)和 `/diff` 输出）捕获鼠标滚轮事件，并内置文本选择机制：拖拽选中文本并在松开鼠标时自动复制，底部状态栏会提示 `copied N lines`。双击选中单词（智能包含 `_-./~+@#$%&=:`，确保文件路径或完整 URL 不被截断），三击选中整行。拖拽到可视区域顶部或底部可自动继续滚动选择。
 
@@ -61,19 +61,19 @@ Markdown 渲染原生支持 LaTeX 数学公式：`$...$`、`$$...$$`、`\(...\)`
 
 内联主聊天视图不拦截鼠标，您可以继续使用系统终端自带的原生选择和复制功能。
 
-### 模型与提供商切换（Model and provider selection） {#model-and-provider-selection}
+### 模型与提供商切换 {#model-and-provider-selection}
 
 使用内置选择器在会话中随时切换模型或提供商，无需重启 Ante。
 
-### 主题选择（Theme selection） {#theme-selection}
+### 主题选择 {#theme-selection}
 
 Ante 提供丰富的主题系统，支持在主题弹窗（`/theme` 或 `Ctrl+T`）中随时选择喜欢的外观。
 
-## 斜杠命令（Slash commands） {#slash-commands}
+## 斜杠命令 {#slash-commands}
 
 输入 `/` 即可触发内置命令（如 `/models`、`/resume`、`/compact` 等）。完整命令列表请参见[斜杠命令手册](/usage/slash-commands)。
 
-## 会话消耗统计（Session usage） {#session-usage}
+## 会话消耗统计 {#session-usage}
 
 `/usage` 打开会话消耗面板：按模型细分显示 Token 用量、全会话缓存命中率以及 Turn 和模型调用次数。
 
@@ -90,15 +90,15 @@ Turns: 12 · Model calls: 2
 
 TUI 根据每次响应返回的用量自行统计，因此仅涵盖分发给客户端的数据。未触发用量事件的开销不在此列（如子智能体会话、失败调用、目标判定器）。`/clear` 会重置计数，恢复的会话仅统计回放事件部分。
 
-## 目标导向型会话（Goal-driven sessions） {#goal-driven-sessions}
+## 目标导向型会话 {#goal-driven-sessions}
 
 使用 `/goal <condition>` 开启持续自主闭环工作，直到满足验收条件。详见[目标导向会话](/usage/goal-sessions)。
 
-## 会话恢复（Session resume） {#session-resume}
+## 会话恢复 {#session-resume}
 
 Ante 会自动将所有会话持久化到磁盘中。输入 `/resume` 即可随时恢复历史会话。
 
-### 工作流程（How it works） {#how-it-works}
+### 工作流程 {#how-it-works}
 
 1. 输入 `/resume` 打开会话选择器
 2. 浏览当前工作目录下的历史会话 —— 每条记录显示首条消息、所用模型、消息总数与相对时间
@@ -117,7 +117,7 @@ Ante 会自动将所有会话持久化到磁盘中。输入 `/resume` 即可随�
 也可以在终端命令行中通过 `ante --resume <SESSION_ID>`（或 `-r`）直接恢复会话。TUI 会话退出时会自动打印当前会话 ID。
 :::
 
-### 从 Claude Code 或 Codex 迁移接管（Coming from Claude Code or Codex） {#coming-from-claude-code-or-codex}
+### 从 Claude Code 或 Codex 迁移接管 {#coming-from-claude-code-or-codex}
 
 如果在当前目录中 4 小时内曾运行过 Claude Code 或 Codex 会话，Ante 启动时会显示一行轻量提示，询问是否直接接管继续。该提示在每个项目中仅出现一次，在无头运行中不会显示。
 
@@ -125,9 +125,9 @@ Ante 会自动将所有会话持久化到磁盘中。输入 `/resume` 即可随�
 
 配合 `/import-claude`，还可以将 Claude Code 在当前目录下的项目记忆复制到 Ante 的[项目记忆库](/extend/memory#importing-claude-code-memory)中。已有 Ante 文件绝不会被覆盖。
 
-## 快捷键参考（Keyboard shortcuts） {#keyboard-shortcuts}
+## 快捷键参考 {#keyboard-shortcuts}
 
-### 聊天输入框快捷键（Chat input） {#chat-input}
+### 聊天输入框快捷键 {#chat-input}
 
 | 快捷键 | 功能 |
 |---|---|
@@ -143,7 +143,7 @@ Ante 会自动将所有会话持久化到磁盘中。输入 `/resume` 即可随�
 | `Ctrl+V` | 从系统剪贴板粘贴文本或图片 |
 | `Escape` | 关闭弹窗；无弹窗时中断当前正在执行的轮次 |
 
-### 单行编辑快捷键（Line editing） {#line-editing}
+### 单行编辑快捷键 {#line-editing}
 
 输入框支持标准 Readline 编辑与多级撤销/重做：
 
@@ -162,17 +162,17 @@ Ante 会自动将所有会话持久化到磁盘中。输入 `/resume` 即可随�
 | `Ctrl+Z` | 撤销上一步编辑 |
 | `Alt+Z` | 重做 |
 
-### 全局快捷键（Global shortcuts） {#global-shortcuts}
+### 全局快捷键 {#global-shortcuts}
 
 | 快捷键 | 功能 |
 |---|---|
 | `Ctrl+T` | 打开主题切换弹窗 |
-| `Ctrl+O` | 打开[完整记录视图（Transcript View）](#transcript-view) |
+| `Ctrl+O` | 打开[完整记录视图](#transcript-view) |
 | `Ctrl+E` | 停止正在运行的本地 llama server（离线模式） |
 | `Ctrl+G` | 展开/折叠本地推理引擎实时日志面板（离线模式） |
 | `Ctrl+K` / `Ctrl+J` | 在日志面板展开时向上/向下滚动日志 |
 
-### 全屏 Diff 视图快捷键（Diff view (fullscreen)） {#diff-view-fullscreen}
+### 全屏 Diff 视图快捷键 {#diff-view-fullscreen}
 
 | 快捷键 | 功能 |
 |---|---|
@@ -182,7 +182,7 @@ Ante 会自动将所有会话持久化到磁盘中。输入 `/resume` 即可随�
 | `Home` / `End` | 跳到顶部/底部 |
 | `q` / `Escape` | 关闭 Diff 视图 |
 
-### 工具审批快捷键（Tool approval） {#tool-approval-1}
+### 工具审批快捷键 {#tool-approval-1}
 
 | 快捷键 | 功能 |
 |---|---|
@@ -192,7 +192,7 @@ Ante 会自动将所有会话持久化到磁盘中。输入 `/resume` 即可随�
 | `Esc` | 拒绝本次工具调用 |
 | `Tab` | 展开预览 Diff 或请求详情 |
 
-### 反向搜索快捷键（Reverse search (Ctrl+R mode)） {#reverse-search-ctrlr-mode}
+### 反向搜索快捷键 {#reverse-search-ctrlr-mode}
 
 | 快捷键 | 功能 |
 |---|---|
@@ -201,7 +201,7 @@ Ante 会自动将所有会话持久化到磁盘中。输入 `/resume` 即可随�
 | `Enter` | 采纳匹配项 |
 | `Escape` / `Ctrl+G` | 取消搜索 |
 
-## @ 语法引用文件（@ mentions） {#mentions}
+## @ 语法引用文件 {#mentions}
 
 在输入框中输入 `@` 可直接引用文件或目录，支持实时自动补全：
 
@@ -214,7 +214,7 @@ Ante 会自动将所有会话持久化到磁盘中。输入 `/resume` 即可随�
 直接粘贴多个文件路径时，Ante 会自动为其添加 `@` 前缀。
 :::
 
-## Bash 模式（Bash mode） {#bash-mode}
+## Bash 模式 {#bash-mode}
 
 在输入内容最前面加上 `!` 即可直接作为本地 Shell 命令执行，而不会发送给智能体：
 
@@ -229,7 +229,7 @@ Ante 会自动将所有会话持久化到磁盘中。输入 `/resume` 即可随�
 Bash 模式在本地直接执行，无需权限审批 —— 输入 `!` 即代表授权。这与智能体自主发起的 `Bash` 工具调用不同，后者的执行依然受权限系统约束。单独输入 `!` 会作为普通文本消息发送。交互式程序（编辑器、分页器）无法在此模式下工作，因为 Bash 模式没有终端输入交互。
 :::
 
-## 终端会话管理（Terminal sessions） {#terminal-sessions}
+## 终端会话管理 {#terminal-sessions}
 
 智能体可以通过常驻的命名 tmux 会话（`ante-*`）驱动交互式程序（如本地 Dev Server、REPL、SSH 或其他 CLI 智能体），使用普通的 `tmux` 命令配合内置的 `tmux` 技能进行控制。会话位于 `ante-` 命名空间下，在 Ante 重启后依然保持存活：后续对话可以随时接管之前留下的服务。您拥有会话的完全生命周期所有权 —— 退出 TUI 时不会杀死后台会话。默认的 `terminals` 状态栏条目会在底部展示正在运行的会话。
 
@@ -241,17 +241,17 @@ Bash 模式在本地直接执行，无需权限审批 —— 输入 `!` 即代�
 
 该功能依赖系统已安装 `tmux`。
 
-## 下一轮提示词预测建议（Next-prompt suggestion） {#next-prompt-suggestion}
+## 下一轮提示词预测建议 {#next-prompt-suggestion}
 
 当一轮对话结束且输入框为空时，Ante 会在后台轻量预测可能的下一步提示词，并以半透明虚字展示。按 `Tab` 键即可采纳并填入输入框进行编辑修改；按其他任意键会自动取消该建议。
 
 预测使用最廉价的模型在关键路径之外异步生成，绝不拖慢会话响应速度，且若未能及时生成则静默不产生任何操作。默认开启；可在 `~/.ante/settings.json` 中配置 `"ambient_prompt_suggestion": false` 关闭。
 
-## 动态思考状态语（Spinner thinking phrase） {#spinner-thinking-phrase}
+## 动态思考状态语 {#spinner-thinking-phrase}
 
 在输入较长提示词时，Ante 会在后台预生成与任务相关的简短状态语作为加载动画的标签，替代通用的轮播文字。与提示词建议类似，它在关键路径之外尽力生成，并自动过滤掉具有破坏性或警告色彩的词汇。默认开启；可在 `~/.ante/settings.json` 中配置 `"ambient_thinking_phrase": false` 关闭。
 
-## 加载状态技巧提示（Spinner tips） {#spinner-tips}
+## 加载状态技巧提示 {#spinner-tips}
 
 在智能体工作期间，Ante 会在加载动画下方展示一行功能技巧提示：
 
@@ -264,7 +264,7 @@ Bash 模式在本地直接执行，无需权限审批 —— 输入 `!` 即代�
 
 默认开启；可在 `~/.ante/settings.json` 中配置 `"tips": false` 关闭。展示历史存储在 `~/.ante/tip_history.json` 中 —— 删除该文件可重置轮播状态。
 
-## TUI 模式的 CLI 命令行参数（CLI flags for TUI mode） {#cli-flags-for-tui-mode}
+## TUI 模式的命令行参数 {#cli-flags-for-tui-mode}
 
 ```bash
 ante --model claude-sonnet-5

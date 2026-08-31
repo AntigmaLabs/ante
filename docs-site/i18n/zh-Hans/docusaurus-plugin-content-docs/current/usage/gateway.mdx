@@ -1,12 +1,14 @@
 ---
-title: "网关模式（Gateway Mode）"
+title: "网关模式"
 sidebar_label: "网关模式"
 description: "将 Ante 作为长寿命机器人接入 Slack 或 Discord"
 ---
 
+# 网关模式
+
 网关模式（Gateway mode）允许将 Ante 作为长寿命机器人运行，可从 Slack、Discord 或同时从两者接入访问。每一次对话 —— 频道中的讨论串（thread）或私聊（DM）—— 都会分配到独立的智能体会话，使得多用户和多团队可以并发与 Ante 协作而互不干扰状态。
 
-## 基础用法（Basic usage） {#basic-usage}
+## 基础用法 {#basic-usage}
 
 ```bash
 ante gateway
@@ -14,7 +16,7 @@ ante gateway
 
 此命令将读取 `~/.ante/channels.json`，连接您启用的所有平台，并开始监听消息。
 
-## 配置文件（Configuration） {#configuration}
+## 配置文件 {#configuration}
 
 创建 `~/.ante/channels.json`。您可以仅启用 Slack、仅启用 Discord 或两者同时启用。
 
@@ -36,7 +38,7 @@ ante gateway
 
 以 `env:` 开头的值会在启动时从环境变量中读取，避免将敏感 Token 明文保存在文件中。
 
-### 访问控制（Access control） {#access-control}
+### 访问控制 {#access-control}
 
 `allow_from` 字段决定机器人会响应谁的消息：
 
@@ -46,7 +48,7 @@ ante gateway
 | `["U123", "U456"]` | 仅限列表中的具体用户 ID |
 | *(省略)* | 拒绝所有访问（安全的默认策略） |
 
-## 配置 Slack（Setting up Slack） {#setting-up-slack}
+## 配置 Slack {#setting-up-slack}
 
 1. 访问 [api.slack.com/apps](https://api.slack.com/apps) → **From scratch** 创建应用。
 2. **Settings → Socket Mode**：开启 Socket Mode 并创建一个拥有 `connections:write` 权限的 App-Level Token。复制 `xapp-…` Token —— 作为 `app_token`。
@@ -67,7 +69,7 @@ export SLACK_APP_TOKEN="xapp-..."
 任何时候修改了权限（Scopes）或事件订阅后，必须点击 **Reinstall to Workspace** 重新安装才能生效。
 :::
 
-## 配置 Discord（Setting up Discord） {#setting-up-discord}
+## 配置 Discord {#setting-up-discord}
 
 1. 访问 [discord.com/developers/applications](https://discord.com/developers/applications) → **New Application** 创建应用。
 2. **Bot**：复制 Token —— 作为 `bot_token`。在 **Privileged Gateway Intents** 下开启 **Message Content Intent**（必选）。
@@ -79,7 +81,7 @@ export DISCORD_BOT_TOKEN="..."
 
 **在 Discord 中使用机器人：** 在服务器频道中 `@提及` 机器人，或发送私聊 DM。机器人会通过引用回复你的消息 —— 直接回复机器人的消息即可继续对话。
 
-## 与机器人交互（Talking to the bot） {#talking-to-the-bot}
+## 与机器人交互 {#talking-to-the-bot}
 
 当机器人加入工作区或服务器且网关正在运行后，您可以像与普通机器人一样与其交谈。部分特定回复具有特殊含义。
 
@@ -99,7 +101,7 @@ export DISCORD_BOT_TOKEN="..."
 
 更多关于工具审批流程的说明，请参见[授权与审批](/usage/approvals)。
 
-## 命令行参数参考（CLI reference） {#cli-reference}
+## 命令行参数参考 {#cli-reference}
 
 ```bash
 ante gateway [--config PATH] [--model MODEL] [--provider PROVIDER] [--output-format FORMAT] [--offline-model PATH]
@@ -117,7 +119,7 @@ ante gateway [--config PATH] [--model MODEL] [--provider PROVIDER] [--output-for
 默认配置假定使用本地 llama-server。若需使用云端托管提供商，请显式传入 `--provider` 和 `--model`（例如 `ante gateway --provider anthropic --model claude-sonnet-5`）。
 :::
 
-### 输出格式（Output formats） {#output-formats}
+### 输出格式 {#output-formats}
 
 | 格式 | 显示内容 |
 | --- | --- |
@@ -125,7 +127,7 @@ ante gateway [--config PATH] [--model MODEL] [--provider PROVIDER] [--output-for
 | `human` | 彩色格式化输出所有事件（适用于调试） |
 | `json` | 逐行输出 JSON Lines 格式的所有事件（适用于通过管道传递给其他工具） |
 
-## 常见问题排查（Troubleshooting） {#troubleshooting}
+## 常见问题排查 {#troubleshooting}
 
 **Slack 提示："Sending messages to this app has been turned off"**
 在 **App Home** 下启用 Messages Tab 并允许用户发送消息，随后重新点击 Reinstall to Workspace。

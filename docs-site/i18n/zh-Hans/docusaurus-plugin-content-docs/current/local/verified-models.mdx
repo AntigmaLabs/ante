@@ -1,5 +1,5 @@
 ---
-title: 推荐验证模型（Verified Models）
+title: 推荐验证模型
 sidebar_label: "推荐验证模型"
 description: "经过 Ante 严格测试与基准评测的精选本地 GGUF 模型列表"
 ---
@@ -11,7 +11,7 @@ description: "经过 Ante 严格测试与基准评测的精选本地 GGUF 模型
 
 随着基准评测运行完成，模型会从 Verified 逐步升级为 Evaled。
 
-## 当前推荐模型列表（Current list） {#current-list}
+## 当前推荐模型列表 {#current-list}
 
 | 模型 | 量化格式 | 下载大小 | 最大上下文 | 评测状态 |
 |---|---|---|---|---|
@@ -30,7 +30,7 @@ description: "经过 Ante 严格测试与基准评测的精选本地 GGUF 模型
 
 迄今为止的一项完整评测：Qwen3.6 27B 在 89 个 Terminal-Bench 2.1 任务（共 445 次 Trial）中取得了 **56.2%** 的准确率 —— 单个 17 GB 的本地模型在我们用于前沿模型的同一基准测试上展现出扎实实力。
 
-## 自定义添加验证模型（Add your own） {#add-your-own}
+## 自定义添加验证模型 {#add-your-own}
 
 Ante 在启动时会自动将 `~/.ante/verified_models.json` 合并到内置推荐列表中。`filename` 匹配内置条目的条目将覆盖内置预设；新文件名会自动追加。
 
@@ -46,7 +46,7 @@ Ante 在启动时会自动将 `~/.ante/verified_models.json` 合并到内置推�
       "kv_cache_bytes_per_token": 131072,
       "support_vision": false
     }
-  ]
+  }
 }
 ```
 

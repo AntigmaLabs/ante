@@ -1,12 +1,12 @@
 ---
-title: "智能体组织架构（Agent Organization，实验性）"
+title: "智能体组织架构（实验性）"
 sidebar_label: "智能体组织"
 description: "用于协同编排多 AI 智能体的多智能体架构模式"
 ---
 
 Ante 支持多种组织智能体协同工作的架构模式。每种架构模式都在自主性、协调开销与输出质量之间进行了不同的权衡取舍。
 
-## 独立并行模式（Independent） {#independent}
+## 独立并行模式 {#independent}
 
 智能体针对同一问题无交互地并行工作。最终由聚合器（Aggregator）统一汇总提炼结论。
 
@@ -35,7 +35,7 @@ flowchart TB
   class Agg agg;
 ```
 
-## 去中心化协同模式（Decentralized） {#decentralized}
+## 去中心化协同模式 {#decentralized}
 
 智能体分轮次并行运行，读取其他智能体前序轮次的提案并提交改进意见。在固定轮次后，无需中心协调者即可自主形成共识。
 
@@ -74,7 +74,7 @@ flowchart TB
   class Stop decision;
 ```
 
-## 中心化迭代模式（Centralized Iterative） {#centralized-iterative}
+## 中心化迭代模式 {#centralized-iterative}
 
 由中心编排者（Orchestrator）拆解问题、并行派发智能体、评估执行结果，并决定继续微调还是完成输出。
 
@@ -119,7 +119,7 @@ flowchart TB
   class Stop decision;
 ```
 
-## 混合迭代模式（Hybrid Iterative） {#hybrid-iterative}
+## 混合迭代模式 {#hybrid-iterative}
 
 将中心化编排与去中心化同行互评相结合。编排者负责规划并分派智能体，随后智能体在同行轮次中相互润色工作成果，最后由编排者进行质量评估。
 
@@ -178,11 +178,11 @@ flowchart TB
   class Stop decision;
 ```
 
-## 选择架构模式（Choosing an architecture） {#choosing-an-architecture}
+## 选择架构模式 {#choosing-an-architecture}
 
 | 架构模式 | 协调机制 | 迭代方式 | 适用场景 |
 |---|---|---|---|
-| **独立并行（Independent）** | 无 | 单轮直出 | 需要多角度独立见解且无交互开销 |
-| **去中心化（Decentralized）** | 点对点 Peer-to-peer | 固定轮次 | 智能体在无中心权威下自组织形成共识 |
-| **中心化迭代（Centralized Iterative）** | 编排者驱动 | 质量关卡把关 | 具备评估检查点的结构化问题拆解与迭代 |
-| **混合迭代（Hybrid Iterative）** | 编排者 + 同行互评 | 质量关卡把关 | 兼顾自顶向下规划与自底向上精细同行评审 |
+| **独立并行** | 无 | 单轮直出 | 需要多角度独立见解且无交互开销 |
+| **去中心化** | 点对点 Peer-to-peer | 固定轮次 | 智能体在无中心权威下自组织形成共识 |
+| **中心化迭代** | 编排者驱动 | 质量关卡把关 | 具备评估检查点的结构化问题拆解与迭代 |
+| **混合迭代** | 编排者 + 同行互评 | 质量关卡把关 | 兼顾自顶向下规划与自底向上精细同行评审 |

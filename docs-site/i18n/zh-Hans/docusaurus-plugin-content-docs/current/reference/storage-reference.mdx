@@ -1,12 +1,12 @@
 ---
-title: "存储与目录结构参考手册（Storage Reference）"
+title: "存储与目录结构参考手册"
 sidebar_label: "存储与目录"
 description: "Ante 在本地文件系统中读写配置与状态的存储目录清单"
 ---
 
 Ante 将配置与状态持久化保存在本地文件系统中。本页面为 Ante 读取或写入的每个文件系统位置提供完整参考。
 
-## 目录位置（Locations） {#locations}
+## 目录位置 {#locations}
 
 | 路径位置 | 用途说明 |
 |---|---|
@@ -107,7 +107,7 @@ Ante 将配置与状态持久化保存在本地文件系统中。本页面为 An
 
 使用指南与优先级规则请参阅 [AGENTS.md](/extend/agents-md)。
 
-## 目录结构总览（Layout） {#layout}
+## 目录结构总览 {#layout}
 
 ### 用户级目录（`~/.ante/`） {#user-level-ante}
 
@@ -145,7 +145,7 @@ Ante 将配置与状态持久化保存在本地文件系统中。本页面为 An
 └── llama.cpp/          # 托管的本地推理引擎
 ```
 
-### 项目级目录（Project-local） {#project-local}
+### 项目级目录 {#project-local}
 
 ```
 AGENTS.md               # 项目行为指引规范
@@ -163,7 +163,7 @@ AGENTS.md               # 项目行为指引规范
 └── agents/             # 项目专属子智能体（Claude Code 兼容）
 ```
 
-## 相关章节（Related） {#related}
+## 相关章节 {#related}
 
 - [偏好设置](/configuration/preference) — 完整 `settings.json` 参考与环境变量列表
 - [目录参考手册](/reference/catalog-reference) — `catalog.json` Schema、内置提供商及模型 ID

@@ -1,26 +1,26 @@
 ---
-title: "持久化记忆系统（Memory）"
+title: "持久化记忆系统"
 sidebar_label: "持久化记忆"
 description: "跨对话会话累积并传递上下文经验的自动持久化记忆系统"
 ---
 
-# 持久化记忆系统（Memory）
+# 持久化记忆系统
 
 Ante 拥有持久化记忆机制，使智能体能够跨会话沉淀经验与知识。关键认知、架构模式和经验教训会保存在记忆文件中，并在未来的会话启动时自动注入系统提示词。
 
-## 工作机制（How it works） {#how-it-works}
+## 工作机制 {#how-it-works}
 
 每个项目在 `~/.ante/projects/<project-id>/memory/` 拥有独立的记忆目录（`<project-id>` 为项目绝对路径的规范化清理形式）。核心文件为 `MEMORY.md` —— 其内容会在每次会话开始时注入系统提示词。
 
 自动记忆在交互式 TUI 中默认开启，在无头 `-p` 运行中默认关闭。可通过 `--enable-auto-memory` 显式开启无头模式记忆，或通过 `--disable-auto-memory` 为 TUI 会话关闭记忆。若要持久化保存，请在 [`settings.json`](/configuration/preference#settings-file) 中配置 `auto_memory`。
 
-### 自动化行为（Automatic behavior） {#automatic-behavior}
+### 自动化行为 {#automatic-behavior}
 
 智能体在项目工作过程中会自动：
 
-1. **查阅（Consults）** 已有记忆文件以复用此前探索出的经验
-2. **记录（Records）** 遇到的常见错误或实用模式
-3. **更新（Updates）** 或清理已过时或被证伪的历史记忆
+1. **查阅** 已有记忆文件以复用此前探索出的经验
+2. **记录** 遇到的常见错误或实用模式
+3. **更新** 或清理已过时或被证伪的历史记忆
 
 ### MEMORY.md 主记忆文件 {#memorymd}
 
@@ -38,7 +38,7 @@ Ante 拥有持久化记忆机制，使智能体能够跨会话沉淀经验与知
 - 鉴权模块正在进行重构 (见 Issue #123)
 ```
 
-### 主题文件（Topic files） {#topic-files}
+### 主题文件 {#topic-files}
 
 对于详细记录，可创建单独文件并在 `MEMORY.md` 中引用它们：
 
@@ -50,7 +50,7 @@ memory/
 └── architecture.md     # 架构设计决策
 ```
 
-## 记忆类型（Memory types） {#memory-types}
+## 记忆类型 {#memory-types}
 
 开启自动记忆后，智能体会保存带有**结构化类型（typed）**的记忆 —— 每个主题文件带有 `name`、`description` 和 `type` Frontmatter 元数据，方便未来会话判断相关性。包含四种类型：
 
@@ -78,23 +78,23 @@ type: feedback
 
 智能体**绝不会**保存敏感密钥、进行中的临时任务状态，或本就可直接从代码库中重新读取的常规信息（代码结构、文件路径、代码规范 —— 这些应归入 `AGENTS.md`）。唤起的记忆被视为反映过去时刻的背景上下文，因此智能体在采取行动前会重新核实记忆中提及的任何文件、参数或函数。
 
-## 指导原则（Guidelines） {#guidelines}
+## 指导原则 {#guidelines}
 
 记忆系统遵循以下设计原则：
 
-- **精炼（Concise）** — `MEMORY.md` 在 200 行后会被截断，因此请保持精简
-- **按语义组织（Semantic）** — 按主题分类，而非按时间顺序流水账
-- **准确有效（Accurate）** — 及时更新或清理过时信息
-- **具备可操作性（Actionable）** — 记录哪些有效、哪些无效以及原因
+- **精炼** — `MEMORY.md` 在 200 行后会被截断，因此请保持精简
+- **按语义组织** — 按主题分类，而非按时间顺序流水账
+- **准确有效** — 及时更新或清理过时信息
+- **具备可操作性** — 记录哪些有效、哪些无效以及原因
 
-## 导入 Claude Code 历史记忆（Importing Claude Code memory） {#importing-claude-code-memory}
+## 导入 Claude Code 历史记忆 {#importing-claude-code-memory}
 
 运行 `/import-claude` 可将当前目录下 Claude Code 的项目记忆（`~/.claude/projects/<project-dir>/memory/` 下的顶层 `.md` 文件）自动复制导入至 Ante 的项目记忆库中。已有 Ante 文件绝不会被覆盖，因此重复运行属于安全的无操作（no-op）。命令会输出哪些文件已导入、哪些文件因已存在而跳过。
 
-## 记忆按项目隔离（Memory is per-project） {#memory-is-per-project}
+## 记忆按项目隔离 {#memory-is-per-project}
 
 记忆严格按项目目录划分作用域。不同项目拥有独立的记忆目录。这意味着智能体在 React 前端项目中积累的知识不会干扰其在 Rust 后端项目中的认知。
 
-## 手动编辑记忆（Manual editing） {#manual-editing}
+## 手动编辑记忆 {#manual-editing}
 
 您可以直接手动编辑记忆文件 —— 它们是普通的 Markdown 文件。智能体在会话中也可以通过 `Write` 和 `Edit` 工具更新它们。

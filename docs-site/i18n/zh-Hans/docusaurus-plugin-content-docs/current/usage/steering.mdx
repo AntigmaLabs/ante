@@ -1,14 +1,14 @@
 ---
-title: 中断与实时引导（Interrupting & Steering）
+title: 中断与实时引导
 sidebar_label: "实时引导"
 description: "在智能体生成过程中及时调整方向，节省时间与 Token 开销"
 ---
 
-# 中断与实时引导（Interrupting & Steering）
+# 中断与实时引导
 
 无需等待智能体在错误的方向上完成整轮执行。Ante 支持在执行过程中随时中断并重新定向。
 
-## 中断执行（Interrupting） {#interrupting}
+## 中断执行 {#interrupting}
 
 在智能体生成内容期间按 `Ctrl+C` 可立即终止当前 Turn。在没有弹出菜单时按 `Escape` 同样可以中断。智能体会完整保留截至该时刻的所有上下文，方便您直接发送后续消息纠正方向 —— 无需从头重新开始。
 
@@ -16,7 +16,7 @@ description: "在智能体生成过程中及时调整方向，节省时间与 To
 
 在及早发现智能体出现偏差时及时中断，能显著节省开发时间并减少 Token 消耗。
 
-## 不中断执行的实时引导（Steering without interrupting） {#steering-without-interrupting}
+## 不中断执行的实时引导 {#steering-without-interrupting}
 
 您无需强行停止当前轮次也可以调整其方向。在智能体工作期间键入消息并按 `Enter` —— 消息不会发起新轮次，而是处于**排队（queued）**状态。随后：
 
@@ -27,7 +27,7 @@ description: "在智能体生成过程中及时调整方向，节省时间与 To
 
 实时引导可以在不破坏智能体执行连贯性的同时微调方向，特别适合在思路正确但遗漏细节时（如“顺便更新对应的测试”、“复用现有的 helper 函数”）提供补充。
 
-## 历史提示词（Command history） {#command-history}
+## 历史提示词 {#command-history}
 
 在输入区按键盘 `Up`（向上方向键）可以循环浏览之前的提示词，便于在中断后快速重新发送或微调。
 

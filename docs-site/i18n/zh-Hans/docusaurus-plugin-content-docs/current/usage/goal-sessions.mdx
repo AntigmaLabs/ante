@@ -1,10 +1,10 @@
 ---
-title: 目标导向型会话（Goal-Driven Sessions）
+title: 目标导向型会话
 sidebar_label: "目标导向会话"
 description: "设定明确的验收成功条件，让 Ante 持续自主迭代直至达成目标"
 ---
 
-# 目标导向型会话（Goal-Driven Sessions）
+# 目标导向型会话
 
 当面对超出单次提示词即可完成的复杂任务时，使用 `/goal`。设定一个具体的成功条件，Ante 将持续自主推进会话，直到该条件完全满足：
 
@@ -12,7 +12,7 @@ description: "设定明确的验收成功条件，让 Ante 持续自主迭代直
 /goal all tests pass and the docs build succeeds
 ```
 
-## 闭环运作机制（How the loop works） {#how-the-loop-works}
+## 闭环运作机制 {#how-the-loop-works}
 
 Ante 开始或持续推进任务，并在每一轮 Turn 完成后评估当前进展。如果目标尚未达成，它会自动发起携带评估器反馈的下一轮 Turn，智能体继续进行修正和推进。
 
@@ -25,7 +25,7 @@ Ante 开始或持续推进任务，并在每一轮 Turn 完成后评估当前进
 
 内置的最大迭代轮次上限也会终止循环，防止会话失控。
 
-## 管理目标（Managing the goal） {#managing-the-goal}
+## 管理目标 {#managing-the-goal}
 
 | 指令 | 效果 |
 |---|---|
@@ -33,7 +33,7 @@ Ante 开始或持续推进任务，并在每一轮 Turn 完成后评估当前进
 | `/goal` | 查看当前目标的执行状态 |
 | `/goal clear` | 清除目标并退出循环 |
 
-## 编写高质量的验收条件（Writing good conditions） {#writing-good-conditions}
+## 编写高质量的验收条件 {#writing-good-conditions}
 
 评估器的准确度取决于给出的成功条件是否具体。尽量使用具体且可客观检验的描述：
 
@@ -43,13 +43,13 @@ Ante 开始或持续推进任务，并在每一轮 Turn 完成后评估当前进
 
 模糊的条件会迫使评估器进行猜测，可能导致循环过早停止或无法收敛。
 
-## 无人值守自动化运行（Running unattended） {#running-unattended}
+## 无人值守自动化运行 {#running-unattended}
 
 当您离开终端时，目标会话能发挥最大价值。运行前建议提前配置两项：
 
 - [授权审批](/usage/approvals) — 提前配置好智能体所需的工具执行权限，否则循环在遇到首个未授权命令时会暂停等待人工输入。
 - [会话恢复](/usage/tui#session-resume) — 所有会话均持久化保存在磁盘上，即使关闭终端，也可以随时通过 `/resume` 重新接管并继续任务。
 
-## 编程方式调用（Programmatic use） {#programmatic-use}
+## 编程方式调用 {#programmatic-use}
 
 目标循环是 Ante 通信协议的原生组成部分：`Op::Goal` 支持设置、清除和查询状态，[服务模式](/usage/serve) 下的外部客户端可以与 TUI 一样以编程方式驱动目标循环。

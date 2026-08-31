@@ -1,10 +1,10 @@
 ---
-title: "资源占用对比（Resource Footprint）"
+title: "资源占用对比"
 sidebar_label: "资源占用对比"
 description: "在 Docker 中对 20 个并行任务进行实测的资源占用数据 — Ante vs Claude Code vs Opencode"
 ---
 
-# 资源占用对比（Resource Footprint）
+# 资源占用对比
 
 大规模并发只有在单个智能体足够轻量、低开销时才具有实际可行性。为了量化这一点，我们在相同的约束条件下使用 Docker 分别在 Ante、Claude Code 和 Opencode 上并行运行了 20 个相同任务，并全程记录了 CPU、内存与磁盘占用情况。
 
@@ -14,7 +14,7 @@ description: "在 Docker 中对 20 个并行任务进行实测的资源占用数
 
 完整测试数据如下。
 
-## 耗时概览（Overview） {#overview}
+## 耗时概览 {#overview}
 
 | 智能体 | 耗时 Wall Time (秒) |
 |-------|--------------|
@@ -22,7 +22,7 @@ description: "在 Docker 中对 20 个并行任务进行实测的资源占用数
 | **Claude** | 627 |
 | **Opencode** | 1076 |
 
-## CPU 使用率（CPU Usage (%)） {#cpu-usage-}
+## CPU 使用率（%） {#cpu-usage-}
 
 | 智能体 | 峰值 Peak | 平均 Avg | P95 | P99 |
 |-------|------|-----|-----|-----|
@@ -30,7 +30,7 @@ description: "在 Docker 中对 20 个并行任务进行实测的资源占用数
 | **Claude** | 89.5 | 12.1 | 31.0 | 43.4 |
 | **Opencode** | 90.8 | 3.8 | 27.1 | 62.3 |
 
-## 内存占用（Memory Usage (MiB)） {#memory-usage-mib}
+## 内存占用（MiB） {#memory-usage-mib}
 
 | 智能体 | 峰值 Peak | 平均 Avg | P95 | P99 |
 |-------|------|-----|-----|-----|
@@ -38,7 +38,7 @@ description: "在 Docker 中对 20 个并行任务进行实测的资源占用数
 | **Claude** | 13877 | 3685 | 8927 | 9535 |
 | **Opencode** | 12944 | 2077 | 11266 | 12852 |
 
-## 磁盘占用（Disk Usage (MiB)） {#disk-usage-mib}
+## 磁盘占用（MiB） {#disk-usage-mib}
 
 | 智能体 | 峰值 Peak | 平均 Avg | P95 | P99 |
 |-------|------|-----|-----|-----|
@@ -46,7 +46,7 @@ description: "在 Docker 中对 20 个并行任务进行实测的资源占用数
 | **Claude** | 22467 | 4304 | 10128 | 10193 |
 | **Opencode** | 59689 | 6046 | 29108 | 34744 |
 
-## 磁盘读取速率（Disk Read Rate (MB/s)） {#disk-read-rate-mbs}
+## 磁盘读取速率（MB/s） {#disk-read-rate-mbs}
 
 | 智能体 | 峰值 Peak | P95 | P99 |
 |-------|------|-----|-----|
@@ -54,7 +54,7 @@ description: "在 Docker 中对 20 个并行任务进行实测的资源占用数
 | **Claude** | 263.9 | 10.4 | 101.9 |
 | **Opencode** | 284.1 | 0.1 | 10.6 |
 
-## 磁盘写入速率（Disk Write Rate (MB/s)） {#disk-write-rate-mbs}
+## 磁盘写入速率（MB/s） {#disk-write-rate-mbs}
 
 | 智能体 | 峰值 Peak | P95 | P99 |
 |-------|------|-----|-----|
@@ -62,7 +62,7 @@ description: "在 Docker 中对 20 个并行任务进行实测的资源占用数
 | **Claude** | 302.3 | 26.6 | 113.0 |
 | **Opencode** | 302.9 | 14.5 | 296.6 |
 
-## 磁盘总 I/O 量（Total Disk I/O (MB)） {#total-disk-io-mb}
+## 磁盘总 I/O 量（MB） {#total-disk-io-mb}
 
 | 智能体 | 总读取 Total Read | 总写入 Total Write |
 |-------|------------|-------------|

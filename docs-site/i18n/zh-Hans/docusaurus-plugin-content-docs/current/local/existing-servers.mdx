@@ -1,16 +1,16 @@
 ---
-title: 接入现有服务（Existing Servers）
+title: 接入现有服务
 sidebar_label: "接入现有服务"
 description: "将 Ante 离线模式连接至您已在运行的 llama.cpp 服务端"
 ---
 
-# 接入现有服务（Existing Servers）
+# 接入现有服务
 
 当您已经在外部自行运行 `llama-server`（如在 Docker 中、使用自定义 llama.cpp 构建、局域网中的另一台机器，或使用 Ante 未直接管理的参数分支）时，可直接将 Ante 连接到现有服务端。
 
 Ante 依然会将该端点视为 `local` 提供商，因此正常的智能体循环、模型切换与提供商行为与托管离线模型完全一致。Ante 不拥有外部连接的服务端，也绝不会自动关闭它们。
 
-## 自动检测本机服务（Auto-detect localhost servers） {#auto-detect-localhost-servers}
+## 自动检测本机服务 {#auto-detect-localhost-servers}
 
 打开 TUI 并执行：
 
@@ -22,7 +22,7 @@ Ante 会自动扫描 localhost 端口 **8080-8179** 中兼容 llama.cpp 的服�
 
 即使尚未安装 Ante 的固定 llama.cpp 引擎，该扫描也能正常运行。若检测到运行中的服务端，选中并按 `Enter` 即可直接附加连接。
 
-## 手动附加连接（Attach manually） {#attach-manually}
+## 手动附加连接 {#attach-manually}
 
 在 `/offline-mode` 界面中，按 `Ctrl+A` 并输入端点地址：
 
@@ -44,11 +44,11 @@ llama-box.local:8080
 
 该弹窗目前不支持带方括号的 IPv6 端点输入。若 Ante 探测 `/health` 和 `/v1/models` 失败，会在离线模式对话框中显示连接错误。
 
-## 模型加载期间接入（Attaching while the model loads） {#attaching-while-the-model-loads}
+## 模型加载期间接入 {#attaching-while-the-model-loads}
 
 `llama-server` 在模型加载的整个过程中其 `/health` 接口均会响应 `503` —— 小模型耗时数秒，大模型耗时数分钟。在该时间窗口内发起连接完全正常：Ante 能识别加载中状态，保持等待，并在服务端就绪后自动完成接入。若服务端在加载过程中崩溃，Ante 会报错提示，等待上限为 10 分钟。这在通过 Docker 容器部署时尤为重要（容器的 "healthy" 状态可能在模型完全加载前便已出现）。
 
-## Docker 启动示例（Docker example） {#docker-example}
+## Docker 启动示例 {#docker-example}
 
 以下命令启动官方 llama.cpp 服务端镜像并在 `8080` 端口向 Ante 暴露服务：
 
@@ -66,7 +66,7 @@ docker run --rm \
 
 对于 CUDA 构建，请使用匹配的 llama.cpp 镜像（如 `ghcr.io/ggml-org/llama.cpp:server-cuda`），并添加适合您机器的 Docker GPU 运行时参数。
 
-## 断开连接行为（Detach behavior） {#detach-behavior}
+## 断开连接行为 {#detach-behavior}
 
 当 Ante 自行启动 `llama-server` 时，Ante 拥有该进程并在停止时关闭它。当 Ante 接入外部服务端时，停止离线模式仅会与该端点断开连接（Detach）；外部服务端保持继续运行。
 
@@ -74,6 +74,6 @@ docker run --rm \
 
 连接至非回环主机时，会将您的对话数据发送至该主机。请仅连接您明确运维或信任的远程端点。
 
-## 相关环境变量（Related environment variables） {#related-environment-variables}
+## 相关环境变量 {#related-environment-variables}
 
 当 Ante 启动托管离线模型时，`ANTE_OFFLINE_CONTEXT` 用于修改默认上下文窗口上限。它不会改变您在外部启动的服务端。

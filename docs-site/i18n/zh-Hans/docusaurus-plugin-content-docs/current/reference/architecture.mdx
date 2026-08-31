@@ -1,16 +1,16 @@
 ---
-title: "系统架构设计（Architecture）"
+title: "系统架构设计"
 sidebar_label: "系统架构"
 description: "Ante 的客户端-守护进程架构、模型提供商系统与工具框架"
 ---
 
-## 概览（Overview） {#overview}
+## 概览 {#overview}
 
 Ante 采用清晰的职责分离设计，遵循客户端-守护进程（Client-Daemon）架构。展示层与核心执行引擎通过消息传递进行解耦，使得切换终端前端（TUI、无头 CLI）时无需变动底层核心引擎。
 
 <img src="/assets/architecture.png" alt="Architecture diagram" />
 
-## 客户端与守护进程划分（Client-Daemon split） {#client-daemon-split}
+## 客户端与守护进程划分 {#client-daemon-split}
 
 ```
 ┌────────────────┐          ┌─────────────────────────────┐
@@ -26,7 +26,7 @@ Ante 采用清晰的职责分离设计，遵循客户端-守护进程（Client-D
 - **Daemon（守护进程）** — 核心引擎。接收操作指令、管理会话、分发大语言模型请求、调度工具安全执行并分发事件。
 - **Transport（传输层）** — 进程内客户端（TUI、无头模式）使用 Tokio 异步有界通道；外部客户端使用基于 stdin/stdout 的 JSONL 协议（`ante serve --stdio`）或 WebSocket 网络协议（`ante serve --ws`）。通过消息 ID 实现跨进程边界的链路追踪。
 
-## 架构演进：从以会话为中心到以智能体为中心（Session-centric to Agent-centric） {#architecture-direction-session-centric-to-agent-centric}
+## 架构演进：从以会话为中心到以智能体为中心 {#architecture-direction-session-centric-to-agent-centric}
 
 Ante 最初采用以会话为中心的运行时，其中 `Session` 是核心执行单元。我们正迈向以智能体为中心（Agent-centric）的现代运行时：长寿命的 `Agent` 实例作为执行的所有者并通过消息通信。
 
@@ -65,7 +65,7 @@ flowchart LR
 
 在此方向下，`Session` 依然重要，但转变为承载用户交互历史、持久化快照以及协议级协调的容器，而非唯一的执行单元。
 
-## 大语言模型提供商（LLM providers） {#llm-providers}
+## 大语言模型提供商 {#llm-providers}
 
 Ante 具备跨提供商无关性。每个提供商均实现了发送提示词与接收流式响应的通用接口。流式传输过程中的偶发网络闪断会在轮次内自动重连；若流式调用在 5 分钟内未产生任何可用事件，将因超时报错而非无限挂起。该超时窗口支持按提供商配置 —— 可通过 [`stream_idle_timeout_secs`](/reference/catalog-reference#provider-fields) 覆盖。
 
@@ -91,12 +91,12 @@ Ante 具备跨提供商无关性。每个提供商均实现了发送提示词与
 
 提供商在会话初始化时从目录中解析。用户可以通过 CLI 参数（`--provider`、`--model`）或配置文件进行覆盖。
 
-### 身份认证（Authentication） {#authentication}
+### 身份认证 {#authentication}
 
 - **API 密钥** — 通过环境变量配置（`ANTHROPIC_API_KEY`、`OPENAI_API_KEY`、`GEMINI_API_KEY`、`XAI_API_KEY`、`OPENROUTER_API_KEY`、`OPENAI_COMPATIBLE_API_KEY`、`ZAI_API_KEY`、`DEEPSEEK_API_KEY`、`ALI_CODING_PLAN_API_KEY`、`VERTEX_GEMINI_API_KEY`、`ANTIX_API_KEY`）
 - **OAuth** — Anthropic、OpenAI 与 Antix 支持交互式 OAuth 登录，在 TUI 中直接完成向导
 
-## 工具系统（Tool system） {#tool-system}
+## 工具系统 {#tool-system}
 
 工具是智能体的双手。每个工具均实现 `Tool` trait：
 
@@ -108,7 +108,7 @@ pub trait Tool: Send + Sync {
 }
 ```
 
-### 内置工具清单（Built-in tools） {#built-in-tools}
+### 内置工具清单 {#built-in-tools}
 
 | 工具 | 分类 | 默认需审批 | 说明 |
 |---|---|---|---|
@@ -124,7 +124,7 @@ pub trait Tool: Send + Sync {
 | `WebSearch` | 内置核心 | 是 | 检索互联网（在支持网络搜索的提供商上自动启用） |
 | `ViewImage` | 内置核心 | 否 | 读取并分析图片（可选工具） |
 
-### 工具过滤机制（Tool filtering） {#tool-filtering}
+### 工具过滤机制 {#tool-filtering}
 
 工具可在会话级别进行过滤控制：
 
@@ -135,7 +135,7 @@ pub trait Tool: Send + Sync {
 - 工具名称匹配不区分大小写
 - 动态注册的工具（MCP 服务器）同样受此约束，无法绕过过滤机制
 
-## 会话生命周期（Session lifecycle） {#session-lifecycle}
+## 会话生命周期 {#session-lifecycle}
 
 1. 客户端发送 `Op::StartSession`（包含模型、提供商与策略配置）
 2. 守护进程解析提供商、验证认证状态，并发现技能与子智能体

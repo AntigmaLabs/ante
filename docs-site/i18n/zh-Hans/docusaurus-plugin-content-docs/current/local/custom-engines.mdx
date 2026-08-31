@@ -1,14 +1,14 @@
 ---
-title: 自定义推理引擎（Custom Engines）
+title: 自定义推理引擎
 sidebar_label: "自定义引擎"
 description: "使用自编译的 llama.cpp 构建版本、微调启动参数或将 Ante 连接到已有服务端"
 ---
 
-# 自定义推理引擎（Custom Engines）
+# 自定义推理引擎
 
 [离线模式](/local/offline)支持开箱即用，由 Ante 自动安装并监管引擎。该体系的每一层都可以被自由替换：二进制文件、启动参数或服务本身。
 
-## 使用自编译的 llama.cpp 构建（Use your own llama.cpp build） {#use-your-own-llamacpp-build}
+## 使用自编译的 llama.cpp 构建 {#use-your-own-llamacpp-build}
 
 Ante 解析引擎二进制的优先级如下：
 
@@ -35,7 +35,7 @@ Ante 解析引擎二进制的优先级如下：
 Ante 通常会在安装期间自行写入这些字段。若将其指向自定义构建版本，版本检查可能会提示“升级”回固定版本 —— 拒绝提示即可保留自定义构建。
 :::
 
-## 调优服务启动命令（Tune the launch command） {#tune-the-launch-command}
+## 调优服务启动命令 {#tune-the-launch-command}
 
 可以通过以下两处旋钮定制启动参数：
 
@@ -62,12 +62,12 @@ Ante 通常会在安装期间自行写入这些字段。若将其指向自定义
 }
 ```
 
-## 连接到运行中的服务端（Attach to a running server） {#attach-to-a-running-server}
+## 连接到运行中的服务端 {#attach-to-a-running-server}
 
 您可以完全独立运行 `llama-server` —— 任意构建版本、任意参数 —— 并让 Ante 作为客户端连接。Ante 会自动扫描本地端口 **8080-8179**，也支持在 `/offline-mode` 中按 `Ctrl+A` 手动输入 `host:port` 接入。
 
 关于端点输入格式、Docker 示例、断开行为及远程主机数据流注意事项，请参见[接入现有服务](/local/existing-servers)。
 
-## 使用其他完全不同的推理框架（A different engine entirely） {#a-different-engine-entirely}
+## 使用其他完全不同的推理框架 {#a-different-engine-entirely}
 
 任何提供兼容 OpenAI 接口的端点（Ollama、vLLM、LM Studio、局域网 GPU 服务器等），均可通过标准目录提供商机制接入 Ante。该方式提供常规提供商机制（模型选择器、通信协议）；本页中的生命周期管理、内存预估与加载进度展示专属于托管的 llama.cpp 路径。参见[添加本地提供商](/usage/providers#add-a-local-provider-with-no-auth)。

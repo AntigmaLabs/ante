@@ -1,5 +1,5 @@
 ---
-title: "智能体原生推理（Agent-Native Inference，实验性）"
+title: "智能体原生推理（实验性）"
 sidebar_label: "智能体原生推理"
 description: "Ante 本地模型的演进方向：直接嵌入在智能体运行时内部的推理引擎"
 ---
@@ -10,7 +10,7 @@ description: "Ante 本地模型的演进方向：直接嵌入在智能体运行�
 本页面描述的是技术演进方向，而非现已正式发布的特性。此处提及的内容尚未包含在任何已发布的 Ante 构建版本中。
 :::
 
-## 为什么需要进程内原生推理（Why in-process） {#why-in-process}
+## 为什么需要进程内原生推理 {#why-in-process}
 
 外部推理服务单次只能接收一个独立的 HTTP 请求。而嵌入在智能体运行时内部的推理引擎能够感知整个 Agent 闭环，从而释放通用服务无法实现的深度优化：
 
@@ -20,7 +20,7 @@ description: "Ante 本地模型的演进方向：直接嵌入在智能体运行�
 
 我们为之努力的目标：让本地模型成为智能体工作的首选底座，凭借其实际表现与能力脱颖而出，而非仅仅因成本和隐私妥协而容忍。与所有其他特性一样，这一宣称也将附带[公开可检验的数据](/benchmarks/eval)。
 
-## 探索原型：nanochat-rs（A working sketch: nanochat-rs） {#a-working-sketch-nanochat-rs}
+## 探索原型：nanochat-rs {#a-working-sketch-nanochat-rs}
 
 [nanochat-rs](https://github.com/AntigmaLabs/nanochat-rs) 是我们公开发布的实验性底层原型：基于纯 Rust 实现的轻量 GPT 架构推理核心，基于 [candle](https://github.com/huggingface/candle) 构建，支持 Hugging Face 模型并保持极简代码面。它在设计上被定位为一个**概念验证的玩具实现（toy by design）** —— 它是 [karpathy/nanochat](https://github.com/karpathy/nanochat) 的 Rust 重写版，**侧重于代码清晰度而非极致性能** —— 但它展示了未来架构的形态：原生推理与调用它的业务代码运行在同一个进程中，零外部服务二进制。
 
@@ -30,6 +30,6 @@ cd nanochat-rs
 cargo run --release --features metal -- -p "write 100 words"
 ```
 
-## 当前状态（Status） {#status}
+## 当前状态 {#status}
 
 目前运行本地模型的官方支持方式仍然是使用[离线模式](/local/offline)的托管 llama.cpp 引擎，或[接入自建推理服务](/local/custom-engines)。进程内原生引擎的研发进展将公布在[更新日志](/changelog)和 [Discord](https://discord.gg/pqhj3DNGz2) 中。

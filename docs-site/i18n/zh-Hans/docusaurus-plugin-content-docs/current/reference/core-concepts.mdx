@@ -1,12 +1,12 @@
 ---
-title: "核心概念与协议体系（Core Concepts & Protocol）"
+title: "核心概念与协议体系"
 sidebar_label: "核心概念"
 description: "Ante 的底层抽象层级模型，以及连接各层级的 Op/Evt 消息传递协议"
 ---
 
 Ante 将智能体交互建模为层次化的概念体系，并通过强类型的消息传递协议进行连接驱动。
 
-## 概念层级模型（Concept hierarchy） {#concept-hierarchy}
+## 概念层级模型 {#concept-hierarchy}
 
 ```
 Project (项目)
@@ -28,11 +28,11 @@ Project (项目)
 通常情况下，若没有工具审批中断，一个 Task 任务通常包含一个 Turn 轮次。
 :::
 
-## 协议体系：操作指令与事件流（Protocol: Ops and Events） {#protocol-ops-and-events}
+## 协议体系：操作指令与事件流 {#protocol-ops-and-events}
 
 Ante 在客户端（TUI 或无头运行器）与守护进程 Daemon 之间采用消息传递协议。操作指令（`Op`）从客户端流向守护进程，事件流（`Evt`）从守护进程流向客户端。
 
-### 消息 ID 规范（Message IDs） {#message-ids}
+### 消息 ID 规范 {#message-ids}
 
 每条消息均包含带有 4 字节前缀的自定义 `Id` 类型，便于链路追踪：
 
@@ -41,7 +41,7 @@ Ante 在客户端（TUI 或无头运行器）与守护进程 Daemon 之间采用
 - `ses_` — 会话（Sessions）
 - `step_` — 模型单步交互（Steps）
 
-## 操作指令参考（Operations reference） {#operations-reference}
+## 操作指令参考 {#operations-reference}
 
 操作指令（`Op`）由客户端发送给守护进程，封装在携带唯一 `Id` 的 `OpMsg` 消息封装中。
 
@@ -59,7 +59,7 @@ Ante 在客户端（TUI 或无头运行器）与守护进程 Daemon 之间采用
 | `Interrupt` | — | 中断当前正在运行的操作 |
 | `Shutdown` | — | 优雅关闭守护进程 |
 
-## 状态事件参考（Events reference） {#events-reference}
+## 状态事件参考 {#events-reference}
 
 事件流（`Evt`）由守护进程推送到客户端，封装在携带时间戳、唯一 `Id` 以及可选的用于关联触发该事件的操作的 `parent` ID 的 `EventMsg` 消息封装中。
 
@@ -91,9 +91,9 @@ Ante 在客户端（TUI 或无头运行器）与守护进程 Daemon 之间采用
 关于包含报文格式示例与所有类型定义的完整协议参考，请参阅[通信协议参考手册](/reference/protocol-reference)。
 :::
 
-## 交互时序流程示例（Flow examples） {#flow-examples}
+## 交互时序流程示例 {#flow-examples}
 
-### 基础交互流程（Basic UI flow） {#basic-ui-flow}
+### 基础交互流程 {#basic-ui-flow}
 
 单次用户输入场景下，轮次暂停等待审批（`TurnPause`）并随后恢复执行的时序：
 
@@ -146,7 +146,7 @@ sequenceDiagram
   Turn-->>-User: Evt::TurnEnd (Completed 完成)
 ```
 
-### 中断处理流程（Interruption flow） {#interruption-flow}
+### 中断处理流程 {#interruption-flow}
 
 中断正在运行的轮次并以新输入继续执行：
 
@@ -192,14 +192,14 @@ sequenceDiagram
   Turn2-->>-User: Evt::TurnEnd (Completed 完成)
 ```
 
-## 上下文管理（Context management） {#context-management}
+## 上下文管理 {#context-management}
 
 Ante 自动管理上下文窗口：
 
 - **Token 预算控制** — 每个轮次均依据模型的上下文上限精确追踪 Token 占用
-- **自动压缩（Auto-compaction）** — 当对话接近上下文上限时，Ante 调用大模型对历史对话进行摘要总结，在释放 Token 的同时保留关键上下文。默认开启；可通过 `auto_compact` [配置项](/configuration/preference#settings-file)关闭（手动 `/compact` 与溢出恢复依然可用）
+- **自动压缩** — 当对话接近上下文上限时，Ante 调用大模型对历史对话进行摘要总结，在释放 Token 的同时保留关键上下文。默认开启；可通过 `auto_compact` [配置项](/configuration/preference#settings-file)关闭（手动 `/compact` 与溢出恢复依然可用）
 - **工具输出裁剪** — 超大工具输出结果会自动裁剪以适配预算范围
 
-## 权限控制（Permissions） {#permissions}
+## 权限控制 {#permissions}
 
 Ante 内置权限管控系统控制工具执行。规则按首个命中即生效的顺序评估，支持三种判定：**Allow**（允许）、**Ask**（询问）与 **Deny**（拒绝）。完整细节请参阅[权限控制](/configuration/permission)。

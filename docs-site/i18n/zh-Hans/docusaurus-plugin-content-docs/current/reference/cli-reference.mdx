@@ -1,5 +1,5 @@
 ---
-title: "CLI 命令行参考手册（CLI Reference）"
+title: "CLI 命令行参考手册"
 sidebar_label: "CLI 命令参考"
 description: "Ante 命令行工具的所有命令与参数选项参考手册"
 ---
@@ -10,7 +10,7 @@ Ante 可以作为交互式 TUI 终端、单次无头命令行任务、长寿命�
 ante [OPTIONS] [COMMAND]
 ```
 
-## 命令总览（Commands） {#commands}
+## 命令总览 {#commands}
 
 | 命令 | 说明 |
 |---|---|
@@ -67,14 +67,14 @@ TUI 要求 stdout 连接到系统终端。若重定向或通过管道输出（�
 
 ```bash
 ante
-ante -p "解释这个项目的作用"
-git diff | ante -p "审查本次改动是否存在 Bug"
-ante --provider openai --model gpt-5.6-sol -p "重构数据库模块"
-ante --effort max -p "排查调度器中的竞态条件"
+ante -p "explain what this project does"
+git diff | ante -p "review this diff for bugs"
+ante --provider openai --model gpt-5.6-sol -p "refactor the database module"
+ante --effort max -p "find the race condition in the scheduler"
 ante --profile work
-ante --profile bare -p "审查该代码仓库"
-ante --resume ses_01ARZ3NDEKTSV4RRFFQ69G5FAV -p "现在添加测试用例"
-ante -p "总结该仓库" --enable-auto-memory
+ante --profile bare -p "review this repository"
+ante --resume ses_01ARZ3NDEKTSV4RRFFQ69G5FAV -p "now add tests"
+ante -p "summarize this repo" --enable-auto-memory
 ```
 
 ## `ante auth` {#ante-auth}
@@ -272,7 +272,7 @@ ante doctor
 ante doctor || echo "ante is not healthy"
 ```
 
-## 输出格式（Output Formats） {#output-formats}
+## 输出格式 {#output-formats}
 
 | 格式 | 说明 |
 |---|---|

@@ -1,12 +1,12 @@
 ---
-title: "基准评测（Benchmarks）"
+title: "基准评测"
 sidebar_label: "Terminal-Bench 评测"
 description: "公开发布版本的真实可复现基准评测 — 实时结果展示于 antigma.ai/eval"
 ---
 
-# 基准评测（Benchmarks）
+# 基准评测
 
-## 评测真实分发版本（We benchmark what we ship） {#we-benchmark-what-we-ship}
+## 评测真实分发版本 {#we-benchmark-what-we-ship}
 
 我们的基准评测以可检验为核心设计：
 
@@ -15,7 +15,7 @@ description: "公开发布版本的真实可复现基准评测 — 实时结果�
 - **遵循官方严格限制。** 所有评测均采用与 Terminal-Bench 官方排行榜相同的参数：89 个任务、每个任务 5 次试验，并严格限制超时时间与硬件资源。
 - **结果实时持续发布。** 我们持续在 [antigma.ai/eval](https://antigma.ai/eval) 公布最新的评测数据。
 
-## Terminal-Bench 2.1：统一 Harness 评测各模型（Terminal-Bench 2.1: one harness, any model） {#terminal-bench-21-one-harness-any-model}
+## Terminal-Bench 2.1：统一 Harness 评测各模型 {#terminal-bench-21-one-harness-any-model}
 
 我们评测的是 **Agent Harness 底座能力**，而非仅仅评测大模型本身。因此，我们公布了 Ante 搭配不同模型时的综合表现。在**所有参与评测的模型中，Ante 均取得了同模型智能体排名第一（#1 same-model agent）**：在相同模型下，没有其他 Harness 跑出比 Ante 更高的准确率。
 
@@ -38,7 +38,7 @@ description: "公开发布版本的真实可复现基准评测 — 实时结果�
 
 **[查看实时评测结果 →](https://antigma.ai/eval)**
 
-## 历史战绩（Track record） {#track-record}
+## 历史战绩 {#track-record}
 
 - Terminal Bench 1.0 排行榜第一名（2025 年）
 - Terminal Bench 2.0 验证 Agent 排行榜第一名 —— 且在基于 Gemini 的 Agent 中位列第一（2026 年 2 月）
@@ -71,11 +71,11 @@ description: "公开发布版本的真实可复现基准评测 — 实时结果�
 - **严谨规范。** 任务规格明确，尽可能采用确定性评分，且在隔离环境中执行。
 - **聚焦核心编码能力。** 智能体能否在真实的 Shell 环境中完成实际任务？读取上下文、推理、行动、验证 —— 这正是 Ante 围绕其构建的核心闭环。
 
-## 资源占用分析（Resource footprint） {#resource-footprint}
+## 资源占用分析 {#resource-footprint}
 
 能力表现只是其中一方面；运行成本是另一大关键。请查阅[资源占用对比](/benchmarks/compare_table)，查看在 Docker 严格限制下 20 个并行任务的 CPU、内存和磁盘占用实测（Ante vs Claude Code vs Opencode）。
 
-## 评测原则（Evaluation principles） {#evaluation-principles}
+## 评测原则 {#evaluation-principles}
 
 智能体的大部分智慧源于模型 —— 但 Agent Harness 是连接人类与 AI 之间的关键底座。
 

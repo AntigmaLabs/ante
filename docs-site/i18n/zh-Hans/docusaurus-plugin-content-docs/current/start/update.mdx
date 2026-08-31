@@ -1,12 +1,12 @@
 ---
-title: 版本更新与发布通道（Update & Channels）
+title: 版本更新与发布通道
 sidebar_label: "更新与通道"
 description: "保持 Ante 为最新版本，并选择符合需求的发布通道"
 ---
 
 Ante 以单一二进制文件分发并支持原地自我更新 —— 首次安装使用的 `install.sh` 脚本会被 `ante update` 针对当前二进制追踪的通道重新运行。
 
-## 检查与更新（Update） {#update}
+## 检查与更新 {#update}
 
 检查当前通道是否有更新的 Ante 发行版并在可用时安装：
 
@@ -18,7 +18,7 @@ ante update
 
 如果当前已是最新版本，Ante 会打印确认信息并退出，不会修改二进制文件。
 
-### 在 TUI 终端界面中更新（Update from the TUI） {#update-from-the-tui}
+### 在 TUI 终端界面中更新 {#update-from-the-tui}
 
 当有新版本可用时，正在运行的 TUI 会在聊天界面中显示包含 Release Notes 摘要的轻量提示。绝不会使用弹窗打断启动。
 
@@ -28,7 +28,7 @@ ante update
 
 安装选择仅作用于当前运行的会话。Ante 在退出并恢复终端后完成更新应用，下次启动即进入新版本。
 
-## 锁定或回滚版本（Pin or roll back） {#pin-or-roll-back}
+## 锁定或回滚版本 {#pin-or-roll-back}
 
 使用 `--version` 安装指定版本：
 
@@ -39,7 +39,7 @@ ante update --version 0.preview.86
 
 该方式会跳过通道的“版本更新校验”，因此可用于升级、重新安装当前版本，或回滚到已发布的历史版本。回滚时，Ante 会记录您回滚前的版本，避免后台更新提示立即建议重新安装。
 
-## 发布通道（Channels） {#channels}
+## 发布通道 {#channels}
 
 发布通道是特定构建流的命名跟踪分支。Ante 提供两个通道：
 
@@ -60,7 +60,7 @@ ante update --version 0.preview.86
 
 `latest` 是已废弃的历史通道名称。现有设置或命令中若仍使用 `latest`，将被视为 `stable`。
 
-## 切换发布通道（Switching channels） {#switching-channels}
+## 切换发布通道 {#switching-channels}
 
 通过位置参数或 `--channel` 切换通道：
 
@@ -76,7 +76,7 @@ ante update --channel nightly
 
 通道名称仅可包含 ASCII 字母、数字、`.`、`_` 或 `-`。
 
-## 首次全新安装指定通道（Initial install） {#initial-install}
+## 首次全新安装指定通道 {#initial-install}
 
 安装脚本同样支持传入通道名称。在全新机器上安装非默认通道：
 
@@ -92,6 +92,6 @@ curl -fsSL https://ante.run/install.sh | bash -s -- nightly
 curl -fsSL https://ante.run/install.sh | ANTE_INSTALL_DIR=/usr/local/bin bash
 ```
 
-## 更新检查机制（How update checks work） {#how-update-checks-work}
+## 更新检查机制 {#how-update-checks-work}
 
 在启动以及长会话运行期间，Ante 会在后台异步检查更新缓存。针对通道清单的网络请求由所有运行中的 Ante 进程共享，最多每小时检查一次；检查结果和发布说明会缓存在 `~/.ante/versions.json` 中。当有新版本时，TUI 会显示上述轻量提示。`ante update` 命令行会忽略本地缓存，实时重新拉取清单。

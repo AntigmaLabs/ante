@@ -1,12 +1,12 @@
 ---
-title: "工具系统参考手册（Tool Reference）"
+title: "工具系统参考手册"
 sidebar_label: "工具参考"
 description: "Ante 会话中可供智能体调用的完整工具集及权限说明"
 ---
 
 工具是智能体在会话中用于感知环境并执行操作的底层能力。部分工具静默运行；除非权限规则另有声明，涉及修改系统的工具默认需要人工确认审批。
 
-## 文件 I/O（File I/O） {#file-io}
+## 文件 I/O {#file-io}
 
 ### Read {#read}
 
@@ -34,7 +34,7 @@ PDF 在客户端本地完成页面渲染与内嵌文本提取，无需网络往�
 
 基于正则表达式搜索文件内容。
 
-## 终端与 Shell（Shell） {#shell}
+## 终端与 Shell {#shell}
 
 ### Bash {#bash}
 
@@ -44,7 +44,7 @@ PDF 在客户端本地完成页面渲染与内嵌文本提取，无需网络往�
 
 针对交互式程序和持久 Shell，智能体通过内置的 `tmux` 技能在常规 Bash 调用中驱动命名 tmux 会话（`ante-*`）—— 发送的每个击键均经过正常的 Bash 权限检查。可通过 [`/term <name>`](/usage/tui#terminal-sessions) 随时查看或在会话中键入内容。
 
-## 内置核心工具（Builtin） {#builtin}
+## 内置核心工具 {#builtin}
 
 ### Agent {#agent}
 
@@ -62,7 +62,7 @@ PDF 在客户端本地完成页面渲染与内嵌文本提取，无需网络往�
 
 检索互联网并返回带引用的搜索结果。需要审批。使用模型提供商的原生网络搜索能力，因此仅在声明了 `supports_web_search` 的提供商（Anthropic、OpenAI、Gemini、Grok、OpenRouter、Antix 和 Ali Coding Plan）下可用，并在这些提供商上自动加入工具集；其他提供商不提供该工具。单次搜索设有 90 秒上限 —— 超时报错并建议使用更窄的查询词，避免挂起整个工具调用批次。
 
-## 可选工具（Opt-in tools） {#opt-in-tools}
+## 可选工具 {#opt-in-tools}
 
 这些工具默认未开启。可通过 `--include-tools` 显式启用。
 
@@ -70,17 +70,17 @@ PDF 在客户端本地完成页面渲染与内嵌文本提取，无需网络往�
 
 根据自然语言指令读取并分析图片内容。
 
-## MCP 工具（MCP tools） {#mcp-tools}
+## MCP 工具 {#mcp-tools}
 
 由配置的 [MCP 服务器](/extend/mcp) 提供的工具会以 `mcp__<server>__<tool>` 形式暴露给智能体。它们与内置工具并列展示，从智能体的角度看行为完全相同。MCP 工具同样受 `--tools`/`--include-tools`/`--exclude-tools` 命令行过滤约束；若需按服务精确过滤，请使用 `enabled_tools` 配置项。
 
-## 默认工具集（Default tool set） {#default-tool-set}
+## 默认工具集 {#default-tool-set}
 
 Ante 默认启用 `Read`、`Bash`、`Grep`、`Glob`、`TodoWrite`、`WebFetch`、`Edit`、`Write` 和 `Agent`。当会话的提供商支持原生网络搜索时，会自动追加 `WebSearch`。
 
 `ViewImage` 为可选启用工具。
 
-## 工具过滤控制（Tool filtering） {#tool-filtering}
+## 工具过滤控制 {#tool-filtering}
 
 在会话中控制可用工具：
 

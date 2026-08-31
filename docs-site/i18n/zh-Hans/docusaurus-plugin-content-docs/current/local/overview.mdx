@@ -1,10 +1,10 @@
 ---
-title: "独立自包含设计（Self-Contained by Design）"
+title: "独立自包含设计"
 sidebar_label: "为什么选择本地模型"
 description: "Ante 中的本地模型支持：单个二进制文件、运行于自有硬件、从全托管到完全本地随心切换"
 ---
 
-# 独立自包含设计（Self-Contained by Design）
+# 独立自包含设计
 
 Ante 是一个独立的单二进制程序（压缩下载仅 ~15MB），能够自主管理其内置的推理引擎。只需准备一个 GGUF 文件，即可在自有硬件上拥有完整的编码智能体：无需 API 密钥、无需注册账号，模型调用绝不离开本地机器。
 
@@ -14,15 +14,15 @@ Ante 是一个独立的单二进制程序（压缩下载仅 ~15MB），能够自
 
 本地运行是 Ante 的一等公民体验。托管云端提供商与本地模型存在于同一个目录系统，运行完全一致的完整提示词与工具链，并经受相同的[公开基准评测](/benchmarks/eval)。您可以按会话为任务选择最适合的运行模式。
 
-## 选择部署拓扑（Pick your topology） {#pick-your-topology}
+## 选择部署拓扑 {#pick-your-topology}
 
 | 拓扑架构 | 架构形态 | 适用场景 |
 |---|---|---|
-| **全前沿云端（All frontier）** | 仅使用云端托管提供商 | 追求顶尖智能上限，具备良好网络连接与预算 |
-| **混合模式（Mixed）** | 本地模型与云端模型并存，在会话间或对话中随时切换 | 部分工作涉及隐私敏感或高频调用，部分任务需要前沿模型 |
-| **完全本地（All local）** | 内置推理引擎承载所有调用 | 离网隔离机器、严苛的数据隐私合规、零边际成本 |
+| **全前沿云端** | 仅使用云端托管提供商 | 追求顶尖智能上限，具备良好网络连接与预算 |
+| **混合模式** | 本地模型与云端模型并存，在会话间或对话中随时切换 | 部分工作涉及隐私敏感或高频调用，部分任务需要前沿模型 |
+| **完全本地** | 内置推理引擎承载所有调用 | 离网隔离机器、严苛的数据隐私合规、零边际成本 |
 
-## Ante 对本地模型的支持体系（How Ante treats local models） {#how-ante-treats-local-models}
+## Ante 对本地模型的支持体系 {#how-ante-treats-local-models}
 
 **平等视作标准提供商。** 任何提供兼容 OpenAI 接口的本地服务端（Ollama、vLLM、LM Studio、自建服务等），均通过与托管提供商相同的 `catalog.json` 机制接入。无需特殊定制逻辑，后续也无需迁移。参见[添加本地提供商](/usage/providers#add-a-local-provider-with-no-auth)及[目录参考手册](/reference/catalog-reference)。
 
@@ -30,7 +30,7 @@ Ante 是一个独立的单二进制程序（压缩下载仅 ~15MB），能够自
 
 **智能体原生推理研发中。** 我们的终极目标是将推理引擎直接嵌入智能体进程，针对智能体调用大模型的行为特征深度调优：跨轮次前缀缓存复用、工具调用的约束解码、子智能体间的批量并发推理。我们通过开源项目 [nanochat-rs](https://github.com/AntigmaLabs/nanochat-rs)（一个纯 Rust 实现的精简推理核心）公开推进探索。参见[智能体原生推理](/experimental/agent-native-inference)。
 
-## 灵活混合本地与前沿模型（Mixing local and frontier） {#mixing-local-and-frontier}
+## 灵活混合本地与前沿模型 {#mixing-local-and-frontier}
 
 当离线模式加载模型后，Ante 会将其注册为 `local` 提供商：与 Anthropic 或 OpenAI 并列的标准 OpenAI 兼容目录项。在此基础上，切换体验顺畅自然：
 
@@ -41,6 +41,6 @@ Ante 是一个独立的单二进制程序（压缩下载仅 ~15MB），能够自
 
 需要了解的一项边界：一个会话一次与一个提供商通信。切换是即时的，但子智能体会运行在其父会话的提供商上，因此目前尚不支持在同一个会话中将主循环路由至前沿提供商而将子智能体路由至 `local`。
 
-## 真实可验证的基准数据（Numbers you can check） {#numbers-you-can-check}
+## 真实可验证的基准数据 {#numbers-you-can-check}
 
 我们以评测前沿模型相同的严谨标准评测本地模型：相同的测试环境、固定公开版本、可审计的 Harbor 运行记录。Qwen3.6 27B（17 GB 下载）在 Terminal-Bench 2.1 跨 445 次 Trial 评测中取得 **56.2%** 的准确率 —— 实时数据见 [antigma.ai/eval](https://antigma.ai/eval)，完整精选列表见[推荐验证模型](/local/verified-models)。

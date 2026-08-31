@@ -1,14 +1,13 @@
 ---
-title: 快速入门（Quickstart）
-sidebar_label: "快速入门"
+title: 快速入门
 description: "在一分钟内安装 Ante 并开始使用"
 ---
 
-## 前置准备（Prerequisites） {#prerequisites}
+## 前置准备 {#prerequisites}
 
 - 至少一家大语言模型提供商（Anthropic、OpenAI 等）的 API 密钥或订阅 —— 或者使用[离线模式](/local/offline)无需任何 API 密钥
 
-## 安装（Installation） {#installation}
+## 安装 {#installation}
 
 Ante 作为单一独立的二进制文件分发，没有任何外部运行时依赖 —— 下载即可直接运行。
 
@@ -26,51 +25,51 @@ curl -fsSL https://ante.run/install.sh | ANTE_INSTALL_DIR=/usr/local/bin bash
 
 macOS 平台的发布二进制文件已经过 Apple 开发者证书签名与公证（Notarized），Gatekeeper 安全检查会自动放行。
 
-## 快速示例（Quick examples） {#quick-examples}
+## 快速示例 {#quick-examples}
 
-### 交互式会话（Interactive session） {#interactive-session}
+### 交互式会话 {#interactive-session}
 
 ```bash
 # 启动 TUI — 与智能体对话、批准工具调用、查看 diff
 ante
 ```
 
-### 单次执行（无头模式）（Headless one-shot） {#headless-one-shot}
+### 单次执行（无头模式） {#headless-one-shot}
 
 ```bash
 # 运行单个任务并退出
 ante -p "add error handling to src/main.rs"
 ```
 
-### 从标准输入通过管道传递输入（Pipe input from stdin） {#pipe-input-from-stdin}
+### 从标准输入通过管道传递内容 {#pipe-input-from-stdin}
 
 ```bash
 # 传递文件内容进行分析
 cat src/lib.rs | ante -p "review this code for bugs"
 ```
 
-### 切换模型提供商（Use a different provider） {#use-a-different-provider}
+### 切换模型提供商 {#use-a-different-provider}
 
 ```bash
 # 覆盖模型和提供商
 ante --provider openai --model gpt-5.6-sol -p "refactor this function"
 ```
 
-### 跳过工具审批（Skip tool approvals） {#skip-tool-approvals}
+### 跳过工具审批 {#skip-tool-approvals}
 
 ```bash
 # YOLO 模式 — 自动批准所有工具调用
 ante --yolo -p "fix all clippy warnings"
 ```
 
-### 作为服务端运行（Run as a server） {#run-as-a-server}
+### 作为服务端运行 {#run-as-a-server}
 
 ```bash
 # 启动长寿命守护进程以进行编程集成
 ante serve
 ```
 
-### 更新到最新版本（Update to the latest version） {#update-to-the-latest-version}
+### 更新到最新版本 {#update-to-the-latest-version}
 
 ```bash
 # 检查新版本并安装
@@ -83,7 +82,7 @@ ante update nightly
 ante update --version v0.preview.86
 ```
 
-## 下一步（What's next?） {#whats-next}
+## 下一步 {#whats-next}
 
 <CardGroup cols={2}>
   <Card title="常用工作流技巧" icon="book-marked" href="/usage/providing-context">

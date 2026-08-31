@@ -1,10 +1,10 @@
 ---
-title: "偏好设置与环境配置（Preferences）"
+title: "偏好设置与环境配置"
 sidebar_label: "偏好设置"
 description: "配置文件、环境变量、遥测机制与目录结构详解"
 ---
 
-## 配置文件（Settings file） {#settings-file}
+## 配置文件 {#settings-file}
 
 Ante 将用户偏好设置保存在 `~/.ante/settings.json` 中。
 
@@ -91,7 +91,7 @@ Ante 将用户偏好设置保存在 `~/.ante/settings.json` 中。
 | `provider_model` | 各提供商最后选用的模型记录 —— 切换提供商时优先采用此记录，其次回退至该提供商的默认模型。每次选择模型/提供商时自动写入 |
 | `mcp_servers` | 会话启动时拉起的 MCP 服务器配置（参见 [MCP 服务器](/extend/mcp)） |
 
-### 命名 Profile 配置文件（Named profiles） {#named-profiles}
+### 命名 Profile 配置文件 {#named-profiles}
 
 使用 `--profile <name>` 可为单次 TUI 或无头运行使用独立的配置文件全量替换 `settings.json`：
 
@@ -104,9 +104,9 @@ ANTE_PROFILE=review ante -p "审查本次改动"
 
 内置的 `bare` Profile 随 Ante 提供：首次运行 `--profile bare` 会生成 `~/.ante/bare.settings.json`，默认禁用欢迎引导与环境感知 UI 功能，并将 `auto_memory`、`skills` 和 `session_save` 设为 `false`（且不包含任何 MCP 服务）。此后其行为与其他 Profile 完全一致 —— 编辑文件或在 `/config` 中修改均可持久化。显式传入的命令行参数（如 `--enable-auto-memory`）仍可在运行时覆盖。
 
-### 状态栏项配置（Status line） {#status-line}
+### 状态栏项配置 {#status-line}
 
-`status_line` 字段控制 TUI 底部状态栏顶部一行显示的条目。权限模式与当前动态活动显示在下方独立行，避免与身份标识竞争宽度。该字段接受条目标识符数组：
+`status_line` 字段控制 TUI 底部状态栏顶部一行显示的条目。权限模式与当前动态活动显示在下方独立行，避免与身份标识竞争宽度。该字段接受条目标符数组：
 
 | 标识符 | 说明 |
 |---|---|
@@ -129,7 +129,7 @@ gpt-5.6(high) · openai · project(⑂ main) · 42% ctx
 
 默认值：按上述顺序展示全部条目。可通过 `~/.ante/settings.json` 或 TUI 中的 `/statusline` 命令配置。
 
-### 脚本自定义状态栏（Command-based status line） {#command-based-status-line}
+### 脚本自定义状态栏 {#command-based-status-line}
 
 若需完全自定义，`status_line_command` 可运行您指定的 Shell 命令并将其输出渲染为状态栏，替换基于条目的默认状态栏：
 
@@ -190,7 +190,7 @@ printf '\033[36m[%s]\033[0m %s' "$model" "$dir"
 
 在将 `command` 指向脚本前请赋予执行权限（`chmod +x`）。若命令执行失败（无执行权限、非零退出码或超时），底部会根据 stderr 显示单行诊断提示（如 `status line: sh: …: Permission denied`）。
 
-### 终端缩放重排（Resize reflow） {#resize-reflow}
+### 终端缩放重排 {#resize-reflow}
 
 当终端窗口大小发生变化时，Ante 会在新的尺寸下重建展示。`resize_reflow` 字段控制如何处理可视屏幕上方的滚屏历史/回滚缓冲区（Scrollback history）：
 
@@ -215,7 +215,7 @@ seq 1 200; printf '\033[2J\033[3J\033[H'
 
 `purge` 的权衡：首次缩放会清空该标签页的全部滚屏历史（包括启动 Ante 前的 Shell 输出），且缩放时仅重放最近 2000 行记录。在 tmux 或 zellij 内部，Ante 始终使用 purge 策略，因为两者均稳定支持 `3 J`。
 
-## 环境变量参考（Environment variables） {#environment-variables}
+## 环境变量参考 {#environment-variables}
 
 | 环境变量 | 说明 |
 |---|---|
@@ -256,13 +256,13 @@ seq 1 200; printf '\033[2J\033[3J\033[H'
 | `ANTE_ENV` | 按部署环境对遥测数据进行分组（默认：`local`） |
 | `RUST_LOG` | 覆盖应用程序日志过滤级别（发布版默认：`ante=info`）；同时作用于本地和导出的日志 |
 
-### 遥测机制（Telemetry） {#telemetry}
+### 遥测机制 {#telemetry}
 
 当设置了 `OTEL_EXPORTER_OTLP_ENDPOINT` 或二进制构建时内嵌了端点时，Ante 会初始化 OpenTelemetry 导出器。导出器通过 OTLP/HTTP 发送指标和应用程序 `tracing` 日志。无论端点如何配置，设置 `ANTE_TELEMETRY=off` 均会完全禁用导出器；`~/.ante/logs/` 下的本地日志文件不受影响，继续正常记录。
 
 指标涵盖工具与模型调用的耗时与错误统计，以及提供商上报用量时的 Token 计数。标签均来自严格受限的有界集合 —— 工具名、模型、提供商、Ante 版本、操作系统/硬件架构 —— 绝不包含任何个人或机器名称。
 
-#### 身份标识（Identity） {#identity}
+#### 身份标识 {#identity}
 
 数据导出默认完全匿名。没有用户名回退，没有主机名，没有 MAC 地址，也没有机器 ID。仅自动携带两个内部标识；另外两个仅在您显式配置时才会出现：
 
@@ -277,7 +277,7 @@ seq 1 200; printf '\033[2J\033[3J\033[H'
 
 所有通过 `RUST_LOG` 过滤规则的应用追踪记录也会一并导出。日志**正文内容（Bodies）**不会被脱敏处理，因此包含路径或工具参数的消息会如实记录 —— 请仅将 `OTEL_EXPORTER_OTLP_ENDPOINT` 指向您完全信任的收集端。
 
-## 目录结构（Directory structure） {#directory-structure}
+## 目录结构 {#directory-structure}
 
 ### 用户级目录（`~/.ante/`） {#user-level-ante}
 
@@ -301,7 +301,7 @@ seq 1 200; printf '\033[2J\033[3J\033[H'
 
 当 `~/.ante/AGENTS.md` 不存在时，Ante 会回退读取 `~/.claude/CLAUDE.md` 作为全局指引，实现零迁移成本兼容 Claude Code。每次仅读取一个文件 —— 只要存在 `AGENTS.md`（即使为空文件），就绝不回退。
 
-### 项目级目录（Project-level） {#project-level}
+### 项目级目录 {#project-level}
 
 ```
 AGENTS.md              # 项目指引规范
@@ -333,13 +333,13 @@ CLAUDE.md              # 项目指引规范（无 AGENTS.md 时的兼容回退�
         └── MEMORY.md      # 本项目的自动记忆
 ```
 
-### 运行时与临时文件（Runtime and temporary files） {#runtime-and-temporary-files}
+### 运行时与临时文件 {#runtime-and-temporary-files}
 
 超大的 WebFetch 响应存放在 `~/.ante/cache/` 中，一次性暂存文件位于 `~/.ante/tmp/`；两处暂存目录中超过 48 小时的条目会在启动时自动清理。后台 Bash 任务句柄位于 `~/.ante/run/jobs/<proc-id>/` 下，在进程存活期间持续保留，进程结束后保留 24 小时。应用日志位于 `~/.ante/logs/<YYYY-MM-DD>/`，按 UTC 日期归档。
 
 完整文件用途请参阅[存储与目录结构参考手册](/reference/storage-reference)。
 
-## 配置优先级（Precedence） {#precedence}
+## 配置优先级 {#precedence}
 
 配置按以下顺序解析生效（后生效者覆盖前者）：
 
