@@ -4,7 +4,7 @@ sidebar_label: "无头模式"
 description: "作为非交互式 CLI 命令行工具运行 Ante，适用于脚本自动化与 CI/CD 流水线"
 ---
 
-无头模式（Headless Mode）在不启动 TUI 界面界面的情况下运行 Ante —— 接收输入提示词、执行任务并输出结果后退出。非常适合脚本编写、CI/CD 自动化流水线和自动化工作流。
+无头模式（Headless Mode）在不启动 TUI 界面的情况下运行 Ante —— 接收输入提示词、执行任务并输出结果后退出。非常适合脚本编写、CI/CD 自动化流水线和自动化工作流。
 
 ## 基础用法（Basic usage） {#basic-usage}
 
@@ -70,7 +70,7 @@ ante [OPTIONS] [--prompt <PROMPT>]
 
 ## 输出格式（Output formats） {#output-formats}
 
-### 极简模式（Minimal，默认） {#minimal-default}
+### 极简模式（Minimal，默认）（Minimal (default)） {#minimal-default}
 
 仅展示智能体回复文本、系统通知与错误：
 
@@ -86,7 +86,7 @@ ante -p "what does this project do"
 ante --output-format human -p "fix the type error in main.rs"
 ```
 
-### JSON 模式 {#json}
+### JSON 模式（JSON） {#json}
 
 逐行输出结构化的 JSON 对象事件，适合脚本与程序解析：
 
@@ -115,7 +115,7 @@ ante --check -p "refactor the auth module to use async/await"
 
 - **抑制原始流式增量（Raw streaming deltas are suppressed）** — 输出展示完整的消息而非增量片段，使日志保持整洁
 - **默认隐式使用 Yolo 策略（Yolo policy is implied）** — 所有工具调用均自动放行（无交互式提示），无论 `--permission-mode` 为何值
-- **积极检查认证状态（Authentication is checked eagerly）** — 若提供商未通过认证，Ante 会立即报错退出
+- **启动时即检查认证状态（Authentication is checked eagerly）** — 若提供商未通过认证，Ante 会立即报错退出
 - **守护进程异常时快速失败（Fails fast if the daemon dies）** — 若智能体进程在任务完成前异常退出，Ante 会报告错误而非返回成功退出码
 
 ## 恢复历史会话（Resuming a session） {#resuming-a-session}
@@ -129,3 +129,32 @@ ante --resume ses_01ARZ3NDEKTSV4RRFFQ69G5FAV -p "now add tests"
 会话 ID 会在 TUI 会话退出时打印提示（`Resume this session with: ante --resume ses_...`）。
 
 使用 `--no-session-save` 启动的会话绝不会持久化保存，因此无法在后续恢复。
+
+## 使用示例（Examples） {#examples}
+
+### CI 流程：代码检查与修复（CI: lint and fix） {#ci-lint-and-fix}
+
+```bash
+ante --yolo -p "run cargo clippy and fix all warnings"
+```
+
+### 代码生成（Code generation） {#code-generation}
+
+```bash
+ante --model claude-sonnet-5 --check \
+  -p "add comprehensive unit tests for src/core/session.rs"
+```
+
+### 限制可用工具（Restricted tools） {#restricted-tools}
+
+```bash
+# 纯只读分析 — 禁止文件写入与 Shell 命令执行
+ante --tools Read Glob Grep \
+  -p "analyze the codebase architecture and summarize it"
+```
+
+### 通过管道传递 Diff 进行代码审查（Pipe a diff for review） {#pipe-a-diff-for-review}
+
+```bash
+git diff HEAD~1 | ante -p "review this diff for bugs and security issues"
+```

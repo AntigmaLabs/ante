@@ -43,7 +43,7 @@ Ante 在客户端（TUI 或无头运行器）与守护进程 Daemon 之间采用
 
 ## 操作指令参考（Operations reference） {#operations-reference}
 
-操作指令（`Op`）由客户端发送给守护进程，封装在携带唯一 `Id` 的 `OpMsg` 信封中。
+操作指令（`Op`）由客户端发送给守护进程，封装在携带唯一 `Id` 的 `OpMsg` 消息封装中。
 
 | 操作指令 (Op) | 载荷参数 (Payload) | 说明 |
 |---|---|---|
@@ -61,7 +61,7 @@ Ante 在客户端（TUI 或无头运行器）与守护进程 Daemon 之间采用
 
 ## 状态事件参考（Events reference） {#events-reference}
 
-事件流（`Evt`）由守护进程推送到客户端，封装在携带时间戳、唯一 `Id` 以及可选的用于关联触发该事件的操作的 `parent` ID 的 `EventMsg` 信封中。
+事件流（`Evt`）由守护进程推送到客户端，封装在携带时间戳、唯一 `Id` 以及可选的用于关联触发该事件的操作的 `parent` ID 的 `EventMsg` 消息封装中。
 
 | 状态事件 (Evt) | 载荷参数 (Payload) | 说明 |
 |---|---|---|

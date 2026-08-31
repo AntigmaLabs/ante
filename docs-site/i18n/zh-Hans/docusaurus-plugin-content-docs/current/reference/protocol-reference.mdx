@@ -332,7 +332,7 @@ Ante 在客户端（Client）与守护进程（Daemon）之间采用强类型的
 | `display_name` | `string` | 展示名称 |
 | `base_url` | `string` | 当前会话实际使用的端点地址 —— 环境变量覆盖可能会使其不同于目录默认值 |
 
-`ProviderSpec` 仅传递客户端无法自行查询的信息。提供商的模型列表不包含在协议消息中，因为全会话一致，可通过 [`ante catalog`](/reference/cli-reference#ante-catalog) 查询。
+`ProviderSpec` 有意仅传递客户端无法自行查询的信息。提供商的模型列表不包含在协议消息中；它对每个会话完全相同，并通过 [`ante catalog`](/reference/cli-reference#ante-catalog) 发布。未知字段会被忽略，因此仍会发送 `preferred_models` 的旧版守护进程载荷能够正常兼容解码。
 
 #### SessionUpdated {#sessionupdated}
 
@@ -598,6 +598,8 @@ Skills 技能、子智能体或 MCP 服务器刷新时触发。在正常会话�
 }
 ```
 
+`mcp_servers` 中的每个条目都反映了实际启动并发现的内容：对于连接失败的服务端，`tools` 列表为空，而 `qualified_name` 是智能体调用该工具时使用的 `mcp__<server>__<tool>` 形式。
+
 ### 提示与信息事件（Informational events） {#informational-events}
 
 #### UsageUpdate {#usageupdate}
@@ -740,6 +742,8 @@ Skills 技能、子智能体或 MCP 服务器刷新时触发。在正常会话�
 ### 离线模式与协议边界（Offline mode and the protocol） {#offline-mode-and-the-protocol}
 
 本地模型管理（引擎安装、模型发现、llama-server 生命周期）属于**客户端侧职责**。它是通过进程内的 `OfflineSubsystem` API 驱动的，而非通过守护进程协议。离线模式面向守护进程的唯一接口是 `RegisterLocalProvider` / `RestoreLocalProvider` —— 客户端自行启动 llama-server，随后向守护进程注册其端口号（及可选的 `ModelSpec`）。
+
+关于面向用户的工作流及 `--offline-model` CLI 参数，请参阅[离线模式](/local/offline)。
 
 ## 传输层（Transport） {#transport}
 

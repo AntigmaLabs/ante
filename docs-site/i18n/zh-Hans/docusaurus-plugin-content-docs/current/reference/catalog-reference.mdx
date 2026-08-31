@@ -309,7 +309,7 @@ ante --provider local
 }
 ```
 
-针对内置提供商，仅需填写希望修改的字段。将可选字段设置为 `null` 可清除预设值：
+针对内置提供商，仅需填写希望修改的字段。将可选字段设置为 `null` 可清除预设值，这在将提供商重新指向不应发送内置认证或请求头的本地代理时非常有用：
 
 ```json
 {
@@ -343,6 +343,8 @@ ante --provider local
 }
 ```
 
+参数值原样透传，因此支持任意 JSON 结构。在内置提供商覆盖层中，`extra_body` 会逐键合并到预设中 —— 匹配的键被替换，其他键保留。
+
 `extra_body` 只能追加新字段，**绝不能**覆盖 Ante 为选定 `wire_style` 生成的保留关键字：
 
 | `wire_style` | 保留关键字列表 |
@@ -352,7 +354,12 @@ ante --provider local
 | `OpenAiResponse` | `model`, `instructions`, `input`, `tools`, `tool_choice`, `parallel_tool_calls`, `max_output_tokens`, `temperature`, `reasoning`, `stream`, `include`, `store` |
 | `Gemini` | `contents`, `systemInstruction`, `generationConfig`, `tools`, `toolConfig` |
 
-保留关键字在加载目录时会被自动忽略并在启动提示中告警，其余字段仍正常加载。若想修改这些参数，请使用[模型字段](#model-fields)或[环境变量覆盖](#environment-overrides)。
+保留关键字在加载目录时会被自动丢弃并在启动提示中命名；提供商的其余配置仍正常加载。若想修改这些参数，请使用[模型字段](#model-fields)或[环境变量覆盖](#environment-overrides)：
+
+```
+Skipped 1 entry in ~/.ante/catalog.json:
+  - providers.my-gateway.extra_body: ignoring Ante-owned request field(s): model
+```
 
 ### 身份认证配置（Authentication） {#authentication}
 
@@ -364,11 +371,13 @@ ante --provider local
 | 自定义 Header | `{ "header": { "name": "x-api-key", "env_key": "MY_KEY" } }` | `<name>: <token>` |
 | Query URL 参数 | `{ "query": { "name": "api_key", "env_key": "MY_KEY" } }` | `?<name>=<token>` |
 
-使用 `oauth_preset` 接入内置 OAuth 流程（`anthropic`、`openai` 或 `antix`）：
+使用 `oauth_preset` 接入内置 OAuth 流程（`anthropic`、`openai` 或 `antix`）而非环境变量：
 
 ```json
 "auth": { "bearer": { "oauth_preset": "anthropic" } }
 ```
+
+提供商在凭据存在时即被视为已认证 —— 环境变量已设置且非空，或磁盘上存在 OAuth Token。没有 `auth` 块的提供商始终被视为已认证。未认证的提供商在自动检测过程中会被跳过，并在选择器中排在最后。
 
 ### 模型字段（Model fields） {#model-fields}
 
@@ -379,17 +388,17 @@ ante --provider local
 | `id` | 模型 ID。在 `preferred_models` 中必填（兼容历史别名 `name`）；在 `models` 下由 key 提供 |
 | `display_name` | 友好展示名称 |
 | `description` | 在模型选择器中展示的简短说明 |
-| `temperature` | 采样温度。在 `AnthropicMessage` 提供商上，开启思考推理时必须为 `1` |
+| `temperature` | 采样温度。在 `AnthropicMessage` 提供商上，开启思考推理时必须为 `1` —— 带有 effort 等级时若设置其他值，轮次会直接显式报错 |
 | `top_p` | Nucleus 采样截断阈值 |
 | `top_k` | Top-k 采样截断阈值 |
-| `max_tokens` | 单轮最大输出 Token 数。在需要显式思考预算的 `AnthropicMessage` 提供商上，设置思考等级时必须大于 1024 |
+| `max_tokens` | 单轮最大输出 Token 数。在需要显式思考预算的 `AnthropicMessage` 提供商上，设置思考等级时必须大于 1024 —— API 的最低预算要求 |
 | `stop_sequences` | 停止生成的标记字符串列表 |
 | `context_limit` | 上下文窗口上限（Token 数） |
 | `effort` | 默认[思考深度等级](/usage/models-and-thinking#effort) —— `min`、`low`、`medium`、`high`、`xhigh` 或 `max`。不支持推理调节的模型请省略（Ante 不会发送 effort 参数并隐藏滑块） |
 | `weight_class` | 规模/成本等级 —— `Feather`（轻量/快速/低成本）、`Middle`（中等）或 `Heavy`（最大/能力最强）。驱动默认模型与辅助模型选取（参见[权重等级](#weight-classes)） |
-| `support_vision` | 是否支持图片输入。省略时 Ante 根据模型 ID 自动推断 |
+| `support_vision` | 是否支持图片输入。省略时 Ante 根据模型 ID 自动推断；对无视觉支持的模型读取图片时返回图片元数据而非像素 |
 
-顶层 `models` 可在解析阶段原地打补丁：
+顶层 `models` 可在解析阶段针对模型 ID 原地打补丁，层叠在标准规格之上。内置预设中该部分为空：
 
 ```json
 {
@@ -403,22 +412,25 @@ ante --provider local
 
 每个内置模型均带有 `weight_class`（`Feather`、`Middle` 或 `Heavy`），Ante 根据此属性自动进行智能选择：
 
-- **默认模型** — 选择提供商但未指明具体模型时，默认选用其 **Heavy** 旗舰模型。
+- **默认模型** — 选择提供商但未指明具体模型时，默认解析为其 **Heavy** 旗舰模型。
 - **辅助任务调用** — 网页内容摘要（`WebFetch`）等轻量内部任务自动选用该提供商的 **Feather** 经济模型。
 
-### 模型与提供商的解析仲裁规则（How a model and provider are chosen） {#how-a-model-and-provider-are-chosen}
+未设置 `weight_class` 的模型回退到目录声明顺序。在自定义模型上设置 `weight_class` 可以精确引导这些自动化选择。
 
-解析模型 ID 时分层覆盖（后生效者胜出）：
+## 模型与提供商的解析仲裁规则（How a model and provider are chosen） {#how-a-model-and-provider-are-chosen}
 
-1. **规范声明（Canonical spec）** — 目录中首个在其 `preferred_models` 中列出该 ID 的提供商。未知 ID 回退为纯基础默认规格。
-2. **`models` 覆盖** — 用户在 `models` 中对该 ID 的局部配置。
+解析模型 ID 时分层覆盖（后生效者覆盖前者）：
+
+1. **规范声明（Canonical spec）** — 目录中首个（按目录顺序）在其 `preferred_models` 中列出该 ID 的提供商。未知 ID 回退为纯基础默认规格。
+2. **`models` 覆盖** — 用户在 `models` 中对该 ID 的局部配置（若有）。
 3. **环境变量覆盖** — 进程环境变量优先级高于一切。
 
-当仅传入 `--model` 时，Ante 寻找已认证且包含该模型的提供商，其次回退至无需模型列表的已认证提供商，最后回退至默认提供商。
+提供商与模型的匹配：
+若仅传入 `--model`，Ante 会挑选已认证且其 `preferred_models` 列表包含该 ID 的提供商，其次回退至没有 `preferred_models` 的已认证提供商，最后回退至默认提供商。
 
-当同时传入 `--provider` 与 `--model` 时，显式指定的提供商只要通过认证即优先胜出。
+若同时传入 `--provider` 与 `--model`，显式指定的提供商只要通过认证即优先胜出。Ante 仍会首先全局解析模型 ID，因此已知 ID 即使由不同提供商提供，也会继承目录元数据和用户覆盖；未知 ID 作为裸模型规格原样透传。
 
-当均未指定时，Ante 自动按目录顺序选用第一个已认证提供商的 Heavy 旗舰模型（若均未认证则回退到 `local`）。
+当未传入 `--model` / `--provider` 时，Ante 执行自动检测：按目录顺序选用第一个已认证提供商的最高权重模型（参见[权重等级](#weight-classes)），若均未认证则回退到 `local`。
 
 ## 环境变量覆盖（Environment overrides） {#environment-overrides}
 
@@ -434,6 +446,21 @@ ante --provider local
 
 思考深度（Effort）无通用环境变量 —— 请通过命令行参数 [`--effort`](/reference/cli-reference#ante) 或配置文件中的 `effort` 字段指定。
 
+多个预设也支持专属的 base-URL 环境变量，且优先级高于 `MODEL_BASE_URL`：`ANTHROPIC_BASE_URL`、`OPENAI_BASE_URL`、`OPENAI_COMPATIBLE_BASE_URL`、`OPENROUTER_BASE_URL`、`DEEPSEEK_BASE_URL`。
+
 ## 容错处理（Error handling） {#error-handling}
 
-单个无效条目不会破坏整个配置文件。Ante 对 `catalog.json` 进行宽容反序列化：无法解析的条目会被跳过并打印启动提示，其余合法条目仍正常生效。仅当文件本身不是合法 JSON 时才会整体拒绝。若缺少 `catalog.json`，Ante 直接使用内置预设。
+单个无效条目不会破坏整个配置文件。Ante 对 `catalog.json` 进行宽容解析：任何反序列化失败的提供商或模型条目会被跳过，其余条目仍正常加载。跳过的条目会在启动时报告，例如：
+
+```
+Skipped 1 entry in ~/.ante/catalog.json:
+  - providers.my-provider: missing field `base_url`
+```
+
+仅当文件**根本不是一个 JSON 对象（isn't a JSON object at all）**时才会被整体拒绝。缺少 `catalog.json` 完全正常 —— Ante 会直接使用内置预设。
+
+## 相关章节（Related） {#related}
+
+- [模型提供商](/usage/providers) — 选择提供商与自定义配置配方
+- [存储与目录结构参考手册](/reference/storage-reference) — `catalog.json` 在磁盘上的位置
+- [离线模式](/local/offline) — 本地运行 GGUF 模型
