@@ -1,0 +1,97 @@
+---
+title: 版本更新与发布通道
+sidebar_label: "更新与通道"
+description: "保持 Ante 为最新版本，并选择符合需求的发布通道"
+---
+
+Ante 以单一二进制文件分发并支持原地自我更新 —— 首次安装使用的 `install.sh` 脚本会被 `ante update` 针对当前二进制追踪的通道重新运行。
+
+## 检查与更新 {#update}
+
+检查当前通道是否有更新的 Ante 发行版并在可用时安装：
+
+```bash
+ante update
+```
+
+若存在新版本，Ante 会运行对应通道的安装程序，并在安装就绪后打印新版本号。重启 Ante 即可使用新版本。
+
+如果当前已是最新版本，Ante 会打印确认信息并退出，不会修改二进制文件。
+
+### 在 TUI 终端界面中更新 {#update-from-the-tui}
+
+当有新版本可用时，正在运行的 TUI 会在聊天界面中显示包含 Release Notes 摘要的轻量提示。绝不会使用弹窗打断启动。
+
+- `/update`：安排在退出 Ante 时自动安装该版本
+- `/update cancel`：保留更新提示，但取消退出时自动安装的计划
+- `/update skip`：永久忽略当前版本；后续有更新的版本时仍会提示
+
+安装选择仅作用于当前运行的会话。Ante 在退出并恢复终端后完成更新应用，下次启动即进入新版本。
+
+## 锁定或回滚版本 {#pin-or-roll-back}
+
+使用 `--version` 安装指定版本：
+
+```bash
+ante update --version v0.preview.86
+ante update --version 0.preview.86
+```
+
+该方式会跳过通道的“版本更新校验”，因此可用于升级、重新安装当前版本，或回滚到已发布的历史版本。回滚时，Ante 会记录您回滚前的版本，避免后台更新提示立即建议重新安装。
+
+## 发布通道 {#channels}
+
+发布通道是特定构建流的命名跟踪分支。Ante 提供两个通道：
+
+| 通道 | 说明 |
+|---|---|
+| `stable` | 推荐日常使用。经过发布流程验证的稳定标签版本。 |
+| `nightly` | 基于开发主分支构建。新功能与 Bug 修复首先在这里发布。 |
+
+默认通道为 `stable`。二进制追踪的通道保存在 `~/.ante/settings.json` 的 `channel` 字段中。`ante update` 每次运行时都会读取默认配置文件；使用[指定配置 Profile](/configuration/preference#named-profiles) 启动的 TUI 会采用该 Profile 中指定的通道。
+
+```json
+{
+  "channel": "nightly"
+}
+```
+
+将 `channel` 设置为空字符串或省略该字段时，将回退至 `stable`。
+
+`latest` 是已废弃的历史通道名称。现有设置或命令中若仍使用 `latest`，将被视为 `stable`。
+
+## 切换发布通道 {#switching-channels}
+
+通过位置参数或 `--channel` 切换通道：
+
+```bash
+# 位置参数形式
+ante update nightly
+
+# 参数标识形式
+ante update --channel nightly
+```
+
+上述两种形式均会获取指定通道的发布清单并执行更新。此覆盖仅对单次更新生效 —— 若希望永久切换通道以便后续 `ante update` 自动跟踪新通道，请在 `~/.ante/settings.json` 中配置 `"channel": "nightly"`。
+
+通道名称仅可包含 ASCII 字母、数字、`.`、`_` 或 `-`。
+
+## 首次全新安装指定通道 {#initial-install}
+
+安装脚本同样支持传入通道名称。在全新机器上安装非默认通道：
+
+```bash
+curl -fsSL https://ante.run/install.sh | bash -s -- nightly
+```
+
+不带参数时，安装脚本默认采用 `stable`。
+
+默认情况下安装程序会将二进制文件写入 `~/.ante/bin`。若想安装到已在 `PATH` 中的其他目录，可设置 `ANTE_INSTALL_DIR`：
+
+```bash
+curl -fsSL https://ante.run/install.sh | ANTE_INSTALL_DIR=/usr/local/bin bash
+```
+
+## 更新检查机制 {#how-update-checks-work}
+
+在启动以及长会话运行期间，Ante 会在后台异步检查更新缓存。针对通道清单的网络请求由所有运行中的 Ante 进程共享，最多每小时检查一次；检查结果和发布说明会缓存在 `~/.ante/versions.json` 中。当有新版本时，TUI 会显示上述轻量提示。`ante update` 命令行会忽略本地缓存，实时重新拉取清单。

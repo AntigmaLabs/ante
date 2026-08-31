@@ -1,0 +1,57 @@
+---
+title: "AGENTS.md"
+description: "加载到每个 Ante 会话中的项目级与全局行为指引"
+---
+
+# AGENTS.md
+
+`AGENTS.md` 文件为 Ante 提供了独立于自动记忆之外的持久化行为规则指引。适用于制定智能体每次在项目中工作时都应遵循的稳定规则。
+
+## 文件位置 {#locations}
+
+当会话中提交首条用户消息时，Ante 会读取两个指引文件：
+
+| 位置 | 作用域 |
+|---|---|
+| `~/.ante/AGENTS.md` | 适用于所有项目的全局指引 |
+| `<project>/AGENTS.md` | 随代码库进行版本控制的项目指引 |
+
+全局路径遵循 `ANTE_HOME` 环境变量；若设置 `ANTE_HOME=/path/to/ante-home`，则全局文件为 `/path/to/ante-home/AGENTS.md`。
+
+### CLAUDE.md 兼容回退 {#claudemd-fallback}
+
+为了实现与 Claude Code 的零迁移兼容，当不存在 `AGENTS.md` 时，每个层级均会回退至 `CLAUDE.md` —— 每个层级仅读取一个文件，绝不同时读取两者：
+
+- **项目级**：Ante 从当前工作目录向上查找；在每个父级目录中优先检查 `AGENTS.md`，其次检查 `CLAUDE.md`。首个包含任一文件的目录胜出，若同级目录下两者并存，仅读取 `AGENTS.md`。
+- **全局级**：`~/.ante/AGENTS.md`，仅当该文件不存在时才回退至 `~/.claude/CLAUDE.md`。存在（即使为空）的 `~/.ante/AGENTS.md` 会阻止该回退。
+
+## Ante 如何注入指引 {#how-ante-applies-instructions}
+
+若两个文件均存在，Ante 会将它们合并为一个提示词提醒块（全局文件在前，项目文件在后）。空文件会被自动忽略。若全局和项目路径解析为同一文件，Ante 仅包含一次。
+
+项目指引适用于代码仓库特定的规则（如构建命令、代码风格规范、架构约束）；全局指引更适合配置通用的个人偏好（如回复格式或语言风格）。
+
+## 示例 {#example}
+
+```markdown title="~/.ante/AGENTS.md"
+# Global preferences
+
+- Keep responses concise.
+- Prefer actionable explanations over background.
+```
+
+```markdown title="AGENTS.md"
+# Project rules
+
+- Run `cargo test --workspace` before changing Rust code.
+- Keep public protocol changes backward compatible.
+- Update docs when CLI flags or config files change.
+```
+
+## AGENTS.md 与 MEMORY.md 的区别 {#agentsmd-vs-memorymd}
+
+`AGENTS.md` 是**人工编写的规则指引**。Ante 将其读取为必须遵守的行动准则。
+
+`MEMORY.md` 是**自动生成的项目记忆**。Ante 用其跨会话记录学习到的经验与上下文。
+
+使用 `AGENTS.md` 约束您希望强制执行的规则。使用记忆记录随着智能体熟悉代码库而可能动态演进的经验总结。

@@ -1,0 +1,173 @@
+---
+title: "存储与目录结构参考手册"
+sidebar_label: "存储与目录"
+description: "Ante 在本地文件系统中读写配置与状态的存储目录清单"
+---
+
+Ante 将配置与状态持久化保存在本地文件系统中。本页面为 Ante 读取或写入的每个文件系统位置提供完整参考。
+
+## 目录位置 {#locations}
+
+| 路径位置 | 用途说明 |
+|---|---|
+| `~/.ante/settings.json` | 用户偏好设置（模型、提供商、主题、MCP 服务器） |
+| `~/.ante/<name>.settings.json` | 通过 `--profile <name>` 或 `ANTE_PROFILE` 选定的完整设置 Profile 文件 |
+| `~/.ante/catalog.json` | 自定义提供商/模型目录 |
+| `~/.ante/auth/` | OAuth 凭据及应用内粘贴的 API 密钥（仅所有者可读权限；环境变量优先级更高） |
+| `~/.ante/AGENTS.md` | 注入到每个项目会话中的全局行为指引 |
+| `~/.ante/skills/` | 用户级全局技能（Skills） |
+| `~/.ante/agents/` | 用户级全局子智能体（Sub-agents） |
+| `~/.ante/.system/` | 由当前安装的 Ante 版本所管理的内置技能与子智能体 |
+| `~/.ante/sessions/<session-id>/` | 持久化会话数据（供 `/resume` 和 `--resume` 使用） |
+| `~/.ante/projects/<project-id>/memory/` | 各项目的专属自动记忆库 |
+| `~/.ante/cache/` | WebFetch 超大响应溢出暂存文件；启动时会自动清理超过 48 小时的条目 |
+| `~/.ante/run/jobs/<proc-id>/` | 后台 Bash 任务句柄：`status.json`、`stdout.txt` 和 `stderr.txt` |
+| `~/.ante/tmp/` | 一次性暂存文件；启动时会自动清理超过 48 小时的条目 |
+| `~/.ante/logs/<YYYY-MM-DD>/` | 应用程序与崩溃日志，按 UTC 日期归档（`ante.<pid>.log` 与 `ante.<pid>.crash.log`） |
+| `~/.ante/logs/llama-server.log` | 本地推理服务器日志 |
+| `~/.ante/models/` | 本地 GGUF 模型的默认存放目录 |
+| `~/.ante/llama.cpp/` | 托管的 llama.cpp 运行时安装目录 |
+| `~/.ante/offline-config.json` | 离线模式引擎、模型与服务端偏好设置 |
+| `~/.ante/verified_models.json` | 用户可选添加与覆盖的验证本地模型列表 |
+| `~/.ante/channels.json` | Slack 与 Discord 机器人网关配置 |
+| `~/.ante/versions.json` | 缓存的版本更新检查与发布说明状态 |
+| `~/.ante/user_input_history.jsonl` | TUI 历史输入提示词记录 |
+| `~/.ante/tip_history.json` | [加载状态技巧提示](/usage/tui#spinner-tips)的展示历史（删除可重置轮播） |
+| `~/.ante/installation-id` | 用于[遥测](/configuration/preference#identity)的随机安装标识（仅在配置遥测时写入；删除可重置身份标识） |
+| `AGENTS.md` | 与全局指引一同注入的项目级行为规范 |
+| `.ante/` | 项目本地配置（技能、子智能体） |
+| `.agents/`, `.claude/` | 兼容的项目本地技能/子智能体目录 |
+
+`<project-id>` 是项目绝对路径的规范化清理形式。环境变量 `ANTE_HOME` 可覆盖 `~/.ante` 路径。
+
+后台任务目录属于运行中进程的状态而非临时草稿。Ante 绝不会因时长原因清理正在运行的活跃任务；在任务结束后，其目录会保留 24 小时，并在随后的启动中完成回收。
+
+## `settings.json` {#settingsjson}
+
+存储用户偏好设置。所有字段均为可选。
+
+```json
+{
+  "model": "claude-sonnet-5",
+  "provider": "anthropic",
+  "theme": "default",
+  "permission_mode": "strict",
+  "permissions": {
+    "allow": ["Bash(npm run *)"],
+    "deny": ["Bash(rm *)"]
+  },
+  "channel": "stable",
+  "has_completed_onboarding": true,
+  "status_line": ["model-name", "current-dir"],
+  "model_effort": {
+    "claude-sonnet-5": "medium",
+    "gpt-5.4": "high"
+  },
+  "provider_model": {
+    "anthropic": "claude-sonnet-5"
+  },
+  "mcp_servers": {
+    "filesystem": {
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-filesystem", "/tmp"]
+    }
+  }
+}
+```
+
+命名 Profile 文件具有相同的 Schema，但在运行时全量替换 `settings.json`；它们不会从 `settings.json` 继承缺失的字段。关于 Profile 机制及完整字段参考，请参阅[偏好设置](/configuration/preference#named-profiles)。
+
+## `catalog.json` {#catalogjson}
+
+在内置目录的基础上添加或覆盖提供商与模型。两个顶层键均为可选。`my-provider` 键即为传入 `--provider` 的标识。若键匹配内置预设（如 `openai`），则逐字段修改该提供商；若为新键则添加提供商；`models` 下的条目将在模型解析时覆盖对应模型的字段属性。
+
+```json
+{
+  "providers": {
+    "my-provider": {
+      "display_name": "My Provider",
+      "base_url": "https://api.example.com/v1",
+      "wire_style": "OpenAiCompatible",
+      "auth": { "bearer": { "env_key": "MY_PROVIDER_API_KEY" } }
+    }
+  },
+  "models": {
+    "claude-sonnet-5": { "effort": "high", "max_tokens": 64000 }
+  }
+}
+```
+
+格式错误的提供商或模型条目会被单独跳过并在启动时报告。同一文件中的其他有效条目仍会正常加载。
+
+完整 Schema、认证格式与解析规则请参阅[目录参考手册](/reference/catalog-reference#catalogjson-schema)，定制配方请参阅[模型提供商](/usage/providers#custom-catalog)。
+
+## `AGENTS.md` {#agentsmd}
+
+存储智能体的持久化行为指引。`~/.ante/AGENTS.md` 全局生效，项目 `AGENTS.md` 作用于该代码仓库。当两者同时存在时，Ante 会在会话首条用户消息中同时注入两者。
+
+使用指南与优先级规则请参阅 [AGENTS.md](/extend/agents-md)。
+
+## 目录结构总览 {#layout}
+
+### 用户级目录（`~/.ante/`） {#user-level-ante}
+
+```
+~/.ante/
+├── settings.json       # 用户偏好设置
+├── <name>.settings.json # 命名 Profile 配置文件
+├── catalog.json        # 自定义提供商/模型目录
+├── auth/               # OAuth 凭证与应用内粘贴的 API 密钥
+├── AGENTS.md           # 全局行为指引
+├── installation-id     # 随机遥测安装标识
+├── user_input_history.jsonl # TUI 提示词历史
+├── tip_history.json    # 加载提示历史
+├── versions.json       # 更新缓存与发布说明状态
+├── channels.json       # 机器人网关配置
+├── offline-config.json # 离线模式配置
+├── verified_models.json # 可选的本地验证模型目录覆盖
+├── .system/            # Ante 管理的内置技能与子智能体
+├── skills/             # 用户级全局技能
+├── agents/             # 用户级全局子智能体
+├── sessions/           # 持久化会话（供 /resume 使用）
+├── projects/           # 各项目状态数据（记忆等）
+│   └── <project-id>/
+│       └── memory/
+│           └── MEMORY.md
+├── cache/              # WebFetch 超长网页暂存（48 小时）
+├── run/
+│   └── jobs/
+│       └── <proc-id>/  # 后台 Bash 状态与输出
+├── tmp/                # 一次性暂存目录（48 小时）
+├── logs/
+│   ├── <YYYY-MM-DD>/   # ante.<pid>.log 与崩溃日志
+│   └── llama-server.log
+├── models/             # 本地 GGUF 模型文件
+└── llama.cpp/          # 托管的本地推理引擎
+```
+
+### 项目级目录 {#project-local}
+
+```
+AGENTS.md               # 项目行为指引规范
+
+.ante/
+├── skills/             # 项目专属技能
+└── agents/             # 项目专属子智能体
+
+.agents/
+├── skills/             # 项目专属技能
+└── agents/             # 项目专属子智能体
+
+.claude/
+├── skills/             # 项目专属技能（Claude Code 兼容）
+└── agents/             # 项目专属子智能体（Claude Code 兼容）
+```
+
+## 相关章节 {#related}
+
+- [偏好设置](/configuration/preference) — 完整 `settings.json` 参考与环境变量列表
+- [目录参考手册](/reference/catalog-reference) — `catalog.json` Schema、内置提供商及模型 ID
+- [模型提供商](/usage/providers) — 选择提供商与自定义配置配方
+- [Skills 技能系统](/extend/skills) — 技能目录结构
+- [子智能体](/extend/subagents) — 子智能体目录结构
+- [持久化记忆](/extend/memory) — 自动记忆存储格式

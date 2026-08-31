@@ -1,0 +1,188 @@
+---
+title: "智能体组织架构（实验性）"
+sidebar_label: "智能体组织"
+description: "用于协同编排多 AI 智能体的多智能体架构模式"
+---
+
+Ante 支持多种组织智能体协同工作的架构模式。每种架构模式都在自主性、协调开销与输出质量之间进行了不同的权衡取舍。
+
+## 独立并行模式 {#independent}
+
+智能体针对同一问题无交互地并行工作。最终由聚合器（Aggregator）统一汇总提炼结论。
+
+**最适合：** 多元独立视角能够显著提升质量的任务（头脑风暴、多路冗余交叉验证）。
+
+```mermaid
+flowchart TB
+  classDef control fill:#e1f5ff,stroke:#4aa3df,color:#00324d;
+  classDef agent fill:#fff4e6,stroke:#e0a96d,color:#4a2c00;
+  classDef agg fill:#e6f3ff,stroke:#6ea8fe,color:#002b55;
+
+  Start([Start]) --> Fanout{{Parallel fan-out}}
+  Fanout --> A1[Agent 1]
+  Fanout --> A2[Agent 2]
+  Fanout --> A3[Agent 3]
+
+  A1 --> Barrier{{Barrier / sync}}
+  A2 --> Barrier
+  A3 --> Barrier
+
+  Barrier --> Agg[Aggregator<br/>Synthesis]
+  Agg --> End([End])
+
+  class Fanout,Barrier control;
+  class A1,A2,A3 agent;
+  class Agg agg;
+```
+
+## 去中心化协同模式 {#decentralized}
+
+智能体分轮次并行运行，读取其他智能体前序轮次的提案并提交改进意见。在固定轮次后，无需中心协调者即可自主形成共识。
+
+**最适合：** 辩论式推理、同行评审（Peer Review）或不应由单一权威主导的方案协商。
+
+```mermaid
+flowchart TB
+  classDef control fill:#e1f5ff,stroke:#4aa3df,color:#00324d;
+  classDef agent fill:#fff4e6,stroke:#e0a96d,color:#4a2c00;
+  classDef state fill:#f3f4f6,stroke:#9ca3af,color:#111827;
+  classDef decision fill:#ffe6f0,stroke:#f472b6,color:#4a044e;
+
+  Start([Start]) --> Init[Initialize]
+  Init --> Board[(Shared board<br/>proposals so far)]
+
+  Board --> Fanout{{Parallel: read & propose}}
+  Fanout --> A1[Agent 1<br/>Read board<br/>+ propose delta]
+  Fanout --> A2[Agent 2<br/>Read board<br/>+ propose delta]
+  Fanout --> A3[Agent 3<br/>Read board<br/>+ propose delta]
+
+  A1 --> Barrier{{Barrier / sync}}
+  A2 --> Barrier
+  A3 --> Barrier
+
+  Barrier --> Merge[Append deltas<br/>to board]
+  Merge --> Board
+
+  Board --> Stop{{Stop?<br/>round limit or convergence}}
+  Stop -->|No| Fanout
+  Stop -->|Yes| Consensus[Consensus formation<br/>from board]
+  Consensus --> End([End])
+
+  class Fanout,Barrier control;
+  class A1,A2,A3 agent;
+  class Board state;
+  class Stop decision;
+```
+
+## 中心化迭代模式 {#centralized-iterative}
+
+由中心编排者（Orchestrator）拆解问题、并行派发智能体、评估执行结果，并决定继续微调还是完成输出。
+
+**最适合：** 受益于自顶向下严密规划与质量关卡（Quality Gate）的复杂任务（带评审的代码生成、多阶段研究）。
+
+```mermaid
+flowchart TB
+  classDef control fill:#e1f5ff,stroke:#4aa3df,color:#00324d;
+  classDef agent fill:#fff4e6,stroke:#e0a96d,color:#4a2c00;
+  classDef orch fill:#e6f3ff,stroke:#6ea8fe,color:#002b55;
+  classDef eval fill:#ffe6e6,stroke:#fb7185,color:#4c0519;
+  classDef state fill:#f3f4f6,stroke:#9ca3af,color:#111827;
+  classDef decision fill:#ffe6f0,stroke:#f472b6,color:#4a044e;
+
+  Start([Start]) --> Setup[Setup]
+  Setup --> Workspace[(Workspace<br/>tasks + results)]
+
+  Workspace --> Orch[Orchestrator<br/>Decompose / refine plan]
+  Orch --> Fanout{{Parallel: execute tasks}}
+  Fanout --> A1[Agent 1]
+  Fanout --> A2[Agent 2]
+  Fanout --> A3[Agent 3]
+
+  A1 --> Barrier{{Barrier / sync}}
+  A2 --> Barrier
+  A3 --> Barrier
+
+  Barrier --> Write[Write results<br/>to workspace]
+  Write --> Workspace
+
+  Workspace --> OrchEval[Orchestrator<br/>Evaluate quality]
+  OrchEval --> Stop{{Done?}}
+  Stop -->|No: refine| Orch
+  Stop -->|Yes| Final[Final<br/>Synthesis]
+  Final --> End([End])
+
+  class Fanout,Barrier control;
+  class A1,A2,A3 agent;
+  class Orch orch;
+  class OrchEval eval;
+  class Workspace state;
+  class Stop decision;
+```
+
+## 混合迭代模式 {#hybrid-iterative}
+
+将中心化编排与去中心化同行互评相结合。编排者负责规划并分派智能体，随后智能体在同行轮次中相互润色工作成果，最后由编排者进行质量评估。
+
+**最适合：** 对产出质量要求极高的协作型任务（协作写作、架构设计）。
+
+```mermaid
+flowchart TB
+  classDef control fill:#e1f5ff,stroke:#4aa3df,color:#00324d;
+  classDef agent fill:#fff4e6,stroke:#e0a96d,color:#4a2c00;
+  classDef peer fill:#f0e6ff,stroke:#a78bfa,color:#2e1065;
+  classDef orch fill:#e6f3ff,stroke:#6ea8fe,color:#002b55;
+  classDef eval fill:#ffe6e6,stroke:#fb7185,color:#4c0519;
+  classDef state fill:#f3f4f6,stroke:#9ca3af,color:#111827;
+  classDef decision fill:#ffe6f0,stroke:#f472b6,color:#4a044e;
+
+  Start([Start]) --> Setup[Setup]
+  Setup --> Workspace[(Workspace<br/>drafts + notes)]
+
+  Workspace --> Orch[Orchestrator<br/>Plan]
+  Orch --> Fanout1{{Parallel: draft}}
+  Fanout1 --> A1[Agent 1]
+  Fanout1 --> A2[Agent 2]
+  Fanout1 --> A3[Agent 3]
+
+  A1 --> Barrier1{{Barrier / sync}}
+  A2 --> Barrier1
+  A3 --> Barrier1
+
+  Barrier1 --> Write1[Write drafts<br/>to workspace]
+  Write1 --> Workspace
+
+  Workspace --> Fanout2{{Parallel: peer refine}}
+  Fanout2 --> PR1[Peer 1<br/>Refine using others]
+  Fanout2 --> PR2[Peer 2<br/>Refine using others]
+  Fanout2 --> PR3[Peer 3<br/>Refine using others]
+
+  PR1 --> Barrier2{{Barrier / sync}}
+  PR2 --> Barrier2
+  PR3 --> Barrier2
+
+  Barrier2 --> Write2[Write refinements<br/>to workspace]
+  Write2 --> Workspace
+
+  Workspace --> OrchEval[Orchestrator<br/>Evaluate quality]
+  OrchEval --> Stop{{Done?}}
+  Stop -->|No: continue| Orch
+  Stop -->|Yes| Final[Final<br/>Synthesis]
+  Final --> End([End])
+
+  class Fanout1,Fanout2,Barrier1,Barrier2 control;
+  class A1,A2,A3 agent;
+  class PR1,PR2,PR3 peer;
+  class Orch orch;
+  class OrchEval eval;
+  class Workspace state;
+  class Stop decision;
+```
+
+## 选择架构模式 {#choosing-an-architecture}
+
+| 架构模式 | 协调机制 | 迭代方式 | 适用场景 |
+|---|---|---|---|
+| **独立并行** | 无 | 单轮直出 | 需要多角度独立见解且无交互开销 |
+| **去中心化** | 点对点 Peer-to-peer | 固定轮次 | 智能体在无中心权威下自组织形成共识 |
+| **中心化迭代** | 编排者驱动 | 质量关卡把关 | 具备评估检查点的结构化问题拆解与迭代 |
+| **混合迭代** | 编排者 + 同行互评 | 质量关卡把关 | 兼顾自顶向下规划与自底向上精细同行评审 |

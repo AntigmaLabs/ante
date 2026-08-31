@@ -1,0 +1,152 @@
+---
+title: "Skills 技能系统"
+sidebar_label: "Skills 技能"
+description: "通过 Agent Skills 开放格式为 Ante 赋予全新能力与专业领域知识"
+---
+
+# Skills 技能系统
+
+Skills（技能）是包含指令、脚本和资源的文件夹，用于扩展 Ante 的能力。它们遵循开放的 [Agent Skills](https://agentskills.io) 格式，使其可在兼容的智能体产品之间自由移植。
+
+## 创建技能 {#creating-a-skill}
+
+一个 Skill 对应一个包含 `SKILL.md` 文件的目录：
+
+```
+commit/
+└── SKILL.md
+```
+
+`SKILL.md` 包含 YAML Frontmatter 元数据及 Markdown 指令：
+
+```markdown
+---
+name: commit
+description: Create a git commit with a descriptive message following conventional commit format.
+---
+
+Look at the current git diff and create a commit with a clear,
+descriptive message that follows conventional commit format.
+Use `git add` to stage relevant files first.
+```
+
+### 包含工具与参考资料的技能示例 {#example-review-skill-with-tools-and-references}
+
+```
+review/
+├── SKILL.md
+└── references/
+    └── checklist.md
+```
+
+```markdown
+---
+name: review
+description: Review code changes for bugs, security issues, and style.
+argument-hint: <path>
+---
+
+Review the code at $ARGUMENTS for bugs, security vulnerabilities, style issues, and missing error handling.
+
+See [checklist](references/checklist.md) for the full review checklist.
+```
+
+Frontmatter 解析对常见的标量格式容错：包含 `: `、以流式符号（如 `[` 或 `{`）开头或包含行内注释的未加引号值在无歧义时会自动修复。格式错误的嵌套 YAML 仍会报错，避免静默加载损坏的元数据。该配置块上限为 16 KB 和 32 层嵌套；超出限制将直接显式报错退出而非部分加载。子智能体 Frontmatter 采用相同的解析器与规则。
+
+## 技能目录位置 {#skill-directories}
+
+| 目录位置 | 作用域 |
+|---|---|
+| `~/.claude/skills/` | 用户级（Claude Code 兼容） |
+| `~/.agents/skills/` | 用户级（兼容目录 —— 在 `~/.ante/skills/` 之前加载） |
+| `~/.ante/skills/` | 用户级（在所有项目中可用） |
+| `.claude/skills/` | 项目级（Claude Code 兼容） |
+| `.agents/skills/` | 项目级 |
+| `.ante/skills/` | 项目级（当前项目专属） |
+
+## SKILL.md Frontmatter 字段 {#skillmd-frontmatter}
+
+| 字段 | 必填 | 默认值 | 说明 |
+|---|---|---|---|
+| `name` | 否 | 所在目录名 | 技能的唯一标识符 |
+| `description` | 否 | 第一段正文 | 该技能的作用及何时应调用 |
+| `argument-hint` | 否 | — | 参数提示占位文本（如 `<path>`） |
+| `user-invocable` | 否 | `true` | 是否支持用户通过斜杠命令手动调用 |
+| `disable-model-invocation` | 否 | `false` | 防止模型自动调用该技能 |
+| `metadata` | 否 | — | 自定义键值对元数据 |
+
+来自其他智能体产品的未识别字段（如 `allowed-tools`）会被兼容容忍并忽略，现有技能无需修改即可直接加载。
+
+## 可选子目录 {#optional-directories}
+
+```
+my-skill/
+├── SKILL.md           # 必选 — 操作指令
+├── scripts/           # 智能体可执行的代码脚本
+├── references/        # 按需加载的补充文档
+└── assets/            # 模板、Schema、数据文件
+```
+
+## 技能发现优先级 {#how-skills-are-discovered}
+
+技能按以下优先级顺序发现（同名技能后者覆盖前者）：
+
+1. 系统级（内置系统技能）
+2. `~/.claude/skills/`（用户级，Claude Code 兼容）
+3. `~/.agents/skills/`（用户级，兼容）
+4. `~/.ante/skills/`（用户级）
+5. `.claude/skills/`（项目级，Claude Code 兼容）
+6. `.agents/skills/`（项目级）
+7. `.ante/skills/`（项目级）
+
+发现的技能会在附加到首条用户消息的提醒中声明给模型，[子智能体](/extend/subagents)会自动继承父会话的技能。
+
+启动 Ante 时传入 `--no-skills` 可完全跳过技能发现。不会向模型声明任何系统、用户或项目技能，也不会暴露为斜杠命令，`/resume` 会为恢复的会话保留该选择。若要持久化关闭技能，请在 [`settings.json`](/configuration/preference#settings-file) 中设置 `"skills": false`（`--skills` 可单次重新启用）。内置的 `--profile bare` 同样禁用技能。
+
+### 按需选择特定技能 {#selecting-individual-skills}
+
+若需针对性添加或排除特定技能而非全量开关，请在 [`settings.json`](/configuration/preference#settings-file) 中配置 `exclude_skills` / `include_skills`：
+
+```json
+{
+  "exclude_skills": ["noisy-skill"],
+  "include_skills": ["deploy-checklist"]
+}
+```
+
+两者均接受精确的技能名称。`exclude_skills` 从所有会话中排除指定技能且优先级高于 `include_skills`；`include_skills` 在会话基础技能集之上额外引入技能（类似于工具的 `--include-tools`）。该选择对全新会话和恢复会话均有效。
+
+## 内置系统级技能 {#bundled-skills}
+
+Ante 在系统级别内置了以下技能：
+
+| 技能 | 功能说明 |
+|---|---|
+| `ante-guide` | 基于官方文档解答关于 Ante 自身的问题，并处理修改 Ante 配置的请求。仅模型自动调用 |
+| `skill-creator` | 创建、改进与评测技能（`/skill-creator`） |
+| `tmux` | 在命名 tmux 会话中驱动交互式终端、服务器和 REPL —— 参见[终端会话](/usage/tui#terminal-sessions)。仅模型自动调用 |
+| `resume-claude` | 在当前目录中继续接管最近的 Claude Code 会话（`/resume-claude`） |
+| `resume-codex` | 在当前目录中接管最近的 Codex 会话（`/resume-codex`） |
+
+同名的用户或项目技能会覆盖内置版本。
+
+## 使用技能 {#using-skills}
+
+```
+/commit
+/review src/core/session.rs
+```
+
+在技能名称后键入的任何内容均作为参数传递给技能。参数如何注入指令取决于技能使用的占位符：
+
+| 占位符 | 替换规则 |
+|---|---|
+| `$ARGUMENTS` | 完整参数字符串（原样逐字替换） |
+| `${1}`, `${2}`, … | 第 1、第 2 个空格分隔的参数（引号包裹的内容保持分组） |
+| `${1:default}` | 位置参数，缺失时使用 `default` 默认值 |
+
+若技能指令中未包含任何占位符，参数会自动追加在 `<arguments>` 块中传递给智能体。
+
+## 了解更多 {#learn-more}
+
+关于命名规范、渐进式信息披露与验证规则的完整细节，请参阅[完整规范（Agent Skills Specification）](https://agentskills.io/specification)。

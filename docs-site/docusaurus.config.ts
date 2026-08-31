@@ -10,11 +10,11 @@ const isZhHansBuild = process.env.DOCUSAURUS_CURRENT_LOCALE === 'zh-Hans'
 
 const docsFooterItems = isZhHansBuild
   ? [
-      { label: 'Antix 简介', to: '/antix/introduction' },
-      { label: '快速入门', to: '/antix/quickstart' },
-      { label: '路由与 BYOK', to: '/antix/concepts/routing' },
-      { label: '虚拟密钥与预算', to: '/antix/concepts/virtual-keys' },
-      { label: '隐私与安全', to: '/antix/concepts/security' },
+      { label: '概览', to: '/' },
+      { label: '快速入门', to: '/start/quickstart' },
+      { label: '基准评测', to: '/benchmarks/eval' },
+      { label: '本地模型', to: '/local/overview' },
+      { label: '模型提供商', to: '/usage/providers' },
     ]
   : [
       { label: 'Overview', to: '/' },
@@ -22,6 +22,21 @@ const docsFooterItems = isZhHansBuild
       { label: 'Benchmarks', to: '/benchmarks/eval' },
       { label: 'Local Models', to: '/local/overview' },
       { label: 'Providers', to: '/usage/providers' },
+    ]
+
+const footerCommunityItems = [
+  { label: 'Discord', href: 'https://discord.gg/pqhj3DNGz2' },
+  { label: 'GitHub', href: 'https://github.com/AntigmaLabs/ante' },
+]
+
+const footerCompanyItems = isZhHansBuild
+  ? [
+      { label: '官网', href: 'https://antigma.ai' },
+      { label: '实时评测', href: 'https://antigma.ai/eval' },
+    ]
+  : [
+      { label: 'Home', href: 'https://antigma.ai' },
+      { label: 'Live Eval', href: 'https://antigma.ai/eval' },
     ]
 
 const legacyAnteRedirects = [
@@ -87,7 +102,7 @@ const config: Config = {
         docs: {
           routeBasePath: '/',
           sidebarPath: './sidebars.ts',
-          include: isZhHansBuild ? ['antix/**/*.{md,mdx}'] : ['**/*.{md,mdx}'],
+          include: ['**/*.{md,mdx}'],
         },
         blog: false,
         theme: {
@@ -159,11 +174,11 @@ const config: Config = {
         {
           href: 'https://antigma.ai/eval',
           position: 'left',
-          label: 'Live Eval',
+          label: isZhHansBuild ? '实时评测' : 'Live Eval',
         },
         {
           href: 'https://antigma.ai',
-          html: socialLinkHtml('Home', websiteIcon),
+          html: socialLinkHtml(isZhHansBuild ? '官网' : 'Home', websiteIcon),
           position: 'right',
         },
         {
@@ -189,22 +204,16 @@ const config: Config = {
       style: 'dark',
       links: [
         {
-          title: 'Docs',
+          title: isZhHansBuild ? '文档' : 'Docs',
           items: docsFooterItems,
         },
         {
-          title: 'Community',
-          items: [
-            { label: 'Discord', href: 'https://discord.gg/pqhj3DNGz2' },
-            { label: 'GitHub', href: 'https://github.com/AntigmaLabs/ante' },
-          ],
+          title: isZhHansBuild ? '社区' : 'Community',
+          items: footerCommunityItems,
         },
         {
-          title: 'Company',
-          items: [
-            { label: 'Home', href: 'https://antigma.ai' },
-            { label: 'Live Eval', href: 'https://antigma.ai/eval' },
-          ],
+          title: isZhHansBuild ? '公司' : 'Company',
+          items: footerCompanyItems,
         },
       ],
       copyright: `Copyright © ${new Date().getFullYear()} Antigma Labs`,

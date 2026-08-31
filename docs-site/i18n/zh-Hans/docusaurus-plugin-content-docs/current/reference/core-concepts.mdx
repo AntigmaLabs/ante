@@ -1,0 +1,205 @@
+---
+title: "核心概念与协议体系"
+sidebar_label: "核心概念"
+description: "Ante 的底层抽象层级模型，以及连接各层级的 Op/Evt 消息传递协议"
+---
+
+Ante 将智能体交互建模为层次化的概念体系，并通过强类型的消息传递协议进行连接驱动。
+
+## 概念层级模型 {#concept-hierarchy}
+
+```
+Project (项目)
+ └── Session (会话)
+      └── Task (任务)
+           └── Turn (轮次)
+                └── Step (单步)
+```
+
+| 概念 | 说明 |
+|---|---|
+| **Project**（项目） | Git 仓库或根目录。可以拥有多个独立会话。 |
+| **Session**（会话） | 用户与 Ante 之间的一次完整交互生命周期。负责管理对话状态、Token 消耗统计与上下文自动压缩。 |
+| **Task**（任务） | 用户希望完成的一项具体工作。可以跨越多个 Turn 轮次。 |
+| **Turn**（轮次） | 与智能体的一轮问答来回。以用户输入为起点，以智能体回复或工具审批请求为终点。 |
+| **Step**（单步） | 智能体与大语言模型（LLM）的单次底层交互。负责处理工具调用（Tool Call）等中间逻辑。 |
+
+:::note
+通常情况下，若没有工具审批中断，一个 Task 任务通常包含一个 Turn 轮次。
+:::
+
+## 协议体系：操作指令与事件流 {#protocol-ops-and-events}
+
+Ante 在客户端（TUI 或无头运行器）与守护进程 Daemon 之间采用消息传递协议。操作指令（`Op`）从客户端流向守护进程，事件流（`Evt`）从守护进程流向客户端。
+
+### 消息 ID 规范 {#message-ids}
+
+每条消息均包含带有 4 字节前缀的自定义 `Id` 类型，便于链路追踪：
+
+- `op_` — 操作指令（Operations）
+- `evt_` — 状态事件（Events）
+- `ses_` — 会话（Sessions）
+- `step_` — 模型单步交互（Steps）
+
+## 操作指令参考 {#operations-reference}
+
+操作指令（`Op`）由客户端发送给守护进程，封装在携带唯一 `Id` 的 `OpMsg` 消息封装中。
+
+| 操作指令 (Op) | 载荷参数 (Payload) | 说明 |
+|---|---|---|
+| `StartSession` | `SessionConfig` | 使用模型、提供商、策略和选项初始化新会话 |
+| `UpdateSession` | `SessionUpdate` | 在不重启的情况下原地更新活跃会话（例如切换模型） |
+| `ResumeSession` | `session_id` | 恢复此前持久化保存的历史会话 |
+| `UserInput` | `String` | 提交用户输入的提示词内容 |
+| `Steer` | `String` | 向当前正在运行的轮次注入额外的用户引导指令 |
+| `ApprovalResponse` | `turn_id`, `responses: [ToolDecision]` | 响应工具审批请求；`Deny` 拒绝时可携带返回给模型的 `message` 反馈 |
+| `SlashCommand` | `name`, `args` | 按名称调用 Skill 技能 |
+| `RegisterLocalProvider` | `port`, `model?` | 将运行中的本地 llama-server 注册为 `local` 提供商 |
+| `RestoreLocalProvider` | — | 恢复此前注册的本地提供商 |
+| `Interrupt` | — | 中断当前正在运行的操作 |
+| `Shutdown` | — | 优雅关闭守护进程 |
+
+## 状态事件参考 {#events-reference}
+
+事件流（`Evt`）由守护进程推送到客户端，封装在携带时间戳、唯一 `Id` 以及可选的用于关联触发该事件的操作的 `parent` ID 的 `EventMsg` 消息封装中。
+
+| 状态事件 (Evt) | 载荷参数 (Payload) | 说明 |
+|---|---|---|
+| `SessionStart` | `SessionInitialized` | 会话初始化就绪（包含模型、提供商、会话 ID、工作目录） |
+| `SessionUpdated` | `SessionInitialized` | 会话属性已原地更新（例如模型已切换） |
+| `SessionEnd` | — | 会话终止结束 |
+| `TurnStart` | `turn_id` | 新轮次已开始 |
+| `TurnPause` | `turn_id`, `reason` | 轮次暂停（例如等待工具调用审批） |
+| `TurnEnd` | `turn_id`, `status` | 轮次执行完毕、被中断或发生错误 |
+| `AgentMessage` | `String` | 智能体生成的完整文本回复 |
+| `Thinking` | `String` | 完整的思考推理独白块 |
+| `MessageDelta` | `String` | 增量流式文本消息片段 |
+| `ThinkingDelta` | `String` | 增量流式思考内容片段 |
+| `ToolStart` | `ToolUse` | 工具调用开始执行 |
+| `ToolUpdate` | `tool_use_id`, `seq`, `message` | 工具执行进度更新 |
+| `ToolEnd` | `tool_use_id`, `status`, `result_json`, `is_error` | 工具执行完成 |
+| `UsageUpdate` | `usage` | Token 消耗与统计数据更新 |
+| `CompactStart` | — | 对话历史压缩开始 |
+| `CompactEnd` | — | 对话历史压缩完成 |
+| `ExtensionRefreshed` | `skills`, `subagents` | Skills 与子智能体已刷新 |
+| `UserInput` | `String` | 仅用于会话回放 —— 出现在恢复的历史会话中，非实时轮次发出 |
+| `Info` | `String` | 通用通知信息 |
+| `Error` | `String` | 错误提示信息 |
+| `Goodbye` | — | 断开连接前的最终消息 |
+
+:::note
+关于包含报文格式示例与所有类型定义的完整协议参考，请参阅[通信协议参考手册](/reference/protocol-reference)。
+:::
+
+## 交互时序流程示例 {#flow-examples}
+
+### 基础交互流程 {#basic-ui-flow}
+
+单次用户输入场景下，轮次暂停等待审批（`TurnPause`）并随后恢复执行的时序：
+
+```mermaid
+sequenceDiagram
+  autonumber
+  box "UI (客户端)"
+    participant User
+  end
+  box "Daemon (守护进程)"
+    participant Core
+    participant Session
+    participant Turn
+  end
+  box "LLM Provider (模型提供商)"
+    participant LLM
+  end
+
+  User->>Core: Op::StartSession
+  Core->>Session: 创建会话
+  Core-->>User: Evt::SessionStart
+
+  User->>Session: Op::UserInput
+  Session-->>+Turn: 启动轮次
+  Turn-->>User: Evt::TurnStart
+
+  rect rgb(245,245,245)
+    note over Turn,LLM: 审批暂停前
+    Turn->>LLM: 提示词 prompt
+    LLM-->>Turn: 模型响应 (工具调用)
+    Turn-->>User: Evt::TurnPause (Approval 审批)
+    User->>Turn: Op::ApprovalResponse(Accept 允许)
+    Turn-->>User: Evt::ToolStart
+    Turn->>Turn: 执行工具
+    Turn-->>User: Evt::ToolEnd
+  end
+
+  rect rgb(245,245,245)
+    note over Turn,LLM: 审批通过后 (同轮次继续)
+    Turn->>LLM: 工具执行结果
+    LLM-->>Turn: 模型响应 (工具调用)
+    Turn-->>User: Evt::ToolStart
+    Turn->>Turn: 应用修改 (自动放行)
+    Turn-->>User: Evt::ToolEnd
+    Turn->>LLM: 执行结果
+    LLM-->>Turn: 模型响应 (最终消息)
+    Turn-->>User: Evt::AgentMessage
+  end
+
+  Turn-->>-User: Evt::TurnEnd (Completed 完成)
+```
+
+### 中断处理流程 {#interruption-flow}
+
+中断正在运行的轮次并以新输入继续执行：
+
+```mermaid
+sequenceDiagram
+  autonumber
+  box "UI (客户端)"
+    participant User
+  end
+  box "Daemon (守护进程)"
+    participant Session
+    participant Turn1
+    participant Turn2
+  end
+  box "LLM Provider (模型提供商)"
+    participant LLM
+  end
+
+  User->>Session: Op::UserInput
+  Session-->>+Turn1: 启动轮次
+  Turn1-->>User: Evt::TurnStart
+  Turn1->>LLM: 提示词 prompt
+  LLM-->>Turn1: 模型响应 (工具调用)
+  Turn1-->>User: Evt::ToolStart
+  Turn1->>Turn1: 执行 (自动放行)
+  Turn1-->>User: Evt::ToolEnd
+  Turn1->>LLM: 工具结果
+  Turn1-->>LLM: 模型响应 (工具调用)
+  Turn1->>Turn1: 执行 (自动放行)
+  User->>Turn1: Op::Interrupt (中断)
+  Turn1-->>-User: Evt::TurnEnd (Interrupted 被中断)
+
+  User->>Session: Op::UserInput
+  Session-->>+Turn2: 启动新轮次
+  Turn2-->>User: Evt::TurnStart
+  Turn2->>LLM: 提示词 prompt
+  LLM-->>Turn2: 模型响应 (工具调用)
+  Turn2->>Turn2: 执行 (自动放行)
+  Turn2-->>User: Evt::ToolEnd
+  Turn2->>LLM: 工具结果
+  LLM-->>Turn2: 模型响应 (文本消息)
+  Turn2-->>User: Evt::AgentMessage
+  Turn2-->>-User: Evt::TurnEnd (Completed 完成)
+```
+
+## 上下文管理 {#context-management}
+
+Ante 自动管理上下文窗口：
+
+- **Token 预算控制** — 每个轮次均依据模型的上下文上限精确追踪 Token 占用
+- **自动压缩** — 当对话接近上下文上限时，Ante 调用大模型对历史对话进行摘要总结，在释放 Token 的同时保留关键上下文。默认开启；可通过 `auto_compact` [配置项](/configuration/preference#settings-file)关闭（手动 `/compact` 与溢出恢复依然可用）
+- **工具输出裁剪** — 超大工具输出结果会自动裁剪以适配预算范围
+
+## 权限控制 {#permissions}
+
+Ante 内置权限管控系统控制工具执行。规则按首个命中即生效的顺序评估，支持三种判定：**Allow**（允许）、**Ask**（询问）与 **Deny**（拒绝）。完整细节请参阅[权限控制](/configuration/permission)。

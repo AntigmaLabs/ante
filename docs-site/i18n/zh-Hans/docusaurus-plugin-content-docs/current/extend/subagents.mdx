@@ -1,0 +1,94 @@
+---
+title: "Sub-Agents 子智能体"
+sidebar_label: "子智能体"
+description: "将复杂多步骤任务委托给专门的子智能体处理"
+---
+
+# Sub-Agents 子智能体
+
+Sub-Agents（子智能体）是主智能体在处理复杂、多步骤任务时派生出的专业智能体。每个子智能体在专属的提示词、工具集以及可选的独立模型配置下运行。
+
+## 内置子智能体 {#built-in-sub-agents}
+
+Ante 内置了两个开箱即用的子智能体：
+
+### general（通用研究子智能体） {#general}
+
+通用智能体，用于调研复杂问题、搜索代码并执行多步骤任务。当主智能体需要进行无法在几次简单尝试内完成的搜索时会委派给它。
+
+### explorer（代码探索子智能体） {#explorer}
+
+针对代码库探索高度优化的快速智能体。能快速按模式定位文件、按关键字搜索代码并回答关于代码库结构的问题。
+
+关于 Ante 自身的问题由内置的 `ante-guide` [技能](/extend/skills#bundled-skills)处理，而非子智能体。
+
+## 创建自定义子智能体 {#creating-custom-sub-agents}
+
+在 `~/.ante/agents/`（用户级）或以下任何项目级位置创建带有 YAML Frontmatter 的 Markdown 文件：
+
+```markdown
+---
+name: security-reviewer
+description: Reviews code for security vulnerabilities and OWASP top 10 issues
+tools:
+  - Read
+  - Grep
+  - Glob
+---
+
+You are a security-focused code reviewer. Analyze the provided code for:
+
+- Injection vulnerabilities (SQL, command, XSS)
+- Authentication and authorization flaws
+- Sensitive data exposure
+- Security misconfiguration
+- Known vulnerable dependencies
+
+Provide findings with severity ratings and remediation steps.
+```
+
+### Frontmatter 字段说明 {#frontmatter-fields}
+
+| 字段 | 必填 | 说明 |
+|---|---|---|
+| `name` | 是 | 子智能体的唯一标识名称 |
+| `description` | 是 | 该智能体的职责描述（展示给主智能体以供委派决策） |
+| `model` | 否 | 覆盖该子智能体使用的大语言模型 |
+| `tools` | 否 | 严格限制该子智能体允许调用的工具列表 |
+
+Frontmatter 的读取规则与[技能 Frontmatter](/extend/skills#creating-a-skill)完全一致：常见的未加引号标量错误在无歧义时会自动修复，配置块上限为 16 KB 和 32 层嵌套。超出限制或遇到无法修复的 YAML 时会显式报错退出。
+
+## 协同工作机制 {#how-sub-agents-work}
+
+当主智能体遇到匹配子智能体描述的任务时，会通过内置的 `Agent` 工具拉起子智能体：
+
+1. 主智能体评估当前可用的子智能体及其职责描述
+2. 通过 `Agent` 工具携带详细的提示词发起任务委派
+3. 子智能体在独立的上下文中自主运行
+4. 执行结果返回给主智能体，主智能体将其融入对话上下文
+
+子智能体会自动继承父会话中配备的[技能](/extend/skills)，使基于技能的工作流在委派任务内部继续生效。委派深度限制为一层：子智能体本身不携带 `Agent` 工具，无法继续派生下级智能体。
+
+```
+┌────────────┐     Agent 工具   ┌──────────────┐
+│  主智能体   │ ────────────▶  │   子智能体    │
+│ Main Agent │ ◀────────────  │  (Explorer)  │
+│            │    返回结果     └──────────────┘
+│            │
+│            │     Agent 工具   ┌──────────────┐
+│            │ ────────────▶  │   子智能体    │
+│            │ ◀────────────  │  (General)   │
+└────────────┘    返回结果     └──────────────┘
+```
+
+## 智能体发现优先级 {#discovery}
+
+子智能体按以下优先级顺序发现（同名智能体后者覆盖前者）：
+
+1. 内置智能体（`general`、`explorer`）
+2. `~/.ante/agents/`（用户级）
+3. `.agents/agents/`（项目级）
+4. `.ante/agents/`（项目级）
+5. `.claude/agents/`（项目级，Claude Code 兼容）
+
+用户级和项目级智能体会与内置智能体一同加载。所有可用智能体在会话初始化时注册，并在附加到首条用户消息的提醒中声明给模型，通过 `ExtensionRefreshed` 协议事件保持刷新。

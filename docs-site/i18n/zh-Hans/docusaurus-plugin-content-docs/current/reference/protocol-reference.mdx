@@ -1,0 +1,810 @@
+---
+title: "通信协议参考手册"
+sidebar_label: "通信协议"
+description: "Ante 客户端与守护进程之间的消息协议、报文传输格式与类型定义的完整参考手册"
+---
+
+Ante 在客户端（Client）与守护进程（Daemon）之间采用强类型的消息传递协议。在同进程内（In-Process）通过有界异步通道交换消息，外部客户端则通过标准输入输出（stdin/stdout）上的 JSON Lines 格式进行通信。
+
+## 传输协议格式 {#wire-format}
+
+外部客户端使用 **JSON Lines** (JSONL) 与守护进程通信 —— 通过 stdin/stdout 每行传输一个 JSON 对象。
+
+- **客户端 → 守护进程（Client → Daemon）**：向 stdin 写入 `OpMsg` 对象（每行一个 JSON）
+- **守护进程 → 客户端（Daemon → Client）**：从 stdout 读取 `EventMsg` 对象（每行一个 JSON）
+
+### OpMsg 消息封装 {#opmsg-envelope}
+
+每个操作指令均封装在 `OpMsg` 中：
+
+```json
+{
+  "op": { "StartSession": { "model": "claude-sonnet-5", "provider": "anthropic" } },
+  "id": "op_01ARZ3NDEKTSV4RRFFQ69G5FAV"
+}
+```
+
+### EventMsg 消息封装 {#eventmsg-envelope}
+
+每个状态事件均封装在 `EventMsg` 中：
+
+```json
+{
+  "timestamp": "2025-06-01T12:00:00Z",
+  "id": "evt_01ARZ3NDEKTSV4RRFFQ69G5FAV",
+  "event": { "AgentMessage": "这是生成的代码..." },
+  "parent": "op_01ARZ3NDEKTSV4RRFFQ69G5FAV"
+}
+```
+
+`parent` 字段用于关联触发该事件的操作指令 ID。在不适用时为 `null`。
+
+## 消息 ID {#message-ids}
+
+每个消息都拥有强类型的 `Id`，由前缀（最多 4 字节）与 [ULID](https://github.com/ulid/spec) 组成。字符串格式为 `{prefix}_{ulid}`。
+
+| 前缀 | 用途 |
+|---|---|
+| `op_` | 操作指令（客户端 → 守护进程） |
+| `evt_` | 状态事件（守护进程 → 客户端） |
+| `ses_` | 会话唯一标识符 |
+| `step_` | 模型单步调用标识符 |
+
+示例：`op_01J5A3B7C9D0E1F2G3H4J5K6M7`
+
+## 操作指令（客户端 → 守护进程） {#operations-client--daemon}
+
+### StartSession {#startsession}
+
+使用指定的模型、提供商和配置项初始化新会话。
+
+```json
+{
+  "op": {
+    "StartSession": {
+      "model": "claude-sonnet-5",
+      "provider": "anthropic",
+      "permission_mode": null,
+      "system_prompt": null,
+      "append_system_prompt": null,
+      "tools": null,
+      "include_tools": null,
+      "exclude_tools": null,
+      "cwd": null,
+      "effort": null,
+      "enable_auto_memory": null,
+      "short_prompt": null,
+      "no_skills": null
+    }
+  },
+  "id": "op_..."
+}
+```
+
+**SessionConfig 字段说明：**
+
+| 字段 | 类型 | 说明 |
+|---|---|---|
+| `model` | `string` | 模型名称（如 `"claude-sonnet-5"`） |
+| `provider` | `string` | 提供商名称（如 `"anthropic"`、`"openai"`、`"gemini"`、`"xai"`、`"openrouter"`、`"local"`） |
+| `permission_mode` | `PermissionMode?` | 工具审批模式：`"strict"`、`"auto"` 或 `"yolo"`。`null` 默认使用 `strict` |
+| `system_prompt` | `string?` | 完全覆盖默认系统提示词 |
+| `append_system_prompt` | `string?` | 向默认系统提示词末尾追加内容 |
+| `tools` | `string[]?` | 精确指定的基础工具集，替换默认工具集。同时约束动态注册的（MCP）工具 |
+| `include_tools` | `string[]?` | 在基础工具集（`tools` 或默认集）之上额外引入的工具列表 |
+| `exclude_tools` | `string[]?` | 从会话中剔除的工具列表；优先级高于 `tools` 和 `include_tools` |
+| `cwd` | `string?` | 工作目录。默认采用守护进程所在的进程目录 |
+| `effort` | `Effort?` | [思考深度（Effort）](/usage/models-and-thinking#effort)覆盖值：`"min"`、`"low"`、`"medium"`、`"high"`、`"xhigh"` 或 `"max"`。`null` 时从目录中解析 |
+| `enable_auto_memory` | `bool?` | 智能体是否记录并唤起[自动记忆（auto-memory）](/extend/memory)。`null` 时采用守护进程默认值（交互式会话开启） |
+| `short_prompt` | `bool?` | 启用紧凑工具描述与系统提示词以减小上下文占用。`null` 时采用配置默认值 |
+| `no_skills` | `bool?` | 为 `true` 时跳过所有技能发现，不声明或调用任何技能。`null` 时采用会话默认值 |
+
+### UpdateSession {#updatesession}
+
+在不重启的情况下原地更新活跃会话（例如在会话中切换模型或权限模式）。每个字段均为可选；省略的字段保持不变。权限模式的变更（如 TUI 中按 `Shift+Tab` 循环切换）会立即生效，适用于当前正在运行以及后续的轮次；模型变更在下一轮 Turn 开始时生效。其他会话选项必须在 `StartSession` 时设定。
+
+```json
+{
+  "op": {
+    "UpdateSession": {
+      "model": { "id": "gpt-5.4", "temperature": 0.2, "effort": "high" },
+      "permission_mode": "auto"
+    }
+  },
+  "id": "op_..."
+}
+```
+
+**SessionUpdate 字段说明：**
+
+| 字段 | 类型 | 说明 |
+|---|---|---|
+| `model` | `ModelSpec?` | 要使用的新模型规格。携带完整请求参数（包含 `effort`）：设置的 `effort` 将覆盖目录默认值；未设置的字段从目录中解析 |
+| `permission_mode` | `PermissionMode?` | 新的权限模式（`"strict"`、`"auto"` 或 `"yolo"`） |
+
+### ResumeSession {#resumesession}
+
+根据会话 ID 恢复此前持久化保存的会话。守护进程会还原对话历史、重新发现扩展项，并回放最近的事件以便客户端重建视图。
+
+```json
+{ "op": { "ResumeSession": { "session_id": "ses_01ARZ..." } }, "id": "op_..." }
+```
+
+| 字段 | 类型 | 说明 |
+|---|---|---|
+| `session_id` | `Id` | 要恢复的会话标识符 |
+
+成功时守护进程会针对当前会话（若有）触发 `SessionEnd`，随后为恢复的会话触发 `SessionStart` 和 `ExtensionRefreshed`，并回放最多 200 条历史事件。失败时触发 `Error` 事件。
+
+### Steer {#steer}
+
+在当前活跃轮次执行期间向智能体提供额外指导，而无需开启新轮次。
+
+```json
+{ "op": { "Steer": "先重点处理 auth 鉴权模块" }, "id": "op_..." }
+```
+
+### UserInput {#userinput}
+
+向智能体提交用户文本提示词。
+
+```json
+{ "op": { "UserInput": "解释这个项目的作用" }, "id": "op_..." }
+```
+
+### ShellInput {#shellinput}
+
+在守护进程端执行 Shell 命令而不启动轮次 —— 对应 TUI 中的 `!command` 路径。守护进程通过 `ShellOutput` 事件进行响应，并将输出排队注入智能体下一轮 Turn 的上下文中。
+
+```json
+{ "op": { "ShellInput": "git status" }, "id": "op_..." }
+```
+
+### ApprovalResponse {#approvalresponse}
+
+响应工具审批请求（在收到原因类型为 `Approval` 的 `TurnPause` 事件后发送）。
+
+```json
+{
+  "op": {
+    "ApprovalResponse": {
+      "turn_id": "step_01ARZ...",
+      "responses": [
+        { "tool_use_id": "tool_use_abc123", "decision": "Accept" },
+        {
+          "tool_use_id": "tool_use_def456",
+          "decision": "Deny",
+          "message": "请改用只读端点"
+        }
+      ]
+    }
+  },
+  "id": "op_..."
+}
+```
+
+**ToolDecision 字段说明：**
+
+| 字段 | 类型 | 说明 |
+|---|---|---|
+| `tool_use_id` | `string` | 正在裁决的工具调用 ID（与 `ToolStart.id` 对应） |
+| `decision` | `ReviewDecision` | 取值如下表所示 |
+| `message` | `string?` | 拒绝时返回的反馈理由。对于其他裁决类型请省略 |
+
+**ReviewDecision 裁决类型取值：**
+
+| 裁决取值 | 说明 |
+|---|---|
+| `Accept` | 允许本次单次工具调用 |
+| `Deny` | 拒绝本次工具调用。智能体将收到失败结果 —— 附带 `message` 时返回 `Tool call denied by user: <message>`，否则返回 `Tool call denied by user and was not executed.` |
+| `AcceptForSession` | 在当前会话生命周期内始终允许（具备作用域泛化 —— 参见[会话临时授权](/configuration/permission#session-grants)） |
+| `AcceptAlways` | 在当前会话中允许，并将规则持久化写入 `settings.json`（“始终允许”） |
+
+### SlashCommand {#slashcommand}
+
+按名称调用 Skill 技能。
+
+```json
+{ "op": { "SlashCommand": { "name": "commit", "args": "-m 'fix bug'" } }, "id": "op_..." }
+```
+
+### Compact {#compact}
+
+在活跃会话上手动触发对话历史压缩（对应 `/compact` 命令）。守护进程会在摘要生成前后分别触发 `CompactStart` 和 `CompactEnd`。
+
+```json
+{ "op": "Compact", "id": "op_..." }
+```
+
+### ContextReport {#contextreport}
+
+请求活跃会话上下文窗口占用的分类明细（对应 `/context` 命令）。守护进程会回复 [`ContextReport`](#contextreport-1) 事件。
+
+```json
+{ "op": "ContextReport", "id": "op_..." }
+```
+
+### Goal {#goal}
+
+在当前会话上设置、清除或查询[目标导向型执行循环](/usage/goal-sessions)。设置目标后，会话将持续自主迭代 —— 在每轮 Turn 结束后由评估器裁决条件 —— 直至目标达成、判定不可达或手动清除。
+
+```json
+{ "op": { "Goal": { "Set": "所有测试通过" } }, "id": "op_..." }
+{ "op": { "Goal": "Clear" }, "id": "op_..." }
+{ "op": { "Goal": "Status" }, "id": "op_..." }
+```
+
+### AmbientPhrase / AmbientSuggestion {#ambientphrase--ambientsuggestion}
+
+在主对话关键路径之外调用轻量廉价模型进行异步预测：`AmbientPhrase` 为正在键入的草稿预测加载状态语；`AmbientSuggestion` 根据最近对话预测下一轮提示词建议。两者均通过 `Ambient` 事件响应；单调递增的 `req_id` 允许客户端丢弃过期的响应。
+
+```json
+{ "op": { "AmbientPhrase": { "draft": "重构解析器以支持...", "req_id": 3 } }, "id": "op_..." }
+{ "op": { "AmbientSuggestion": { "recent_user": "修复该 bug", "recent_agent": "已修复 — 原因是...", "req_id": 7 } }, "id": "op_..." }
+```
+
+### Interrupt {#interrupt}
+
+中断当前正在运行的操作。
+
+```json
+{ "op": "Interrupt", "id": "op_..." }
+```
+
+### Shutdown {#shutdown}
+
+请求优雅关闭守护进程。
+
+```json
+{ "op": "Shutdown", "id": "op_..." }
+```
+
+### RegisterLocalProvider {#registerlocalprovider}
+
+将运行中的本地推理服务（例如客户端启动的离线 `llama-server`）注册为此守护进程的 `local` 提供商。模型参数为可选 —— 提供时将本地提供商锁定为特定的 `ModelSpec`；否则本地提供商托管该服务提供的任意模型。
+
+```json
+{
+  "op": {
+    "RegisterLocalProvider": {
+      "port": 8080,
+      "model": null
+    }
+  },
+  "id": "op_..."
+}
+```
+
+| 字段 | 类型 | 说明 |
+|---|---|---|
+| `port` | `u16` | 本地 llama-server 监听的端口号 |
+| `model` | `ModelSpec?` | 可选的模型规格，用于锁定提供商 |
+
+### RestoreLocalProvider {#restorelocalprovider}
+
+在会话级提供商切换后恢复此前注册的本地提供商配置。当守护进程需要还原到之前注册的本地服务端而无需重新提供端口和模型时非常有用。
+
+```json
+{ "op": "RestoreLocalProvider", "id": "op_..." }
+```
+
+## 状态事件（守护进程 → 客户端） {#events-daemon--client}
+
+### 会话事件 {#session-events}
+
+#### SessionStart {#sessionstart}
+
+在会话初始化完成后触发。包含当前模型、提供商、会话 ID 和工作目录的元数据。Skills 和子智能体通过 `ExtensionRefreshed` 独立分发。
+
+```json
+{
+  "event": {
+    "SessionStart": {
+      "model": { "id": "claude-sonnet-5", "max_tokens": 8192 },
+      "provider": {
+        "id": "anthropic",
+        "display_name": "Anthropic",
+        "base_url": "https://api.anthropic.com/v1"
+      },
+      "session_id": "ses_01ARZ...",
+      "cwd": "/home/user/project",
+      "permission_mode": "strict"
+    }
+  }
+}
+```
+
+**SessionInitialized 字段说明：**
+
+| 字段 | 类型 | 说明 |
+|---|---|---|
+| `model` | `ModelSpec` | 当前活跃的模型规格 |
+| `provider` | `ProviderSpec` | 当前活跃的提供商规格（见下表） |
+| `session_id` | `Id` | 唯一会话标识符 |
+| `cwd` | `string` | 工作目录路径 |
+| `permission_mode` | `PermissionMode` | 当前活跃的权限模式（`"strict"`、`"auto"` 或 `"yolo"`） |
+
+**ProviderSpec 字段说明：**
+
+| 字段 | 类型 | 说明 |
+|---|---|---|
+| `id` | `string` | 提供商 Key，例如 `"anthropic"`（兼容支持历史别名 `name`） |
+| `display_name` | `string` | 展示名称 |
+| `base_url` | `string` | 当前会话实际使用的端点地址 —— 环境变量覆盖可能会使其不同于目录默认值 |
+
+`ProviderSpec` 有意仅传递客户端无法自行查询的信息。提供商的模型列表不包含在协议消息中；它对每个会话完全相同，并通过 [`ante catalog`](/reference/cli-reference#ante-catalog) 发布。未知字段会被忽略，因此仍会发送 `preferred_models` 的旧版守护进程载荷能够正常兼容解码。
+
+#### SessionUpdated {#sessionupdated}
+
+当活跃会话原地更新（如通过 `UpdateSession` 切换模型）时触发。携带与 `SessionStart` 相同的字段。
+
+```json
+{
+  "event": {
+    "SessionUpdated": {
+      "model": { "id": "gpt-5.4" },
+      "provider": {
+        "id": "openai",
+        "display_name": "OpenAI",
+        "base_url": "https://api.openai.com/v1"
+      },
+      "session_id": "ses_01ARZ...",
+      "cwd": "/home/user/project",
+      "permission_mode": "strict"
+    }
+  }
+}
+```
+
+#### SessionEnd {#sessionend}
+
+在会话生命周期跨度结束时触发。类似于 `TurnEnd`：携带会话标识、结束原因及最终的 Token 消耗核算。
+
+```json
+{
+  "event": {
+    "SessionEnd": {
+      "session_id": "ses_01ARZ...",
+      "reason": "Shutdown",
+      "usage": { "input_tokens": 15000, "output_tokens": 3000 }
+    }
+  }
+}
+```
+
+**SessionEndReason 取值变体：**
+
+| 变体 | 说明 |
+|---|---|
+| `Replaced` | 会话被新的或恢复的会话所替换 |
+| `Shutdown` | 守护进程正在关闭退出 |
+
+### 轮次生命周期事件 {#turn-lifecycle-events}
+
+#### TurnStart {#turnstart}
+
+新轮次开始处理时触发。
+
+```json
+{ "event": { "TurnStart": { "turn_id": "step_01ARZ..." } } }
+```
+
+#### TurnPause {#turnpause}
+
+当轮次暂停以等待用户输入（例如工具审批）时触发。
+
+```json
+{
+  "event": {
+    "TurnPause": {
+      "turn_id": "step_01ARZ...",
+      "reason": {
+        "Approval": {
+          "tools": [
+            { "id": "tool_use_abc123", "name": "Bash", "input": { "command": "ls -la" } }
+          ],
+          "message": "是否允许运行 Shell 命令？"
+        }
+      }
+    }
+  }
+}
+```
+
+**TurnPauseReason 取值变体：**
+
+| 变体 | 字段 | 说明 |
+|---|---|---|
+| `Approval` | `tools: ToolUse[]`, `message: string` | 正在等待工具调用审批 |
+
+#### TurnResume {#turnresume}
+
+在 `TurnPause` 后恢复执行时触发（例如审批得到响应或收到实时引导指令），客户端无需从下一个工具事件反推恢复状态。
+
+```json
+{ "event": { "TurnResume": { "turn_id": "step_01ARZ..." } } }
+```
+
+#### TurnEnd {#turnend}
+
+轮次完成时触发。`steps` 为轮次结束前尝试的单步循环次数。
+
+```json
+{ "event": { "TurnEnd": { "turn_id": "step_01ARZ...", "status": "Completed", "steps": 4 } } }
+```
+
+**TurnEndStatus 取值变体：**
+
+| 变体 | 字段 | 说明 |
+|---|---|---|
+| `Completed` | — | 轮次成功执行完毕 |
+| `Interrupted` | `reason?: string` | 轮次被中断 |
+| `Error` | `kind?: string`, `headline: string`, `details: string[]` | 轮次异常结束。`kind` 为机器可读的稳定 LLM 错误类型（如 `"oauth"` 表示提供商登录缺失、过期或被撤销）。`headline` 为单行摘要；`details` 为详细错误原因行 |
+
+### 消息流式事件 {#message-streaming-events}
+
+#### AgentMessage {#agentmessage}
+
+完整的智能体文本回复（非流式）。
+
+```json
+{ "event": { "AgentMessage": "该项目是一个 Web 服务器..." } }
+```
+
+#### Thinking {#thinking}
+
+完整的思考推理链路块（非流式）。
+
+```json
+{ "event": { "Thinking": "让我先分析一下代码库的结构..." } }
+```
+
+#### MessageDelta {#messagedelta}
+
+智能体回复的增量流式片段。拼接所有 delta 片段即可构建完整消息。
+
+```json
+{ "event": { "MessageDelta": "该项目" } }
+```
+
+#### ThinkingDelta {#thinkingdelta}
+
+智能体思考推理过程的增量流式片段。
+
+```json
+{ "event": { "ThinkingDelta": "让我" } }
+```
+
+### 工具事件 {#tool-events}
+
+#### ToolStart {#toolstart}
+
+工具开始调用时触发。
+
+```json
+{
+  "event": {
+    "ToolStart": {
+      "id": "tool_use_abc123",
+      "name": "Read",
+      "input": { "file_path": "/src/main.rs" }
+    }
+  }
+}
+```
+
+#### ToolUpdate {#toolupdate}
+
+工具执行期间的进度更新。
+
+```json
+{
+  "event": {
+    "ToolUpdate": {
+      "tool_use_id": "tool_use_abc123",
+      "seq": 0,
+      "message": "正在读取文件..."
+    }
+  }
+}
+```
+
+| 字段 | 类型 | 说明 |
+|---|---|---|
+| `tool_use_id` | `string` | 工具调用标识符（与 `ToolStart.id` 对应） |
+| `seq` | `u64` | 单调递增的序列号 |
+| `message` | `string` | 进度提示信息 |
+
+#### ToolEnd {#toolend}
+
+工具执行完成时触发。
+
+```json
+{
+  "event": {
+    "ToolEnd": {
+      "tool_use_id": "tool_use_abc123",
+      "status": "Completed",
+      "result_json": { "content": "fn main() { ... }" },
+      "is_error": false
+    }
+  }
+}
+```
+
+**ToolEndStatus 取值变体：**
+
+| 变体 | 说明 |
+|---|---|
+| `Completed` | 工具成功执行完成 |
+| `Cancelled` | 工具执行被取消 |
+| `Denied` | 工具调用被用户拒绝 |
+| `Failed` | 工具执行发生错误失败 |
+
+### 上下文压缩事件 {#compaction-events}
+
+#### CompactStart {#compactstart}
+
+对话历史压缩开始时触发。
+
+```json
+{ "event": "CompactStart" }
+```
+
+#### CompactEnd {#compactend}
+
+对话历史压缩完成时触发。`summary` 为替换历史记录并作为后续会话上下文保留的文本；压缩失败（历史未改动）或未生成可展示文本时为 `null`。
+
+```json
+{ "event": { "CompactEnd": { "summary": "用户要求进行..." } } }
+```
+
+### 扩展事件 {#extension-events}
+
+#### ExtensionRefreshed {#extensionrefreshed}
+
+Skills 技能、子智能体或 MCP 服务器刷新时触发。在正常会话中至少发送两次：首次在 `SessionStart` 后发送初始技能与子智能体（此时 `mcp_servers: []`）；第二次在后台 MCP 预热完成后发送发现的服务器与工具列表。
+
+```json
+{
+  "event": {
+    "ExtensionRefreshed": {
+      "session_id": "ses_01ARZ...",
+      "skills": [
+        { "name": "commit", "description": "创建 Git commit", "scope": "user", "argument_hint": "-m 'message'" }
+      ],
+      "subagents": [
+        { "name": "explore", "description": "探索代码库", "scope": "project" }
+      ],
+      "mcp_servers": [
+        {
+          "name": "filesystem",
+          "command": "npx",
+          "args": ["-y", "@modelcontextprotocol/server-filesystem", "/tmp"],
+          "tools": [
+            {
+              "name": "read_text_file",
+              "qualified_name": "mcp__filesystem__read_text_file",
+              "description": "读取文本文件内容",
+              "parameters": [
+                { "name": "path", "param_type": "string", "required": true, "description": "文件路径" }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  }
+}
+```
+
+`mcp_servers` 中的每个条目都反映了实际启动并发现的内容：对于连接失败的服务端，`tools` 列表为空，而 `qualified_name` 是智能体调用该工具时使用的 `mcp__<server>__<tool>` 形式。
+
+### 提示与信息事件 {#informational-events}
+
+#### UsageUpdate {#usageupdate}
+
+会话的 Token 消耗统计。在首条回复前或模型上下文限制未知时省略 `context`。仅包含原始测量数据 —— `used_tokens`（包含缓存的窗口占用）与 `limit_tokens`（模型原始上下文限制）；百分比由客户端自行计算。在提供商支持时，`usage` 还包含 `cache_read_tokens` 与 `cache_creation_tokens`。
+
+```json
+{
+  "event": {
+    "UsageUpdate": {
+      "usage": { "input_tokens": 1500, "output_tokens": 300 },
+      "context": { "used_tokens": 1800, "limit_tokens": 200000 }
+    }
+  }
+}
+```
+
+#### ContextReport {#contextreport-1}
+
+响应 [`ContextReport`](#contextreport) 操作：请求时刻会话上下文窗口占用的按类别细分明细。
+
+```json
+{
+  "event": {
+    "ContextReport": {
+      "system_prompt_tokens": 3200,
+      "system_tools_tokens": 4100,
+      "mcp_tools_tokens": 900,
+      "memory_tokens": 600,
+      "skills_tokens": 450,
+      "messages_tokens": 12000,
+      "used_tokens": 21250,
+      "limit_tokens": 200000,
+      "compact_buffer_tokens": 20000
+    }
+  }
+}
+```
+
+| 字段 | 类型 | 说明 |
+|---|---|---|
+| `system_prompt_tokens` | `u32` | 系统提示词（不含单独计数的技能与记忆部分） |
+| `system_tools_tokens` | `u32` | 内置工具 Schema 定义 |
+| `mcp_tools_tokens` | `u32` | MCP 工具 Schema 定义 |
+| `memory_tokens` | `u32` | 项目/全局指引文件及自动记忆提示词 |
+| `skills_tokens` | `u32` | 可用技能列表描述 |
+| `messages_tokens` | `u32` | 对话消息内容 —— 未归入上述类别的全部内容 |
+| `used_tokens` | `u32` | 上下文窗口总占用 Token 数 |
+| `limit_tokens` | `u32?` | 模型上下文上限；未验证时为 `null` |
+| `compact_buffer_tokens` | `u32` | 窗口顶部预留的缓冲 Token；一旦占用进入该预留区将触发自动压缩 |
+
+#### Info {#info}
+
+通用信息提示。
+
+```json
+{ "event": { "Info": "正在压缩对话历史记录..." } }
+```
+
+#### InfoBlockStart {#infoblockstart}
+
+开启带标题的分组信息块。后续具有相同 `id` 的 `InfoBlockAppend` 事件会作为树状缩进的子行展示 —— 适用于多阶段后台通知（如 MCP 预热）。当 `loading` 为 true 时，在收到首条 `InfoBlockAppend` 之前标题会展示 `.`/`..`/`...` 加载动画。
+
+```json
+{
+  "event": {
+    "InfoBlockStart": {
+      "id": "mcp-warmup-ses_01ARZ...",
+      "header": "正在后台预热 4 个 MCP 服务 — 工具将在连接建立后就绪。",
+      "loading": true
+    }
+  }
+}
+```
+
+#### InfoBlockAppend {#infoblockappend}
+
+向相同 `id` 的 `InfoBlockStart` 追加一行子详情。若对应 block 不存在则静默忽略。
+
+```json
+{
+  "event": {
+    "InfoBlockAppend": {
+      "id": "mcp-warmup-ses_01ARZ...",
+      "detail": "MCP 就绪: 4/4 服务已连接，已注册 60 个工具。"
+    }
+  }
+}
+```
+
+#### Error {#error}
+
+错误提示信息。
+
+```json
+{ "event": { "Error": "认证失败: API 密钥无效" } }
+```
+
+#### Goodbye {#goodbye}
+
+守护进程断开前的最终消息。收到此消息后不会再发送任何事件。
+
+```json
+{ "event": "Goodbye" }
+```
+
+#### UserInput {#userinput-1}
+
+为会话回放记录的用户输入。此变体写入持久化的事件日志，但**不会**在实时会话中发出 —— 仅在 `ResumeSession` 历史回放时可见。
+
+```json
+{ "event": { "UserInput": "解释这个项目的作用" } }
+```
+
+#### ShellOutput {#shelloutput}
+
+响应 `ShellInput` 操作：执行的命令及输出结果。
+
+```json
+{
+  "event": {
+    "ShellOutput": {
+      "command": "git status",
+      "stdout": "On branch main...",
+      "stderr": "",
+      "exit_code": 0
+    }
+  }
+}
+```
+
+#### Ambient {#ambient}
+
+由轻量模型在主对话外生成的即时预测提示 —— 正在键入草稿的预测加载状态语，或作为输入虚字展示的下一轮提示词建议。通过 `AmbientPhrase` / `AmbientSuggestion` 请求；`req_id` 便于客户端丢弃过期响应。不写入持久化事件日志。
+
+```json
+{ "event": { "Ambient": { "kind": "PromptSuggestion", "req_id": 7, "text": "运行测试" } } }
+```
+
+### 离线模式与协议边界 {#offline-mode-and-the-protocol}
+
+本地模型管理（引擎安装、模型发现、llama-server 生命周期）属于**客户端侧职责**。它是通过进程内的 `OfflineSubsystem` API 驱动的，而非通过守护进程协议。离线模式面向守护进程的唯一接口是 `RegisterLocalProvider` / `RestoreLocalProvider` —— 客户端自行启动 llama-server，随后向守护进程注册其端口号（及可选的 `ModelSpec`）。
+
+关于面向用户的工作流及 `--offline-model` CLI 参数，请参阅[离线模式](/local/offline)。
+
+## 传输层 {#transport}
+
+### 进程内通道 {#in-process-channels}
+
+当客户端与守护进程运行在同一进程内（TUI 或无头模式）时，通过 Tokio 有界异步 mpsc 通道通信：
+
+| 通道 | 方向 | 缓冲区容量 |
+|---|---|---|
+| Op 操作指令通道 | 客户端 → 守护进程 | 256 条消息 |
+| Event 事件通道 | 守护进程 → 客户端 | 4096 条消息 |
+
+### Stdio 传输（JSONL） {#stdio-transport-jsonl}
+
+对于使用 `ante serve`（或 `ante serve --stdio`）的外部客户端，`StdioTransport` 将 stdin/stdout 桥接到内部通道：
+
+- **stdin** → 逐行解析为 `OpMsg` → 转发至守护进程
+- **守护进程事件** → 序列化为 JSON → 逐行写入 **stdout**
+- **stdin EOF** → 自动发送 `Op::Shutdown`
+- **收到 `Evt::Goodbye`** → 传输层退出
+- **JSON 解析失败** → 向 stdout 回复 `Evt::Error`
+
+### WebSocket 传输 {#websocket-transport}
+
+对于网络或基于浏览器的客户端（`ante serve --ws <ADDR>`），`WsTransport` 在 WebSocket 帧上交换相同的 JSONL 协议：
+
+- 每个 WebSocket 连接拥有独立的守护进程实例
+- 消息通过文本帧传输相同的 `OpMsg` 与 `EventMsg` JSON 对象
+- **客户端断开连接** → 当前守护进程实例退出，服务端接受下一个连接
+- **收到 `Op::Shutdown`** → 连接与服务端一同关闭退出
+- 服务端持续循环接受新连接直至收到 `Shutdown`
+
+## 完整交互生命周期示例 {#complete-flow-example}
+
+从启动到关闭的完整会话生命周期时序：
+
+```
+Client (客户端)                             Daemon (守护进程)
+  │                                               │
+  │─── OpMsg { StartSession(...) } ──────────────▶│
+  │◀── EventMsg { SessionStart(...) } ────────────│
+  │                                               │
+  │─── OpMsg { UserInput("修复该 bug") } ─────────▶│
+  │◀── EventMsg { TurnStart { turn_id } } ────────│
+  │◀── EventMsg { ThinkingDelta("...") } ─────────│
+  │◀── EventMsg { ThinkingDelta("...") } ─────────│
+  │◀── EventMsg { Thinking("...") } ──────────────│
+  │◀── EventMsg { MessageDelta("...") } ──────────│
+  │◀── EventMsg { ToolStart(ToolUse) } ───────────│
+  │◀── EventMsg { TurnPause(Approval) } ──────────│
+  │                                               │
+  │─── OpMsg { ApprovalResponse(...) } ──────────▶│
+  │◀── EventMsg { ToolUpdate(...) } ──────────────│
+  │◀── EventMsg { ToolEnd(...) } ─────────────────│
+  │◀── EventMsg { MessageDelta("...") } ──────────│
+  │◀── EventMsg { AgentMessage("...") } ──────────│
+  │◀── EventMsg { UsageUpdate(...) } ─────────────│
+  │◀── EventMsg { TurnEnd(Completed) } ───────────│
+  │                                               │
+  │─── OpMsg { Shutdown } ───────────────────────▶│
+  │◀── EventMsg { SessionEnd } ───────────────────│
+  │◀── EventMsg { Goodbye } ──────────────────────│
+  │                                               │
+```
