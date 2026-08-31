@@ -1,0 +1,48 @@
+---
+title: "提供上下文：文件、目录与网络检索"
+sidebar_label: "上下文提供"
+description: "通过 @ 语法引用本地文件，并利用网络工具为智能体获取最新网络内容"
+---
+
+# 提供上下文：文件、目录与网络检索
+
+为智能体提供精准的上下文信息：在提示词中直接引用本地文件和目录，或让 Ante 自动从互联网检索所需信息。
+
+## 使用 @ 语法引用文件
+
+在输入框中输入 `@` 紧接着输入文件或目录路径。Ante 会在您输入时实时弹出自动补全下拉框 —— 按 Tab 键补全，按 Enter 键确认。
+
+<img src="/assets/cookbook/files.gif" alt="使用 @ 语法添加文件上下文" style={{width: '100%', borderRadius: '8px', margin: '16px 0'}} />
+
+- **`@path/to/file.rs`** — 将该文件的完整内容嵌入到当前消息中
+- **`@path/to/dir/`** — 嵌入该目录的树状结构列表
+
+补全支持项目相对路径、用户主目录 `~/`、绝对路径以及 `../` 和 `./` 路径，方便引用项目之外的文件。
+
+这确保了智能体能够直接精准查阅您关注的代码，避免猜测或盲目搜索。
+
+:::tip
+如果直接粘贴多个文件路径，Ante 会自动为其添加 `@` 前缀。单次提示词中可以引用任意数量的文件。
+:::
+
+## 检索并获取网络内容
+
+Ante 具备网络搜索和抓取 URL 内容的能力，无需离开终端即可查阅外部文档、API 手册或技术方案。只需以自然语言提问，Ante 将自动调用网络工具获取信息：
+
+<img src="/assets/cookbook/webbrowse.gif" alt="Ante 执行网络检索" style={{width: '100%', borderRadius: '8px', margin: '16px 0'}} />
+
+智能体可以：
+
+- **搜索互联网** 获取最新文档、代码示例和解决方案
+- **抓取指定 URL** 直接阅读网页全文（如 API 文档、Release Notes、技术博客）
+- **总结提炼** 内容并将其整合至当前对话上下文中
+
+当您使用不熟悉的第三方库或需要查阅工具/API 的最新说明时，这尤其有效。
+
+:::note
+抓取指定 URL（`WebFetch`）默认开启。全局**网络搜索**（`WebSearch`）通过模型提供商的原生 Search 能力实现，因此仅在支持搜索的提供商（Anthropic、OpenAI、Gemini、Grok、OpenRouter、Antix 或 Ali Coding Plan）下可用并自动启用。详见[工具参考手册](/reference/tools-reference#websearch)。
+:::
+
+:::tip
+也可以在命令行中直接通过管道将网页内容传入 Ante：`curl https://example.com/docs | ante -p "总结主要内容"`。
+:::

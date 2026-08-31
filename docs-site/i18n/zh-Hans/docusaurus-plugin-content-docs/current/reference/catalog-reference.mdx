@@ -1,0 +1,121 @@
+---
+title: "模型与提供商目录参考手册（Catalog Reference）"
+sidebar_label: "模型与提供商目录"
+description: "内置提供商列表、预设模型清单以及 catalog.json Schema 规范"
+---
+
+# 模型与提供商目录参考手册（Catalog Reference）
+
+Ante 根据**目录（Catalog）**解析每个提供商与模型：包括本文档中记录的内置预设，以及在启动时合并覆盖的 [`~/.ante/catalog.json`](#catalogjson-schema)。目录在进程启动时读取一次。
+
+日常选择提供商与配置指南请参阅[提供商与认证配置](/usage/providers)。
+
+## 内置提供商列表
+
+| 提供商 | Key 标识 | 通信协议格式 (Wire Style) | 认证方式 |
+|---|---|---|---|
+| Anthropic | `anthropic` | `AnthropicMessage` | `ANTHROPIC_API_KEY` |
+| Anthropic Subscription | `anthropic-subscription` | `AnthropicMessage` | OAuth |
+| OpenAI | `openai` | `OpenAiResponse` | `OPENAI_API_KEY` |
+| OpenAI Compatible | `openai-compatible` | `OpenAiCompatible` | `OPENAI_COMPATIBLE_API_KEY` |
+| OpenAI Subscription | `openai-subscription` | `OpenAiResponse` | OAuth (Codex) |
+| Gemini | `gemini` | `Gemini` | `GEMINI_API_KEY` |
+| Vertex AI Gemini | `vertex-gemini` | `Gemini` | `VERTEX_GEMINI_API_KEY` |
+| Open Router | `openrouter` | `OpenAiCompatible` | `OPENROUTER_API_KEY` |
+| Open Router Responses | `openrouter-responses` | `OpenAiResponse` | `OPENROUTER_API_KEY` |
+| Open Router Anthropic | `openrouter-anthropic` | `AnthropicMessage` | `OPENROUTER_API_KEY` |
+| Grok (xAI) | `xai` | `OpenAiResponse` | `XAI_API_KEY` |
+| Zai | `zai` | `OpenAiCompatible` | `ZAI_API_KEY` |
+| DeepSeek | `deepseek` | `OpenAiCompatible` | `DEEPSEEK_API_KEY` |
+| Ali Coding Plan | `ali-coding-plan` | `AnthropicMessage` | `ALI_CODING_PLAN_API_KEY` |
+| Antix | `antix` | `AnthropicMessage` | OAuth |
+| Antix (API key) | `antix-api-key` | `AnthropicMessage` | `ANTIX_API_KEY` |
+| Local | `local` | `OpenAiCompatible` | 无需认证 |
+
+`Key 标识` 列即为传递给 `--provider` 的参数值。
+
+## 各提供商的主力模型
+
+### Anthropic
+
+`anthropic` 与 `anthropic-subscription` 支持相同模型族：
+
+| 模型 ID | 说明 | 上下文大小 |
+|---|---|---|
+| `claude-haiku-4-5` | 极速响应，接近前沿智能水平 | 200K |
+| `claude-sonnet-5` | 速度与智能的最佳平衡 | 1M |
+| `claude-opus-5` | 复杂 Agent 级编码与企业级重构 | 1M |
+| `claude-fable-5` | 针对严苛深度推理的最强能力 | 1M |
+
+```bash
+ante --provider anthropic --model claude-sonnet-5
+```
+
+### OpenAI
+
+| 模型 ID | 说明 | 上下文大小 |
+|---|---|---|
+| `gpt-5.6-sol` | GPT-5.6 旗舰模型，擅长复杂推理与系统级编码 | 1.05M |
+| `gpt-5.6-terra` | 智能水平与 Token 成本的极佳平衡 | 1.05M |
+| `gpt-5.6-luna` | 面向大规模高吞吐任务的高效模型 | 1.05M |
+| `gpt-5.5-pro` | 复杂任务上的超高稳定性 | 400K |
+| `gpt-5.4-pro` | GPT-5.4 系列高可靠主力 | 400K |
+| `gpt-5.3-codex` | 前沿代码专精模型 | 400K |
+| `gpt-5.4-mini` | 更快、更经济的 GPT-5.4 版本 | 400K |
+
+```bash
+ante --provider openai --model gpt-5.6-sol
+```
+
+### DeepSeek
+
+| 模型 ID | 说明 | 上下文大小 |
+|---|---|---|
+| `deepseek-chat` | DeepSeek-V4 通用主力模型 | 128K |
+| `deepseek-reasoner` | DeepSeek-R1 深度思考推理模型 | 128K |
+
+### Ali Coding Plan（阿里代码计划）
+
+支持通过 DashScope 调用 Qwen、Kimi、GLM、MiniMax 等优质国产大模型：
+
+| 模型 ID | 说明 |
+|---|---|
+| `qwen3.5-plus` | 通义千问 3.5 Plus 主力代码模型 |
+| `qwen3.5-max` | 通义千问 3.5 Max 最强旗舰模型 |
+| `kimi-k2.5` | 月之暗面 Kimi K2.5 |
+| `glm-5-turbo` | 智谱 GLM-5 Turbo |
+| `minimax-m2.5` | MiniMax M2.5 |
+
+```bash
+ante --provider ali-coding-plan --model qwen3.5-plus
+```
+
+## `catalog.json` Schema 配置规范
+
+```json
+{
+  "providers": {
+    "my-provider": {
+      "display_name": "My Custom Provider",
+      "base_url": "https://api.example.com/v1",
+      "wire_style": "OpenAiCompatible",
+      "auth": { "bearer": { "env_key": "MY_PROVIDER_API_KEY" } },
+      "preferred_models": [
+        {
+          "id": "my-model-id",
+          "description": "Custom model",
+          "context_limit": 128000,
+          "max_tokens": 8192,
+          "effort": "medium"
+        }
+      ]
+    }
+  },
+  "models": {
+    "claude-sonnet-5": {
+      "effort": "high",
+      "max_tokens": 64000
+    }
+  }
+}
+```

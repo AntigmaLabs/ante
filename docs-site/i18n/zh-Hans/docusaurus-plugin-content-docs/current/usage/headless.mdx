@@ -1,0 +1,105 @@
+---
+title: "无头模式（Headless Mode）"
+sidebar_label: "无头模式"
+description: "作为非交互式 CLI 命令行工具运行 Ante，适用于脚本自动化与 CI/CD 流水线"
+---
+
+# 无头模式（Headless Mode）
+
+无头模式（Headless Mode）在不启动 TUI 图形终端界面的情况下运行 Ante —— 接收输入提示词、执行任务并输出结果后自动退出。非常适合 Shell 脚本、CI/CD 自动化流水线和程序批量调用。
+
+## 基础用法
+
+使用 `-p` 或 `--prompt` 参数传入任务提示词：
+
+```bash
+ante -p "解释这个项目的作用和架构"
+```
+
+完整参数形式：
+
+```bash
+ante --prompt "为 auth 模块添加单元测试"
+```
+
+## 标准输入（Stdin）管道
+
+通过标准输入将代码或文件内容通过管道传入：
+
+```bash
+cat src/main.rs | ante -p "审查这段代码中的潜在 Bug"
+```
+
+结合标准输入与提示词参数：
+
+```bash
+echo "function add(a, b) { return a + b }" | ante -p "添加 TypeScript 类型标注"
+```
+
+当同时提供标准输入与 `-p` 提示词参数时，两者将自动拼接（先输入 Stdin 内容，随后拼接 Prompt 提示词）。
+
+重定向标准输出仅适用于无头模式。如果在没有提示词的情况下运行 `ante > out.txt` 会被拒绝启动，因为交互式 TUI 需要通过终端游标交互。请传入提示词或使用管道将输出捕获到文件中。
+
+## CLI 命令行参数参考
+
+```
+ante [OPTIONS] [--prompt <PROMPT>]
+```
+
+| 参数 | 说明 |
+|---|---|
+| `-p`, `--prompt <PROMPT>` | 要执行的任务提示词 |
+| `-m`, `--model <MODEL>` | 覆盖使用的模型名称 |
+| `--provider <PROVIDER>` | 覆盖 API 提供商（例如 `anthropic`、`openai`、`gemini`、`xai`、`openrouter`、`local`） |
+| `--profile <NAME>` | 使用 `~/.ante/<name>.settings.json` 替代默认的 `settings.json`；也可通过环境变量 `ANTE_PROFILE` 指定；内置的 `bare` Profile 会禁用环境感知特性、Skills、MCP 服务、会话持久化与自动记忆 |
+| `--effort <LEVEL>` | 覆盖模型的[思考深度（Effort）](/usage/models-and-thinking#effort)：`min`、`low`、`medium`、`high`、`xhigh` 或 `max` |
+| `--yolo` | 跳过所有工具调用的审批确认提示 |
+| `--permission-mode <MODE>` | 兼容保留参数；由于无头模式无法进行交互式审批，无头执行时始终自动以 `yolo` 模式运行 |
+| `--output-format <FORMAT>` | 输出格式：`json`、`human`、`minimal`（默认：`minimal`） |
+| `--system-prompt <PROMPT>` | 完全替换默认的系统提示词（与 `--system-prompt-file` 互斥） |
+| `--system-prompt-file <PATH>` | 从 UTF-8 文本文件中读取系统提示词替换内容（与 `--system-prompt` 互斥） |
+| `--append-system-prompt <TEXT>` | 向系统提示词尾部追加额外内容 |
+| `--short-prompt` | 启用紧凑提示词集：采用精简版系统提示词和更简短的内置工具描述 |
+| `--skills` / `--no-skills` | 强制启用或禁用 Skills 技能发现（覆盖 `skills` 配置）；使用 `--no-skills` 时不会加载或声明任何 Skills |
+| `--enable-auto-memory` / `--disable-auto-memory` | 启用或禁用[自动记忆](/extend/memory)（覆盖 `auto_memory` 设置，无头模式默认关闭） |
+| `--tools <TOOLS>...` | 将默认工具集精确替换为指定的工具列表 |
+| `--include-tools <TOOLS>...` | 在默认工具集（或 `--tools` 指定的基础集）之上额外引入指定工具 |
+| `--exclude-tools <TOOLS>...` | 从生效工具集中剔除指定工具 |
+| `-r`, `--resume <SESSION_ID>` | 根据会话 ID 恢复之前保存的历史会话 |
+| `--session-save` / `--no-session-save` | 启用或跳过会话持久化；使用 `--no-session-save` 时不会向磁盘写入快照（与 `--resume` 互斥） |
+| `--check` | 在主任务完成后自动触发一次验证复查 Pass |
+| `--offline-model <PATH>` | 本地 GGUF 文件路径。自动启动本地 llama-server 并将提供商切换至 `local`，会话退出时自动清理 |
+
+## 输出格式（Output Formats）
+
+### Minimal（默认）
+
+仅输出智能体最终的文本回复、信息与错误提示：
+
+```bash
+ante -p "这个项目主要做什么"
+```
+
+### Human
+
+以人类易读的格式和 ANSI 终端彩色高亮展示所有事件：
+
+```bash
+ante --output-format human -p "修复 main.rs 中的类型错误"
+```
+
+### JSON
+
+逐行（JSONL）输出结构化事件对象，便于程序和脚本解析消费：
+
+```bash
+ante --output-format json -p "列出所有 TODO 注释" | jq '.event'
+```
+
+## 自我验证复查（Verification Check）
+
+`--check` 参数会在主任务执行完成后触发第二轮审查，要求智能体主动复核自身代码修改的正确性：
+
+```bash
+ante --check -p "重构数据解析模块并保证所有测试通过"
+```

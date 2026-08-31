@@ -1,0 +1,89 @@
+---
+title: "核心概念与协议体系"
+sidebar_label: "核心概念"
+description: "Ante 的底层抽象层级模型，以及连接各层级的 Op/Evt 消息传递协议"
+---
+
+# 核心概念与协议体系
+
+Ante 将智能体交互建模为层次化的核心概念，并通过强类型的消息传递协议进行连接驱动。
+
+## 概念层级模型
+
+```
+Project (项目)
+ └── Session (会话)
+      └── Task (任务)
+           └── Turn (轮次)
+                └── Step (单步)
+```
+
+| 概念 | 说明 |
+|---|---|
+| **Project**（项目） | Git 仓库或项目根目录。可以拥有多个独立会话。 |
+| **Session**（会话） | 用户与 Ante 之间的一次完整交互生命周期。负责管理对话状态、Token 消耗统计与上下文自动压缩。 |
+| **Task**（任务） | 用户希望完成的一项具体工作。可以跨越多个 Turn 轮次。 |
+| **Turn**（轮次） | 与智能体的一轮问答来回。以用户输入为起点，以智能体回复或工具审批请求为终点。 |
+| **Step**（单步） | 智能体与大语言模型（LLM）的单次底层交互。负责处理工具调用（Tool Call）等中间逻辑。 |
+
+:::note
+通常情况下，若没有工具审批中断，一个 Task 任务通常包含一个 Turn 轮次。
+:::
+
+## 协议体系：操作指令（Ops）与事件流（Events）
+
+Ante 在客户端（TUI 终端或无头运行器）与守护进程 Daemon 之间采用消息传递协议。操作指令（`Op`）从客户端流向守护进程，事件流（`Evt`）从守护进程流向客户端。
+
+### 消息 ID 规范
+
+每条消息均包含带有 4 字节前缀的全局唯一 `Id`，便于端到端追踪：
+
+- `op_` — 操作指令（Operations）
+- `evt_` — 状态事件（Events）
+- `ses_` — 会话（Sessions）
+- `step_` — 模型单步交互（Steps）
+
+## 核心操作指令（Ops）
+
+操作指令由客户端发送给守护进程，封装在携带唯一 `Id` 的 `OpMsg` 信封中：
+
+| 操作指令 | 载荷参数 | 说明 |
+|---|---|---|
+| `StartSession` | `SessionConfig` | 使用指定的模型、提供商与策略初始化新会话 |
+| `UpdateSession` | `SessionUpdate` | 原地更新当前活跃会话属性（如切换模型） |
+| `ResumeSession` | `session_id` | 恢复此前持久化保存的历史会话 |
+| `UserInput` | `String` | 提交用户输入的提示词内容 |
+| `Steer` | `String` | 向当前正在运行的轮次注入实时引导指令 |
+| `ApprovalResponse` | `turn_id`, `responses` | 响应工具审批请求；`Deny` 拒绝时可携带反馈原因 |
+| `SlashCommand` | `name`, `args` | 按名称调用 Skill 技能 |
+| `RegisterLocalProvider` | `port`, `model?` | 将运行中的本地推理服务注册为 `local` 提供商 |
+| `RestoreLocalProvider` | — | 恢复此前注册的本地提供商 |
+| `Interrupt` | — | 中断当前正在运行的操作 |
+| `Shutdown` | — | 优雅关闭守护进程 |
+
+## 核心事件流（Events）
+
+事件流由守护进程推送到客户端，封装在携带时间戳与 `Id` 的 `EventMsg` 信封中：
+
+| 事件 | 载荷参数 | 说明 |
+|---|---|---|
+| `SessionStart` | `SessionInitialized` | 会话初始化就绪（包含会话 ID、工作目录、模型） |
+| `SessionUpdated` | `SessionInitialized` | 会话属性已原地更新 |
+| `SessionEnd` | — | 会话终止结束 |
+| `TurnStart` | `turn_id` | 新轮次已开始 |
+| `TurnPause` | `turn_id`, `reason` | 轮次暂停（如等待用户审批工具调用） |
+| `TurnEnd` | `turn_id`, `status` | 轮次执行完毕、被中断或发生错误 |
+| `AgentMessage` | `String` | 智能体生成的完整文本回复 |
+| `Thinking` | `String` | 完整的思考推理独白块 |
+| `MessageDelta` | `String` | 增量流式文本消息片段 |
+| `ThinkingDelta` | `String` | 增量流式思考内容片段 |
+| `ToolStart` | `ToolUse` | 工具开始执行 |
+| `ToolUpdate` | `tool_use_id`, `msg` | 工具执行进度更新 |
+| `ToolEnd` | `tool_use_id`, `status` | 工具执行完成并返回结果 |
+| `UsageUpdate` | `usage` | Token 消耗与缓存命中统计更新 |
+| `CompactStart` / `End` | — | 对话历史上下文压缩开始/结束 |
+| `ExtensionRefreshed` | `skills`, `subagents` | Skills 与子智能体列表已刷新 |
+| `Info` / `Error` | `String` | 系统通知与错误提示 |
+| `Goodbye` | — | 断开连接前的最终事件 |
+
+详细的协议 Schema 与 JSON 示例请参阅[协议参考手册](/reference/protocol-reference)。

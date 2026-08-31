@@ -1,0 +1,102 @@
+---
+title: "Skills 技能系统"
+sidebar_label: "Skills 技能"
+description: "通过开放的 Agent Skills 规范为 Ante 赋予全新的专业领域技能与能力"
+---
+
+# Skills 技能系统
+
+Skills（技能）是包含操作指令、可执行脚本和参考资源的模块化目录，用于大幅扩展 Ante 的专业领域能力。它们遵循开放的 [Agent Skills](https://agentskills.io) 标准格式，可在兼容该标准的智能体产品之间通用移植。
+
+## 创建一个 Skill
+
+一个 Skill 对应一个包含 `SKILL.md` 文件的目录：
+
+```
+commit/
+└── SKILL.md
+```
+
+`SKILL.md` 包含 YAML Frontmatter 元数据及 Markdown 详细指令：
+
+```markdown
+---
+name: commit
+description: 按照规范的 Conventional Commits 格式创建具备清晰说明的 Git Commit。
+---
+
+检查当前的 git diff，并按照 Conventional Commits 规范生成清晰、描述性的 commit message。
+优先使用 `git add` 暂存相关文件。
+```
+
+### 包含工具与参考资料的复杂 Skill 示例
+
+```
+review/
+├── SKILL.md
+└── references/
+    └── checklist.md
+```
+
+```markdown
+---
+name: review
+description: 审查代码变更中的 Bug、安全漏洞和代码风格问题。
+argument-hint: <path>
+---
+
+对 $ARGUMENTS 路径下的代码进行审查，重点排查 Bug、安全漏洞、风格规范及遗漏的错误处理。
+
+完整检查清单请参阅 [checklist](references/checklist.md)。
+```
+
+## Skills 存储目录与作用域
+
+| 目录 | 作用域 |
+|---|---|
+| `~/.claude/skills/` | 用户级全局（Claude Code 兼容） |
+| `~/.agents/skills/` | 用户级全局（通用兼容目录） |
+| `~/.ante/skills/` | 用户级全局（在所有项目中可用） |
+| `.claude/skills/` | 项目级（Claude Code 兼容） |
+| `.agents/skills/` | 项目级 |
+| `.ante/skills/` | 项目级（当前代码库专属） |
+
+## SKILL.md Frontmatter 字段参考
+
+| 字段 | 必填 | 默认值 | 说明 |
+|---|---|---|---|
+| `name` | 否 | 所在目录名 | 技能的唯一标识名 |
+| `description` | 否 | 第一段正文 | 技能的功能描述及模型何时应该调用 |
+| `argument-hint` | 否 | — | 参数提示占位符（如 `<path>`） |
+| `user-invocable` | 否 | `true` | 是否支持作为斜杠命令由用户在终端手动调用 |
+| `disable-model-invocation` | 否 | `false` | 若设为 `true`，则禁止模型自动触发该技能 |
+| `metadata` | 否 | — | 自定义键值对元数据 |
+
+## 内置系统级 Skills
+
+Ante 内置了以下系统级技能：
+
+| 技能 | 功能说明 |
+|---|---|
+| `ante-guide` | 基于官方文档解答关于 Ante 自身功能与配置的疑问。仅模型自动调用 |
+| `skill-creator` | 交互式创建、优化与评测自定义技能（`/skill-creator`） |
+| `tmux` | 在命名 tmux 会话中驱动交互式终端、服务器与 REPL。仅模型自动调用 |
+| `resume-claude` | 接管并继续当前目录中最近的 Claude Code 会话（`/resume-claude`） |
+| `resume-codex` | 接管并继续当前目录中最近的 Codex 会话（`/resume-codex`） |
+
+## 调用与参数传递
+
+在 TUI 中输入斜杠命令即可触发：
+
+```
+/commit
+/review src/core/session.rs
+```
+
+命令后输入的任意内容会作为参数传递给 Skill，支持在 Markdown 指令中使用占位符：
+
+| 占位符 | 替换规则 |
+|---|---|
+| `$ARGUMENTS` | 完整参数字符串（逐字保留） |
+| `${1}`, `${2}`, … | 第 1、第 2 个空格分隔的参数（引号内容保持分组） |
+| `${1:default}` | 位置参数，若未提供则使用默认值 `default` |

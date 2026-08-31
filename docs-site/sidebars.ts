@@ -137,6 +137,4 @@ const sidebars: SidebarsConfig = {
   antix: antixSidebar,
 }
 
-export default process.env.DOCUSAURUS_CURRENT_LOCALE === 'zh-Hans'
-  ? { antix: antixSidebar }
-  : sidebars
+export default sidebars

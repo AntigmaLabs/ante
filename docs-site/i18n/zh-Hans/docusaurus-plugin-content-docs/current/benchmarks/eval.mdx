@@ -1,0 +1,86 @@
+---
+title: "基准评测"
+sidebar_label: "Terminal-Bench 评测"
+description: "公开发布版本的真实可复现基准评测 — 实时结果展示于 antigma.ai/eval"
+---
+
+# 基准评测
+
+## 评测真实发布版本
+
+我们的评测原则以可检验为核心：
+
+- **评测真实分发的构建版本。** 每次评测均基于固定且公开可下载的 Ante 发行版运行，与 `ante update` 安装的二进制完全一致（例如 `0.preview.43`）。没有专用于评测的分支，也没有针对 Benchmark 定制的专用提示词。
+- **运行过程完全可审计。** 每个评测得分均附带对应 [Harbor](https://github.com/harbor-framework/harbor) 原始运行记录的链接，任何人都可以审阅每个 Trial 运行过程。
+- **遵循官方严格限制。** 所有评测均采用与 Terminal-Bench 官方排行榜相同的参数：89 个任务、每个任务 5 次试验，并严格限制超时时间与硬件资源。
+- **结果实时持续发布。** 我们持续在 [antigma.ai/eval](https://antigma.ai/eval) 公布最新的评测数据。
+
+## Terminal-Bench 2.1：统一 Harness 评测各模型能力
+
+我们评测的是 **Agent Harness 底座能力**，而非仅仅评测大模型本身。因此，我们公布了 Ante 搭配不同模型时的综合表现。在**所有参与评测的模型中，Ante 均取得了同模型 Agent 排名第一（#1 same-model agent）**：在相同模型下，没有其他 Harness 跑出比 Ante 更高的准确率。
+
+实时看板重点数据（截至 2026 年 6 月）：
+
+| 模型 | 准确率 | 同模型排名 |
+|---|---|---|
+| GLM 5.2 | **74.6%** ±2.06 | #1 |
+| MiMo V2.5 | 65.8% ±2.30 | #1 |
+| DeepSeek V4 Pro | 65.8% ±2.25 | #1 |
+| DeepSeek V4 Flash | 62.7% ±2.29 | #1 |
+| MiniMax M3 | 62.1% ±2.33 | #1 |
+
+两项值得关注的事实：
+
+- **Ante + GLM 5.2 达到 74.6% 准确率**，使开源权重模型直接位列公开验证榜单的前 7 名。
+- **Ante + DeepSeek V4 Pro 达到 65.8%**：在完整的 445 次 Trial 评测中总推理费用仅约 $36，准确率媲美公开榜单上的顶尖闭源前沿模型 Harness 组合。
+
+优秀的高性能 Harness 能够将前沿能力下放：让开源和高性价比模型完成以往只有昂贵前沿模型才能胜任的工作。
+
+**[查看实时评测结果 →](https://antigma.ai/eval)**
+
+## 历史战绩
+
+- Terminal Bench 1.0 排行榜第一名（2025 年）
+- Terminal Bench 2.0 验证 Agent 排行榜第一名 —— 且在基于 Gemini 的 Agent 中位列第一（2026 年 2 月）
+
+<div className="benchmark-gallery">
+  <figure className="benchmark-shot">
+    <img
+      src="/assets/benchmarks/terminal-bench-1.jpeg"
+      alt="Terminal-Bench leaderboard showing Ante ranked first with Claude Sonnet 4.5 on September 30, 2025."
+    />
+    <figcaption>
+      <strong>Terminal Bench 1.0.</strong> Ante 于 2025 年 9 月 30 日在公开排行榜位列第一。
+    </figcaption>
+  </figure>
+
+  <figure className="benchmark-shot">
+    <img
+      src="/assets/benchmarks/terminal-bench-2.jpeg"
+      alt="Harbor Terminal-Bench 2.0 leaderboard showing Ante near the top with Gemini 3 Pro on January 6, 2026."
+    />
+    <figcaption>
+      <strong>Terminal Bench 2.0.</strong> Ante 于 2026 年 1 月 6 日在验证 Agent 中排名第一（总榜第二，且为展示榜单中排名最高的 Gemini 系列 Agent）。
+    </figcaption>
+  </figure>
+</div>
+
+我们将 [Terminal Bench](https://github.com/harbor-framework/terminal-bench-1) 与 [Harbor](https://github.com/harbor-framework/harbor) 作为主要的外部基准评测体系。Harbor 与 Terminal Bench 团队秉承严谨、扎实的研究精神，不追逐噱头。
+
+为什么选择 Terminal Bench：
+- **严谨规范。** 任务规格明确，尽可能采用确定性评分，且在隔离环境中执行。
+- **聚焦核心编码能力。** 智能体能否在真实的 Shell 环境中完成实际任务？读取上下文、推理、行动、验证 —— 这正是 Ante 围绕其构建的核心闭环。
+
+## 资源占用分析
+
+能力表现只是其中一方面；运行成本是另一大关键。请查阅[资源占用对比](/benchmarks/compare_table)，查看在 Docker 严格限制下 20 个并行任务的 CPU、内存和磁盘占用实测（Ante vs Claude Code vs Opencode）。
+
+## 评测原则
+
+智能体的大部分智慧源于模型 —— 但 Agent Harness 是连接人类与 AI 之间的关键底座。
+
+> 我们评测的是 **Agent 底座** 激发并转化模型能力的效果 —— 而非仅仅评测模型自身。
+
+**优化 Harness 底座，而非优化单次 Prompt。** 当评测得分需要提升时，我们专注于优化智能体运行底座 —— 运行时架构、调度编排、可靠性系统 —— 而非针对特定 Benchmark 调整提示词。通过系统底层优化带来的性能提升具有持久性，而仅靠调优提示词则容易脆弱失效。
+**尽早评测，从简出发。** 基于真实失败案例提炼出的精简评测集，远胜于人工构造的庞大测试用例。
+**隔离与可复现。** 每次评测均在干净环境下启动。当得分下降时，能够准确发现真实的回归问题。

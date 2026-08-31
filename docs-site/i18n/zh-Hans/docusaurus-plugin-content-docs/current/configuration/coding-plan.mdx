@@ -1,0 +1,43 @@
+---
+title: "代码订阅套餐（Coding Plans）"
+sidebar_label: "代码套餐"
+description: "在 Ante 中接入第三方代码订阅套餐与专属大额 API"
+---
+
+# 代码订阅套餐（Coding Plans）
+
+许多大模型提供商（包括阿里云百炼/通义、MiniMax、Kimi、火山引擎/豆包、z.ai 智谱等）均推出了高性价比的 Coding 开发者专属订阅套餐，为 AI 编程工具提供充沛的每月 Token 额度。由于这些套餐普遍兼容 Anthropic 或 OpenAI 协议，Ante 可以开箱即用地无缝接入。
+
+## 阿里代码计划（内置支持）
+
+Ante 原生内置了 `ali-coding-plan` 提供商预设。详细的模型列表与参数配置请参见[目录参考手册](/reference/catalog-reference#ali-coding-plan)。
+
+## 通用代码套餐接入
+
+以下以智谱 z.ai DevPack 为例；其他提供商的代码套餐接入方式完全一致。
+
+### 兼容 Anthropic 协议
+
+使用 `anthropic` 提供商，并通过 `MODEL_BASE_URL` 指向套餐对应的端点地址：
+
+**示例：智谱 z.ai DevPack（Anthropic 格式）**
+
+```bash
+export ANTHROPIC_API_KEY="your_z_ai_key"
+export MODEL_BASE_URL="https://api.z.ai/api/anthropic"
+
+ante --provider anthropic --model glm-5-turbo -p "重构鉴权模块"
+```
+
+### 兼容 OpenAI 协议
+
+使用 `openai-compatible` 提供商，并通过 `MODEL_BASE_URL` 指向套餐的兼容端点：
+
+**示例：智谱 z.ai DevPack（OpenAI 格式）**
+
+```bash
+export OPENAI_COMPATIBLE_API_KEY="your_z_ai_key"
+export MODEL_BASE_URL="https://api.z.ai/api/coding/paas/v4"
+
+ante --provider openai-compatible --model glm-5-turbo -p "为缓存层添加单元测试"
+```

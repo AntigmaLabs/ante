@@ -1,0 +1,156 @@
+---
+title: 权限控制系统
+sidebar_label: "权限控制"
+description: "了解 Ante 如何通过模式、规则和匹配器对工具执行进行安全管控"
+---
+
+# 权限控制系统
+
+Ante 内置了完善的权限控制系统，精细控制各项工具调用是自动放行、需要人工审批还是直接拒绝执行。
+
+## 权限模式（Permission Modes）
+
+| 模式 | 行为特征 |
+|---|---|
+| `strict` | 优先匹配显式规则。若无规则命中，已知安全的只读 Bash 命令自动放行，其余工具均弹出人工确认。此为默认模式。 |
+| `auto` | 优先匹配显式规则。若无规则命中，常规工具自动放行，除非 Bash 命令被风险分类器识别为危险操作（此时会弹窗提示确认）。 |
+| `yolo` | 所有工具调用均自动放行 —— 无确认弹窗，不计算规则（包括 `deny` 拒绝规则）。 |
+
+在 `~/.ante/settings.json` 中配置默认模式：
+
+```json
+{
+  "permission_mode": "auto",
+  "permissions": {
+    "allow": ["Bash(npm run *)"],
+    "ask": ["Write"],
+    "deny": ["Bash(rm *)"]
+  }
+}
+```
+
+也可以在启动命令行中按会话临时覆盖：
+
+```bash
+ante --yolo "运行 cargo clippy 并修复所有警告"
+ante --permission-mode auto "更新文档并运行测试"
+```
+
+在 TUI 界面中，按 **Shift+Tab** 可实时循环切换模式：`strict` → `auto` → `yolo` → `strict`。变动即时生效，甚至适用于当前正在运行轮次中的后续工具调用。切换到 `strict` 或 `auto` 会自动将该模式保存为 `~/.ante/settings.json` 的全局默认值；切换到 `yolo` 则仅对当前会话生效，防止后续会话意外在无保护状态下启动。
+
+:::warning
+在无头模式（Headless Mode）下，由于无法进行交互式审批，系统会自动以 `yolo` 模式运行。
+:::
+
+## 判定结果（Decisions）
+
+| 判定结果 | 效果 |
+|---|---|
+| **Allow**（允许） | 工具立即执行，不弹窗确认 |
+| **Ask**（询问） | 弹出交互菜单等待用户批准或拒绝 |
+| **Deny**（拒绝） | 工具调用被直接拦截并报错返回给模型 |
+
+## 规则机制与优先级
+
+权限规则由**判定（Decision）**与**工具匹配器（Tool Matcher）**组合而成。持久化规则存储在 `~/.ante/settings.json` 的 `permissions.allow`、`permissions.ask` 和 `permissions.deny` 列表中。
+
+优先级固定为：**deny（拒绝） > session grants（会话临时授权） > ask（询问） > allow（允许） > tool defaults（工具默认值）**。在各层级内部，匹配器为无序集合。会话临时授权是在审批弹窗中选择“本次会话允许”时添加的动态规则（详见[会话临时授权](#session-grants)）。
+
+```
+规则配置:  deny=[Bash(rm *)], ask=[Bash], allow=[Write]
+                ↓
+工具调用:  Bash({ "command": "ls" })
+                ↓
+匹配命中:  Ask(Bash)
+                ↓
+执行判定:  Ask (弹窗提示用户确认)
+```
+
+若没有命中任何显式规则，则由当前权限模式决定默认行为：`strict` 模式除了已知的安全只读 Shell 命令外均需询问；`auto` 模式除了危险 Shell 命令外均自动放行；`yolo` 模式一律立即放行。
+
+### 各工具的默认行为
+
+| 工具 | 默认判定 |
+|---|---|
+| `Bash` | Ask |
+| `Write` | Ask |
+| `Edit` | Ask |
+| `Read` | Allow |
+| `Glob` | Allow |
+| `Grep` | Allow |
+| `Agent` | Allow |
+| `TodoWrite` | Allow |
+| `WebFetch` | Ask |
+| `WebSearch` | Ask |
+| `ViewImage` | Allow |
+
+在 `strict` 模式下，对于未配置规则的 Shell 命令，若属于经过安全审计的纯只读命令（包括由它们组成的管道、`&&`、`||`、`;` 序列），Ante 会自动放行；任何包含重定向、命令替换或未知二进制调用的命令仍会弹出提示。
+
+在 `auto` 模式下，非 Bash 工具直接放行，Bash 命令在未被标记为危险操作时自动放行。
+
+### 会话临时授权（Session Grants）
+
+在审批弹窗中，您可以选择：
+
+- **Yes** — 仅允许本次单次调用。
+- **Yes, allow … for this session** — 在当前会话生命周期内临时放行。该授权高于 `ask`/`allow` 和工具默认值，但低于 `deny` 规则，并在会话结束时自动失效。
+- **Yes, always allow … (save to settings)** — 将匹配器写入 `~/.ante/settings.json` 的 `permissions.allow` 中，持久化应用于未来所有会话。
+
+授权具备智能作用域范围：单个经过批准的 Bash 命令会自动泛化为**双 Token 前缀**（例如批准 `cargo test -p foo` 会自动泛化为 `Bash(cargo test *)`），同类命令无需重复确认。但被风险分类器标记的命令（如 `rm -rf build`）、第二个 Token 为参数标识的命令（如 `ls -la`）以及多阶段复合命令（如 `git add -A && git commit -m wip`）会严格限制在**精确命令匹配**，避免意外扩大放行范围。`Agent`、`Read`、`Edit` 和 `Write` 会以首要参数（子智能体类型或文件路径）作为作用域，`Grep` 和 `Glob` 则以搜索 Pattern 为作用域。
+
+授权规则具备包含合并特性：若已有宽泛规则覆盖了更窄的规则，较窄规则会自动被吸收折叠，避免规则臃肿。
+
+## 工具匹配器语法
+
+### 简单匹配器
+
+按名称匹配该工具的**任意**调用：
+
+```
+Bash
+Write
+Agent
+```
+
+### 带参匹配器（Specifier Matcher）
+
+仅在工具的首要参数匹配指定的 Glob 通配符模式时命中：
+
+```
+Bash(cargo test *)
+Bash(npm run *)
+Agent(explore)
+Read(src/**)
+Edit(src/**)
+Grep(*secret*)
+Glob(**/*.rs)
+```
+
+支持参数细化的工具及其首要参数如下：
+
+| 工具 | 首要参数 |
+|---|---|
+| `Bash` | `command` |
+| `Agent` | `subagent_type` |
+| `Read` | `file_path`（或 `path`） |
+| `Edit` | `file_path` |
+| `Write` | `file_path` |
+| `Grep` | `pattern` |
+| `Glob` | `pattern` |
+
+对于文件操作类工具，Ante 在进行权限匹配前会自动对路径进行规范化处理：去除外层引号、展开用户目录 `~`、解析 `.` 和 `..` 相对路径。例如 `Deny(Read(/tmp/secret*))` 能够精准拦截 `Read("~/../tmp/secret.txt")`。
+
+`Grep` 和 `Glob` 匹配搜索表达式本身，不包含被搜索的目录路径。
+
+### Glob 通配符语法
+
+| 模式 | 匹配示例 |
+|---|---|
+| `cargo test *` | `cargo test --all`、`cargo test my_mod` |
+| `npm run *` | `npm run build`、`npm run test` |
+| `safe-cmd:*` | `safe-cmd:foo`、`safe-cmd:bar` |
+| `exp*` | `explore`、`experiment` |
+
+:::warning
+单命令通配符**不能**直接匹配多阶段复合命令。`Bash(npm run *)` 可以匹配 `npm run build`，但**绝不会**匹配 `npm run build && rm -rf /` 或 `npm run build | sh` —— 复合序列中的每一个阶段都必须独立满足权限规则，防止利用命令拼接绕过安全检查。
+:::

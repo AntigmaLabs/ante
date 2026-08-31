@@ -1,0 +1,41 @@
+---
+title: "存储与目录结构参考手册（Storage Reference）"
+sidebar_label: "存储与目录"
+description: "Ante 在本地文件系统中读写配置与状态的存储目录清单"
+---
+
+# 存储与目录结构参考手册（Storage Reference）
+
+Ante 将配置与状态持久化保存在本地文件系统中。本页面梳理了 Ante 涉及的所有目录与文件位置。
+
+## 目录路径清单
+
+| 路径 | 作用说明 |
+|---|---|
+| `~/.ante/settings.json` | 用户偏好配置（模型、提供商、主题、MCP 服务器） |
+| `~/.ante/<name>.settings.json` | 通过 `--profile <name>` 选定的独立 Profile 配置文件 |
+| `~/.ante/catalog.json` | 自定义提供商与模型目录 |
+| `~/.ante/auth/` | OAuth 凭据及应用内粘贴的 API 密钥（权限仅用户本人可读） |
+| `~/.ante/AGENTS.md` | 注入所有项目会话的用户级全局行为指引 |
+| `~/.ante/skills/` | 用户级全局 Skills 技能目录 |
+| `~/.ante/agents/` | 用户级全局子智能体目录 |
+| `~/.ante/.system/` | Ante 内置的系统级 Skills 与子智能体 |
+| `~/.ante/sessions/<session-id>/` | 会话持久化数据（供 `/resume` 使用） |
+| `~/.ante/projects/<project-id>/memory/` | 各项目的自动持久化记忆库 |
+| `~/.ante/cache/` | WebFetch 超长网页缓存文件（保留 48 小时） |
+| `~/.ante/run/jobs/<proc-id>/` | 后台 Bash 任务句柄：`status.json`、`stdout.txt`、`stderr.txt` |
+| `~/.ante/tmp/` | 临时暂存文件（保留 48 小时） |
+| `~/.ante/logs/<YYYY-MM-DD>/` | 应用程序与崩溃日志（按 UTC 日期归档） |
+| `~/.ante/logs/llama-server.log` | 本地推理引擎日志 |
+| `~/.ante/models/` | 本地 GGUF 模型的默认存放目录 |
+| `~/.ante/llama.cpp/` | Ante 托管的 llama.cpp 运行时安装目录 |
+| `~/.ante/offline-config.json` | 离线推理模式引擎与参数配置 |
+| `~/.ante/verified_models.json` | 用户自定义追加的验证模型配置 |
+| `~/.ante/channels.json` | Slack 与 Discord 机器人网关配置 |
+| `~/.ante/versions.json` | 版本更新检查缓存与 Release Notes |
+| `~/.ante/user_input_history.jsonl` | TUI 历史输入提示词记录 |
+| `AGENTS.md` | 项目代码库内版本控制的智能体行为规范 |
+| `.ante/` | 项目级专属配置（skills, agents） |
+| `.agents/`, `.claude/` | 兼容的项目级扩展目录 |
+
+可通过环境变量 `ANTE_HOME` 覆盖 `~/.ante` 根目录。

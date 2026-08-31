@@ -1,0 +1,49 @@
+---
+title: 推荐验证模型（Verified Models）
+sidebar_label: "推荐验证模型"
+description: "经过 Ante 严格测试与基准评测的精选本地 GGUF 模型列表"
+---
+
+# 推荐验证模型（Verified Models）
+
+在[离线模式](/local/offline)选择器中的 **Verified models（推荐验证模型）** 列表经过严格筛选：均经过 Ante 智能体闭环测试，可直接从 Hugging Face 下载，并预先计算好了内存/显存开销。每个模型具有以下两种状态之一：
+
+- **Evaled（已完成完整评测）** — 运行了完整的公开基准评测：与[云端前沿模型评测](/benchmarks/eval)完全相同的 Terminal-Bench 2.1 Harness、固定构建与公开 Harbor 审计记录。实时得分展示于 [antigma.ai/eval](https://antigma.ai/eval)。
+- **Verified（已通过兼容性验证）** — 经过端到端兼容性测试：模型能够顺利加载、对话模板解析正确，且在 Ante 智能体闭环中支持稳定的工具调用。尚未完成全部 445 次 Trial 评测。
+
+## 当前推荐模型列表
+
+| 模型 | 量化格式 | 下载大小 | 最大上下文 | 评测状态 |
+|---|---|---|---|---|
+| Qwen3.8 27B | Q4_K_M | 17 GB | 256K | Verified |
+| MiniMax-M2.7 | Q3_K_XL | 102 GB | 192K | Verified |
+| Qwen3.5 122B-A10B | Q2_K | 45 GB | 256K | Verified |
+| Qwen3.6 35B-A3B | Q4_K_M | 22 GB | 256K | Verified |
+| Qwen3.6 27B | Q4_K_M | 17 GB | 256K | **Evaled** — [Terminal-Bench 2.1 准确率 56.2%](https://antigma.ai/eval) |
+| GLM-4.7-Flash | Q4_K_M | 18 GB | 198K | Verified |
+| Gemma 4 26B-A4B-it | Q4_K_M | 16 GB | 256K | Verified |
+| Devstral-Small-2 24B | Q4_K_M | 14 GB | 384K | Verified |
+| Qwen3.5 9B | Q4_K_M | 5.7 GB | 256K | Verified |
+| Gemma 4 E4B-it | Q4_K_M | 4.7 GB | 128K | Verified |
+
+“最大上下文”为模型底层架构支持的上限；Ante 默认将初始上下文窗口设置为 32K 以保持内存占用可预测，您可以在[偏好设置](/local/offline#model-preferences)中针对各模型调大，或通过环境变量 `ANTE_OFFLINE_CONTEXT` 全局覆盖。
+
+## 自定义添加验证模型
+
+Ante 在启动时会自动将 `~/.ante/verified_models.json` 合并到内置推荐列表中。`filename` 相同的条目将覆盖内置预设，新条目会自动追加。
+
+```json
+{
+  "models": [
+    {
+      "name": "My Custom Model",
+      "repo": "username/repo-name",
+      "filename": "model-Q4_K_M.gguf",
+      "context_window": 32768,
+      "file_size_mb": 5000,
+      "kv_cache_bytes_per_token": 131072,
+      "support_vision": false
+    }
+  ]
+}
+```

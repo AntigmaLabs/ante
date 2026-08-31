@@ -1,0 +1,90 @@
+---
+title: "工具系统参考手册（Tool Reference）"
+sidebar_label: "工具参考"
+description: "Ante 会话中可供智能体调用的完整工具集及权限说明"
+---
+
+# 工具系统参考手册（Tool Reference）
+
+工具（Tools）是智能体在会话中用于感知环境并执行操作的底层能力。部分工具静默执行；涉及修改系统的工具默认需要人工确认审批。
+
+## 文件系统 I/O
+
+### Read（读取文件）
+
+读取文本文件、图片和 PDF。长行内容完整返回而不截断。
+
+PDF 在客户端本地完成页面渲染与文本提取，无需网络往返，支持按页码范围分批阅读大文档。当模型不支持视觉多模态时，读取图片会自动返回元数据（格式与分辨率），方便代码化分析。
+
+### Write（写入文件）
+
+创建新文件或完整覆盖现有文件。默认需要审批确认。
+
+### Edit（修改文件）
+
+在文件中执行精确字符串替换。默认需要审批确认。
+
+当智能体在同一次批量调用中针对同一文件发出多个 `Edit`/`Write` 时，Ante 会按顺序串行执行，确保后序编辑基于前序结果进行；针对不同文件的调用仍保持并发执行。
+
+### Glob（文件模式匹配）
+
+使用 Glob 通配符快速查找和遍历匹配的文件路径。
+
+### Grep（内容正则搜索）
+
+基于正则表达式快速搜索文件内容。
+
+## 终端与 Shell
+
+### Bash（执行命令）
+
+执行 Shell 命令。每次调用均在独立的非交互子进程中运行 —— 进程状态不跨调用持久。
+
+可选参数 `max_wait_ms` 控制等待命令在内联返回的时长（默认 `10000`ms，限制在 `250`–`600000`ms）。超时不会杀死命令，而是返回后台任务句柄（在 `~/.ante/run/jobs/<proc-id>/` 下输出 `status.json`、`stdout.txt`、`stderr.txt`）。默认需要审批确认。
+
+针对常驻交互式程序，智能体可通过内置的 `tmux` 技能驱动命名 tmux 会话（`ante-*`），并通过 `/term <name>` 在 TUI 中随时挂载查看。
+
+## 内置核心工具
+
+### Agent（子智能体派生）
+
+动态派生专属子智能体自主处理复杂子任务。
+
+### TodoWrite（任务清单管理）
+
+维护多步骤任务列表，实时跟踪执行进度与状态。
+
+### WebFetch（抓取网页内容）
+
+获取指定 URL 网页并自动转换为 Markdown，超长内容会自动保存为本地缓存供分片阅读。默认需要审批。
+
+### WebSearch（网络搜索）
+
+通过模型提供商的原生搜索能力检索互联网内容并返回带引用的搜索结果。支持 Anthropic、OpenAI、Gemini、Grok、OpenRouter、Antix、Ali Coding Plan 等提供商。默认需要审批。
+
+## 可选工具（Opt-in）
+
+### ViewImage
+
+通过自然语言指令针对图片进行分析解读（可通过 `--include-tools ViewImage` 启用）。
+
+## MCP 工具（Model Context Protocol）
+
+通过配置的 [MCP 服务器](/extend/mcp) 注入的工具会自动命名为 `mcp__<server>__<tool>`，调用体验与内置工具完全一致。
+
+## 默认工具集与命令行过滤
+
+默认启用的工具集包括：`Read`、`Bash`、`Grep`、`Glob`、`TodoWrite`、`WebFetch`、`Edit`、`Write`、`Agent`，以及在支持的提供商下自动追加的 `WebSearch`。
+
+通过参数自定义工具集：
+
+```bash
+# 精确指定工具集
+ante --tools Read Glob Grep "仅分析代码"
+
+# 引入可选工具
+ante --include-tools ViewImage "分析截图"
+
+# 排除指定工具
+ante --exclude-tools Bash Write "纯只读代码审查"
+```

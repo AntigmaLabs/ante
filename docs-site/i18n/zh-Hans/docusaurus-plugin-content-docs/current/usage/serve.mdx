@@ -1,0 +1,115 @@
+---
+title: 服务模式（ante serve）
+sidebar_label: "服务模式"
+description: "将 Ante 作为长寿命服务端运行，供外部程序以结构化协议进行集成"
+---
+
+# 服务模式（ante serve）
+
+服务模式（Server Mode）将 Ante 作为长寿命守护进程运行，外部客户端可通过结构化的消息协议对其进行驱动。非常适合用于构建编辑器插件（如 VS Code / Neovim 扩展）、Web UI 界面或任何需要长期以编程方式控制 Ante 的自动化系统。
+
+## 基础用法
+
+```bash
+ante serve
+```
+
+该命令将启动守护进程，并通过 stdin/stdout 提供 [JSONL 通信协议](/reference/protocol-reference)。进程会持续运行，直到客户端发送 `Shutdown` 指令或关闭 stdin。
+
+### 标准输入输出 Stdio 传输（默认）
+
+```bash
+ante serve --stdio
+```
+
+`--stdio` 是默认传输方式。守护进程从 stdin 逐行读取 `OpMsg` JSON 对象，并将 `EventMsg` JSON 对象逐行写回 stdout。
+
+### WebSocket 传输
+
+```bash
+ante serve --ws 127.0.0.1:8080
+```
+
+`--ws` 参数在指定地址上启动 WebSocket 服务端。每个接入的连接均拥有独立的守护进程实例。服务端持续接受新连接，直到收到 `Shutdown` 指令。
+
+:::note
+`--stdio` 与 `--ws` 互斥，不能同时使用。
+:::
+
+:::caution
+监听地址必须为本地回环地址（`127.0.0.0/8` 或 `::1`）。Ante 拒绝绑定外部网络地址（例如传入 `0.0.0.0:8080` 会直接报错退出）。由于该协议未设置身份认证机制，绑定到公网或局域网路由接口将导致任何接入方获得在本机执行工具的完全权限。若需远程访问，请通过 SSH 隧道或带身份验证的反向代理转发。
+:::
+
+## 工作原理
+
+1. 守护进程启动并等待 stdin 或 WebSocket 发送的操作指令。
+2. 客户端发送 `StartSession` 操作，使用指定的模型和提供商初始化会话。
+3. 发送 `UserInput` 操作提交任务提示词。
+4. 在 stdout 上接收流式事件 —— 思考流增量（thinking deltas）、消息增量（message deltas）、工具调用（tool calls）、审批确认等。
+5. 监听并响应 `TurnPause` 事件，发送 `ApprovalResponse` 批准或拒绝工具调用。
+6. 发送 `Shutdown`（或关闭 stdin）优雅停止守护进程。
+
+完整的协议消息结构与格式请参阅[协议参考手册](/reference/protocol-reference)。
+
+## 调用示例
+
+```bash
+# 启动守护进程并通过命名管道向其发送 JSONL 消息
+mkfifo /tmp/ante-pipe
+ante serve < /tmp/ante-pipe &
+echo '{"op":{"StartSession":{"model":"claude-sonnet-5","provider":"anthropic"}},"id":"op_001"}' > /tmp/ante-pipe
+echo '{"op":{"UserInput":"计算 2+2 等于多少"},"id":"op_002"}' > /tmp/ante-pipe
+```
+
+在实际工程中，通常由宿主程序通过子进程方式直接拉起并写入 stdin。以下为 Node.js 示例：
+
+```javascript
+const { spawn } = require("child_process");
+
+const ante = spawn("ante", ["serve"]);
+let buffer = "";
+
+ante.stdout.on("data", (chunk) => {
+  buffer += chunk.toString();
+  const lines = buffer.split("\n");
+  buffer = lines.pop();
+  for (const line of lines) {
+    if (!line.trim()) continue;
+    const event = JSON.parse(line);
+    console.log("Event:", event.event);
+  }
+});
+
+ante.stdin.write(JSON.stringify({
+  op: { StartSession: { model: "claude-sonnet-5", provider: "anthropic" } },
+  id: "op_001"
+}) + "\n");
+
+ante.stdin.write(JSON.stringify({
+  op: { UserInput: "解释这个项目的作用" },
+  id: "op_002"
+}) + "\n");
+```
+
+## 服务模式与无头模式的区别
+
+| 特性 | 无头模式（Headless） | 服务模式（Server） |
+|---|---|---|
+| **生命周期** | 执行单个 Prompt 任务后立即退出 | 长寿命常驻，支持多轮持续交互 |
+| **输入方式** | CLI 参数或标准输入管道 | 结构化 JSONL 操作指令（`OpMsg`） |
+| **输出形式** | 格式化文本（minimal / human / json） | 原始协议事件流（JSONL `EventMsg`） |
+| **传输层** | 命令行调用 | Stdio（默认）或 WebSocket（`--ws`） |
+| **会话管理** | 隐式创建（单次调用对应单会话） | 显式声明（客户端发送 `StartSession`） |
+| **工具审批** | 自动批准（默认开启 yolo） | 客户端须主动响应 `TurnPause` 事件 |
+
+## CLI 命令行参数参考
+
+| 参数 | 说明 |
+|---|---|
+| `--stdio` | 使用基于 stdin/stdout 的 JSONL 通信（默认） |
+| `--ws <ADDR>` | 在本地回环地址上启动 WebSocket 服务 |
+| `--offline-model <PATH>` | 自动使用指定的 GGUF 模型拉起本地 llama-server，并将其作为 `local` 提供商注入到接入的会话中 |
+
+:::note
+`--prompt` 参数不能与 `ante serve` 同时使用，请通过 `UserInput` 操作指令传递提示词。
+:::

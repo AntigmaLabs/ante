@@ -1,0 +1,173 @@
+---
+title: "偏好配置与设置"
+sidebar_label: "偏好设置"
+description: "Ante 配置文件、环境变量与目录结构详解"
+---
+
+## 配置文件
+
+Ante 将用户偏好配置保存在 `~/.ante/settings.json` 中。
+
+大部分设置都可以通过 TUI 中的 `/config` 命令进行可视化查看与修改 —— 该交互式设置面板支持实时开关（使用技巧、智能预测提示、紧凑工具折叠、短提示词、自动压缩、重绘策略、默认权限模式、更新通道等），并提供直达主题、模型、提供商、状态栏、MCP 和离线模式的快捷入口。修改会即时持久化到 `settings.json`。部分在启动阶段读取的参数（如 `resize_reflow`）会在面板中标记为 "(next session)" 并在下次启动时生效。
+
+配置文件 `settings.json` 示例：
+
+```json
+{
+  "model": "claude-sonnet-5",
+  "provider": "anthropic",
+  "theme": "default",
+  "append_system_prompt": "Prefer small, focused commits.",
+  "tools": ["Read", "Write", "Edit", "Bash"],
+  "auto_memory": true,
+  "skills": true,
+  "include_skills": ["deploy-checklist"],
+  "exclude_skills": ["noisy-skill"],
+  "session_save": true,
+  "permission_mode": "auto",
+  "permissions": {
+    "allow": ["Bash(npm run *)"],
+    "deny": ["Bash(rm *)"]
+  },
+  "has_completed_onboarding": true,
+  "ambient_prompt_suggestion": true,
+  "ambient_thinking_phrase": true,
+  "tips": true,
+  "group_tool_activity": true,
+  "short_prompt": false,
+  "auto_compact": true,
+  "channel": "stable",
+  "resize_reflow": "conservative",
+  "status_line": ["model-name", "current-dir"],
+  "status_line_command": {
+    "command": "~/.config/ante/statusline.sh",
+    "padding": 1,
+    "refresh_interval": 5
+  },
+  "model_effort": {
+    "claude-sonnet-5": "medium",
+    "gpt-5.4": "high"
+  },
+  "provider_model": {
+    "anthropic": "claude-sonnet-5",
+    "openai": "gpt-5.6-sol"
+  },
+  "mcp_servers": {
+    "filesystem": {
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-filesystem", "/tmp"]
+    }
+  }
+}
+```
+
+| 字段 | 说明 |
+|---|---|
+| `model` | 默认模型名称 |
+| `provider` | 默认 API 提供商 |
+| `theme` | TUI 配色主题 |
+| `system_prompt` | 新会话的替换系统提示词（CLI `--system-prompt` / `--system-prompt-file` 优先级更高） |
+| `append_system_prompt` | 向新会话系统提示词末尾追加的内容（CLI `--append-system-prompt` 优先级更高） |
+| `tools` | 新会话的基础工具集，替换默认内置工具集（CLI `--tools` 优先级更高） |
+| `auto_memory` | 是否启用[自动记忆（Auto Memory）](/extend/memory)（TUI 默认开启，无头模式默认关闭） |
+| `skills` | 是否发现并加载 [Skills 技能](/extend/skills)（默认 `true`） |
+| `include_skills` | 在基础技能集之上额外加载的指定技能列表 |
+| `exclude_skills` | 从所有会话中排除的技能列表（优先级高于 `include_skills`） |
+| `session_save` | 是否持久化保存会话记录与可恢复快照（默认 `true`） |
+| `permission_mode` | 默认权限模式（`strict`、`auto` 或 `yolo`） |
+| `permissions` | 持久化工具权限规则，分为 `allow`、`ask` 和 `deny` 匹配器（详见[权限控制](/configuration/permission)） |
+| `has_completed_onboarding` | 是否已完成首次启动欢迎引导 |
+| `ambient_prompt_suggestion` | 是否在轮次结束后以虚字显示[下一轮提示词预测建议](/usage/tui#next-prompt-suggestion) |
+| `ambient_thinking_phrase` | 是否在键入长提示词时后台预测[任务专属加载状态语](/usage/tui#spinner-thinking-phrase) |
+| `tips` | 是否在智能体思考动画下方展示[功能技巧提示](/usage/tui#spinner-tips) |
+| `group_tool_activity` | 是否将连续的静默工具调用折叠为紧凑汇总块（Ctrl+O 完整记录视图中仍保留全部细节） |
+| `short_prompt` | 是否启用紧凑精简版系统提示词和简短工具描述 |
+| `auto_compact` | 是否在接近模型上下文上限时主动自动压缩历史对话（默认开启） |
+| `channel` | `ante update` 跟踪的发布通道（`stable` 或 `nightly`） |
+| `resize_reflow` | 终端缩放时的回滚历史重绘策略：`conservative`（保守，默认）或 `purge`（清除重放） |
+| `status_line` | TUI 底部状态栏展示项列表（详见下文） |
+| `status_line_command` | 执行自定义 Shell 脚本渲染自定义状态栏（优先级高于 `status_line`） |
+| `model_effort` | 各模型的[思考深度（Effort）](/usage/models-and-thinking#effort)覆盖映射 |
+| `provider_model` | 各提供商最后选用的模型记录 |
+| `mcp_servers` | 会话启动时拉起的 MCP 服务配置（详见 [MCP 服务器](/extend/mcp)） |
+
+### 命名配置 Profile
+
+使用 `--profile <name>` 可在单次 TUI 或无头运行时指定独立的配置文件：
+
+```bash
+ante --profile work
+ANTE_PROFILE=review ante -p "审查本次代码改动"
+```
+
+名为 `work` 的 Profile 会读写 `~/.ante/work.settings.json`。Profile 是完整替换而非层叠继承：Profile 中未指定的项会回退到 Ante 系统默认值，而非读取 `settings.json`。
+
+内置的 `bare` Profile 提供最纯净的基础环境：首次运行 `--profile bare` 会生成 `~/.ante/bare.settings.json`，自动禁用引导与环境感知功能，并将 `auto_memory`、`skills`、`session_save` 均置为 `false`。
+
+### 状态栏项配置（Status Line）
+
+`status_line` 字段控制 TUI 底部状态栏顶部一行的展示内容：
+
+| 项 | 说明 |
+|---|---|
+| `model-name` | 当前模型名称 |
+| `effort` | 当前[思考深度等级](/usage/models-and-thinking#effort)（单独显示时为 `effort: high`） |
+| `provider` | 当前模型提供商 |
+| `current-dir` | 当前工作目录 |
+| `git-branch` | 当前 Git 分支（如 `⑂ main`） |
+| `pr-link` | 当前分支关联的 GitHub PR 链接（依赖 `gh`） |
+| `context-used` | 上下文窗口剩余百分比（如 `42% ctx`） |
+| `terminals` | 正在运行的 `ante-*` tmux 会话列表 |
+
+当 `effort` 与 `model-name` 同时启用时会自动合并为 `gpt-5.6(high)`；分支与目录同时启用时合并为 `project(⑂ main)`。
+
+### 自定义命令状态栏（status_line_command）
+
+通过 `status_line_command` 执行自定义脚本渲染个性化状态栏：
+
+```json
+{
+  "status_line_command": {
+    "command": "~/.config/ante/statusline.sh",
+    "padding": 1,
+    "refresh_interval": 5
+  }
+}
+```
+
+Ante 会将当前会话的上下文快照 JSON 传递给脚本的 stdin，并将 stdout 输出逐行（最多 8 行）渲染为状态栏，原生支持 ANSI 彩色和 OSC 8 超链接。JSON 数据格式与 Claude Code statusline 保持高度兼容。
+
+## 环境变量参考
+
+| 环境变量 | 说明 |
+|---|---|
+| `ANTHROPIC_API_KEY` | Anthropic (Claude) API 密钥 |
+| `OPENAI_API_KEY` | OpenAI API 密钥 |
+| `OPENAI_COMPATIBLE_API_KEY` | 兼容 OpenAI 格式提供商的 API 密钥 |
+| `GEMINI_API_KEY` | Google Gemini API 密钥 |
+| `VERTEX_GEMINI_API_KEY` | Vertex AI Gemini API 密钥 |
+| `XAI_API_KEY` | Grok (xAI) API 密钥 |
+| `OPENROUTER_API_KEY` | Open Router API 密钥 |
+| `ZAI_API_KEY` | 智谱 Zai API 密钥 |
+| `DEEPSEEK_API_KEY` | DeepSeek API 密钥 |
+| `ALI_CODING_PLAN_API_KEY` | 阿里百炼 Coding Plan API 密钥 |
+| `ANTIX_API_KEY` | Antix 企业网关 API 密钥 |
+| `MODEL_BASE_URL` | 全局基础 API 地址（可被各提供商专属变量覆盖） |
+| `ANTHROPIC_BASE_URL` | 覆盖 Anthropic API 基础地址 |
+| `OPENAI_BASE_URL` | 覆盖 OpenAI API 基础地址 |
+| `OPENAI_COMPATIBLE_BASE_URL` | 覆盖 OpenAI 兼容提供商的基础地址 |
+| `OPENROUTER_BASE_URL` | 覆盖 Open Router 基础地址 |
+| `DEEPSEEK_BASE_URL` | 覆盖 DeepSeek 基础地址 |
+| `ANTIX_BASE_URL` | 覆盖 Antix 基础地址 |
+| `MODEL_TEMPERATURE` | 覆盖模型采样温度（浮点数） |
+| `MODEL_TOP_P` | 覆盖模型 Top-P 采样参数（浮点数） |
+| `MODEL_MAX_TOKENS` | 覆盖模型最大输出 Token 数 |
+| `MODEL_CONTEXT_LIMIT` | 覆盖模型最大上下文窗口上限 |
+| `ANTE_HOME` | 覆盖 Ante 主配置目录（默认：`~/.ante`） |
+| `ANTE_PROFILE` | 指定生效的设置 Profile（等同于 `--profile <name>`） |
+| `ANTE_INSTALL_DIR` | 安装脚本的目标二进制目录（默认：`~/.ante/bin`） |
+| `ANTE_OFFLINE_CONTEXT` | 覆盖本地 GGUF 模型的上下文窗口 Token 上限 |
+| `ANTE_MCP_TOOL_TIMEOUT` | MCP 工具调用的超时时间（秒，默认 600） |
+| `ANTE_OPENAI_TRANSPORT` | OpenAI 传输协议：`http_sse`（默认）或 `websocket_auto` |
+| `ANTE_TELEMETRY` | 禁用遥测（设为 `off`、`false`、`0` 或 `disabled`） |
+| `RUST_LOG` | 覆盖日志过滤级别（生产默认：`ante=info`） |

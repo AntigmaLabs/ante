@@ -8,21 +8,13 @@ const socialLinkHtml = (label: string, icon: string) =>
 
 const isZhHansBuild = process.env.DOCUSAURUS_CURRENT_LOCALE === 'zh-Hans'
 
-const docsFooterItems = isZhHansBuild
-  ? [
-      { label: 'Antix 简介', to: '/antix/introduction' },
-      { label: '快速入门', to: '/antix/quickstart' },
-      { label: '路由与 BYOK', to: '/antix/concepts/routing' },
-      { label: '虚拟密钥与预算', to: '/antix/concepts/virtual-keys' },
-      { label: '隐私与安全', to: '/antix/concepts/security' },
-    ]
-  : [
-      { label: 'Overview', to: '/' },
-      { label: 'Quickstart', to: '/start/quickstart' },
-      { label: 'Benchmarks', to: '/benchmarks/eval' },
-      { label: 'Local Models', to: '/local/overview' },
-      { label: 'Providers', to: '/usage/providers' },
-    ]
+const docsFooterItems = [
+  { label: 'Overview', to: '/' },
+  { label: 'Quickstart', to: '/start/quickstart' },
+  { label: 'Benchmarks', to: '/benchmarks/eval' },
+  { label: 'Local Models', to: '/local/overview' },
+  { label: 'Providers', to: '/usage/providers' },
+]
 
 const legacyAnteRedirects = [
   { from: '/usage/offline', to: '/local/offline' },
@@ -87,7 +79,7 @@ const config: Config = {
         docs: {
           routeBasePath: '/',
           sidebarPath: './sidebars.ts',
-          include: isZhHansBuild ? ['antix/**/*.{md,mdx}'] : ['**/*.{md,mdx}'],
+          include: ['**/*.{md,mdx}'],
         },
         blog: false,
         theme: {

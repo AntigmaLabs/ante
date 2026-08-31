@@ -1,0 +1,112 @@
+---
+title: 离线与本地推理模式（Offline Mode）
+sidebar_label: "离线模式"
+description: "通过 Ante 原生管理的 llama.cpp 推理引擎运行本地 GGUF 模型"
+---
+
+# 离线与本地推理模式（Offline Mode）
+
+Ante 通过原生管理的 [llama.cpp](https://github.com/ggml-org/llama.cpp) 推理引擎运行本地 GGUF 模型。无需 API 密钥，无需注册账号：指定本地模型文件，完整的智能体闭环即可在自有硬件上流畅运转。模型加载到本地后，推理过程完全无需网络连接。
+
+若需完全断开网络环境运行，请同时设置 `ANTE_TELEMETRY=off`。这会独立于本地推理禁用遥测指标与日志上报；详见[遥测配置](/configuration/preference#telemetry)。
+
+:::info
+离线推理模式目前处于活跃开发中，后续版本将持续优化体验与性能。
+:::
+
+## 工作流程
+
+进入离线模式时，Ante 会自动：
+
+1. 检查 llama.cpp 运行时，提供一键自动安装或升级：拉取与当前硬件架构（Apple Silicon Metal、Linux CUDA / Vulkan / CPU）严格匹配且带校验码验证的固定官方构建版本。
+2. 扫描并自动发现磁盘上的 GGUF 模型文件。
+3. 检测本地端口上已在运行的 llama.cpp 服务端。
+4. 根据模型文件大小与上下文窗口自动预估内存/显存需求。
+5. 启动并全生命周期监管本地推理服务。
+
+若希望使用自定义的 llama.cpp 构建、指定专属参数或接入已启动的服务，请参见[自定义引擎](/local/custom-engines)。
+
+## 快速上手
+
+1. **启动 Ante 并进入离线模式** — 正常启动 Ante 并在 TUI 中选择离线模式：
+   ```bash
+   ante
+
+   # 在 TUI 中执行
+   /offline-mode
+   ```
+
+2. **自动安装 llama.cpp** — 若尚未安装，Ante 会提示自动安装至 `~/.ante/llama.cpp`。当 Ante 新版本升级了固定引擎版本时，也会提示一键升级。在非交互环境下可直接运行 [`ante offline install`](/reference/cli-reference#ante-offline) 完成安装。
+
+3. **选择模型** — 支持三种来源：
+   - **推荐验证模型（Verified models）** — 从 Hugging Face 直接下载[官方验证推荐的高分模型](/local/verified-models)
+   - **本地模型（Local models）** — 自动扫描磁盘中已有的 GGUF 模型文件
+   - **运行中的服务（Running servers）** — [直接接入](/local/existing-servers)已在本地端口或局域网运行的 llama 服务
+
+4. **直接命令行传入模型文件** — 跳过 TUI 一步到位加载并执行：
+   ```bash
+   ante --offline-model /path/to/model.gguf "你的任务提示词"
+   ```
+
+模型加载成功后，会自动作为 `local` 提供商注册到目录中，您也可以通过 `/providers` 随时切换或使用 `--provider local` 调用。服务停止后，`local` 自动注销。
+
+## 脚本自动化与服务端使用
+
+### 无头模式（单次任务）
+
+使用 `--offline-model` 针对本地 GGUF 模型执行一次性任务 —— 无需启动 TUI：
+
+```bash
+ante --offline-model ~/.ante/models/Qwen3.5-9B-Q4_K_M.gguf "解释这段代码的逻辑"
+```
+
+<img src="/assets/offline-headless.gif" alt="无头离线模式运行本地 GGUF 模型" style={{width: '100%', borderRadius: '8px', margin: '16px 0'}} />
+
+Ante 会自动拉起 llama-server，等待就绪，执行任务，并在结束后自动关闭服务。
+
+### 服务模式（WebSocket 共享本地模型）
+
+在运行 `ante serve` 时，可以加载一次本地模型并供所有接入客户端并发复用：
+
+```bash
+ante serve --ws 127.0.0.1:9000 --offline-model ~/.ante/models/Qwen3.5-9B-Q4_K_M.gguf
+```
+
+<img src="/assets/offline-serve.gif" alt="服务模式下多个客户端共享离线本地模型" style={{width: '100%', borderRadius: '8px', margin: '16px 0'}} />
+
+## 进度指示
+
+在下载模型或将其加载到内存显存时，Ante 会在 TUI 中实时展示精细进度条：
+
+- **下载阶段（Download phase）** — 显示已下载字节数与总大小
+- **元数据读取（Metadata）** — 读取 GGUF 元数据
+- **张量加载（Tensor loading）** — 将权重装载至 RAM/VRAM
+- **GPU 卸载（GPU offload）** — 将网络层分配至 GPU 计算单元
+
+## 模型扫描路径
+
+Ante 会自动在以下目录中扫描发现 GGUF 模型文件：
+
+| 目录 | 说明 |
+|---|---|
+| `~/.ante/models` | 默认模型存储目录（可配置） |
+| `~/.cache/llama.cpp` | llama.cpp 默认缓存 |
+| `~/.cache/huggingface/hub` | Hugging Face 缓存目录 |
+| `~/.llama/models` | 常见 llama 模型目录 |
+
+## 多模态视觉支持（Vision Models）
+
+若模型同级目录下存在对应的多模态投影文件（`mmproj-*.gguf`），Ante 启动时会自动挂载，支持在对话中直接发送图片。
+
+## 本地服务生命周期管理
+
+| 快捷键 | 功能 |
+|---|---|
+| `Ctrl+E` | 停止当前连接的本地推理服务 |
+| `Ctrl+G` | 展开/折叠本地推理引擎实时日志面板 |
+| `Ctrl+K` / `Ctrl+J` | 在日志面板展开时向上/向下滚动日志 |
+
+在退出 Ante 时若仍有本地服务运行，界面会询问：
+- **`s`** — 停止服务并退出
+- **`k`** — 保持服务在后台继续运行并退出（打印 PID）
+- **`Esc`** — 取消并留在 Ante 中

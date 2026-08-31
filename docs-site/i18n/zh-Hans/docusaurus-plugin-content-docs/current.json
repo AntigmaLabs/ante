@@ -4,35 +4,43 @@
     "description": "The label for version current"
   },
   "sidebar.docs.category.Getting Started": {
-    "message": "Getting Started",
+    "message": "快速起步",
     "description": "The label for category 'Getting Started' in sidebar 'docs'"
   },
   "sidebar.docs.category.Benchmarks": {
-    "message": "Benchmarks",
+    "message": "基准评测",
     "description": "The label for category 'Benchmarks' in sidebar 'docs'"
   },
   "sidebar.docs.category.Using Ante": {
-    "message": "Using Ante",
+    "message": "使用 Ante",
     "description": "The label for category 'Using Ante' in sidebar 'docs'"
   },
+  "sidebar.docs.category.Input": {
+    "message": "输入与交互",
+    "description": "The label for category 'Input' in sidebar 'docs'"
+  },
+  "sidebar.docs.category.Local Models": {
+    "message": "本地模型",
+    "description": "The label for category 'Local Models' in sidebar 'docs'"
+  },
   "sidebar.docs.category.Configuration": {
-    "message": "Configuration",
+    "message": "系统配置",
     "description": "The label for category 'Configuration' in sidebar 'docs'"
   },
   "sidebar.docs.category.Customization": {
-    "message": "Customization",
+    "message": "扩展与定制",
     "description": "The label for category 'Customization' in sidebar 'docs'"
   },
   "sidebar.docs.category.Programmatic Usage": {
-    "message": "Programmatic Usage",
+    "message": "编程与服务调用",
     "description": "The label for category 'Programmatic Usage' in sidebar 'docs'"
   },
   "sidebar.docs.category.Reference": {
-    "message": "Reference",
+    "message": "参考手册",
     "description": "The label for category 'Reference' in sidebar 'docs'"
   },
   "sidebar.docs.category.Experimental": {
-    "message": "Experimental",
+    "message": "实验性特性",
     "description": "The label for category 'Experimental' in sidebar 'docs'"
   },
   "sidebar.antix.category.Getting Started": {

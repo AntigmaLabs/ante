@@ -1,0 +1,100 @@
+---
+title: "网关模式（Gateway Mode）"
+sidebar_label: "网关模式"
+description: "将 Ante 作为长寿命机器人接入 Slack 或 Discord"
+---
+
+# 网关模式（Gateway Mode）
+
+网关模式（Gateway Mode）允许将 Ante 作为长寿命机器人运行，并接入 Slack、Discord 或同时接入两者。每一次对话 —— 频道中的 Thread 线程或私聊 DM —— 都会分配到独立的 Agent 会话，多个用户和团队可以并发与 Ante 协作而互不干扰。
+
+## 基础启动
+
+```bash
+ante gateway
+```
+
+此命令将读取 `~/.ante/channels.json` 配置，连接已启用的各平台并开始监听消息。
+
+## 配置文件
+
+创建或修改 `~/.ante/channels.json`。可以单独启用 Slack、Discord，或同时启用：
+
+```json
+{
+  "slack": {
+    "enabled": true,
+    "bot_token": "env:SLACK_BOT_TOKEN",
+    "app_token": "env:SLACK_APP_TOKEN",
+    "allow_from": "open"
+  },
+  "discord": {
+    "enabled": true,
+    "bot_token": "env:DISCORD_BOT_TOKEN",
+    "allow_from": ["123456789012345678"]
+  }
+}
+```
+
+以 `env:` 开头的值会在启动时从环境变量中读取，避免将敏感 Token 明文写入磁盘文件。
+
+### 访问控制
+
+`allow_from` 字段控制谁有权限与机器人交互：
+
+| 取值 | 允许访问的受众 |
+| --- | --- |
+| `"open"` | 工作区或服务器内的所有成员 |
+| `["U123", "U456"]` | 仅限列表中的具体用户 ID |
+| *(省略)* | 拒绝所有访问（安全的默认策略） |
+
+## 配置 Slack
+
+1. 访问 [api.slack.com/apps](https://api.slack.com/apps) → 点击 **From scratch** 创建应用。
+2. **Settings → Socket Mode**：开启 Socket Mode 并创建一个拥有 `connections:write` 权限的 App-Level Token。复制该 `xapp-…` Token —— 作为 `app_token`。
+3. **Features → OAuth & Permissions → Bot Token Scopes**：添加权限 `chat:write`、`app_mentions:read`、`channels:history`、`im:history`、`im:write`。
+4. **Features → Event Subscriptions**：启用 Events 并订阅 `message.channels` 与 `message.im`。
+5. **Features → App Home**：启用 Messages Tab 并允许用户直接发送消息。
+6. **Settings → OAuth & Permissions → Install to Workspace**。复制生成的 `xoxb-…` Bot User OAuth Token —— 作为 `bot_token`。
+7. 在需要机器人的频道中运行：`/invite @your-bot-name`。
+
+```bash
+export SLACK_BOT_TOKEN="xoxb-..."
+export SLACK_APP_TOKEN="xapp-..."
+```
+
+**在 Slack 中与机器人交互：** 在频道中 `@机器人` 或发起直接私信。机器人的回复将自动汇集在对应的 Thread 讨论串中。
+
+:::note
+任何时候修改了 Scopes 权限或事件订阅后，必须点击 **Reinstall to Workspace** 重新安装生效。
+:::
+
+## 配置 Discord
+
+1. 访问 [discord.com/developers/applications](https://discord.com/developers/applications) → 点击 **New Application**。
+2. **Bot**：复制 Token —— 作为 `bot_token`。在 **Privileged Gateway Intents** 下开启 **Message Content Intent**（必选）。
+3. **OAuth2 → URL Generator**：在 **Scopes** 中勾选 `bot`；在 **Bot Permissions** 中勾选 `Send Messages`、`Read Message History`、`View Channels`。打开生成的链接将 Bot 邀请到您的服务器中。
+
+```bash
+export DISCORD_BOT_TOKEN="..."
+```
+
+**在 Discord 中与机器人交互：** 在服务器频道中 `@机器人` 或发送私聊 DM。机器人会通过引用回复（Reply）你的消息 —— 直接回复 Bot 的消息即可继续上下文。
+
+## 交互指令与权限审批
+
+当机器人部署在工作区且 Gateway 正在运行时，你可以像与同事交流一样与 Ante 对话。部分特定回复具有特殊含义：
+
+| 指令 | 效果 |
+| --- | --- |
+| `stop` | 随时取消当前正在运行的任务（类似于 TUI 中的 Ctrl+C） |
+
+当机器人发起工具执行确认请求时，可直接回复以下关键词：
+
+| 回复 | 效果 |
+| --- | --- |
+| `yes`（或 `y`） | 批准本次单次工具调用 |
+| `no`（或 `n`） | 拒绝本次工具调用 |
+| `always` | 批准并在当前会话的后续调用中始终允许该工具 |
+
+更多细节参见[命令审查与工具授权](/usage/approvals)。

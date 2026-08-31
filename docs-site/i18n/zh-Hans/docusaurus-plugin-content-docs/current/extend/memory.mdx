@@ -1,0 +1,71 @@
+---
+title: "持久化记忆系统（Memory）"
+sidebar_label: "持久化记忆"
+description: "跨对话会话累积并传递上下文经验的自动记忆系统"
+---
+
+# 持久化记忆系统（Memory）
+
+Ante 拥有持久化记忆机制，使智能体能够跨会话沉淀经验与知识。关键认知、架构模式和排错心得会保存在项目记忆文件中，并在未来的会话启动时自动注入系统提示词。
+
+## 工作机制
+
+每个项目在 `~/.ante/projects/<project-id>/memory/` 拥有独立的记忆目录（`<project-id>` 为项目绝对路径的哈希标识）。核心入口为 `MEMORY.md` —— 其内容会在每次会话开始时注入系统提示词。
+
+自动记忆在交互式 TUI 中默认开启，在无头 `-p` 模式下默认关闭。可通过 `--enable-auto-memory` 或 `--disable-auto-memory` 显式指定，或在 `settings.json` 中配置 `auto_memory`。
+
+### 自动化行为
+
+智能体在项目工作过程中会自动：
+
+1. **查阅** 已有记忆以复用此前探索出的规律与结论；
+2. **记录** 遇到的通用陷阱或有效实践；
+3. **更新** 或清理已过时或被证伪的历史记忆。
+
+### MEMORY.md
+
+主记忆索引文件。最多注入系统提示词前 200 行或 25 KB 内容。建议保持精炼，并将详细文档拆分为独立主题文件进行链接。
+
+```markdown
+# 项目常用模式
+
+- 所有可能失败的函数均返回 `anyhow::Result`
+- 单元测试写在与源码同级的 `#[cfg(test)]` 模块中
+- 常见问题排查参见 [debugging.md](debugging.md)
+
+# 已知问题
+
+- 鉴权模块正在进行重构 (见 Issue #123)
+```
+
+## 记忆分类类型（Memory Types）
+
+开启自动记忆后，智能体会将记忆按结构化类型保存在独立主题文件中，包含 `name`、`description` 和 `type` Frontmatter 元数据：
+
+| 类型 | 记录内容 |
+|---|---|
+| `user` | 用户的技术背景、偏好与习惯 —— 方便定制解释深度与默认行为 |
+| `feedback` | 在本项目中的指导规范与纠偏反馈，包含规则、**Why** 原由和 **How to apply** 适用范围 |
+| `project` | 无法直接从代码或 Git 历史推导的进行中任务、设计决策或架构约束 |
+| `reference` | 外部系统（Linear 任务、Grafana 看板、Slack 频道）的索引指针 |
+
+结构化主题记忆文件示例：
+
+```markdown
+---
+name: bundle-refactors
+description: 在该模块中进行重构时倾向于合并为单个 PR
+type: feedback
+---
+
+在此区域进行多文件重构时，优先提交单个聚合 PR 而非拆散。
+
+**Why:** 用户明确确认过该做法，属于已验证的正向反馈。
+**How to apply:** 涉及该业务区域的多文件重构任务。
+```
+
+智能体**绝不会**保存敏感密钥、临时任务过程状态，或本就可直接从代码库中读取的常规结构（规范准则应写入 `AGENTS.md`）。
+
+## 导入 Claude Code 历史记忆
+
+运行 `/import-claude` 可将当前目录下 Claude Code 的项目记忆（`~/.claude/projects/<project-dir>/memory/` 下的 `.md` 文件）自动拷贝导入至 Ante 的记忆目录中。已有同名文件绝不会被覆盖。

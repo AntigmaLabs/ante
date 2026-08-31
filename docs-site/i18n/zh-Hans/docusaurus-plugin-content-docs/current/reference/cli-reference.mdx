@@ -1,0 +1,77 @@
+---
+title: "CLI 命令行参考手册（CLI Reference）"
+sidebar_label: "CLI 命令参考"
+description: "Ante 命令行工具的所有子命令、参数选项与使用示例"
+---
+
+# CLI 命令行参考手册（CLI Reference）
+
+Ante 可以作为交互式 TUI 终端界面、单次无头脚本命令、长寿命协议服务端或多平台机器人网关运行。
+
+```bash
+ante [OPTIONS] [COMMAND]
+```
+
+## 子命令总览
+
+| 子命令 | 说明 |
+|---|---|
+| `ante` | 启动交互式 TUI；若提供了 `-p` / `--prompt` 参数则自动以无头模式运行 |
+| `ante auth` | 管理模型提供商的身份登录认证，无需拉起完整的 Agent 会话 |
+| `ante serve` | 启动长寿命的 JSONL 或 WebSocket 服务端 |
+| `ante gateway` | 启动 Slack / Discord 机器人网关 |
+| `ante update` | 检查并安装最新版本的 Ante |
+| `ante offline` | 管理离线推理模式使用的本地推理引擎与 GGUF 模型 |
+| `ante rage` | 收集脱敏后的诊断与环境日志包，便于排查 Bug |
+| `ante catalog` | 以 JSON 格式打印当前生效的提供商与模型目录 |
+| `ante doctor` | 执行启动自检并输出各启动阶段的耗时统计 |
+
+## `ante` 主命令参数
+
+```bash
+ante [OPTIONS]
+```
+
+| 参数 | 说明 |
+|---|---|
+| `-m`, `--model <MODEL>` | 覆盖使用的默认模型名称 |
+| `--provider <PROVIDER>` | 覆盖 API 模型提供商 |
+| `--profile <NAME>` | 指定独立的配置 Profile（`~/.ante/<name>.settings.json`）；内置的 `bare` Profile 提供极简环境 |
+| `--effort <LEVEL>` | 覆盖模型的思考深度（`min`、`low`、`medium`、`high`、`xhigh`、`max`） |
+| `--yolo` | 跳过当前会话的所有工具审批弹窗 |
+| `--permission-mode <MODE>` | 指定权限模式（`strict`、`auto`、`yolo`） |
+| `--system-prompt <PROMPT>` | 完全替换系统提示词 |
+| `--system-prompt-file <PATH>` | 从文件读取系统提示词替换内容 |
+| `--append-system-prompt <TEXT>` | 向系统提示词末尾追加内容 |
+| `--short-prompt` | 启用紧凑精简版系统提示词和简短工具描述 |
+| `--skills` / `--no-skills` | 强制启用或禁用 Skills 技能系统 |
+| `--enable-auto-memory` / `--disable-auto-memory` | 强制启用或禁用自动持久化记忆 |
+| `--tools <TOOLS>...` | 将生效工具集精确替换为指定的工具列表 |
+| `--include-tools <TOOLS>...` | 在默认工具集基础上额外引入指定工具 |
+| `--exclude-tools <TOOLS>...` | 从生效工具集中剔除指定工具 |
+| `--output-format <FORMAT>` | 无头模式输出格式：`json`、`human`、`minimal`（默认） |
+| `-p`, `--prompt <PROMPT>` | 无头模式下执行的任务提示词 |
+| `--check` | 在无头任务完成后自动执行一轮自我验证检查 |
+| `-r`, `--resume <SESSION_ID>` | 根据 ID 恢复历史持久化会话 |
+| `--session-save` / `--no-session-save` | 开启或禁用会话持久化快照写入 |
+| `--offline-model <PATH>` | 指定本地 GGUF 模型文件路径以离线模式启动 |
+| `-V`, `--version` | 打印 Ante 版本号 |
+
+## 常用 CLI 命令示例
+
+```bash
+# 启动 TUI
+ante
+
+# 无头单次运行
+ante -p "解释这个项目的作用"
+
+# 通过标准输入管道传入代码
+git diff | ante -p "审查本次改动是否存在 Bug"
+
+# 指定模型与思考深度
+ante --provider openai --model gpt-5.6-sol --effort max -p "排查调度器中的竞态条件"
+
+# 恢复指定历史会话并继续提问
+ante --resume ses_01ARZ3NDEKTSV4RRFFQ69G5FAV -p "继续添加对应的单元测试"
+```

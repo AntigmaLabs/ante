@@ -1,0 +1,35 @@
+---
+title: "智能体原生推理（Agent-Native Inference，实验性）"
+sidebar_label: "智能体原生推理"
+description: "Ante 本地模型演进方向：将推理引擎直接嵌入智能体运行时内部"
+---
+
+# 智能体原生推理（Agent-Native Inference，实验性）
+
+目前，[离线模式](/local/offline)通过管理外部 llama.cpp 服务实现：Ante 安装、启动、监控并在退出时关闭它。这能够良好工作并作为当前本地推理的稳定途径。而下一步演进方向，则是将推理引擎直接**内置在智能体进程中（In-Process）**。
+
+:::warning
+本页面描述的是技术探索方向，而非现已正式发布的特性。
+:::
+
+## 为什么需要进程内原生推理
+
+外部推理服务单次只能接收一个独立的 HTTP 请求。而嵌入在智能体运行时内部的推理引擎能够感知整个 Agent 闭环，从而释放通用服务无法实现的深度优化：
+
+- **跨轮次前缀缓存复用（Prefix Reuse）。** 智能体轮次共享漫长而稳定的前缀：系统提示词、工具定义规范、历史对话记录。感知 Turn 生命周期的内置引擎可以直接在显存中保留这些前缀，无需每次请求重复计算 KV 缓存。
+- **针对工具调用的约束解码（Constrained Decoding）。** 工具调用的 JSON 参数必须严格符合 Schema 规范。在语法约束下进行 Token 采样解码，可以直接在生成层面杜绝格式错误，避免事后重试。
+- **子智能体批量并发推理（Subagent Batching）。** 多个调用相同模型的并发子智能体可以通过同一个内置引擎进行 Batching 批处理，无需在单端口上排队等待。
+
+## 探索原型：nanochat-rs
+
+[nanochat-rs](https://github.com/AntigmaLabs/nanochat-rs) 是我们公开发布的实验性底层原型：基于纯 Rust 实现的轻量 GPT 架构推理核心，基于 [candle](https://github.com/huggingface/candle) 构建，支持 Hugging Face 模型并保持极简代码面。它展示了未来架构的形态：原生推理与业务逻辑运行在同一个进程中，零外部依赖。
+
+```bash
+git clone https://github.com/AntigmaLabs/nanochat-rs
+cd nanochat-rs
+cargo run --release --features metal -- -p "写一段 100 字的简介"
+```
+
+## 当前状态
+
+当前运行本地模型的推荐方式仍然是使用[离线模式](/local/offline)的托管 llama.cpp 引擎，或[接入自建推理服务](/local/custom-engines)。

@@ -1,0 +1,69 @@
+---
+title: 接入现有服务（Existing Servers）
+sidebar_label: "接入现有服务"
+description: "将 Ante 离线模式连接至您已在运行的 llama.cpp 服务端"
+---
+
+# 接入现有服务（Existing Servers）
+
+当您已经在外部运行了 `llama-server`（例如在 Docker 容器内、使用自定义构建版本、局域网内另一台 GPU 服务器）时，可直接将 Ante 连接到现有服务端。
+
+Ante 会将该端点注册为 `local` 提供商，正常的智能体闭环、模型切换与提供商机制均与托管离线模型一致。Ante 不拥有外部服务的进程所有权，断开时绝不会终止外部服务。
+
+## 自动扫描本机服务
+
+在 TUI 中输入：
+
+```bash
+/offline-mode
+```
+
+Ante 会自动扫描本机回环地址上的 **8080-8179** 端口。它会检查 `/health` 并从 `/v1/models` 中读取模型名称，将扫描到的服务列在选择列表顶部。
+
+即使本机尚未安装 Ante 的托管 llama.cpp 引擎，该扫描也能正常工作。选中扫描到的服务按 `Enter` 即可直接附加连接。
+
+## 手动指定服务地址
+
+在 `/offline-mode` 界面中，按 `Ctrl+A` 并输入端点地址：
+
+```text
+127.0.0.1:8080
+```
+
+仅输入端口号代表 `127.0.0.1`：
+
+```text
+8080
+```
+
+支持局域网主机名：
+
+```text
+llama-box.local:8080
+```
+
+## 模型加载期间接入
+
+`llama-server` 在模型加载过程中 `/health` 接口会返回 `503`（小模型耗时数秒，大模型耗时数分钟）。在此时发起连接完全正常：Ante 能自动识别加载中状态并耐心等待，一旦服务就绪会自动完成接入。这在通过 Docker 部署时尤其有用。
+
+## Docker 启动示例
+
+通过官方 llama.cpp 镜像启动并在 `8080` 端口向 Ante 提供服务：
+
+```bash
+docker run --rm \
+  -p 8080:8080 \
+  -v "$PWD/models:/models" \
+  ghcr.io/ggml-org/llama.cpp:server \
+  --model /models/model.gguf \
+  --host 0.0.0.0 \
+  --port 8080 \
+  --ctx-size 32768 \
+  --jinja
+```
+
+若使用 CUDA 硬件加速，请切换为对应的 CUDA 镜像（如 `ghcr.io/ggml-org/llama.cpp:server-cuda`）并添加 GPU 运行时参数。
+
+## 分离与注销行为
+
+当 Ante 自主启动 `llama-server` 时，Ante 拥有该进程并在停止时关闭它。当 Ante 接入外部服务时，停止离线模式仅会与该端点断开连接（Detach），外部服务继续正常运行。
