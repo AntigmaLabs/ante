@@ -77,6 +77,10 @@ const config: Config = {
     },
   },
 
+  clientModules: [
+    require.resolve('./src/clientModules/localeDetector.ts'),
+  ],
+
   markdown: {
     mermaid: true,
   },

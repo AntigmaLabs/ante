@@ -13,9 +13,28 @@ Ante 的所有重要变更，按最新版本优先排列。每个版本都会发
 为避免改写发布语义，以下版本条目暂时保留英文原文。
 :::
 
+## v0.preview.91 {#v0-preview-91}
+
+<p className="changelog-release-meta"><span className="changelog-badge">最新</span><time dateTime="2026-08-30">2026年8月30日</time><a href="https://github.com/AntigmaLabs/ante/releases/tag/v0.preview.91">GitHub 发布</a></p>
+
+### Added
+- Anthropic `xhigh` reasoning effort — available on Claude Sonnet 5 and Opus 5, Opus 4.7/4.8, and always on Fable/Mythos 5; Opus/Sonnet 4.6 keep their four-level adaptive ladder
+- `gpt-5.4-mini`, `gpt-5.4-nano`, and `glm-5.3-flash` in the Antix catalog
+- Completed reasoning blocks show how long the model thought — `Thought for <duration>`, derived from protocol event timestamps so replays report the same number
+
+### Changed
+- Compaction tuning: manual `/compact` folds more history than automatic compaction, so running it twice in a row no longer re-folds a fresh summary; an overflow retry stops once it stops making progress instead of spending more provider calls; and a single oversized tool result is trimmed rather than costing a rejected request
+- GLM 5.3 defaults to max reasoning effort when an OpenAI-compatible profile supplies no effort, and Anthropic stream errors carrying the `invalid_request` provider alias are classified instead of surfacing raw
+- Telemetry uses the standard `OTEL_EXPORTER_OTLP_ENDPOINT` and `OTEL_EXPORTER_OTLP_HEADERS` environment variables
+
+### Fixed
+- Markdown link URLs render in the design steel blue instead of hardcoded ANSI blue, which was nearly unreadable on dark backgrounds
+
+---
+
 ## v0.preview.90 {#v0-preview-90}
 
-<p className="changelog-release-meta"><span className="changelog-badge">最新</span><time dateTime="2026-08-27">2026年8月27日</time><a href="https://github.com/AntigmaLabs/ante/releases/tag/v0.preview.90">GitHub 发布</a></p>
+<p className="changelog-release-meta"><time dateTime="2026-08-27">2026年8月27日</time><a href="https://github.com/AntigmaLabs/ante/releases/tag/v0.preview.90">GitHub 发布</a></p>
 
 ### Added
 - `/compact` accepts instructions that steer the handoff summary — `/compact focus on the API changes` passes trailing arguments into the fold prompt
