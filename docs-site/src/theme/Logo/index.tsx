@@ -53,18 +53,6 @@ export default function Logo(props) {
     </>
   )
 
-  if (currentLocale === 'zh-Hans') {
-    return (
-      <a
-        href="/"
-        {...propsRest}
-        {...(logo?.target && { target: logo.target })}
-      >
-        {content}
-      </a>
-    )
-  }
-
   return (
     <Link
       to={logoLink}
