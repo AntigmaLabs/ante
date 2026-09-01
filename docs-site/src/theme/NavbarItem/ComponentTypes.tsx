@@ -37,7 +37,7 @@ function ConditionalLocaleDropdownNavbarItem(props: React.ComponentProps<typeof 
   }
 
   return (
-    <div onClick={handleClick} style={{ display: 'inline-flex' }}>
+    <div className="navbar-locale-switcher-wrapper" onClick={handleClick}>
       <LocaleDropdownNavbarItem dropdownItemsBefore={[]} dropdownItemsAfter={[]} {...props} />
     </div>
   )
