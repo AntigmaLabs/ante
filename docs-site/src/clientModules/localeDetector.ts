@@ -34,14 +34,27 @@ function detectAndRedirect() {
       return
     }
 
-    // No preference set yet: inspect browser language
-    const languages = navigator.languages || [navigator.language || '']
-    const isChinese = languages.some((lang) => {
-      const lower = (lang || '').toLowerCase()
-      return lower.startsWith('zh')
-    })
+    // No stored preference: evaluate user languages in order of preference
+    const languages =
+      navigator.languages && navigator.languages.length > 0
+        ? navigator.languages
+        : [navigator.language || '']
 
-    if (isChinese) {
+    let matchedLocale: 'zh-Hans' | 'en' | null = null
+    for (const lang of languages) {
+      const lower = (lang || '').toLowerCase()
+      if (lower.startsWith('zh')) {
+        matchedLocale = 'zh-Hans'
+        break
+      }
+      if (lower.startsWith('en')) {
+        matchedLocale = 'en'
+        break
+      }
+    }
+
+    // If first matched supported language is Chinese, redirect to zh-Hans
+    if (matchedLocale === 'zh-Hans') {
       localStorage.setItem(STORAGE_KEY, 'zh-Hans')
       window.location.replace(`/zh-Hans${pathname}${search}${hash}`)
     }
