@@ -464,6 +464,37 @@ fn deepseek_rungs(max_reasoning_effort: ReasoningEffort) -> [(Effort, Option<Rea
     ]
 }
 
+/// Thinking params for catalog-supported efforts: each supported level is sent
+/// as the same-named `reasoning_effort` value, and requests between levels
+/// round down like any built-in ladder. The provider client has already
+/// normalized the levels; an empty list sends nothing.
+pub fn thinking_params_for_supported_efforts(
+    supported_efforts: &[Effort],
+    requested: Option<Effort>,
+) -> ThinkingParams {
+    ThinkingParams {
+        reasoning_effort: requested
+            .and_then(|requested| effort::resolve_level(supported_efforts, requested))
+            .map(reasoning_effort_ident),
+        thinking: None,
+        enable_thinking: None,
+        thinking_budget: None,
+    }
+}
+
+/// The same-named wire value for each internal level (`min` is spelled
+/// `minimal` on the wire).
+fn reasoning_effort_ident(level: Effort) -> ReasoningEffort {
+    match level {
+        Effort::Min => ReasoningEffort::Minimal,
+        Effort::Low => ReasoningEffort::Low,
+        Effort::Medium => ReasoningEffort::Medium,
+        Effort::High => ReasoningEffort::High,
+        Effort::XHigh => ReasoningEffort::XHigh,
+        Effort::Max => ReasoningEffort::Max,
+    }
+}
+
 /// The distinct effort levels a compat provider+model exposes, for the UI.
 pub fn effort_levels(provider_id: &str, model_id: &str) -> Vec<Effort> {
     let family = OpenAiCompatFamily::from_provider_model(provider_id, model_id);
@@ -819,7 +850,50 @@ mod tests {
             effort_levels("openai-compatible", "gpt-oss"),
             vec![Effort::Min, Effort::Low, Effort::Medium, Effort::High],
         );
-        // The None dialect ignores effort entirely: no options.
+        // The None dialect supports no effort values.
         assert!(effort_levels("openrouter", "minimax/minimax-m3").is_empty());
+    }
+
+    #[test]
+    fn supported_effort_params_send_the_same_named_value() {
+        let supported_efforts = [Effort::Low, Effort::Medium, Effort::High];
+        let params =
+            thinking_params_for_supported_efforts(&supported_efforts, Some(Effort::Medium));
+        assert_eq!(params.reasoning_effort, Some(ReasoningEffort::Medium));
+        assert!(params.thinking.is_none());
+        assert!(params.enable_thinking.is_none());
+        assert_eq!(
+            thinking_params_for_supported_efforts(&[Effort::Min, Effort::High], Some(Effort::Min),)
+                .reasoning_effort,
+            Some(ReasoningEffort::Minimal),
+        );
+    }
+
+    #[test]
+    fn supported_effort_params_round_like_a_ladder() {
+        let supported_efforts = [Effort::Low, Effort::Medium, Effort::High];
+        // Above the ceiling rounds down; below the floor takes the floor.
+        assert_eq!(
+            thinking_params_for_supported_efforts(&supported_efforts, Some(Effort::Max))
+                .reasoning_effort,
+            Some(ReasoningEffort::High),
+        );
+        assert_eq!(
+            thinking_params_for_supported_efforts(&supported_efforts, Some(Effort::Min))
+                .reasoning_effort,
+            Some(ReasoningEffort::Low),
+        );
+    }
+
+    #[test]
+    fn supported_effort_params_send_nothing_when_empty_or_unset() {
+        assert!(
+            thinking_params_for_supported_efforts(&[], Some(Effort::High))
+                .reasoning_effort
+                .is_none()
+        );
+        assert!(
+            thinking_params_for_supported_efforts(&[Effort::Low], None).reasoning_effort.is_none()
+        );
     }
 }

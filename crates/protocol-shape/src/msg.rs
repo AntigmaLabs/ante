@@ -23,7 +23,11 @@ pub struct OpMsg {
 #[allow(clippy::large_enum_variant)]
 #[derive(Debug, Clone, Deserialize, Serialize)]
 pub enum Op {
-    StartSession(SessionOverrides),
+    /// Start a session from the request, replacing any running one: set
+    /// fields are pinned, unset fields resolve to the host's defaults. There
+    /// is no separate restart op — a client keeps the request it sent and
+    /// re-sends it (optionally `patched`) for `/clear` semantics.
+    StartSession(SessionRequest),
     UpdateSession(SessionUpdate),
     Interrupt,
     UserInput(String),
@@ -37,6 +41,9 @@ pub enum Op {
         name: String,
         args: String,
     },
+    /// Continue a saved conversation from its persisted snapshot: what the
+    /// host persisted is restored, and everything the snapshot does not pin
+    /// resolves like a fresh session from the host's current defaults.
     ResumeSession {
         session_id: Id,
     },
@@ -380,14 +387,14 @@ pub struct McpToolParam {
     pub description: String,
 }
 
-/// A patch of session overrides produced by every caller (CLI, TUI, gateway,
-/// external `serve` clients). `None` means "leave unchanged" for every field —
-/// there is exactly one meaning, regardless of who built the value.
-///
-/// This is the wire payload of [`Op::StartSession`]: the requested session
-/// configuration. Unset fields fall back to the daemon's defaults.
-#[derive(Debug, Clone, Default, Serialize, Deserialize)]
-pub struct SessionOverrides {
+/// The requested session configuration — the payload of [`Op::StartSession`].
+/// A set field is pinned: it wins over every default. An unset field means
+/// "the host's default for this, now": the daemon fills it from the user's
+/// settings (re-read at the session boundary) or its built-in default. There
+/// is exactly one meaning, regardless of who built the value — never "leave
+/// unchanged".
+#[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
+pub struct SessionRequest {
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub model: Option<String>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
@@ -419,6 +426,52 @@ pub struct SessionOverrides {
     /// advertised, or invocable.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub no_skills: Option<bool>,
+    /// Whether the session writes a transcript and a resumable snapshot.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub save_session: Option<bool>,
+}
+
+impl SessionRequest {
+    /// Fold `patch` onto `self`, field by field: a set field in the patch
+    /// wins, an unset one keeps `self`'s value. This is the rule for every
+    /// request-over-request combination (e.g. a client retargeting the
+    /// request it keeps for `/clear`). `patch` is destructured exhaustively
+    /// (no `..` rest) so adding a field fails to compile here until its fold
+    /// rule is decided.
+    pub fn patched(self, patch: SessionRequest) -> SessionRequest {
+        let SessionRequest {
+            model,
+            provider,
+            permission_mode,
+            system_prompt,
+            append_system_prompt,
+            tools,
+            include_tools,
+            exclude_tools,
+            cwd,
+            effort,
+            enable_auto_memory,
+            short_prompt,
+            no_skills,
+            save_session,
+        } = patch;
+        SessionRequest {
+            model: model.or(self.model),
+            provider: provider.or(self.provider),
+            permission_mode: permission_mode.or(self.permission_mode),
+            system_prompt: system_prompt.or(self.system_prompt),
+            append_system_prompt: append_system_prompt.or(self.append_system_prompt),
+            tools: tools.or(self.tools),
+            include_tools: include_tools.or(self.include_tools),
+            exclude_tools: exclude_tools.or(self.exclude_tools),
+            cwd: cwd.or(self.cwd),
+            effort: effort.or(self.effort),
+            enable_auto_memory: enable_auto_memory.or(self.enable_auto_memory),
+            short_prompt: short_prompt.or(self.short_prompt),
+            no_skills: no_skills.or(self.no_skills),
+            save_session: save_session.or(self.save_session),
+        }
+    }
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
@@ -478,12 +531,11 @@ pub struct ModelSpec {
     pub context_limit: Option<u32>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub effort: Option<Effort>,
-    /// The distinct effort levels the model supports on its provider,
-    /// ascending. Empty when the model takes no effort knob on that
-    /// provider's wire. Filled in during model resolution; clients read it
-    /// and leave it empty on input — a value sent here is ignored.
-    #[serde(default, skip_serializing_if = "Vec::is_empty")]
-    pub effort_options: Vec<Effort>,
+    /// The effort levels this model supports when configured in the user catalog.
+    /// When absent, the provider's built-in model profile supplies the ladder;
+    /// an empty list means that the model takes no effort setting.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub supported_efforts: Option<Vec<Effort>>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub support_vision: Option<bool>,
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -713,8 +765,9 @@ pub enum Scope {
 #[cfg(test)]
 mod tests {
     use super::{
-        Evt, ExtensionRefreshed, Id, ModelSpec, Op, PermissionMode, ProviderSpec, ReviewDecision,
-        SessionInitialized, SessionUpdate, ToolDecision, ToolUse, Usage, WeightClass,
+        Effort, Evt, ExtensionRefreshed, Id, ModelSpec, Op, PermissionMode, ProviderSpec,
+        ReviewDecision, SessionInitialized, SessionRequest, SessionUpdate, ToolDecision, ToolUse,
+        Usage, WeightClass,
     };
     use std::path::PathBuf;
 
@@ -730,7 +783,7 @@ mod tests {
             stop_sequences: None,
             context_limit: None,
             effort: None,
-            effort_options: Vec::new(),
+            supported_efforts: None,
             support_vision: None,
             weight_class: None,
         }
@@ -824,24 +877,64 @@ mod tests {
 
     #[test]
     fn session_overrides_effort_round_trips() {
-        let parsed: super::SessionOverrides =
+        let parsed: super::SessionRequest =
             serde_json::from_value(serde_json::json!({"effort": "max"})).unwrap();
         assert_eq!(parsed.effort, Some(super::Effort::Max));
 
-        let parsed: super::SessionOverrides =
-            serde_json::from_value(serde_json::json!({})).unwrap();
+        let parsed: super::SessionRequest = serde_json::from_value(serde_json::json!({})).unwrap();
         assert_eq!(parsed.effort, None);
     }
 
     #[test]
     fn short_prompt_round_trips_and_defaults_to_unset() {
-        let parsed: super::SessionOverrides =
+        let parsed: super::SessionRequest =
             serde_json::from_value(serde_json::json!({"short_prompt": true})).unwrap();
         assert_eq!(parsed.short_prompt, Some(true));
 
-        let parsed: super::SessionOverrides =
-            serde_json::from_value(serde_json::json!({})).unwrap();
+        let parsed: super::SessionRequest = serde_json::from_value(serde_json::json!({})).unwrap();
         assert_eq!(parsed.short_prompt, None);
+    }
+
+    fn pinned_request() -> SessionRequest {
+        SessionRequest {
+            model: Some("base-model".to_string()),
+            provider: Some("anthropic".to_string()),
+            permission_mode: Some(PermissionMode::Strict),
+            system_prompt: Some("base prompt".to_string()),
+            cwd: Some(std::path::PathBuf::from("/base")),
+            effort: Some(Effort::Medium),
+            enable_auto_memory: Some(true),
+            short_prompt: Some(true),
+            no_skills: Some(true),
+            save_session: Some(true),
+            ..Default::default()
+        }
+    }
+
+    #[test]
+    fn patched_with_an_empty_patch_keeps_every_field() {
+        assert_eq!(pinned_request().patched(SessionRequest::default()), pinned_request());
+    }
+
+    #[test]
+    fn patched_overwrites_only_the_patch_set_fields() {
+        let patched = pinned_request().patched(SessionRequest {
+            model: Some("new-model".to_string()),
+            permission_mode: Some(PermissionMode::Yolo),
+            enable_auto_memory: Some(false),
+            short_prompt: Some(false),
+            ..Default::default()
+        });
+        // Overwritten by the patch:
+        assert_eq!(patched.model.as_deref(), Some("new-model"));
+        assert_eq!(patched.permission_mode, Some(PermissionMode::Yolo));
+        assert_eq!(patched.enable_auto_memory, Some(false));
+        assert_eq!(patched.short_prompt, Some(false));
+        // Untouched (patch unset == keep):
+        assert_eq!(patched.provider.as_deref(), Some("anthropic"));
+        assert_eq!(patched.system_prompt.as_deref(), Some("base prompt"));
+        assert_eq!(patched.effort, Some(Effort::Medium));
+        assert_eq!(patched.save_session, Some(true));
     }
 
     #[test]

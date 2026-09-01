@@ -21,6 +21,28 @@ pub fn levels<T>(rungs: &[(Effort, T)]) -> Vec<Effort> {
     rungs.iter().map(|(level, _)| *level).collect()
 }
 
+/// Return effort levels in the canonical ladder order.
+pub fn normalize_levels(mut levels: Vec<Effort>) -> Vec<Effort> {
+    levels.sort_unstable();
+    levels.dedup();
+    levels
+}
+
+/// Resolve a requested effort to an exact selectable level. Requests between
+/// levels round down; requests below the floor take the floor. An empty ladder
+/// has no effective effort. `levels` must be sorted ascending and deduplicated.
+pub fn resolve_level(levels: &[Effort], requested: Effort) -> Option<Effort> {
+    debug_assert!(levels.windows(2).all(|w| w[0] < w[1]), "effort levels must ascend");
+    let mut selected = *levels.first()?;
+    for &level in levels {
+        if level > requested {
+            break;
+        }
+        selected = level;
+    }
+    Some(selected)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -50,5 +72,22 @@ mod tests {
             assert!(value >= last, "resolve must not decrease at {level}");
             last = value;
         }
+    }
+
+    #[test]
+    fn resolve_level_returns_an_exact_selectable_level() {
+        let levels = [Effort::Low, Effort::Medium, Effort::Max];
+        assert_eq!(resolve_level(&levels, Effort::Medium), Some(Effort::Medium));
+        assert_eq!(resolve_level(&levels, Effort::XHigh), Some(Effort::Medium));
+        assert_eq!(resolve_level(&levels, Effort::Min), Some(Effort::Low));
+        assert_eq!(resolve_level(&[], Effort::High), None);
+    }
+
+    #[test]
+    fn normalize_levels_sorts_and_deduplicates() {
+        assert_eq!(
+            normalize_levels(vec![Effort::High, Effort::Low, Effort::High]),
+            vec![Effort::Low, Effort::High]
+        );
     }
 }

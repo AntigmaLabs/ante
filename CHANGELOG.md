@@ -1,5 +1,29 @@
 # Changelog
 
+## v0.preview.92 - 2026-08-31
+
+### Added
+- `/add-provider` — a bundled skill that walks you through adding a custom OpenAI-compatible provider: it discovers the endpoint's models, probes which reasoning effort levels it accepts, and writes the entry into `~/.ante/catalog.json`
+- `catalog.json` can declare which reasoning effort levels a model supports, so a custom endpoint shows its real ladder instead of one guessed from the model's name
+
+### Changed
+- Grep and Glob page correctly: a page is cut at a whole entry and the "more results" marker points at the cut. Grep previously dropped results past its character limit while claiming there were more. Glob is now paginated too, returns partial results when it times out, and both tools list files in path order
+- File search in the TUI is much faster on large projects, and no longer hides files nested more than six levels deep
+- Resuming a long session is faster
+- Reasoning effort is consistent everywhere — the selector, the session, and the provider all agree on the level you picked
+- Compaction skips a fold that cannot free any space, instead of repeatedly compacting to no effect on small context windows
+- Large tool results reach you and the model whole, instead of being replaced by a "trimmed, please retry" error that forced tools to be re-run one at a time
+- A slow or huge error page from WebFetch no longer eats the whole request timeout
+
+### Fixed
+- Anthropic subscription sign-in works again against Anthropic's current OAuth endpoints, and verifies it was granted inference access before reporting a connection
+- Headless `--resume` no longer fails to start when the provider comes from the saved session, and keeps its memory setting
+- `/offline-mode` no longer crashes the TUI on terminals shorter than 12 rows
+
+### Wire
+- `Op::StartSession`'s payload is renamed `SessionOverrides` → `SessionRequest`. Field names are unchanged, but an unset field now means "use the host's default" rather than "leave unchanged"
+- `ModelSpec.effort_options` is replaced by `supported_efforts`. Clients that read the effort ladder need a coordinated bump
+
 ## v0.preview.91 - 2026-08-30
 
 ### Added
