@@ -6,9 +6,7 @@
     "node": ">=22"
   },
   "scripts": {
-    "prestart": "node scripts/sync-changelog.mjs",
     "start": "docusaurus start",
-    "prebuild": "node scripts/sync-changelog.mjs",
     "build": "docusaurus build",
     "serve": "docusaurus serve",
     "clear": "docusaurus clear"

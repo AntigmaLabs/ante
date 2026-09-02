@@ -147,7 +147,6 @@ const config: Config = {
           'extend/**',
           'reference/**',
           'experimental/**',
-          'changelog*',
           'antix/**',
         ],
         includeUnmatchedLast: true,

@@ -132,7 +132,6 @@ const sidebars: SidebarsConfig = {
       collapsed: true,
       items: ['experimental/agent-org', 'experimental/agent-native-inference'],
     },
-    'changelog',
   ],
   antix: antixSidebar,
 }
