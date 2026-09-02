@@ -329,6 +329,9 @@ pub struct ProviderSpec {
     pub base_url: String,
 }
 
+/// A session's announced state: its identity and mutable settings
+/// (`SessionStart`, `SessionUpdated`) plus the capabilities it was equipped
+/// with, which are fixed for the session's lifetime.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct SessionInitialized {
     pub model: ModelSpec,
@@ -336,6 +339,12 @@ pub struct SessionInitialized {
     pub session_id: Id,
     pub cwd: PathBuf,
     pub permission_mode: PermissionMode,
+    /// The skills the user can invoke in this session. Empty when absent.
+    #[serde(default)]
+    pub skills: Vec<SkillMetadata>,
+    /// The subagents this session can delegate to. Empty when absent.
+    #[serde(default)]
+    pub subagents: Vec<SubagentMetadata>,
 }
 
 /// Partial update to a live session's mutable state. Each field is optional so
@@ -354,6 +363,9 @@ pub struct SessionUpdate {
     pub permission_mode: Option<PermissionMode>,
 }
 
+/// The session's MCP servers and their tools, sent for `session_id` as the
+/// servers come online. `skills` and `subagents` repeat the lists the
+/// session's `SessionStart` announced.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ExtensionRefreshed {
     pub session_id: Id,
@@ -1141,6 +1153,8 @@ mod tests {
             session_id,
             cwd: PathBuf::from("/tmp/session-updated"),
             permission_mode: PermissionMode::default(),
+            skills: vec![],
+            subagents: vec![],
         }));
 
         let json = serde_json::to_string(&event).expect("serialize SessionUpdated");

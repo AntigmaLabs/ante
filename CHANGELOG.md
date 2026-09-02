@@ -1,5 +1,21 @@
 # Changelog
 
+## v0.preview.93 - 2026-09-02
+
+### Changed
+- Tool activity in the TUI shows project-relative paths (or `~` for other home-directory paths), labels completed shell commands as `Ran`, and keeps header punctuation visually neutral
+- Compaction learns a provider's actual context window after an overflow, scales summaries and anchors to fit, and retries once instead of walking a shrinking retry ladder
+
+### Fixed
+- Parallel tool results share one context cap, preventing oversized batches from entering a repeated clear-and-rerun loop; cleared-result markers now identify the original tool call
+- Buffered provider requests stop at the configured idle timeout instead of potentially hanging until the connection fails
+- A second Cerebras turn after reasoning and tool use no longer fails because replayed `reasoning_content` is unsupported
+- Goal evaluation and compaction retry once without `tool_choice` when an OpenAI-compatible provider rejects that parameter
+- OpenCode zen usage-window errors are classified as terminal quota errors instead of being retried as transient rate limits
+
+### Wire
+- `SessionInitialized` adds `skills` and `subagents`, so `SessionStart` and `SessionUpdated` announce the capabilities equipped for the session; both fields default to empty when absent
+
 ## v0.preview.92 - 2026-08-31
 
 ### Added
