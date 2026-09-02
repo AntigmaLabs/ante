@@ -21,7 +21,7 @@
     "@mermaid-js/layout-elk": "^0.1.9",
     "clsx": "^2.0.0",
     "docusaurus-plugin-llms": "^0.5.1",
-    "lucide-react": "^1.33.0",
+    "lucide-react": "^1.37.0",
     "prism-react-renderer": "^2.3.0",
     "react": "^19.2.8",
     "react-dom": "^19.2.8"
