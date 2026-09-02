@@ -55,11 +55,16 @@ const legacyAnteRedirects = [
   { from: '/usage/web-browsing', to: '/usage/providing-context' },
 ]
 
+const changelogRedirect = {
+  from: '/changelog',
+  to: 'https://ante.run/changelog',
+}
+
 const config: Config = {
   title: 'Ante',
   tagline: 'a ghost in your shell: self-contained, self-organizing, benchmarked in public',
   favicon: 'assets/ante2.png',
-  url: 'https://ante.run',
+  url: 'https://docs.antigma.ai',
   baseUrl: '/',
 
   i18n: {
@@ -123,7 +128,10 @@ const config: Config = {
     [
       '@docusaurus/plugin-client-redirects',
       {
-        redirects: isZhHansBuild ? [] : legacyAnteRedirects,
+        redirects: [
+          ...(isZhHansBuild ? [] : legacyAnteRedirects),
+          changelogRedirect,
+        ],
       },
     ],
     // Generates llms.txt and llms-full.txt (llmstxt.org) at build time.
@@ -147,7 +155,6 @@ const config: Config = {
           'extend/**',
           'reference/**',
           'experimental/**',
-          'changelog*',
           'antix/**',
         ],
         includeUnmatchedLast: true,
