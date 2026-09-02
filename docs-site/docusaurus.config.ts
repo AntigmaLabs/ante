@@ -165,11 +165,6 @@ const config: Config = {
       },
       items: [
         {
-          type: 'custom-conditionalLocaleDropdown',
-          position: 'right',
-          className: 'navbar-locale-switcher',
-        },
-        {
           type: 'docSidebar',
           sidebarId: 'antix',
           position: 'left',
@@ -194,6 +189,11 @@ const config: Config = {
           href: 'https://github.com/AntigmaLabs/ante',
           html: socialLinkHtml('GitHub', githubIcon),
           position: 'right',
+        },
+        {
+          type: 'custom-conditionalLocaleDropdown',
+          position: 'right',
+          className: 'navbar-locale-switcher',
         },
       ],
     },
