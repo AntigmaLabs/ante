@@ -47,7 +47,7 @@ Operations (`Op`) are sent from the client to the daemon, wrapped in an `OpMsg` 
 
 | Op | Payload | Description |
 |---|---|---|
-| `StartSession` | `SessionOverrides` | Initialize a new session with model, provider, policy, and options |
+| `StartSession` | `SessionRequest` | Initialize a new session; set fields are pinned and unset fields resolve from the host's current defaults |
 | `UpdateSession` | `SessionUpdate` | Update the active session (e.g. switch models) without restarting |
 | `ResumeSession` | `session_id` | Resume a previously persisted session |
 | `UserInput` | `String` | Submit a user prompt |
@@ -71,11 +71,12 @@ Events (`Evt`) are sent from the daemon to the client, wrapped in an `EventMsg` 
 
 | Evt | Payload | Description |
 |---|---|---|
-| `SessionStart` | `SessionInitialized` | Session initialized with model, provider, session ID, working directory |
-| `SessionUpdated` | `SessionInitialized` | Session updated in place (e.g. model changed) |
-| `SessionEnd` | — | Session terminated |
+| `SessionStart` | `SessionInitialized` | Session initialized with identity, mutable settings, skills, and subagents |
+| `SessionUpdated` | `SessionInitialized` | Session updated in place, repeating the session's equipped skills and subagents |
+| `SessionEnd` | `session_id`, `reason`, `usage` | Session terminated with final usage accounting |
 | `TurnStart` | `turn_id` | A new turn has begun |
 | `TurnPause` | `turn_id`, `reason` | Turn paused (e.g. waiting for tool approval) |
+| `TurnResume` | `turn_id` | A paused turn resumed after approval or steering |
 | `TurnEnd` | `turn_id`, `status` | Turn completed, interrupted, or errored |
 | `AgentMessage` | `String` | Complete text response from agent |
 | `Thinking` | `String` | Complete chain-of-thought block |
@@ -203,8 +204,8 @@ sequenceDiagram
 Ante automatically manages context windows:
 
 - **Token budget** — Each turn tracks token usage against the model's context limit
-- **Auto-compaction** — When the dialog approaches the context limit, Ante evicts aged tool results first, preserves the newest slice and user messages verbatim, and summarizes only the older prefix the model will no longer see. Manual `/compact` uses a tighter target and usually folds more history. On by default; disable with the `auto_compact` [setting](/configuration/preference#settings-file) (manual `/compact` and overflow recovery remain available)
-- **Tool result trimming** — Large tool outputs are trimmed to fit within budget, including a single result too large for a provider request, and older results decay before conversational messages are summarized. Overflow retries stop when another reduction makes no progress
+- **Auto-compaction** — When the dialog approaches the context limit, Ante evicts aged tool results first, preserves the newest slice and user messages verbatim, and summarizes only the older prefix the model will no longer see. Manual `/compact` uses a tighter target and usually folds more history. If a provider rejects a request below the advertised limit, the session learns a smaller effective window, rescales the compaction budget, and retries once. On by default; disable with the `auto_compact` [setting](/configuration/preference#settings-file) (manual `/compact` and overflow recovery remain available)
+- **Tool result trimming** — Large outputs are bounded to fit within budget, and a parallel result batch shares one overall context cap. Older results decay before conversational messages are summarized; a cleared marker names the original `tool_use_id`, whose complete result remains in a saved session's event log
 
 ## Permissions
 

@@ -23,6 +23,7 @@ ante [OPTIONS] [COMMAND]
 | `ante rage` | 收集脱敏后的排错诊断归档包（日志 + 环境信息），便于提交 Issue。 |
 | `ante catalog` | 以 JSON 格式打印当前生效的提供商与模型目录。 |
 | `ante doctor` | 执行启动自检并输出各启动阶段的耗时与健康报告。 |
+| `ante <name>` | 运行外部 `ante-<name>` 应用。 |
 
 ## `ante` 主命令 {#ante}
 
@@ -38,7 +39,7 @@ TUI 要求 stdout 连接到系统终端。若重定向或通过管道输出（�
 |---|---|
 | `-m`, `--model <MODEL>` | 覆盖默认模型名称。 |
 | `--provider <PROVIDER>` | 覆盖使用的 API 模型提供商标识。 |
-| `--profile <NAME>` | 使用 `~/.ante/<name>.settings.json` 作为本次运行的配置文件全量替换 `settings.json`。未知的名称将从默认值开始。内置的 `bare` Profile（首次使用时生成真实文件）会自动禁用技能、MCP 服务器、会话持久化、自动记忆及环境感知 UI 功能。也可通过环境变量 `ANTE_PROFILE` 指定。 |
+| `--profile <NAME>` | 在整个进程中使用现有的 `~/.ante/<name>.settings.json` 替代 `settings.json`；可置于任意子命令前后，环境变量 `ANTE_PROFILE` 等效。未知名称会警告并回退到 `settings.json`。内置 `bare` Profile 会禁用技能、MCP 服务器、会话持久化、自动记忆及环境感知 UI 功能。 |
 | `--effort <LEVEL>` | 覆盖本次运行模型的[思考深度等级](/usage/models-and-thinking#effort)：`min`、`low`、`medium`、`high`、`xhigh` 或 `max`。 |
 | `--yolo` | 跳过本次会话的所有工具审批确认提示。 |
 | `--permission-mode <MODE>` | 覆盖本次运行的权限模式：`strict`、`auto` 或 `yolo`。与 `--yolo` 互斥。 |
@@ -50,9 +51,9 @@ TUI 要求 stdout 连接到系统终端。若重定向或通过管道输出（�
 | `--no-skills` | 跳过技能发现，覆盖配置项。不会向模型声明技能，也不提供斜杠命令。 |
 | `--enable-auto-memory` | 强制启用自动记忆，覆盖配置项。与 `--disable-auto-memory` 互斥。 |
 | `--disable-auto-memory` | 强制禁用自动记忆，覆盖配置项。与 `--enable-auto-memory` 互斥。 |
-| `--tools <TOOLS>...` | 精确指定生效的基础工具集（空格分隔）。覆盖配置项。历史弃用别名：`--allowed-tools` 仍兼容但会打印警告。 |
-| `--include-tools <TOOLS>...` | 在基础工具集（`tools` 或默认集）之上额外引入指定工具（空格分隔）。 |
-| `--exclude-tools <TOOLS>...` | 从会话中移除指定工具（空格分隔）。优先级高于 `--tools` 和 `--include-tools`。历史弃用别名：`--disallowed-tools` 仍兼容但会打印警告。 |
+| `--tools <TOOLS>` | 用这些工具精确替换默认工具集。每次传入逗号分隔的值，也可重复使用参数；空格分隔列表会报错。覆盖 `tools` 配置。旧参数名 `--allowed-tools` 已移除。 |
+| `--include-tools <TOOLS>` | 在默认工具集或 `--tools` 基础集之上添加工具。每次传入逗号分隔的值，也可重复使用参数。 |
+| `--exclude-tools <TOOLS>` | 在 `--tools` 与 `--include-tools` 处理后移除工具。每次传入逗号分隔的值，也可重复使用参数。已弃用的别名 `--disallowed-tools` 仍可使用。 |
 | `--output-format <FORMAT>` | 无头模式输出格式：`json`、`human` 或 `minimal`（默认）。 |
 | `-p`, `--prompt <PROMPT>` | 无头模式下执行的任务提示词。支持标准输入管道。 |
 | `--check` | 在无头任务完成后自动执行一轮自我验证检查。 |
@@ -169,7 +170,7 @@ ante update [OPTIONS] [CHANNEL]
 | 参数标识 | 说明 |
 |---|---|
 | `--channel <CHANNEL>` | 更新追踪的发布通道。等同于位置参数形式。 |
-| `--version <VERSION>` | 安装指定的具体发布版本而非通道最新版。支持带或不带前缀 `v`（如 `v0.preview.86` 或 `0.preview.86`）。与通道参数互斥。 |
+| `--version <VERSION>` | 安装指定的具体发布版本而非通道最新版。支持带或不带前缀 `v`（如 `v0.preview.93` 或 `0.preview.93`）。与通道参数互斥。 |
 | `-h`, `--help` | 打印帮助信息。 |
 
 ### 使用示例 {#ante-update-examples}
@@ -178,7 +179,7 @@ ante update [OPTIONS] [CHANNEL]
 ante update
 ante update nightly
 ante update --channel stable
-ante update --version v0.preview.86
+ante update --version v0.preview.93
 ```
 
 ## `ante offline` {#ante-offline}

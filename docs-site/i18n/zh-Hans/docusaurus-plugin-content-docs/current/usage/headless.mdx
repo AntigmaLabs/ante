@@ -60,9 +60,9 @@ ante [OPTIONS] [--prompt <PROMPT>]
 | `--short-prompt` | 启用紧凑提示词集：采用精简版系统提示词和更简短的内置工具描述 |
 | `--skills` / `--no-skills` | 加载或跳过技能发现（覆盖 `skills` 配置）；使用 `--no-skills` 时不会加载或声明任何技能 |
 | `--enable-auto-memory` / `--disable-auto-memory` | 启用或禁用[自动记忆](/extend/memory)（覆盖 `auto_memory` 设置，无头模式默认关闭） |
-| `--tools <TOOLS>...` | 将默认工具集精确替换为指定的工具列表。历史弃用别名：`--allowed-tools` 仍生效但会打印警告 |
-| `--include-tools <TOOLS>...` | 在默认工具集（或 `--tools` 基础集）之上额外引入指定工具 |
-| `--exclude-tools <TOOLS>...` | 从会话中移除指定工具（在 `--tools` 和 `--include-tools` 应用后生效）。历史弃用别名：`--disallowed-tools` 仍生效但会打印警告 |
+| `--tools <TOOLS>` | 用这些工具精确替换默认工具集。传入逗号分隔的值或重复使用参数；空格分隔列表会报错。旧参数名 `--allowed-tools` 已移除 |
+| `--include-tools <TOOLS>` | 在默认工具集或 `--tools` 基础集之上添加工具。传入逗号分隔的值或重复使用参数 |
+| `--exclude-tools <TOOLS>` | 在 `--tools` 与 `--include-tools` 处理后移除工具。传入逗号分隔的值或重复使用参数；已弃用的别名 `--disallowed-tools` 仍可使用 |
 | `-r`, `--resume <SESSION_ID>` | 根据会话 ID 恢复之前保存的历史会话 |
 | `--session-save` / `--no-session-save` | 保存或跳过会话持久化（覆盖 `session_save` 设置）。使用 `--no-session-save` 时不写入记录快照；与 `--resume` 互斥 |
 | `--check` | 在主任务完成后自动执行一轮自我验证检查 |
@@ -126,6 +126,8 @@ ante --check -p "refactor the auth module to use async/await"
 ante --resume ses_01ARZ3NDEKTSV4RRFFQ69G5FAV -p "now add tests"
 ```
 
+已保存的模型、提供商、思考深度和对话会被直接恢复；快照未固定的配置则从主机当前默认值解析。因此，无头恢复不要求当前默认提供商与已保存会话的提供商一致。
+
 会话 ID 会在 TUI 会话退出时打印提示（`Resume this session with: ante --resume ses_...`）。
 
 使用 `--no-session-save` 启动的会话绝不会持久化保存，因此无法在后续恢复。
@@ -149,7 +151,7 @@ ante --model claude-sonnet-5 --check \
 
 ```bash
 # 纯只读分析 — 禁止文件写入与 Shell 命令执行
-ante --tools Read Glob Grep \
+ante --tools Read,Glob,Grep \
   -p "analyze the codebase architecture and summarize it"
 ```
 

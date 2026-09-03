@@ -67,7 +67,7 @@ In this direction, `Session` remains important, but as a container for user inte
 
 ## LLM providers
 
-Ante is provider-agnostic. Each provider implements a common interface for sending prompts and receiving streaming responses. Transient mid-stream failures reconnect within the turn; a streaming call that produces no usable event within five minutes fails with a timeout instead of hanging indefinitely. That window is per provider — override it with [`stream_idle_timeout_secs`](/reference/catalog-reference#provider-fields).
+Ante is provider-agnostic. Each provider implements a common interface for sending prompts and receiving responses. Transient mid-stream failures reconnect within the turn. Streaming calls that produce no usable event and buffered calls that do not finish within five minutes fail with a timeout instead of hanging indefinitely. That window is per provider — override it with [`stream_idle_timeout_secs`](/reference/catalog-reference#provider-fields).
 
 | Provider | Wire Format | Models |
 |---|---|---|

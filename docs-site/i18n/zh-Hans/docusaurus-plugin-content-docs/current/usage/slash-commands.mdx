@@ -13,13 +13,14 @@ description: "在交互式 TUI 终端中用于常用操作的内置命令"
 | `/clear` | 清空对话历史 |
 | `/init` | 分析项目并创建 `AGENTS.md` 文件 |
 | `/exit` | 退出 Ante |
-| `/compact` | 总结对话历史以释放上下文窗口 |
+| `/compact [instructions]` | 压缩较早的对话历史以释放上下文；可选指令可引导交接摘要强调或保留特定内容 |
 | `/config` | 打开设置对话框 —— 搜索、开关并跳转至主题、模型、提供商、状态栏、MCP 及离线设置（参见[偏好设置](/configuration/preference#settings-file)） |
 | `/theme` | 打开主题选择对话框 |
 | `/diff` | 展示 Git 改动 diff（包含未跟踪的文件） |
 | `/connect` | 通过 OAuth 登录（API 密钥会自动检测） |
 | `/models [model_id]` | 不带参数时，打开当前提供商的模型与思考深度选择器；带模型 ID 时，直接切换至该模型 —— 包含目录未列出的 ID |
 | `/providers` | 为当前会话选择可用的提供商 |
+| `/add-provider` | 在 `catalog.json` 中配置自定义提供商 —— 发现端点模型并可探测每个模型支持的思考深度（参见[自定义模型目录](/usage/providers#custom-catalog)） |
 | `/offline-mode` | 通过内置推理引擎运行本地模型 |
 | `/term [name [args...]]` | 不带名称时，打开终端会话选择器；带名称时，附加或分离该 tmux 会话，当会话为新建时拉起同名命令及参数 —— 参见[终端会话](/usage/tui#terminal-sessions) |
 | `/update [skip \| cancel]` | 安排在退出时安装待更新的版本；`skip` 永久忽略该版本，`cancel` 取消已安排的更新 |
@@ -29,7 +30,6 @@ description: "在交互式 TUI 终端中用于常用操作的内置命令"
 | `/resume` | 恢复当前目录下此前保存的会话 |
 | `/resume-claude [id]` | 在当前目录中继续接管最近的 Claude Code 会话（内置技能 —— 参见[从 Claude Code 或 Codex 迁移](/usage/tui#coming-from-claude-code-or-codex)） |
 | `/resume-codex [id]` | 在当前目录中接管最近的 Codex 会话（内置技能） |
-| `/skill-creator` | 创建、改进与评测[技能](/extend/skills)（内置技能） |
 | `/import-claude` | 将当前目录下的 Claude Code 项目记忆复制到 Ante 的[项目记忆库](/extend/memory#importing-claude-code-memory) |
 | `/statusline` | 配置状态栏 |
 | `/mcp` | 检查并管理已配置的 [MCP 服务器](/extend/mcp) |

@@ -284,7 +284,7 @@ ante --provider local
 | `extra_body` | — | 合并到每个 Chat 和 Streaming 请求体顶层的专属 JSON 字段（参见[额外请求字段](#extra-request-fields)） |
 | `supports_web_search` | — | 该提供商是否提供原生网络搜索功能。为 `true` 时自动向该提供商的会话添加 `WebSearch` 工具；为 `false`（默认）时不提供 |
 | `preferred_models` | — | 在选择器中展示并作为默认模型的推荐列表（参见[模型字段](#model-fields)）。对于内置提供商，匹配的模型 ID 会被合并修改，新 ID 会被追加；省略时保持内置列表不变 |
-| `stream_idle_timeout_secs` | — | 流式调用在超时报错前允许的最长无可用事件时间（秒）。涵盖等待首个事件和后续事件间隔，跨 SSE 和 WebSocket 均有效。默认 `300` 秒。慢速本地模型或代理端点可适当调大 |
+| `stream_idle_timeout_secs` | — | 提供商请求在超时报错前允许的最长空闲时间（秒）。流式调用涵盖等待首个事件及 SSE/WebSocket 后续事件间隔；缓冲调用则限制收集响应期间的整个请求时长。默认 `300` 秒。慢速本地模型或代理端点可适当调大 |
 
 ```json
 {
@@ -395,6 +395,7 @@ Skipped 1 entry in ~/.ante/catalog.json:
 | `stop_sequences` | 停止生成的标记字符串列表 |
 | `context_limit` | 上下文窗口上限（Token 数） |
 | `effort` | 默认[思考深度等级](/usage/models-and-thinking#effort) —— `min`、`low`、`medium`、`high`、`xhigh` 或 `max`。不支持推理调节的模型请省略（Ante 不会发送 effort 参数并隐藏滑块） |
+| `supported_efforts` | 该模型在当前提供商上接受的思考深度级别，按升序排列（取值同 `effort`）。它会替换内置档位：滑块只显示这些级别，OpenAI 兼容提供商会发送同名 `reasoning_effort`（`min` 在线上拼写为 `minimal`）。空列表表示模型不接受思考深度设置；省略则保留内置档位 |
 | `weight_class` | 规模/成本等级 —— `Feather`（轻量/快速/低成本）、`Middle`（中等）或 `Heavy`（最大/能力最强）。驱动默认模型与辅助模型选取（参见[权重等级](#weight-classes)） |
 | `support_vision` | 是否支持图片输入。省略时 Ante 根据模型 ID 自动推断；对无视觉支持的模型读取图片时返回图片元数据而非像素 |
 
@@ -413,7 +414,7 @@ Skipped 1 entry in ~/.ante/catalog.json:
 每个内置模型均带有 `weight_class`（`Feather`、`Middle` 或 `Heavy`），Ante 根据此属性自动进行智能选择：
 
 - **默认模型** — 选择提供商但未指明具体模型时，默认解析为其 **Heavy** 旗舰模型。
-- **辅助任务调用** — 网页内容摘要（`WebFetch`）等轻量内部任务自动选用该提供商的 **Feather** 经济模型。
+- **环境感知 UI 调用** — 加载状态语和下一提示词建议等装饰性调用会在提供商拥有 Feather 或 Middle 模型时选用其最轻量模型。WebFetch 会把网页内容直接返回给当前会话模型，不走此路径。
 
 未设置 `weight_class` 的模型回退到目录声明顺序。在自定义模型上设置 `weight_class` 可以精确引导这些自动化选择。
 

@@ -27,11 +27,15 @@ When the agent issues several `Edit`/`Write` calls for the same file in one batc
 
 ### Glob
 
-Find files by glob pattern.
+Find files by glob pattern. Results are sorted by path and returned in pages of 100 files by default. A page ends at `head_limit` entries or the shared output budget, whichever comes first; pass the footer's `next_offset` back as `offset` to continue without skipping or repeating files. Set `head_limit: 0` to remove the entry-count limit (the output budget still applies).
+
+Glob returns matches found before its search deadline as a partial page with an explicit timeout footer. If it times out before finding anything, it fails with a suggestion to narrow the path or pattern. The default deadline is 20 seconds; set `ANTE_FILE_SEARCH_TIMEOUT` to a positive number of seconds to override it for both Glob and Grep.
 
 ### Grep
 
-Search file contents with regular expressions.
+Search file contents with ripgrep regular expressions. Its modes return matching file paths (the default), match counts, or matching content lines. Results are sorted by path and paged at 250 entries by default; `head_limit`, `offset`, `next_offset`, and the output-budget behavior match Glob. Pages are always cut between complete entries, so a continuation never starts midway through a path, count, or content line.
+
+Grep reports skipped unreadable, undecodable, oversized, or failed files in its footer. Like Glob, a timeout returns matches already found as a clearly marked partial page and becomes an error only when there are no matches to return.
 
 ## Shell
 

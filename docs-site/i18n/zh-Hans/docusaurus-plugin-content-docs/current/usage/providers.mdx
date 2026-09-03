@@ -51,7 +51,7 @@ ante --provider anthropic --model claude-sonnet-5
 
 ## 自定义模型目录 {#custom-catalog}
 
-创建 `~/.ante/catalog.json` 以添加 Ante 未内置的提供商、修改内置提供商属性或微调模型默认参数。该文件在启动时会合并覆盖到内置预设之上，因此只需声明新增或修改的部分。常见示例如下；完整 Schema 请查阅[目录参考手册](/reference/catalog-reference#catalogjson-schema)。
+创建 `~/.ante/catalog.json` 以添加 Ante 未内置的提供商、修改内置提供商属性或微调模型默认参数。该文件在启动时会合并覆盖到内置预设之上，因此只需声明新增或修改的部分。如果不想手写，可在 TUI 中运行 `/add-provider`：Ante 会发现端点提供的模型、探测每个模型接受的思考深度，并写入配置（重启后加载）。常见示例如下；完整 Schema 请查阅[目录参考手册](/reference/catalog-reference#catalogjson-schema)。
 
 ### 添加托管型提供商 {#add-a-hosted-provider}
 
@@ -83,6 +83,22 @@ ante --provider anthropic --model claude-sonnet-5
 export TOGETHER_API_KEY="..."
 ante --provider together --model moonshotai/Kimi-K2-Instruct
 ```
+
+### 声明模型支持的思考深度 {#declare-supported-efforts}
+
+[思考深度滑块](/usage/models-and-thinking#effort)的档位通常由提供商和模型家族内置推导，因此自定义端点上的模型可能得到不符合实际接口的档位。可使用 `supported_efforts` 声明真实集合；滑块将只显示这些级别，OpenAI 兼容提供商会把选择值作为同名的 `reasoning_effort` 发送：
+
+```json
+"preferred_models": [
+  {
+    "id": "kimi-k3",
+    "effort": "high",
+    "supported_efforts": ["low", "medium", "high"]
+  }
+]
+```
+
+空列表（`"supported_efforts": []`）表示该模型完全不接受思考深度设置。端点没有报告支持档位的标准 API；不确定时可让 `/add-provider` 自动探测。
 
 ### 添加无需认证的本地服务 {#add-a-local-provider-with-no-auth}
 

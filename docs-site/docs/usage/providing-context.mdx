@@ -17,7 +17,7 @@ Type `@` followed by a file or directory path. Ante shows a search dropdown as y
 - **`@path/to/file.rs`** — embeds the full file contents into your message
 - **`@path/to/dir/`** — embeds the directory tree listing
 
-Completion covers project-relative paths as well as `~/`, absolute, `../`, and `./` paths, so files outside the project work too.
+Completion covers the full project tree, including files nested more than six directories deep, and honors the same ignore rules as Ante's file tools. Project-relative searches reuse a background-built index for fast fuzzy matching. `~/`, absolute, `../`, and `./` paths also work, so files outside the project remain available.
 
 This ensures the agent sees exactly the code you're asking about, without guessing or searching.
 

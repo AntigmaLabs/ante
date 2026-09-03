@@ -289,7 +289,7 @@ A `providers` entry whose key matches a built-in (e.g. `openai`) patches that pr
 | `extra_body` | — | Provider-specific JSON fields merged into every chat and streaming request body (see [Extra request fields](#extra-request-fields)). |
 | `supports_web_search` | — | Whether the provider exposes a native web-search affordance. When `true`, the `WebSearch` tool is added to sessions on this provider automatically; when `false` (the default), `WebSearch` is not offered. |
 | `preferred_models` | — | Models shown for this provider in the picker and used as provider defaults (see [Model fields](#model-fields)). For built-in provider overlays, matching model ids are patched and new ids are appended; omitted leaves the preset list unchanged. |
-| `stream_idle_timeout_secs` | — | How long a streaming call may go without a usable event before it fails, in seconds. Covers both the wait for the first event and the silence between later ones, over SSE and WebSocket alike. Defaults to `300`. Raise it for a slow local or proxied endpoint; lower it to fail over from a stalled one sooner. |
+| `stream_idle_timeout_secs` | — | How long a provider request may remain idle before it fails, in seconds. For streaming calls, this covers both the wait for the first event and silence between later events over SSE or WebSocket; for buffered calls, it bounds the whole request while the response is collected. Defaults to `300`. Raise it for a slow local or proxied endpoint; lower it to fail over from a stalled one sooner. |
 
 ```json
 {

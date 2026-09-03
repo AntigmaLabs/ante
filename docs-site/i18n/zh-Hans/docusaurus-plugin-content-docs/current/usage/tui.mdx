@@ -49,9 +49,9 @@ Markdown 渲染原生支持 LaTeX 数学公式：`$...$`、`$$...$$`、`\(...\)`
 
 按 `Ctrl+O` 打开全屏完整记录视图：展示完整的历史对话记录以及展开的工具调用输出（包含主聊天视图中被截断的长文本）。使用 `j`/`k` 或 `PgUp`/`PgDn` 滚动，使用 `g`/`G` 快速跳转到顶部/底部，按 `Ctrl+O` 或 `q` 退出。
 
-在主聊天视图中，连续的静默工具调用（如 Bash、Read、Grep、Glob、WebFetch、WebSearch 及 MCP 工具）默认会被折叠为单个紧凑活动块。调用执行时展示计数、参数与耗时；完成后折叠为汇总信息（如 `Ran 2 shell commands, searched for 3 patterns`）。成功的文件读取和失败调用会单独展开在下方 —— 读取显示为 `Read (src/main.rs) ·110 lines`，失败调用显示为红色 `Failed` 标题及其错误原因。Edit、Write 和 Agent 调用始终保持独立卡片，且全屏记录视图始终保留所有详细调用与输出。可以在 `/config` 中开关 **Group tool activity** 或在 `~/.ante/settings.json` 中配置 `"group_tool_activity": false`；修改仅对新调用生效。
+在主聊天视图中，连续的静默工具调用（如 Bash、Read、Grep、Glob、WebFetch、WebSearch 及 MCP 工具）默认会被折叠为单个紧凑活动块。调用执行时展示计数、参数与耗时；完成后折叠为汇总信息（如 `Ran 2 shell commands, searched for 3 patterns`）。成功的文件读取和失败调用会单独展开在下方 —— 读取显示为 `Read (src/main.rs) ·110 lines`，失败调用显示为红色 `Failed` 标题及其错误原因。独立 Shell 调用完成后，标题会从 `Run` 切换为 `Ran`。项目内的工具路径相对于会话目录显示，主目录下其他位置使用 `~`，两者之外的路径保留绝对形式。Edit、Write 和 Agent 调用始终保持独立卡片，且全屏记录视图始终保留所有详细调用与输出。可以在 `/config` 中开关 **Group tool activity** 或在 `~/.ante/settings.json` 中配置 `"group_tool_activity": false`；修改仅对新调用生效。
 
-在执行会话压缩后（通过手动 `/compact` 或[自动压缩](/configuration/preference#settings-file)），主视图显示折叠的 `* Compacted` 标记；完整记录视图则展示模型生成的完整上下文摘要。当 Ante 对过长工具输出进行裁剪而非摘要时，会显示一行通知提示裁剪范围。
+在执行会话压缩后（通过手动 `/compact` 或[自动压缩](/configuration/preference#settings-file)），主视图显示折叠的 `* Compacted` 标记；完整记录视图则展示模型生成的完整上下文摘要。Ante 会先清除较早的工具结果，原样保留最新工作片段与用户消息，只总结模型将不再看到的较早上下文。手动压缩的目标更紧，因此通常会折叠更多历史；紧接着重复运行不会重新压缩刚生成的摘要。如果提供商在模型声明的上下文上限以下拒绝请求，Ante 会为当前会话学习一个更小的有效窗口，重新缩放摘要与保留锚点，并重试一次。可用附加指令引导交接内容，例如 `/compact focus on the API changes`。当无需生成摘要时，指令没有可引导的内容，系统会用信息行报告已清理的工具结果。
 
 ### 文本选择与复制 {#selecting-and-copying-text}
 
@@ -208,7 +208,7 @@ Ante 会自动将所有会话持久化到磁盘中。输入 `/resume` 即可随�
 - `@path/to/file.rs` — 将文件全文嵌入消息
 - `@path/to/dir/` — 嵌入目录树状列表
 
-补全支持项目相对路径以及 `~/`、绝对路径、`../` 和 `./` 路径，方便引用项目之外的文件。
+项目相对路径补全会搜索完整项目树，包括嵌套超过六层的文件，并复用后台构建的索引进行快速模糊匹配。`~/`、绝对路径、`../` 和 `./` 路径同样可用，方便引用项目之外的文件。
 
 :::tip
 直接粘贴多个文件路径时，Ante 会自动为其添加 `@` 前缀。
@@ -273,9 +273,9 @@ ante --profile work
 ante --no-skills
 ante --system-prompt "You are a Python expert"
 ante --append-system-prompt "Always use type hints"
-ante --tools Read Grep Glob
+ante --tools Read,Grep,Glob
 ante --include-tools ViewImage
-ante --exclude-tools Bash Write
+ante --exclude-tools Bash,Write
 ante --yolo                       # 跳过所有工具审批
 ante --resume ses_01ARZ3NDEK...   # 恢复历史会话
 ```

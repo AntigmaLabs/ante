@@ -55,7 +55,7 @@ Example: `op_01J5A3B7C9D0E1F2G3H4J5K6M7`
 
 ### StartSession
 
-Initialize a new session with model, provider, and configuration.
+Initialize a new session, replacing any session already running. A field supplied by the client is pinned; an omitted or `null` field resolves from the host's settings at this session boundary, or from Ante's built-in default when the setting is absent.
 
 ```json
 {
@@ -73,20 +73,21 @@ Initialize a new session with model, provider, and configuration.
       "effort": null,
       "enable_auto_memory": null,
       "short_prompt": null,
-      "no_skills": null
+      "no_skills": null,
+      "save_session": null
     }
   },
   "id": "op_..."
 }
 ```
 
-**SessionConfig fields:**
+**SessionRequest fields:**
 
 | Field | Type | Description |
 |---|---|---|
-| `model` | `string` | Model name (e.g. `"claude-sonnet-5"`) |
-| `provider` | `string` | Provider name (e.g. `"anthropic"`, `"openai"`, `"gemini"`, `"xai"`, `"openrouter"`, `"local"`) |
-| `permission_mode` | `PermissionMode?` | Tool approval mode: `"strict"`, `"auto"`, or `"yolo"`. `null` uses `strict` |
+| `model` | `string?` | Model name (e.g. `"claude-sonnet-5"`); `null` uses the host default |
+| `provider` | `string?` | Provider name (e.g. `"anthropic"`, `"openai"`, `"gemini"`, `"xai"`, `"openrouter"`, `"local"`); `null` uses the host default |
+| `permission_mode` | `PermissionMode?` | Tool approval mode: `"strict"`, `"auto"`, or `"yolo"`; `null` uses the host default |
 | `system_prompt` | `string?` | Override the default system prompt entirely |
 | `append_system_prompt` | `string?` | Append content to the default system prompt |
 | `tools` | `string[]?` | Exactly these tools, replacing the default tool set as the base. Also gates dynamically registered (MCP) tools |
@@ -97,6 +98,9 @@ Initialize a new session with model, provider, and configuration.
 | `enable_auto_memory` | `bool?` | Whether the agent records and recalls [auto-memory](/extend/memory). `null` leaves the daemon default (on for interactive sessions) |
 | `short_prompt` | `bool?` | Use compact tool descriptions and system prompt to shrink the context footprint. `null` leaves the settings default |
 | `no_skills` | `bool?` | When `true`, skip all skill discovery so no skills are advertised or invocable. `null` leaves the session default |
+| `save_session` | `bool?` | Whether to write a transcript and resumable snapshot. `null` leaves the host's session-saving default |
+
+`SessionRequest` replaced the former `SessionOverrides` name in `v0.preview.92`. The JSON field names stayed the same, but absence now has one explicit meaning for `StartSession`: resolve the host's default now, never “leave the previous session unchanged.” A client implementing `/clear` should retain and resend its own request, applying any model or permission-mode changes it made; there is no separate restart operation.
 
 ### UpdateSession
 
@@ -123,7 +127,7 @@ Update the active session without restarting it (e.g. switch models or permissio
 
 ### ResumeSession
 
-Resume a previously persisted session by its ID. The daemon restores the conversation history, re-discovers extensions, and replays recent events so the client can rebuild its view.
+Resume a previously persisted session by its ID. The daemon restores the saved dialog and pinned model, provider, and effort, resolves anything the snapshot did not pin from the host's current defaults, re-discovers extensions, and replays recent events so the client can rebuild its view.
 
 ```json
 { "op": { "ResumeSession": { "session_id": "ses_01ARZ..." } }, "id": "op_..." }
@@ -296,7 +300,7 @@ Restore the previously registered local provider configuration after a session-l
 
 #### SessionStart
 
-Emitted when a session is initialized. Contains metadata about the active model, provider, session ID, and working directory. Skills and subagents are delivered separately via `ExtensionRefreshed`.
+Emitted when a session is initialized. It announces the session identity, mutable settings, and the skills and subagents equipped for the session. `ExtensionRefreshed` immediately repeats those capability lists alongside MCP state for clients that replace all extension state from one event.
 
 ```json
 {
@@ -310,7 +314,9 @@ Emitted when a session is initialized. Contains metadata about the active model,
       },
       "session_id": "ses_01ARZ...",
       "cwd": "/home/user/project",
-      "permission_mode": "strict"
+      "permission_mode": "strict",
+      "skills": [],
+      "subagents": []
     }
   }
 }
@@ -325,6 +331,10 @@ Emitted when a session is initialized. Contains metadata about the active model,
 | `session_id` | `Id` | Unique session identifier |
 | `cwd` | `string` | Working directory path |
 | `permission_mode` | `PermissionMode` | Active permission mode (`"strict"`, `"auto"`, or `"yolo"`) |
+| `skills` | `SkillMetadata[]` | Skills the user can invoke in this session. Defaults to an empty list when absent for backward compatibility |
+| `subagents` | `SubagentMetadata[]` | Subagents this session can delegate to. Defaults to an empty list when absent for backward compatibility |
+
+The embedded `ModelSpec` uses the model fields documented in the [Catalog Reference](/reference/catalog-reference#model-fields). Since `v0.preview.92`, its optional `supported_efforts` field carries a custom model's accepted effort ladder; it replaces the old output-only `effort_options` field.
 
 **ProviderSpec fields:**
 
@@ -352,7 +362,9 @@ Emitted when the active session is updated in place (e.g. model changed via `Upd
       },
       "session_id": "ses_01ARZ...",
       "cwd": "/home/user/project",
-      "permission_mode": "strict"
+      "permission_mode": "strict",
+      "skills": [],
+      "subagents": []
     }
   }
 }
@@ -565,7 +577,7 @@ Emitted when dialog compaction completes. `summary` is the text that replaced th
 
 #### ExtensionRefreshed
 
-Emitted when skills, subagents, or MCP servers are refreshed. Sent at least twice during a normal session: once right after `SessionStart` with the initial skills/subagents (and `mcp_servers: []`), and again after MCP warm-up completes in the background with the discovered server and tool list.
+Emitted when skills, subagents, or MCP servers are refreshed. It is sent once immediately after `SessionStart` with the same skills/subagents and `mcp_servers: []`. When MCP servers are configured, a second event follows after warm-up with the discovered servers and tools; with no MCP configuration, the initial event is the only one.
 
 ```json
 {

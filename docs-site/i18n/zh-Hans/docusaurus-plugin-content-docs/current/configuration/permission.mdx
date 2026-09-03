@@ -163,13 +163,13 @@ Glob 模式 `safe-cmd:*` **不会**匹配 `safe-cmd --flag`。请使用 `safe-cm
 
 ```bash
 # 精确指定基础工具集
-ante --tools Read Glob Grep "analyze the code"
+ante --tools Read,Glob,Grep -p "analyze the code"
 
 # 剔除指定工具
-ante --exclude-tools Bash Write "read-only analysis"
+ante --exclude-tools Bash,Write -p "read-only analysis"
 ```
 
-在这些列表中接受 `Bash(cargo test *)` 匹配器语法，但仅会按工具名进行过滤 —— 仍保留整个 `Bash` 工具。若要精确控制工具允许运行的内容，请结合使用 `allow`/`ask`/`deny` 权限规则。
+每个过滤参数接收一个逗号分隔的值并可重复使用；`--tools Read Glob` 这类空格分隔列表不被接受。在这些列表中接受 `Bash(cargo test *)` 匹配器语法，但仅会按工具名进行过滤 —— 仍保留整个 `Bash` 工具。若要精确控制工具允许运行的内容，请结合使用 `allow`/`ask`/`deny` 权限规则。
 
 :::tip
 工具过滤（Filtering）与权限系统（Permissions）相互独立。工具过滤控制会话中**存在**哪些工具；权限系统控制已存在的工具**是否需要确认审批**。

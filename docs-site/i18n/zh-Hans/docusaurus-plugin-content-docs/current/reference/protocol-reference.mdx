@@ -56,7 +56,7 @@ Ante 在客户端（Client）与守护进程（Daemon）之间采用强类型的
 
 ### StartSession {#startsession}
 
-使用指定的模型、提供商和配置项初始化新会话。
+初始化新会话，并替换任何正在运行的会话。客户端提供的字段会被固定；省略或设为 `null` 的字段会在当前会话边界从主机设置解析，设置不存在时再使用 Ante 内置默认值。
 
 ```json
 {
@@ -74,20 +74,21 @@ Ante 在客户端（Client）与守护进程（Daemon）之间采用强类型的
       "effort": null,
       "enable_auto_memory": null,
       "short_prompt": null,
-      "no_skills": null
+      "no_skills": null,
+      "save_session": null
     }
   },
   "id": "op_..."
 }
 ```
 
-**SessionConfig 字段说明：**
+**SessionRequest 字段说明：**
 
 | 字段 | 类型 | 说明 |
 |---|---|---|
-| `model` | `string` | 模型名称（如 `"claude-sonnet-5"`） |
-| `provider` | `string` | 提供商名称（如 `"anthropic"`、`"openai"`、`"gemini"`、`"xai"`、`"openrouter"`、`"local"`） |
-| `permission_mode` | `PermissionMode?` | 工具审批模式：`"strict"`、`"auto"` 或 `"yolo"`。`null` 默认使用 `strict` |
+| `model` | `string?` | 模型名称（如 `"claude-sonnet-5"`）；`null` 使用主机默认值 |
+| `provider` | `string?` | 提供商名称（如 `"anthropic"`、`"openai"`、`"gemini"`、`"xai"`、`"openrouter"`、`"local"`）；`null` 使用主机默认值 |
+| `permission_mode` | `PermissionMode?` | 工具审批模式：`"strict"`、`"auto"` 或 `"yolo"`；`null` 使用主机默认值 |
 | `system_prompt` | `string?` | 完全覆盖默认系统提示词 |
 | `append_system_prompt` | `string?` | 向默认系统提示词末尾追加内容 |
 | `tools` | `string[]?` | 精确指定的基础工具集，替换默认工具集。同时约束动态注册的（MCP）工具 |
@@ -98,6 +99,9 @@ Ante 在客户端（Client）与守护进程（Daemon）之间采用强类型的
 | `enable_auto_memory` | `bool?` | 智能体是否记录并唤起[自动记忆（auto-memory）](/extend/memory)。`null` 时采用守护进程默认值（交互式会话开启） |
 | `short_prompt` | `bool?` | 启用紧凑工具描述与系统提示词以减小上下文占用。`null` 时采用配置默认值 |
 | `no_skills` | `bool?` | 为 `true` 时跳过所有技能发现，不声明或调用任何技能。`null` 时采用会话默认值 |
+| `save_session` | `bool?` | 是否写入对话记录与可恢复快照。`null` 保留主机的会话保存默认值 |
+
+`SessionRequest` 在 `v0.preview.92` 中取代旧名称 `SessionOverrides`。JSON 字段名保持不变，但对 `StartSession` 而言，缺省值现在只有一个明确含义：立即解析主机默认值，而不是“保留上一会话不变”。实现 `/clear` 的客户端应自行保留并重新发送其请求，同时合并用户做过的模型或权限模式变更；协议中没有独立的重启操作。
 
 ### UpdateSession {#updatesession}
 
@@ -124,7 +128,7 @@ Ante 在客户端（Client）与守护进程（Daemon）之间采用强类型的
 
 ### ResumeSession {#resumesession}
 
-根据会话 ID 恢复此前持久化保存的会话。守护进程会还原对话历史、重新发现扩展项，并回放最近的事件以便客户端重建视图。
+根据会话 ID 恢复此前持久化保存的会话。守护进程会还原已保存的对话以及固定的模型、提供商与思考深度；快照未固定的配置从主机当前默认值解析。随后重新发现扩展项并回放最近事件，以便客户端重建视图。
 
 ```json
 { "op": { "ResumeSession": { "session_id": "ses_01ARZ..." } }, "id": "op_..." }
@@ -210,11 +214,14 @@ Ante 在客户端（Client）与守护进程（Daemon）之间采用强类型的
 
 ### Compact {#compact}
 
-在活跃会话上手动触发对话历史压缩（对应 `/compact` 命令）。守护进程会在摘要生成前后分别触发 `CompactStart` 和 `CompactEnd`。
+在活跃会话上手动触发对话历史压缩（对应 `/compact` 命令）。可选 `instructions` 可引导替换摘要强调或保留哪些内容；如果仅清除工具结果就能释放足够空间，则无需摘要，指令也不会生效。守护进程会在操作前后分别触发 `CompactStart` 和 `CompactEnd`。
 
 ```json
-{ "op": "Compact", "id": "op_..." }
+{ "op": { "Compact": {} }, "id": "op_..." }
+{ "op": { "Compact": { "instructions": "重点保留 API 变更" } }, "id": "op_..." }
 ```
+
+`Compact` 自 `v0.preview.90` 起为结构体变体；没有指令时客户端也必须发送空对象，不能再发送旧的裸字符串形式。
 
 ### ContextReport {#contextreport}
 
@@ -294,7 +301,7 @@ Ante 在客户端（Client）与守护进程（Daemon）之间采用强类型的
 
 #### SessionStart {#sessionstart}
 
-在会话初始化完成后触发。包含当前模型、提供商、会话 ID 和工作目录的元数据。Skills 和子智能体通过 `ExtensionRefreshed` 独立分发。
+在会话初始化完成后触发。它会声明会话身份、可变设置，以及当前会话已装备的 Skills 和子智能体。`ExtensionRefreshed` 会立即重复这些能力列表，并附带 MCP 状态，方便客户端通过单一事件整体替换扩展状态。
 
 ```json
 {
@@ -308,7 +315,9 @@ Ante 在客户端（Client）与守护进程（Daemon）之间采用强类型的
       },
       "session_id": "ses_01ARZ...",
       "cwd": "/home/user/project",
-      "permission_mode": "strict"
+      "permission_mode": "strict",
+      "skills": [],
+      "subagents": []
     }
   }
 }
@@ -323,6 +332,10 @@ Ante 在客户端（Client）与守护进程（Daemon）之间采用强类型的
 | `session_id` | `Id` | 唯一会话标识符 |
 | `cwd` | `string` | 工作目录路径 |
 | `permission_mode` | `PermissionMode` | 当前活跃的权限模式（`"strict"`、`"auto"` 或 `"yolo"`） |
+| `skills` | `SkillMetadata[]` | 用户可在此会话中调用的 Skills；缺省时为兼容旧版本默认空列表 |
+| `subagents` | `SubagentMetadata[]` | 此会话可委派的子智能体；缺省时为兼容旧版本默认空列表 |
+
+其中的 `ModelSpec` 使用[目录参考手册](/reference/catalog-reference#model-fields)列出的模型字段。自 `v0.preview.92` 起，可选字段 `supported_efforts` 用于携带自定义模型接受的思考深度档位，并取代旧的仅输出字段 `effort_options`。
 
 **ProviderSpec 字段说明：**
 
@@ -350,7 +363,9 @@ Ante 在客户端（Client）与守护进程（Daemon）之间采用强类型的
       },
       "session_id": "ses_01ARZ...",
       "cwd": "/home/user/project",
-      "permission_mode": "strict"
+      "permission_mode": "strict",
+      "skills": [],
+      "subagents": []
     }
   }
 }
@@ -563,7 +578,7 @@ Ante 在客户端（Client）与守护进程（Daemon）之间采用强类型的
 
 #### ExtensionRefreshed {#extensionrefreshed}
 
-Skills 技能、子智能体或 MCP 服务器刷新时触发。在正常会话中至少发送两次：首次在 `SessionStart` 后发送初始技能与子智能体（此时 `mcp_servers: []`）；第二次在后台 MCP 预热完成后发送发现的服务器与工具列表。
+Skills 技能、子智能体或 MCP 服务器刷新时触发。`SessionStart` 后会立即发送一次，其中 Skills 与子智能体和启动事件相同，`mcp_servers: []`。配置了 MCP 服务器时，后台预热完成后会再发送第二次，带上发现的服务器与工具；未配置 MCP 时只有首次事件。
 
 ```json
 {

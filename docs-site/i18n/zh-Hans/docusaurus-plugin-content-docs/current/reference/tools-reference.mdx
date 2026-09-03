@@ -28,11 +28,15 @@ PDF 在客户端本地完成页面渲染与内嵌文本提取，无需网络往�
 
 ### Glob {#glob}
 
-根据 Glob 通配符模式查找匹配的文件路径。
+根据 Glob 通配符模式查找文件。结果按路径排序，默认每页返回 100 个文件。页面会在达到 `head_limit` 条目数或共享输出预算时结束（以先到者为准）；将页脚中的 `next_offset` 作为下一次调用的 `offset`，即可继续读取且不会跳过或重复文件。将 `head_limit` 设为 `0` 可取消条目数上限，但输出预算仍然生效。
+
+Glob 在搜索截止时间前已找到匹配项时，会返回带明确超时页脚的部分页面；若超时前一项也未找到，则报错并建议缩小路径或模式。默认截止时间为 20 秒；可将 `ANTE_FILE_SEARCH_TIMEOUT` 设为正整数秒数，同时覆盖 Glob 和 Grep 的期限。
 
 ### Grep {#grep}
 
-基于正则表达式搜索文件内容。
+使用 ripgrep 正则表达式搜索文件内容。输出模式可以返回匹配文件路径（默认）、匹配计数或匹配内容行。结果按路径排序，默认每页 250 个条目；`head_limit`、`offset`、`next_offset` 与输出预算的行为和 Glob 相同。分页只会在完整条目之间截断，因此续页不会从路径、计数或内容行的中间开始。
+
+Grep 会在页脚报告无法读取、解码、打开或过大的文件。与 Glob 一样，超时时会把已找到的匹配项作为明确标记的部分页面返回；只有没有任何匹配项可返回时才报错。
 
 ## 终端与 Shell {#shell}
 
@@ -41,6 +45,8 @@ PDF 在客户端本地完成页面渲染与内嵌文本提取，无需网络往�
 执行 Shell 命令。每次调用均在独立的非交互子进程中运行 —— 进程状态不跨调用持久化。可选的 `max_wait_ms` 字段控制 Ante 在内联等待命令完成的时长（默认 `10000`ms，限制在 `250`–`600000`ms 之间）。超出该等待窗口**绝不会**杀死命令或触发超时：Ante 会返回位于 `~/.ante/run/jobs/<proc-id>/` 下的后台任务句柄，包含 pid、部分输出以及持续追加写入的 `status.json`、`stdout.txt` 和 `stderr.txt` 文件。对于服务或监听进程建议传入如 `250` 的短窗口；请勿附加 `&`（属于多余符号且会被自动剥离）。
 
 若命令在等待窗口内执行完毕，Ante 会直接在内联返回输出并显式清理句柄文件。一旦返回后台句柄，该任务在 Ante 重启后依然存活且活跃期间绝不被回收；任务结束后，其目录在闲置保留 24 小时后会在后续启动时统一回收。在返回句柄前中断 Bash 调用会终止整个进程组（包含子进程与孙进程）。要停止已经转入后台运行的任务，请使用 `kill -- -<pid>` 向其进程组发送信号。需要审批。
+
+结果以 `status: exited` 和明确的 `exit_code` 开头，并仅在非空时分别给出 `stdout` 与 `stderr`。后台结果则以 `status: running` 开头，并列出进程 ID 与句柄文件。被信号终止的命令采用 Shell 的 `128 + signal` 退出码约定。
 
 针对交互式程序和持久 Shell，智能体通过内置的 `tmux` 技能在常规 Bash 调用中驱动命名 tmux 会话（`ante-*`）—— 发送的每个击键均经过正常的 Bash 权限检查。可通过 [`/term <name>`](/usage/tui#terminal-sessions) 随时查看或在会话中键入内容。
 
@@ -56,7 +62,7 @@ PDF 在客户端本地完成页面渲染与内嵌文本提取，无需网络往�
 
 ### WebFetch {#webfetch}
 
-获取指定 URL 网页，自动转换为 Markdown，并调用轻量模型提炼关键信息。超长响应会自动转存到本地缓存文件中供智能体分片读取，而非生硬截断。需要审批。
+获取指定 URL 的内容并转换为 Markdown，交由当前会话模型直接分析。输入仅包含 URL；WebFetch 不会调用第二个提炼模型。超长响应会自动转存到本地缓存文件中供智能体分片读取，而非生硬截断。请求使用 `ante/<version>` 作为 User-Agent；HTTP 失败时会尽可能附带最多 2 KB 的文本响应体。需要审批。
 
 ### WebSearch {#websearch}
 
@@ -72,7 +78,7 @@ PDF 在客户端本地完成页面渲染与内嵌文本提取，无需网络往�
 
 ## MCP 工具 {#mcp-tools}
 
-由配置的 [MCP 服务器](/extend/mcp) 提供的工具会以 `mcp__<server>__<tool>` 形式暴露给智能体。它们与内置工具并列展示，从智能体的角度看行为完全相同。MCP 工具同样受 `--tools`/`--include-tools`/`--exclude-tools` 命令行过滤约束；若需按服务精确过滤，请使用 `enabled_tools` 配置项。
+由配置的 [MCP 服务器](/extend/mcp) 提供的工具会以 `mcp__<server>__<tool>` 形式暴露给智能体。它们与内置工具并列展示，从智能体的角度看行为完全相同。MCP 工具同样受 `--tools`/`--include-tools`/`--exclude-tools` 命令行过滤约束，因此未点名它们的限制性 `--tools` 基础集会将其移除；若需按服务精确过滤，请使用 `enabled_tools` 配置项。
 
 ## 默认工具集 {#default-tool-set}
 
@@ -85,14 +91,16 @@ Ante 默认启用 `Read`、`Bash`、`Grep`、`Glob`、`TodoWrite`、`WebFetch`�
 在会话中控制可用工具：
 
 ```bash
-# 精确指定工具集
-ante --tools Read Glob Grep "分析代码"
+# 用这些工具精确替换默认工具集
+ante --tools Read,Glob,Grep -p "分析代码"
 
 # 在默认集基础上引入可选工具
-ante --include-tools ViewImage "描述 assets/ 中的截图"
+ante --include-tools ViewImage -p "描述 assets/ 中的截图"
 
 # 剔除指定工具
-ante --exclude-tools Bash Write "纯只读分析"
+ante --exclude-tools Bash,Write -p "纯只读分析"
 ```
+
+每个参数接收一个逗号分隔的值并可重复使用。空格分隔列表会报错，旧参数名 `--allowed-tools` 已不再接受（`--disallowed-tools` 仍作为 `--exclude-tools` 的弃用别名保留）。
 
 在这些参数中传入匹配器语法（如 `Bash(cargo test *)`）仅会按工具名进行过滤 —— 仍保留整个 `Bash` 工具可用。若要限制工具*允许执行的具体操作*，请配合使用[权限规则](/configuration/permission#tool-matchers)。

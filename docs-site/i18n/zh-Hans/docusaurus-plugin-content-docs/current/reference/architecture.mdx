@@ -67,7 +67,7 @@ flowchart LR
 
 ## 大语言模型提供商 {#llm-providers}
 
-Ante 具备跨提供商无关性。每个提供商均实现了发送提示词与接收流式响应的通用接口。流式传输过程中的偶发网络闪断会在轮次内自动重连；若流式调用在 5 分钟内未产生任何可用事件，将因超时报错而非无限挂起。该超时窗口支持按提供商配置 —— 可通过 [`stream_idle_timeout_secs`](/reference/catalog-reference#provider-fields) 覆盖。
+Ante 具备跨提供商无关性。每个提供商均实现了发送提示词与接收响应的通用接口。流式传输过程中的偶发网络闪断会在轮次内自动重连；流式调用若 5 分钟内没有可用事件、缓冲调用若 5 分钟内未完成，都会因超时报错而非无限挂起。该超时窗口支持按提供商配置 —— 可通过 [`stream_idle_timeout_secs`](/reference/catalog-reference#provider-fields) 覆盖。
 
 | 提供商 | 通信协议格式 (Wire Format) | 支持模型 |
 |---|---|---|

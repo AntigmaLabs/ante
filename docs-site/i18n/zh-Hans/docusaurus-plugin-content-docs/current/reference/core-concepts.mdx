@@ -47,15 +47,21 @@ Ante 在客户端（TUI 或无头运行器）与守护进程 Daemon 之间采用
 
 | 操作指令 (Op) | 载荷参数 (Payload) | 说明 |
 |---|---|---|
-| `StartSession` | `SessionConfig` | 使用模型、提供商、策略和选项初始化新会话 |
+| `StartSession` | `SessionRequest` | 初始化新会话；已设置字段会固定，未设置字段从主机当前默认值解析 |
 | `UpdateSession` | `SessionUpdate` | 在不重启的情况下原地更新活跃会话（例如切换模型） |
 | `ResumeSession` | `session_id` | 恢复此前持久化保存的历史会话 |
 | `UserInput` | `String` | 提交用户输入的提示词内容 |
+| `ShellInput` | `String` | 在守护进程端运行 Shell 命令，不启动智能体轮次 |
 | `Steer` | `String` | 向当前正在运行的轮次注入额外的用户引导指令 |
 | `ApprovalResponse` | `turn_id`, `responses: [ToolDecision]` | 响应工具审批请求；`Deny` 拒绝时可携带返回给模型的 `message` 反馈 |
 | `SlashCommand` | `name`, `args` | 按名称调用 Skill 技能 |
 | `RegisterLocalProvider` | `port`, `model?` | 将运行中的本地 llama-server 注册为 `local` 提供商 |
 | `RestoreLocalProvider` | — | 恢复此前注册的本地提供商 |
+| `Compact` | `instructions?` | 压缩较早的对话历史，可选指令可引导交接摘要 |
+| `ContextReport` | — | 请求按类别拆分的上下文窗口占用报告 |
+| `Goal` | `GoalCommand` | 设置、清除或查询目标导向型执行循环 |
+| `AmbientPhrase` | `draft`, `req_id` | 为当前草稿请求尽力而为的加载状态语 |
+| `AmbientSuggestion` | `recent_user`, `recent_agent`, `req_id` | 请求尽力而为的下一提示词建议 |
 | `Interrupt` | — | 中断当前正在运行的操作 |
 | `Shutdown` | — | 优雅关闭守护进程 |
 
@@ -65,11 +71,12 @@ Ante 在客户端（TUI 或无头运行器）与守护进程 Daemon 之间采用
 
 | 状态事件 (Evt) | 载荷参数 (Payload) | 说明 |
 |---|---|---|
-| `SessionStart` | `SessionInitialized` | 会话初始化就绪（包含模型、提供商、会话 ID、工作目录） |
-| `SessionUpdated` | `SessionInitialized` | 会话属性已原地更新（例如模型已切换） |
-| `SessionEnd` | — | 会话终止结束 |
+| `SessionStart` | `SessionInitialized` | 会话初始化就绪，包含身份、可变设置、技能与子智能体 |
+| `SessionUpdated` | `SessionInitialized` | 会话属性已原地更新，并重复会话已装备的技能与子智能体 |
+| `SessionEnd` | `session_id`, `reason`, `usage` | 会话终止并提供最终用量统计 |
 | `TurnStart` | `turn_id` | 新轮次已开始 |
 | `TurnPause` | `turn_id`, `reason` | 轮次暂停（例如等待工具调用审批） |
+| `TurnResume` | `turn_id` | 暂停的轮次在审批或引导后恢复 |
 | `TurnEnd` | `turn_id`, `status` | 轮次执行完毕、被中断或发生错误 |
 | `AgentMessage` | `String` | 智能体生成的完整文本回复 |
 | `Thinking` | `String` | 完整的思考推理独白块 |
@@ -80,8 +87,8 @@ Ante 在客户端（TUI 或无头运行器）与守护进程 Daemon 之间采用
 | `ToolEnd` | `tool_use_id`, `status`, `result_json`, `is_error` | 工具执行完成 |
 | `UsageUpdate` | `usage` | Token 消耗与统计数据更新 |
 | `CompactStart` | — | 对话历史压缩开始 |
-| `CompactEnd` | — | 对话历史压缩完成 |
-| `ExtensionRefreshed` | `skills`, `subagents` | Skills 与子智能体已刷新 |
+| `CompactEnd` | `summary?` | 对话历史压缩完成；未生成替换摘要时为空 |
+| `ExtensionRefreshed` | `session_id`, `skills`, `subagents`, `mcp_servers` | Skills、子智能体与 MCP 服务器状态已刷新 |
 | `UserInput` | `String` | 仅用于会话回放 —— 出现在恢复的历史会话中，非实时轮次发出 |
 | `Info` | `String` | 通用通知信息 |
 | `Error` | `String` | 错误提示信息 |
@@ -197,8 +204,8 @@ sequenceDiagram
 Ante 自动管理上下文窗口：
 
 - **Token 预算控制** — 每个轮次均依据模型的上下文上限精确追踪 Token 占用
-- **自动压缩** — 当对话接近上下文上限时，Ante 调用大模型对历史对话进行摘要总结，在释放 Token 的同时保留关键上下文。默认开启；可通过 `auto_compact` [配置项](/configuration/preference#settings-file)关闭（手动 `/compact` 与溢出恢复依然可用）
-- **工具输出裁剪** — 超大工具输出结果会自动裁剪以适配预算范围
+- **自动压缩** — 当对话接近上下文上限时，Ante 会先清除较早的工具结果，原样保留最新片段与用户消息，只总结模型将不再看到的较早前缀。手动 `/compact` 使用更紧的目标，通常折叠更多历史。如果提供商在声明上限以下拒绝请求，会话会学习更小的有效窗口、重新缩放压缩预算并重试一次。默认开启；可通过 `auto_compact` [配置项](/configuration/preference#settings-file)关闭（手动 `/compact` 与溢出恢复依然可用）
+- **工具输出裁剪** — 超大输出会被限制在上下文预算内，并行结果批次共享一个总上限。较早结果会先于对话消息衰减；清除标记会列出原始 `tool_use_id`，完整结果仍保留在已保存会话的事件日志中
 
 ## 权限控制 {#permissions}
 

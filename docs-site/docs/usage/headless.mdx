@@ -125,6 +125,8 @@ Pass `--resume <SESSION_ID>` to continue a previously saved session. Ante replay
 ante --resume ses_01ARZ3NDEKTSV4RRFFQ69G5FAV -p "now add tests"
 ```
 
+The saved model, provider, effort, and dialog are restored directly; settings the snapshot did not pin resolve from the host's current defaults. Headless resume therefore does not need the current default provider to match the session's provider.
+
 The session ID is printed when a TUI session exits (`Resume this session with: ante --resume ses_...`).
 
 Sessions started with `--no-session-save` are never persisted, so they cannot be resumed later.
