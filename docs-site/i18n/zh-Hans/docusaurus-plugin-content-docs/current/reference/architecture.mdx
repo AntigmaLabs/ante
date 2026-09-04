@@ -24,7 +24,7 @@ Ante 采用清晰的职责分离设计，遵循客户端-守护进程（Client-D
 
 - **Client（客户端）** — 用户面向层。基于 ratatui 的 TUI 终端界面、无头 CLI 运行器，或通过 `ante serve` 连接的外部进程。负责发送 `Op` 操作指令并渲染接收到的 `Evt` 事件。
 - **Daemon（守护进程）** — 核心引擎。接收操作指令、管理会话、分发大语言模型请求、调度工具安全执行并分发事件。
-- **Transport（传输层）** — 进程内客户端（TUI、无头模式）使用 Tokio 异步有界通道；外部客户端使用基于 stdin/stdout 的 JSONL 协议（`ante serve --stdio`）或 WebSocket 网络协议（`ante serve --ws`）。通过消息 ID 实现跨进程边界的链路追踪。
+- **Transport（传输层）** — 进程内客户端（TUI、无头模式）使用 Tokio 异步有界通道；外部客户端使用基于 stdin/stdout 的 JSONL 协议（`ante serve --stdio`）、供本地客户端连入共享宿主的 Unix 域套接字（`ante serve --sock`），或 WebSocket 网络协议（`ante serve --ws`）。通过消息 ID 实现跨进程边界的链路追踪。
 
 ## 架构演进：从以会话为中心到以智能体为中心 {#architecture-direction-session-centric-to-agent-centric}
 

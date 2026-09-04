@@ -21,6 +21,21 @@ ante serve --stdio
 
 The `--stdio` flag is optional — stdio is the default transport. The daemon reads `OpMsg` JSON objects from stdin and writes `EventMsg` JSON objects to stdout, one per line.
 
+### Unix socket transport
+
+```bash
+ante serve --sock                 # ~/.ante/run/serve.sock
+ante serve --sock /tmp/ante.sock
+```
+
+`--sock` hosts the protocol on a Unix domain socket, so clients that outlive any single connection can dial the host instead of spawning one each time. With no path, the socket is `run/serve.sock` inside the Ante home.
+
+Each connection drives its own session. A client's `Shutdown` ends only that client's connection; the host keeps listening. The process exits on `SIGINT` or `SIGTERM`.
+
+:::note
+One host owns a socket path at a time. Ownership is an exclusive lock on a `.lock` file beside the socket: a second `ante serve --sock` on the same path refuses to start rather than stealing the path, so a live host's socket is never pulled out from under its clients. A socket file left behind by a crashed host holds no lock and is replaced on the next start, so a stale file needs no manual cleanup.
+:::
+
 ### WebSocket transport
 
 ```bash
@@ -30,7 +45,7 @@ ante serve --ws 127.0.0.1:8080
 The `--ws` flag starts a WebSocket server on the given address. Each connection gets its own daemon instance. The server loops accepting new connections until a client sends a `Shutdown` operation.
 
 :::note
-`--stdio` and `--ws` are mutually exclusive — you cannot use both at the same time.
+The transport flags are mutually exclusive — pick one of `--stdio`, `--sock`, or `--ws`.
 :::
 
 :::caution
@@ -88,6 +103,47 @@ ante.stdin.write(JSON.stringify({
 }) + "\n");
 ```
 
+## Rust SDK
+
+`ante-sdk` is the Ante client for external programs, so a Rust integration does not have to frame JSONL or manage the host process itself. `connect` returns a `Client` — an op sender and an event receiver — over any transport:
+
+```rust
+use ante_sdk::{ConnectOptions, connect, protocol::{Op, SessionRequest}};
+
+let mut client = connect("stdio".parse()?, ConnectOptions::default()).await?;
+
+client.send(Op::StartSession(SessionRequest {
+    model: Some("claude-sonnet-5".into()),
+    provider: Some("anthropic".into()),
+    ..Default::default()
+})).await?;
+
+client.send(Op::UserInput("explain what this project does".into())).await?;
+
+while let Some(event) = client.next_event().await {
+    println!("{event:?}");
+}
+```
+
+An `Endpoint` names where a host is reachable — never a session. Which session a connection drives is decided by the ops sent over it (`StartSession`, `ResumeSession`):
+
+| Endpoint | What the client does | Host lifetime |
+|---|---|---|
+| `stdio` | Spawns `ante serve --stdio` as its own child | Ends with the connection — dropping the op sender closes the child's stdin |
+| `unix:<path>` | Dials the socket file of an `ante serve --sock` host | Someone else's; the host outlives the connection |
+| `ws://<addr>` | Names a WebSocket host, but is not connectable yet | Someone else's |
+
+Every path yields the same `Client`, and a process that hosts sessions itself gets that same type from its host directly — the in-process channel carries the wire types the remote codecs serialize, so nothing a client can observe differs between them.
+
+`ConnectOptions` is all optional and applies to the spawned host on the `stdio` path: `executable` (defaults to `ante` on `PATH`), `args` appended after `serve --stdio`, `cwd`, and extra `env`. Connecting succeeds at the transport level — the pipe opened, or the socket dialed. There is no greeting, so the first op's reply is the liveness check.
+
+```rust
+// Dial a host someone else is running
+let client = connect("unix:/tmp/ante.sock".parse()?, ConnectOptions::default()).await?;
+```
+
+The crate's `claude` module is unrelated to the Ante protocol: it drives Claude Code as a child process.
+
 ## Differences from headless mode
 
 | | Headless | Server |
@@ -95,7 +151,7 @@ ante.stdin.write(JSON.stringify({
 | **Lifetime** | Single prompt, then exits | Long-lived, multiple interactions |
 | **Input** | CLI argument or stdin pipe | Structured JSONL operations |
 | **Output** | Formatted text (minimal/human/json) | Raw protocol events (JSONL) |
-| **Transport** | N/A | Stdio (default) or WebSocket (`--ws`) |
+| **Transport** | N/A | Stdio (default), Unix socket (`--sock`), or WebSocket (`--ws`) |
 | **Sessions** | Implicit — one per invocation | Explicit — client sends `StartSession` |
 | **Tool approval** | Auto-approved (yolo implied) | Client must respond to `TurnPause` events |
 
@@ -104,6 +160,7 @@ ante.stdin.write(JSON.stringify({
 | Flag | Description |
 |---|---|
 | `--stdio` | Use JSONL over stdin/stdout (default) |
+| `--sock [PATH]` | Serve the protocol over a Unix domain socket (default: `run/serve.sock` in the Ante home) |
 | `--ws <ADDR>` | Serve the protocol over WebSocket on a loopback address |
 | `--offline-model <PATH>` | Boot a local llama-server with this GGUF model and register it as the `local` provider for every connecting client |
 

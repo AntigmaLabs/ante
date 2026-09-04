@@ -5,7 +5,7 @@ description: "Settings file, environment variables, and directory structure"
 
 ## Settings file
 
-Ante stores user preferences in `~/.ante/settings.json`.
+Ante stores user preferences in `~/.ante/settings.json`. A repository can layer its own `.ante/settings.json` on top for everyone working in it — see [Project settings](#project-settings).
 
 Most of these settings can also be viewed and changed interactively with the `/config` command in the TUI — a searchable settings dialog with in-place toggles (tips, ambient predictions, grouped tool activity, short prompt, auto compact, resize reflow, default permission mode, update channel) and shortcuts into the dedicated dialogs (theme, model, provider, status line, MCP servers, offline mode). Changes are persisted to `settings.json` immediately; settings consumed at startup, such as `resize_reflow`, are marked "(next session)" in the dialog and take effect on the next session.
 
@@ -100,9 +100,47 @@ ANTE_PROFILE=review ante -p "review this change"
 ante update --profile work
 ```
 
-The profile `work` reads and writes `~/.ante/work.settings.json`. Profiles are whole-file replacements, not layers: values omitted from an existing profile fall back to Ante defaults, not to `settings.json`. The file must already exist or be a bundled template; an unknown name prints a warning and uses `settings.json` instead of creating a profile. To create one, write or copy `~/.ante/<name>.settings.json` before launching Ante. Profile names may contain lowercase ASCII letters, digits, `-`, and `_`. CLI flags still override the selected profile.
+The profile `work` reads and writes `~/.ante/work.settings.json`. Profiles are whole-file replacements, not layers: values omitted from an existing profile fall back to Ante defaults, not to `settings.json`. The file must already exist or be a bundled template; an unknown name prints a warning and uses `settings.json` instead of creating a profile. To create one, write or copy `~/.ante/<name>.settings.json` before launching Ante. Profile names may contain lowercase ASCII letters, digits, `-`, and `_`. CLI flags still override the selected profile. For per-repository configuration, prefer [project settings](#project-settings): they layer rather than replace, and need no flag.
 
 The built-in `bare` profile ships with Ante: the first `--profile bare` run seeds `~/.ante/bare.settings.json` with onboarding and ambient UI features disabled, plus `auto_memory`, `skills`, and `session_save` set to `false` (and no MCP servers, since the profile defines none). After that it behaves like any other profile — edit the file or change settings in `/config` and they persist. Explicit run flags such as `--enable-auto-memory` still override it per run.
+
+### Project settings
+
+A repository can carry its own settings. When a session starts, Ante walks up from the session's working directory, and the nearest ancestor containing `.ante/settings.json` supplies a **project layer** over your user settings:
+
+```json title=".ante/settings.json"
+{
+  "append_system_prompt": "This repo targets Rust 1.88. Prefer `anyhow` over custom error types.",
+  "exclude_skills": ["deploy-prod"],
+  "auto_compact": true,
+  "permissions": {
+    "deny": ["Bash(terraform apply *)"]
+  }
+}
+```
+
+Unlike [named profiles](#named-profiles), this is a layer, not a replacement: keys the project file omits keep their value from `~/.ante/settings.json`, and only the keys it sets are overridden. Nothing needs to be passed on the command line — checking the file into the repository is enough for everyone working in it.
+
+#### What a project may set
+
+Because `.ante/settings.json` is repository content, it can be written by anyone who can open a pull request. It may therefore **pin or narrow, never widen**. These keys are dropped, with a notice, when they appear in a project file:
+
+| Dropped key | Why |
+|---|---|
+| `permission_mode` | A repository cannot move you to a laxer approval mode |
+| `permissions.allow` | A repository cannot pre-approve tool calls on your behalf |
+| `mcp_servers` | A repository cannot launch new server processes on your machine |
+| `system_prompt` | A repository cannot replace the agent's instructions wholesale |
+| `model` | A repository cannot redirect your traffic to a different model |
+| `provider` | A repository cannot redirect your traffic to a different provider |
+
+Everything else layers normally. `permissions.deny` and `permissions.ask` are *narrowing* rules, so a project can add them — that is the intended way to fence off destructive commands for a repository. `append_system_prompt`, `exclude_skills`, `model_effort`, `tools`, `auto_compact`, and the UI toggles all apply.
+
+#### Checking what applied
+
+`ante doctor` prints a `project` row showing the file it resolved (or that none was found) and any keys it dropped. [`ante rage`](/reference/cli-reference#ante-rage) includes the project file, redacted the same way as the user file, so a bug report carries the settings that were actually in effect.
+
+Project settings are read once, at session start. Editing the file mid-session has no effect until the next session.
 
 ### Status line
 
@@ -295,6 +333,7 @@ All application tracing records that pass the active `RUST_LOG` filter are expor
 ├── projects/          # Per-project auto-memory
 ├── cache/             # WebFetch spill files (48-hour scratch)
 ├── run/jobs/          # Background Bash status and output
+├── run/serve.sock     # Unix socket for `ante serve --sock` (with a .lock sibling)
 ├── tmp/               # Disposable staging (48-hour scratch)
 ├── logs/              # Application logs partitioned by UTC date
 ├── skills/            # User-level skills
@@ -310,6 +349,7 @@ AGENTS.md              # Project instructions
 CLAUDE.md              # Project instructions (fallback when no AGENTS.md)
 
 .ante/
+├── settings.json      # Project settings layered over the user's
 ├── skills/            # Project-specific skills
 └── agents/            # Project-specific sub-agents
 
@@ -346,5 +386,6 @@ See [Storage Reference](/reference/storage-reference) for the complete layout an
 Configuration is resolved in this order (later overrides earlier):
 
 1. Built-in defaults
-2. `~/.ante/settings.json`
-3. CLI flags (`--model`, `--provider`, etc.)
+2. `~/.ante/settings.json` (or `~/.ante/<name>.settings.json` under `--profile`)
+3. The project's `.ante/settings.json`, for the keys it is [allowed to set](#project-settings)
+4. CLI flags (`--model`, `--provider`, etc.)

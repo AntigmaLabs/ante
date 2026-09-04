@@ -74,7 +74,8 @@ Initialize a new session, replacing any session already running. A field supplie
       "enable_auto_memory": null,
       "short_prompt": null,
       "no_skills": null,
-      "save_session": null
+      "save_session": null,
+      "title": null
     }
   },
   "id": "op_..."
@@ -99,19 +100,21 @@ Initialize a new session, replacing any session already running. A field supplie
 | `short_prompt` | `bool?` | Use compact tool descriptions and system prompt to shrink the context footprint. `null` leaves the settings default |
 | `no_skills` | `bool?` | When `true`, skip all skill discovery so no skills are advertised or invocable. `null` leaves the session default |
 | `save_session` | `bool?` | Whether to write a transcript and resumable snapshot. `null` leaves the host's session-saving default |
+| `title` | `string?` | A display name for the session, shown in place of the first message in resume pickers. Trimmed; empty after trimming means no title. `null` starts the session untitled |
 
 `SessionRequest` replaced the former `SessionOverrides` name in `v0.preview.92`. The JSON field names stayed the same, but absence now has one explicit meaning for `StartSession`: resolve the host's default now, never “leave the previous session unchanged.” A client implementing `/clear` should retain and resend its own request, applying any model or permission-mode changes it made; there is no separate restart operation.
 
 ### UpdateSession
 
-Update the active session without restarting it (e.g. switch models or permission mode mid-session). Each field is optional; an absent field is left unchanged. A permission-mode change — what `Shift+Tab` cycling sends from the TUI — takes effect immediately, applying to the turn already in flight as well as later ones; a model change applies on the next turn. Other session options must be set at `StartSession` time.
+Update the active session without restarting it (e.g. switch models or permission mode mid-session). Each field is optional; an absent field is left unchanged. A permission-mode change — what `Shift+Tab` cycling sends from the TUI — takes effect immediately, applying to the turn already in flight as well as later ones; a model change applies on the next turn. A `title` change applies at once and is echoed back on the `SessionUpdated` event. Other session options must be set at `StartSession` time.
 
 ```json
 {
   "op": {
     "UpdateSession": {
       "model": { "id": "gpt-5.4", "temperature": 0.2, "effort": "high" },
-      "permission_mode": "auto"
+      "permission_mode": "auto",
+      "title": "auth refactor"
     }
   },
   "id": "op_..."
@@ -124,6 +127,7 @@ Update the active session without restarting it (e.g. switch models or permissio
 |---|---|---|
 | `model` | `ModelSpec?` | New model specification to use. Carries the whole request, `effort` included: a set `effort` overrides the catalog default; unset fields resolve from the catalog |
 | `permission_mode` | `PermissionMode?` | New permission mode (`"strict"`, `"auto"`, or `"yolo"`) |
+| `title` | `string?` | Rename the session. The text is trimmed; an empty or whitespace-only string clears the title |
 
 ### ResumeSession
 
@@ -322,7 +326,7 @@ Emitted when a session is initialized. It announces the session identity, mutabl
 }
 ```
 
-**SessionInitialized fields:**
+**SessionInfo fields:**
 
 | Field | Type | Description |
 |---|---|---|
@@ -333,6 +337,7 @@ Emitted when a session is initialized. It announces the session identity, mutabl
 | `permission_mode` | `PermissionMode` | Active permission mode (`"strict"`, `"auto"`, or `"yolo"`) |
 | `skills` | `SkillMetadata[]` | Skills the user can invoke in this session. Defaults to an empty list when absent for backward compatibility |
 | `subagents` | `SubagentMetadata[]` | Subagents this session can delegate to. Defaults to an empty list when absent for backward compatibility |
+| `title` | `string?` | The session's [title](/usage/tui#session-title) when one is set — chosen by the user or the client, never derived from the conversation. Omitted from the payload entirely when unset |
 
 The embedded `ModelSpec` uses the model fields documented in the [Catalog Reference](/reference/catalog-reference#model-fields). Since `v0.preview.92`, its optional `supported_efforts` field carries a custom model's accepted effort ladder; it replaces the old output-only `effort_options` field.
 
@@ -343,6 +348,8 @@ The embedded `ModelSpec` uses the model fields documented in the [Catalog Refere
 | `id` | `string` | Provider key, e.g. `"anthropic"` (accepts `name` as a legacy alias) |
 | `display_name` | `string` | Friendly name for display |
 | `base_url` | `string` | Endpoint actually in use for this session — environment overrides can move it away from the catalog default |
+
+The payload type was named `SessionInitialized` before `v0.preview.94` and is now `SessionInfo`. This is a Rust type name only — the event names (`SessionStart`, `SessionUpdated`) and the JSON are unchanged, so no client needs to adapt.
 
 `ProviderSpec` deliberately carries only what a client cannot look up for itself. The provider's model list is not on the wire; it is identical for every session and is published by [`ante catalog`](/reference/cli-reference#ante-catalog). Unknown fields are ignored, so payloads from older daemons that still send `preferred_models` decode fine.
 
@@ -779,6 +786,15 @@ For external clients using `ante serve` (or `ante serve --stdio`), `StdioTranspo
 - **EOF on stdin** → Automatically sends `Op::Shutdown`
 - **`Evt::Goodbye` received** → Transport exits
 - **JSON parse errors** → An `Evt::Error` is sent back on stdout
+
+### Unix socket transport
+
+For clients that dial a host someone else is running, `ante serve --sock [PATH]` listens on a Unix domain socket (default `run/serve.sock` in the Ante home) and exchanges the same JSONL protocol over the stream:
+
+- Each connection gets its own daemon instance
+- `Op::Shutdown` ends only that connection; the host keeps accepting new ones
+- The host process exits on `SIGINT` or `SIGTERM`
+- Ownership is an exclusive lock on a `.lock` file beside the socket, so a second host on the same path refuses to start rather than displacing the live one; a stale socket left by a crashed host holds no lock and is replaced
 
 ### WebSocket transport
 

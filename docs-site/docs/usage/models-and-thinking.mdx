@@ -38,7 +38,7 @@ In `/models`, effort is a slider under the model list with one tick per level th
 
 The ladder is built in per provider and model family. For custom providers you can declare it yourself with `supported_efforts` on the model's catalog entry (see the [Catalog Reference](/reference/catalog-reference#model-fields)) — or run `/add-provider`, which probes the endpoint and writes the declaration for you.
 
-Anthropic exposes `xhigh` on Claude Sonnet 5 and Opus 5, Opus 4.7/4.8, and the always-thinking Fable/Mythos 5 family. Opus and Sonnet 4.6 retain their four active adaptive levels (`low` through `high`, then `max`) plus the `min` off position.
+Anthropic exposes `xhigh` on Claude Sonnet 5 and Opus 5, Opus 4.7/4.8, and the always-thinking Fable/Mythos 5 family. Opus and Sonnet 4.6 retain their four active adaptive levels (`low` through `high`, then `max`) plus the `min` off position. Gemini 3.7 and 3.8 expose exactly `low`, `medium`, and `high` — a requested `xhigh` or `max` rounds down to `high`.
 
 :::note
 Anthropic's API requires `temperature: 1` whenever thinking is active. If you've set a different `temperature` for a Claude model in your [catalog](/reference/catalog-reference#model-fields) or via `MODEL_TEMPERATURE`, turns with thinking on fail with a message saying so — clear the override to fix it.

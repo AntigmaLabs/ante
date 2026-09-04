@@ -15,7 +15,7 @@ ante [OPTIONS] [COMMAND]
 |---|---|
 | `ante` | Start the interactive TUI. If `-p` / `--prompt` is provided, run in headless mode instead. |
 | `ante auth` | Manage provider sign-in without starting an agent session. |
-| `ante serve` | Run a long-lived JSONL or WebSocket protocol server. |
+| `ante serve` | Run a long-lived protocol server over stdio, a Unix socket, or WebSocket. |
 | `ante gateway` | Run the Slack / Discord channel gateway. |
 | `ante update` | Check for the latest Ante release and install it if available. |
 | `ante offline` | Manage the local inference engine used by offline mode. |
@@ -116,12 +116,13 @@ ante auth login --no-browser
 ante serve [OPTIONS]
 ```
 
-Server mode exposes the Ante protocol over stdin/stdout by default, or over WebSocket when `--ws` is provided.
+Server mode exposes the Ante protocol over stdin/stdout by default, over a Unix domain socket when `--sock` is provided, or over WebSocket when `--ws` is provided.
 
 | Flag | Description |
 |---|---|
-| `--stdio` | Serve the JSONL protocol over stdin/stdout. This is the default transport. |
-| `--ws <ADDR>` | Serve the protocol over WebSocket on the given loopback socket address. Conflicts with `--stdio`. |
+| `--stdio` | Serve the JSONL protocol over stdin/stdout. This is the default transport. The three transport flags are mutually exclusive. |
+| `--sock [PATH]` | Serve the protocol over a Unix domain socket. Defaults to `run/serve.sock` in the Ante home when no path is given. |
+| `--ws <ADDR>` | Serve the protocol over WebSocket on the given loopback socket address. |
 | `--offline-model <PATH>` | Load a local GGUF model at startup for offline mode. |
 | `-h`, `--help` | Print command help. |
 
@@ -135,10 +136,18 @@ The global `--profile` flag remains accepted and selects the settings file used 
 `--ws` accepts loopback addresses only (`127.0.0.0/8`, `::1`). A non-loopback address such as `0.0.0.0:8080` is refused before the listener binds — the protocol is unauthenticated, so exposing it beyond the local machine would hand any reachable client full tool access. To reach the daemon from elsewhere, front it with an SSH tunnel or an authenticating reverse proxy.
 :::
 
+:::note
+One host owns a socket at a time. `--sock` takes an exclusive lock on a `.lock` file beside the socket, so a second `ante serve --sock` on the same path refuses to start and leaves the running host's socket untouched. A socket file left behind by a crashed host holds no lock and is replaced on the next start.
+
+Each client connection drives its own session. A client's `Shutdown` ends only that connection — the host keeps listening, and exits on `SIGINT` or `SIGTERM`.
+:::
+
 ### Examples
 
 ```bash
 ante serve
+ante serve --sock                        # ~/.ante/run/serve.sock
+ante serve --sock /tmp/ante.sock
 ante serve --ws 127.0.0.1:8080
 ```
 
@@ -235,6 +244,8 @@ The archive contains:
 | `catalog.redacted.json` | `~/.ante/catalog.json` with secrets removed, included only when a custom catalog exists. |
 | `logs/` | Recent application and crash logs, filtered and scrubbed; each copy is prefixed with its date (`<date>-<name>`). `DEBUG`/`TRACE` lines are dropped so request bodies never enter the bundle. |
 
+When a [project settings](/configuration/preference#project-settings) file applies to the directory you collect from, its `.ante/settings.json` is included too, redacted the same way as the user file — so the bundle shows the settings that were actually in effect.
+
 By default the newest logs are collected, up to 10 files or 10 MB (crash logs are always prioritized). Use `--since` to collect everything within a time window instead.
 
 | Flag | Description |
@@ -277,7 +288,7 @@ ante doctor
 
 Boot the same runtime a real launch uses — load the merged catalog, start a daemon session, and render the first TUI frame — then print a readiness report with per-phase timings. Use it to confirm Ante is installed and configured correctly, or as a CI smoke test ("does Ante boot, does the first frame render").
 
-It needs no TTY and no API key: MCP warm-up is skipped and the session reaches readiness from the catalog alone. The report lists four checks — `home` (the Ante home and input history are writable), `catalog` (provider/model counts), `session` (the resolved `provider/model`), and `first frame` (the headless render) — followed by a total. Warnings (such as no authenticated provider, a skipped catalog entry, or a `settings.json` parse notice) are listed below the table. `doctor` exits non-zero if any hard check fails, including an unwritable Ante home, so it works in scripts.
+It needs no TTY and no API key: MCP warm-up is skipped and the session reaches readiness from the catalog alone. The report lists five checks — `home` (the Ante home and input history are writable), `catalog` (provider/model counts), `project` (the [project settings](/configuration/preference#project-settings) file that applies to this directory, or that none was found), `session` (the resolved `provider/model`), and `first frame` (the headless render) — followed by a total. Warnings (such as no authenticated provider, a skipped catalog entry, a `settings.json` parse notice, or a key dropped from a project settings file) are listed below the table. `doctor` exits non-zero if any hard check fails, including an unwritable Ante home, so it works in scripts.
 
 ### Examples
 

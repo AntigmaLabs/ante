@@ -28,6 +28,7 @@ description: "在交互式 TUI 终端中用于常用操作的内置命令"
 | `/usage` | 查看当前会话累计的 Token 消耗 —— 各模型 Token 计数、缓存命中率与轮次统计（参见[会话消耗统计](/usage/tui#session-usage)） |
 | `/welcome` | 显示欢迎/引导配置对话框 |
 | `/resume` | 恢复当前目录下此前保存的会话 |
+| `/rename [title]` | 为当前会话设置标题，显示在恢复选择器与终端标签页中；不带参数时清除标题（参见[会话标题](/usage/tui#session-title)） |
 | `/resume-claude [id]` | 在当前目录中继续接管最近的 Claude Code 会话（内置技能 —— 参见[从 Claude Code 或 Codex 迁移](/usage/tui#coming-from-claude-code-or-codex)） |
 | `/resume-codex [id]` | 在当前目录中接管最近的 Codex 会话（内置技能） |
 | `/import-claude` | 将当前目录下的 Claude Code 项目记忆复制到 Ante 的[项目记忆库](/extend/memory#importing-claude-code-memory) |
@@ -50,3 +51,4 @@ description: "在交互式 TUI 终端中用于常用操作的内置命令"
 - `/models` 与 `/providers` 相互协同；参见[模型选择、提供商与思考深度](/usage/models-and-thinking)。
 - `/goal` 驱动[目标导向型会话](/usage/goal-sessions)：持续工作直至满足成功条件。
 - `/resume` 恢复历史对话；参见[会话恢复](/usage/tui#session-resume)。
+- `/rename` 为当前会话命名，使 `/resume` 能按名称展示；参见[会话标题](/usage/tui#session-title)。

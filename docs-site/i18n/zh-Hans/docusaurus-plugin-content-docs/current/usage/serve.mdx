@@ -22,6 +22,21 @@ ante serve --stdio
 
 `--stdio` 参数为可选 —— stdio 是默认传输方式。守护进程从 stdin 逐行读取 `OpMsg` JSON 对象，并将 `EventMsg` JSON 对象逐行写入 stdout。
 
+### Unix 套接字传输 {#unix-socket-transport}
+
+```bash
+ante serve --sock                 # ~/.ante/run/serve.sock
+ante serve --sock /tmp/ante.sock
+```
+
+`--sock` 将协议托管在 Unix 域套接字上，因此生命周期长于单次连接的客户端可以直接连入宿主，而无需每次都拉起一个新进程。未指定路径时，套接字位于 Ante 主目录下的 `run/serve.sock`。
+
+每个连接驱动各自的会话。某个客户端的 `Shutdown` 只结束该客户端的连接，宿主继续监听；宿主进程在收到 `SIGINT` 或 `SIGTERM` 时退出。
+
+:::note
+同一时刻只有一个宿主拥有某个套接字路径。所有权由套接字旁 `.lock` 文件上的排他锁表示：同一路径上的第二个 `ante serve --sock` 会拒绝启动，而不是抢占该路径，因此正在运行的宿主不会被从其客户端下方抽走。崩溃遗留的套接字文件不持有锁，会在下次启动时被替换，无需手动清理。
+:::
+
 ### WebSocket 传输 {#websocket-transport}
 
 ```bash
@@ -31,7 +46,7 @@ ante serve --ws 127.0.0.1:8080
 `--ws` 参数在指定地址上启动 WebSocket 服务端。每个连接均拥有独立的守护进程实例。服务端持续循环接受新连接，直到收到 `Shutdown` 操作指令。
 
 :::note
-`--stdio` 与 `--ws` 互斥 —— 不能同时使用。
+传输方式参数互斥 —— 只能在 `--stdio`、`--sock`、`--ws` 中选择其一。
 :::
 
 :::caution
@@ -89,6 +104,47 @@ ante.stdin.write(JSON.stringify({
 }) + "\n");
 ```
 
+## Rust SDK {#rust-sdk}
+
+`ante-sdk` 是面向外部程序的 Ante 客户端，因此 Rust 集成无需自行处理 JSONL 分帧或管理宿主进程。`connect` 会返回一个 `Client` —— 即一个 op 发送端与一个事件接收端 —— 适用于任意传输方式：
+
+```rust
+use ante_sdk::{ConnectOptions, connect, protocol::{Op, SessionRequest}};
+
+let mut client = connect("stdio".parse()?, ConnectOptions::default()).await?;
+
+client.send(Op::StartSession(SessionRequest {
+    model: Some("claude-sonnet-5".into()),
+    provider: Some("anthropic".into()),
+    ..Default::default()
+})).await?;
+
+client.send(Op::UserInput("explain what this project does".into())).await?;
+
+while let Some(event) = client.next_event().await {
+    println!("{event:?}");
+}
+```
+
+`Endpoint` 描述的是宿主在哪里可达 —— 而非某个会话。连接驱动哪个会话，由其上发送的 op（`StartSession`、`ResumeSession`）决定：
+
+| Endpoint | 客户端行为 | 宿主生命周期 |
+|---|---|---|
+| `stdio` | 将 `ante serve --stdio` 作为自身子进程拉起 | 随连接结束 —— 丢弃 op 发送端即关闭子进程的 stdin |
+| `unix:<path>` | 连接某个 `ante serve --sock` 宿主的套接字文件 | 属于他人；宿主的生命周期长于该连接 |
+| `ws://<addr>` | 指向一个 WebSocket 宿主，但目前尚不可连接 | 属于他人 |
+
+每种方式都产出同一个 `Client`；自身托管会话的进程也直接从其宿主获得同一类型 —— 进程内通道传递的正是远程编解码器所序列化的协议类型，因此客户端所能观察到的一切并无差别。
+
+`ConnectOptions` 全部字段可选，且仅作用于 `stdio` 路径上拉起的宿主：`executable`（默认为 `PATH` 上的 `ante`）、追加在 `serve --stdio` 之后的 `args`、`cwd`，以及额外的 `env`。连接成功仅代表传输层成功 —— 管道已打开，或套接字已连上。协议没有握手问候，因此第一个 op 的回复才是存活性检查。
+
+```rust
+// 连接他人正在运行的宿主
+let client = connect("unix:/tmp/ante.sock".parse()?, ConnectOptions::default()).await?;
+```
+
+该 crate 的 `claude` 模块与 Ante 协议无关：它用于将 Claude Code 作为子进程驱动。
+
 ## 服务模式与无头模式的区别 {#differences-from-headless-mode}
 
 | | 无头模式（Headless） | 服务模式（Server） |
@@ -96,7 +152,7 @@ ante.stdin.write(JSON.stringify({
 | **生命周期** | 执行单次提示词后退出 | 长寿命常驻，支持多轮持续交互 |
 | **输入方式** | CLI 参数或 stdin 管道 | 结构化 JSONL 操作指令 |
 | **输出形式** | 格式化文本（minimal/human/json） | 原始协议事件流（JSONL） |
-| **传输层** | 无 | Stdio（默认）或 WebSocket (`--ws`) |
+| **传输层** | 无 | Stdio（默认）、Unix 套接字 (`--sock`) 或 WebSocket (`--ws`) |
 | **会话管理** | 隐式创建 —— 单次调用对应单会话 | 显式声明 —— 客户端发送 `StartSession` |
 | **工具审批** | 自动批准（默认隐式 yolo） | 客户端必须主动响应 `TurnPause` 事件 |
 
@@ -105,6 +161,7 @@ ante.stdin.write(JSON.stringify({
 | 参数标识 | 说明 |
 |---|---|
 | `--stdio` | 通过 stdin/stdout 提供 JSONL 协议服务（默认） |
+| `--sock [PATH]` | 通过 Unix 域套接字提供协议服务（默认为 Ante 主目录下的 `run/serve.sock`） |
 | `--ws <ADDR>` | 在本地回环地址上通过 WebSocket 提供协议服务 |
 | `--offline-model <PATH>` | 自动使用指定的 GGUF 模型拉起本地 llama-server，并将其作为 `local` 提供商注册给所有接入客户端 |
 

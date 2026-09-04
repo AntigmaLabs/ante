@@ -39,6 +39,8 @@ min · low · medium · high · xhigh · max
 
 每个提供商和模型家族的档位通常由 Ante 内置。对于自定义提供商，可以在模型目录条目中使用 `supported_efforts` 自行声明（参见[目录参考手册](/reference/catalog-reference#model-fields)），也可以运行 `/add-provider`，让它探测端点并写入声明。
 
+Anthropic 在 Claude Sonnet 5、Opus 5、Opus 4.7/4.8 以及始终开启思考的 Fable/Mythos 5 家族上提供 `xhigh`；Opus 与 Sonnet 4.6 保留其四个自适应档位（`low` 到 `high`，再到 `max`）以及关闭位 `min`。Gemini 3.7 与 3.8 仅提供 `low`、`medium`、`high` 三档 —— 请求 `xhigh` 或 `max` 会向下取整为 `high`。
+
 :::note
 Anthropic API 规定：开启 Extended Thinking 时 `temperature` 必须为 `1`。如果在[目录配置](/reference/catalog-reference#model-fields)或环境变量 `MODEL_TEMPERATURE` 中设置了其他温度，开启思考的轮次会报错提示 —— 清除温度覆盖即可恢复正常。
 :::

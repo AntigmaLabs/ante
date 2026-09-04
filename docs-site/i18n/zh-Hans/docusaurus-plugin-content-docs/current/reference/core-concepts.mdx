@@ -48,7 +48,7 @@ Ante 在客户端（TUI 或无头运行器）与守护进程 Daemon 之间采用
 | 操作指令 (Op) | 载荷参数 (Payload) | 说明 |
 |---|---|---|
 | `StartSession` | `SessionRequest` | 初始化新会话；已设置字段会固定，未设置字段从主机当前默认值解析 |
-| `UpdateSession` | `SessionUpdate` | 在不重启的情况下原地更新活跃会话（例如切换模型） |
+| `UpdateSession` | `SessionUpdate` | 在不重启的情况下原地更新活跃会话（例如切换模型，或重命名会话） |
 | `ResumeSession` | `session_id` | 恢复此前持久化保存的历史会话 |
 | `UserInput` | `String` | 提交用户输入的提示词内容 |
 | `ShellInput` | `String` | 在守护进程端运行 Shell 命令，不启动智能体轮次 |
@@ -71,8 +71,8 @@ Ante 在客户端（TUI 或无头运行器）与守护进程 Daemon 之间采用
 
 | 状态事件 (Evt) | 载荷参数 (Payload) | 说明 |
 |---|---|---|
-| `SessionStart` | `SessionInitialized` | 会话初始化就绪，包含身份、可变设置、技能与子智能体 |
-| `SessionUpdated` | `SessionInitialized` | 会话属性已原地更新，并重复会话已装备的技能与子智能体 |
+| `SessionStart` | `SessionInfo` | 会话初始化就绪，包含身份、可变设置、可选标题、技能与子智能体 |
+| `SessionUpdated` | `SessionInfo` | 会话属性已原地更新，并重复会话已装备的技能与子智能体 |
 | `SessionEnd` | `session_id`, `reason`, `usage` | 会话终止并提供最终用量统计 |
 | `TurnStart` | `turn_id` | 新轮次已开始 |
 | `TurnPause` | `turn_id`, `reason` | 轮次暂停（例如等待工具调用审批） |

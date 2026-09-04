@@ -23,7 +23,7 @@ Ante follows a clean separation of concerns with a client-daemon architecture. T
 
 - **Client** — The user-facing layer. The ratatui-based TUI, headless CLI runner, or an external process connected via `ante serve`. Sends `Op` operations and renders `Evt` events.
 - **Daemon** — The core engine. Receives operations, manages sessions, dispatches to LLM providers, schedules tool execution, and emits events.
-- **Transport** — Bounded async channels (Tokio) for in-process clients (TUI, headless), JSONL over stdin/stdout for external clients (`ante serve --stdio`), or WebSocket for networked clients (`ante serve --ws`). Message IDs enable tracing across the boundary.
+- **Transport** — Bounded async channels (Tokio) for in-process clients (TUI, headless), JSONL over stdin/stdout for external clients (`ante serve --stdio`), a Unix domain socket for local clients that dial a shared host (`ante serve --sock`), or WebSocket for networked clients (`ante serve --ws`). Message IDs enable tracing across the boundary.
 
 ## Architecture direction: Session-centric to Agent-centric
 

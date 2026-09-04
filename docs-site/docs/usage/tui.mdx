@@ -100,7 +100,7 @@ Ante persists every session to disk. Use `/resume` to pick up a previous convers
 ### How it works
 
 1. Type `/resume` to open the session picker
-2. Browse sessions scoped to the current working directory — each entry shows the first message, model, message count, and relative time
+2. Browse sessions scoped to the current working directory — each entry shows its [title](#session-title), or the first message when it has none, along with the model, message count, and relative time
 3. Press **Enter** to select, or **Esc** to cancel
 4. Press **d** (or **Delete**) to delete the selected session — press **d** again to confirm, any other key cancels. The currently active session can't be deleted
 
@@ -115,6 +115,19 @@ Sessions are stored in `~/.ante/sessions/{session_id}/` with atomic writes for c
 :::tip
 You can also resume from the CLI with `ante --resume <SESSION_ID>` (or `-r`) in either TUI or headless mode. The session ID is printed when a TUI session exits.
 :::
+
+### Session title
+
+A session can carry a title — a name you choose, never one derived from the conversation:
+
+```
+/rename auth refactor
+/rename                 # clears the title
+```
+
+The title shows in the `/resume` picker in place of the first message, so a long-running session is recognizable by what it is for rather than by how it opened. It also follows into the terminal tab, which makes several Ante windows tellable apart at a glance, and it survives a resume — rename once and the label sticks.
+
+Whitespace around the title is trimmed, and a title that is empty after trimming clears it.
 
 ### Coming from Claude Code or Codex
 

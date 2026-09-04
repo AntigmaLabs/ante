@@ -16,7 +16,7 @@ ante [OPTIONS] [COMMAND]
 |---|---|
 | `ante` | 启动交互式 TUI 终端。若提供了 `-p` / `--prompt`，则以无头模式运行。 |
 | `ante auth` | 管理提供商的登录认证，无需拉起完整的智能体对话。 |
-| `ante serve` | 运行长寿命的 JSONL 或 WebSocket 协议服务端。 |
+| `ante serve` | 运行长寿命的协议服务端，支持 stdio、Unix 套接字或 WebSocket。 |
 | `ante gateway` | 运行接入 Slack / Discord 的消息网关。 |
 | `ante update` | 检查最新版本的 Ante 并自动安装。 |
 | `ante offline` | 管理离线模式使用的本地推理引擎。 |
@@ -106,12 +106,13 @@ ante auth login --no-browser
 ante serve [OPTIONS]
 ```
 
-服务模式默认在 stdin/stdout 上暴露 Ante 协议，或在传入 `--ws` 时通过 WebSocket 提供服务。
+服务模式默认在 stdin/stdout 上暴露 Ante 协议；传入 `--sock` 时通过 Unix 域套接字提供服务，传入 `--ws` 时通过 WebSocket 提供服务。
 
 | 参数标识 | 说明 |
 |---|---|
-| `--stdio` | 通过 stdin/stdout 提供 JSONL 协议服务（默认传输方式）。 |
-| `--ws <ADDR>` | 在给定的本地回环地址上通过 WebSocket 提供服务。与 `--stdio` 互斥。 |
+| `--stdio` | 通过 stdin/stdout 提供 JSONL 协议服务（默认传输方式）。三个传输方式参数互斥。 |
+| `--sock [PATH]` | 通过 Unix 域套接字提供服务。未指定路径时默认为 Ante 主目录下的 `run/serve.sock`。 |
+| `--ws <ADDR>` | 在给定的本地回环地址上通过 WebSocket 提供服务。 |
 | `--offline-model <PATH>` | 启动时加载本地 GGUF 模型以供离线模式使用。 |
 | `-h`, `--help` | 打印帮助信息。 |
 
@@ -123,10 +124,18 @@ ante serve [OPTIONS]
 `--ws` 仅接受本地回环地址（`127.0.0.0/8`、`::1`）。非回环地址（如 `0.0.0.0:8080`）会在绑定前被直接拒绝 —— 由于该协议未设身份认证，暴露给外部网络将赋予接入方在机器上执行任意工具的完全权限。若需远程连接，请使用 SSH 隧道或带身份验证的反向代理。
 :::
 
+:::note
+同一时刻只有一个宿主拥有某个套接字路径。`--sock` 会在套接字旁的 `.lock` 文件上获取排他锁，因此同一路径上的第二个 `ante serve --sock` 会拒绝启动，并保持正在运行的宿主的套接字不受影响。崩溃遗留的套接字文件不持有锁，会在下次启动时被替换。
+
+每个客户端连接驱动各自的会话。某个客户端的 `Shutdown` 只结束该连接 —— 宿主继续监听，并在收到 `SIGINT` 或 `SIGTERM` 时退出。
+:::
+
 ### 使用示例 {#ante-serve-examples}
 
 ```bash
 ante serve
+ante serve --sock                        # ~/.ante/run/serve.sock
+ante serve --sock /tmp/ante.sock
 ante serve --ws 127.0.0.1:8080
 ```
 
@@ -222,6 +231,8 @@ ante rage [OPTIONS]
 | `catalog.redacted.json` | 移除敏感信息后的 `~/.ante/catalog.json`（存在自定义目录时包含）。 |
 | `logs/` | 最近的应用程序与崩溃日志（过滤剥离 `DEBUG`/`TRACE`，避免请求体进入归档）。 |
 
+当收集目录适用某个[项目设置](/configuration/preference#project-settings)文件时，其 `.ante/settings.json` 也会一并收录，脱敏方式与用户设置文件相同 —— 使问题报告能反映实际生效的配置。
+
 默认收集最新的日志文件（最多 10 个文件或 10 MB，崩溃日志优先）。使用 `--since` 可指定时间窗口。
 
 | 参数标识 | 说明 |
@@ -264,7 +275,7 @@ ante doctor
 
 启动与真实运行相同的运行时 —— 加载合并目录、初始化守护进程会话并渲染首帧 TUI —— 随后打印各阶段耗时的就绪报告。用于确认 Ante 是否安装配置正确，或作为 CI 冒烟测试。
 
-无需 TTY 和 API 密钥：跳过 MCP 预热，直接基于目录进入就绪状态。报告包含四项检查 —— `home`（Ante 目录与输入历史可写性）、`catalog`（提供商/模型计数）、`session`（解析的提供商/模型）以及 `first frame`（无头渲染），最后输出总耗时。若任何硬性检查失败（如目录不可写），`doctor` 会返回非零退出码。
+无需 TTY 和 API 密钥：跳过 MCP 预热，直接基于目录进入就绪状态。报告包含五项检查 —— `home`（Ante 目录与输入历史可写性）、`catalog`（提供商/模型计数）、`project`（适用于当前目录的[项目设置](/configuration/preference#project-settings)文件，或提示未找到）、`session`（解析的提供商/模型）以及 `first frame`（无头渲染），最后输出总耗时。警告（例如未认证的提供商、被跳过的目录条目、`settings.json` 解析提示，或项目设置文件中被丢弃的键）列在表格下方。若任何硬性检查失败（如目录不可写），`doctor` 会返回非零退出码。
 
 ### 使用示例 {#ante-doctor-examples}
 

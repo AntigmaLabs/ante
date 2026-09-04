@@ -48,7 +48,7 @@ Operations (`Op`) are sent from the client to the daemon, wrapped in an `OpMsg` 
 | Op | Payload | Description |
 |---|---|---|
 | `StartSession` | `SessionRequest` | Initialize a new session; set fields are pinned and unset fields resolve from the host's current defaults |
-| `UpdateSession` | `SessionUpdate` | Update the active session (e.g. switch models) without restarting |
+| `UpdateSession` | `SessionUpdate` | Update the active session (e.g. switch models, or rename it) without restarting |
 | `ResumeSession` | `session_id` | Resume a previously persisted session |
 | `UserInput` | `String` | Submit a user prompt |
 | `ShellInput` | `String` | Run a daemon-side shell command without starting an agent turn |
@@ -71,8 +71,8 @@ Events (`Evt`) are sent from the daemon to the client, wrapped in an `EventMsg` 
 
 | Evt | Payload | Description |
 |---|---|---|
-| `SessionStart` | `SessionInitialized` | Session initialized with identity, mutable settings, skills, and subagents |
-| `SessionUpdated` | `SessionInitialized` | Session updated in place, repeating the session's equipped skills and subagents |
+| `SessionStart` | `SessionInfo` | Session initialized with identity, mutable settings, optional title, skills, and subagents |
+| `SessionUpdated` | `SessionInfo` | Session updated in place, repeating the session's equipped skills and subagents |
 | `SessionEnd` | `session_id`, `reason`, `usage` | Session terminated with final usage accounting |
 | `TurnStart` | `turn_id` | A new turn has begun |
 | `TurnPause` | `turn_id`, `reason` | Turn paused (e.g. waiting for tool approval) |

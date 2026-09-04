@@ -75,7 +75,8 @@ Ante 在客户端（Client）与守护进程（Daemon）之间采用强类型的
       "enable_auto_memory": null,
       "short_prompt": null,
       "no_skills": null,
-      "save_session": null
+      "save_session": null,
+      "title": null
     }
   },
   "id": "op_..."
@@ -100,19 +101,21 @@ Ante 在客户端（Client）与守护进程（Daemon）之间采用强类型的
 | `short_prompt` | `bool?` | 启用紧凑工具描述与系统提示词以减小上下文占用。`null` 时采用配置默认值 |
 | `no_skills` | `bool?` | 为 `true` 时跳过所有技能发现，不声明或调用任何技能。`null` 时采用会话默认值 |
 | `save_session` | `bool?` | 是否写入对话记录与可恢复快照。`null` 保留主机的会话保存默认值 |
+| `title` | `string?` | 会话的展示名称，在恢复选择器中替代首条消息显示。文本两端会被裁剪，裁剪后为空即视为无标题。`null` 表示会话以无标题启动 |
 
 `SessionRequest` 在 `v0.preview.92` 中取代旧名称 `SessionOverrides`。JSON 字段名保持不变，但对 `StartSession` 而言，缺省值现在只有一个明确含义：立即解析主机默认值，而不是“保留上一会话不变”。实现 `/clear` 的客户端应自行保留并重新发送其请求，同时合并用户做过的模型或权限模式变更；协议中没有独立的重启操作。
 
 ### UpdateSession {#updatesession}
 
-在不重启的情况下原地更新活跃会话（例如在会话中切换模型或权限模式）。每个字段均为可选；省略的字段保持不变。权限模式的变更（如 TUI 中按 `Shift+Tab` 循环切换）会立即生效，适用于当前正在运行以及后续的轮次；模型变更在下一轮 Turn 开始时生效。其他会话选项必须在 `StartSession` 时设定。
+在不重启的情况下原地更新活跃会话（例如在会话中切换模型或权限模式）。每个字段均为可选；省略的字段保持不变。权限模式的变更（如 TUI 中按 `Shift+Tab` 循环切换）会立即生效，适用于当前正在运行以及后续的轮次；模型变更在下一轮 Turn 开始时生效。`title` 变更立即生效，并通过 `SessionUpdated` 事件回传。其他会话选项必须在 `StartSession` 时设定。
 
 ```json
 {
   "op": {
     "UpdateSession": {
       "model": { "id": "gpt-5.4", "temperature": 0.2, "effort": "high" },
-      "permission_mode": "auto"
+      "permission_mode": "auto",
+      "title": "auth refactor"
     }
   },
   "id": "op_..."
@@ -125,6 +128,7 @@ Ante 在客户端（Client）与守护进程（Daemon）之间采用强类型的
 |---|---|---|
 | `model` | `ModelSpec?` | 要使用的新模型规格。携带完整请求参数（包含 `effort`）：设置的 `effort` 将覆盖目录默认值；未设置的字段从目录中解析 |
 | `permission_mode` | `PermissionMode?` | 新的权限模式（`"strict"`、`"auto"` 或 `"yolo"`） |
+| `title` | `string?` | 重命名会话。文本两端会被裁剪；传入空字符串或仅含空白的字符串即清除标题 |
 
 ### ResumeSession {#resumesession}
 
@@ -323,7 +327,7 @@ Ante 在客户端（Client）与守护进程（Daemon）之间采用强类型的
 }
 ```
 
-**SessionInitialized 字段说明：**
+**SessionInfo 字段说明：**
 
 | 字段 | 类型 | 说明 |
 |---|---|---|
@@ -334,6 +338,7 @@ Ante 在客户端（Client）与守护进程（Daemon）之间采用强类型的
 | `permission_mode` | `PermissionMode` | 当前活跃的权限模式（`"strict"`、`"auto"` 或 `"yolo"`） |
 | `skills` | `SkillMetadata[]` | 用户可在此会话中调用的 Skills；缺省时为兼容旧版本默认空列表 |
 | `subagents` | `SubagentMetadata[]` | 此会话可委派的子智能体；缺省时为兼容旧版本默认空列表 |
+| `title` | `string?` | 已设置时为会话的[标题](/usage/tui#session-title) —— 由用户或客户端指定，绝不会从对话内容中推断。未设置时该字段整体从载荷中省略 |
 
 其中的 `ModelSpec` 使用[目录参考手册](/reference/catalog-reference#model-fields)列出的模型字段。自 `v0.preview.92` 起，可选字段 `supported_efforts` 用于携带自定义模型接受的思考深度档位，并取代旧的仅输出字段 `effort_options`。
 
@@ -344,6 +349,8 @@ Ante 在客户端（Client）与守护进程（Daemon）之间采用强类型的
 | `id` | `string` | 提供商 Key，例如 `"anthropic"`（兼容支持历史别名 `name`） |
 | `display_name` | `string` | 展示名称 |
 | `base_url` | `string` | 当前会话实际使用的端点地址 —— 环境变量覆盖可能会使其不同于目录默认值 |
+
+该载荷类型在 `v0.preview.94` 之前名为 `SessionInitialized`，现已更名为 `SessionInfo`。这仅是 Rust 类型名称的变更 —— 事件名（`SessionStart`、`SessionUpdated`）与 JSON 均保持不变，客户端无需适配。
 
 `ProviderSpec` 有意仅传递客户端无法自行查询的信息。提供商的模型列表不包含在协议消息中；它对每个会话完全相同，并通过 [`ante catalog`](/reference/cli-reference#ante-catalog) 发布。未知字段会被忽略，因此仍会发送 `preferred_models` 的旧版守护进程载荷能够正常兼容解码。
 
@@ -780,6 +787,15 @@ Skills 技能、子智能体或 MCP 服务器刷新时触发。`SessionStart` �
 - **stdin EOF** → 自动发送 `Op::Shutdown`
 - **收到 `Evt::Goodbye`** → 传输层退出
 - **JSON 解析失败** → 向 stdout 回复 `Evt::Error`
+
+### Unix 套接字传输 {#unix-socket-transport}
+
+对于需要连入他人已启动宿主的客户端，`ante serve --sock [PATH]` 会监听一个 Unix 域套接字（默认为 Ante 主目录下的 `run/serve.sock`），并在该字节流上交换同样的 JSONL 协议：
+
+- 每个连接拥有独立的守护进程实例
+- `Op::Shutdown` 只结束该连接；宿主继续接受新连接
+- 宿主进程在收到 `SIGINT` 或 `SIGTERM` 时退出
+- 所有权由套接字旁 `.lock` 文件上的排他锁表示，因此同一路径上的第二个宿主会拒绝启动，而不会顶替正在运行的宿主；崩溃遗留的陈旧套接字文件不持有锁，会在下次启动时被替换
 
 ### WebSocket 传输 {#websocket-transport}
 

@@ -185,7 +185,7 @@ Bring your own API key, subscription, or local model; no account required, not e
 
 | Provider | Example Models |
 |----------|---------------|
-| Anthropic | Claude Sonnet 5, Opus 5, Fable 5 (API key or subscription OAuth) |
+| Anthropic | Claude Sonnet 5, Opus 5, Fable 5.1 (API key or subscription OAuth) |
 | OpenAI | GPT-5.6 family (API key or ChatGPT/Codex OAuth) |
 | Google Gemini | Gemini 3.x family (Gemini API or Vertex AI) |
 | Grok (xAI) | Grok 4.5 |

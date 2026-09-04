@@ -21,6 +21,7 @@ Ante persists configuration and state on the local filesystem. This page is a re
 | `~/.ante/projects/<project-id>/memory/` | Per-project auto-memory |
 | `~/.ante/cache/` | Oversized WebFetch response spill files; entries older than 48 hours are removed at startup |
 | `~/.ante/run/jobs/<proc-id>/` | Background Bash job handles: `status.json`, `stdout.txt`, and `stderr.txt` |
+| `~/.ante/run/serve.sock` | Default Unix socket for [`ante serve --sock`](/reference/cli-reference#ante-serve); a `serve.sock.lock` sibling holds the host's exclusive lock |
 | `~/.ante/tmp/` | Disposable staging files; entries older than 48 hours are removed at startup |
 | `~/.ante/logs/<YYYY-MM-DD>/` | Application and crash logs, partitioned by UTC date (`ante.<pid>.log` and `ante.<pid>.crash.log`) |
 | `~/.ante/logs/llama-server.log` | Local inference server log |
@@ -34,6 +35,7 @@ Ante persists configuration and state on the local filesystem. This page is a re
 | `~/.ante/tip_history.json` | Show history for [spinner tips](/usage/tui#spinner-tips) (delete to reset the rotation) |
 | `~/.ante/installation-id` | Random installation label for [telemetry](/configuration/preference#identity), written only when telemetry is configured (delete to reset the identity) |
 | `AGENTS.md` | Project instructions injected alongside global instructions |
+| `.ante/settings.json` | [Project settings](/configuration/preference#project-settings) layered over the user's, resolved from the nearest ancestor of the session directory |
 | `.ante/` | Project-local configuration (skills, sub-agents) |
 | `.agents/`, `.claude/` | Additional project-local skill/sub-agent directories |
 
@@ -75,6 +77,8 @@ Stores user preferences. All fields are optional.
 ```
 
 Named profile files have the same schema but replace `settings.json` wholesale for that run; they do not inherit missing values from it. See [Preferences](/configuration/preference#named-profiles) for profile behavior and the full field reference.
+
+A project's `.ante/settings.json` uses the same schema but *layers* over the user file: only the keys it sets are overridden. As repository content it may pin or narrow only, so `permission_mode`, `permissions.allow`, `mcp_servers`, `system_prompt`, `model`, and `provider` are dropped with a notice. See [Project settings](/configuration/preference#project-settings).
 
 ## `catalog.json`
 
@@ -134,8 +138,10 @@ See [AGENTS.md](/extend/agents-md) for usage guidance and precedence details.
 │           └── MEMORY.md
 ├── cache/              # WebFetch spills (48-hour scratch)
 ├── run/
-│   └── jobs/
-│       └── <proc-id>/  # Background Bash status and output
+│   ├── jobs/
+│   │   └── <proc-id>/  # Background Bash status and output
+│   ├── serve.sock      # `ante serve --sock` listener
+│   └── serve.sock.lock # Ownership lock for the socket above
 ├── tmp/                # Disposable staging (48-hour scratch)
 ├── logs/
 │   ├── <YYYY-MM-DD>/   # ante.<pid>.log and crash logs
@@ -150,6 +156,7 @@ See [AGENTS.md](/extend/agents-md) for usage guidance and precedence details.
 AGENTS.md               # Project instructions
 
 .ante/
+├── settings.json       # Project settings layered over the user's
 ├── skills/             # Project-specific skills
 └── agents/             # Project-specific sub-agents
 

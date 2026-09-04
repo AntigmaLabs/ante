@@ -6,7 +6,7 @@ description: "配置文件、环境变量、遥测机制与目录结构详解"
 
 ## 配置文件 {#settings-file}
 
-Ante 将用户偏好设置保存在 `~/.ante/settings.json` 中。
+Ante 将用户偏好设置保存在 `~/.ante/settings.json` 中。仓库还可以在其之上叠加自己的 `.ante/settings.json`，对所有在其中工作的人生效 —— 参见[项目设置](#project-settings)。
 
 大部分设置都可以通过 TUI 中的 `/config` 命令进行可视化查看与修改 —— 该交互式设置面板支持原地开关切换（技巧提示、环境感知预测、紧凑工具折叠、短提示词、自动压缩、重排策略、默认权限模式、更新通道），并提供直达主题、模型、提供商、状态栏、MCP 服务器及离线模式的专属弹窗入口。修改会即时持久化到 `settings.json` 中；在启动阶段读取的参数（如 `resize_reflow`）会在面板中标记为 "(next session)" 并在下次会话中生效。
 
@@ -100,9 +100,47 @@ ante --profile work
 ANTE_PROFILE=review ante -p "审查本次改动"
 ```
 
-名为 `work` 的 Profile 会读写 `~/.ante/work.settings.json`。Profile 是**整文件替换（whole-file replacements）**而非分层叠加：Profile 中未指定的字段会回退到 Ante 系统默认值，而不会从 `settings.json` 继承。新名称从默认值开始，其文件会在首次保存更改时自动创建。Profile 名称可包含小写 ASCII 字母、数字、`-` 和 `_`。命令行参数优先级高于选定的 Profile。
+名为 `work` 的 Profile 会读写 `~/.ante/work.settings.json`。Profile 是**整文件替换（whole-file replacements）**而非分层叠加：Profile 中未指定的字段会回退到 Ante 系统默认值，而不会从 `settings.json` 继承。新名称从默认值开始，其文件会在首次保存更改时自动创建。Profile 名称可包含小写 ASCII 字母、数字、`-` 和 `_`。命令行参数优先级高于选定的 Profile。若需按仓库配置，请优先使用[项目设置](#project-settings)：它是叠加而非替换，且无需传入任何参数。
 
 内置的 `bare` Profile 随 Ante 提供：首次运行 `--profile bare` 会生成 `~/.ante/bare.settings.json`，默认禁用欢迎引导与环境感知 UI 功能，并将 `auto_memory`、`skills` 和 `session_save` 设为 `false`（且不包含任何 MCP 服务）。此后其行为与其他 Profile 完全一致 —— 编辑文件或在 `/config` 中修改均可持久化。显式传入的命令行参数（如 `--enable-auto-memory`）仍可在运行时覆盖。
+
+### 项目设置 {#project-settings}
+
+仓库可以携带自己的设置。会话启动时，Ante 会从会话工作目录逐级向上查找，由最近一个包含 `.ante/settings.json` 的上级目录提供一层**项目层**，叠加在用户设置之上：
+
+```json title=".ante/settings.json"
+{
+  "append_system_prompt": "本仓库面向 Rust 1.88，优先使用 `anyhow` 而非自定义错误类型。",
+  "exclude_skills": ["deploy-prod"],
+  "auto_compact": true,
+  "permissions": {
+    "deny": ["Bash(terraform apply *)"]
+  }
+}
+```
+
+与[命名 Profile](#named-profiles) 不同，这是叠加而非替换：项目文件未指定的键保留 `~/.ante/settings.json` 中的取值，只有它显式设置的键会被覆盖。无需在命令行传入任何参数 —— 将该文件提交进仓库，所有在其中工作的人便自动生效。
+
+#### 项目可以设置哪些键 {#what-a-project-may-set}
+
+由于 `.ante/settings.json` 属于仓库内容，任何能提交 Pull Request 的人都可以修改它。因此它**只能固定或收紧，不能放宽**。以下键出现在项目文件中时会被丢弃并给出提示：
+
+| 被丢弃的键 | 原因 |
+|---|---|
+| `permission_mode` | 仓库不能把你切换到更宽松的审批模式 |
+| `permissions.allow` | 仓库不能代替你预先批准工具调用 |
+| `mcp_servers` | 仓库不能在你的机器上拉起新的服务进程 |
+| `system_prompt` | 仓库不能整体替换智能体的系统指令 |
+| `model` | 仓库不能把你的请求改道到其他模型 |
+| `provider` | 仓库不能把你的请求改道到其他提供商 |
+
+其余字段正常叠加。`permissions.deny` 与 `permissions.ask` 属于*收紧*类规则，因此项目可以添加它们 —— 这正是为仓库圈定高危命令的预期用法。`append_system_prompt`、`exclude_skills`、`model_effort`、`tools`、`auto_compact` 以及各项 UI 开关均可生效。
+
+#### 查看实际生效的配置 {#checking-what-applied}
+
+`ante doctor` 会打印一行 `project`，显示它解析到的文件（或提示未找到），以及被丢弃的键。[`ante rage`](/reference/cli-reference#ante-rage) 会以与用户设置文件相同的脱敏方式收录项目文件，使问题报告能反映实际生效的配置。
+
+项目设置仅在会话启动时读取一次。会话进行中修改该文件不会生效，需下次会话才会应用。
 
 ### 状态栏项配置 {#status-line}
 
@@ -293,6 +331,7 @@ seq 1 200; printf '\033[2J\033[3J\033[H'
 ├── projects/          # 各项目自动记忆
 ├── cache/             # WebFetch 响应溢出文件（48 小时暂存）
 ├── run/jobs/          # 后台 Bash 状态与输出
+├── run/serve.sock     # `ante serve --sock` 的 Unix 套接字（含同级 .lock 文件）
 ├── tmp/               # 一次性暂存目录（48 小时暂存）
 ├── logs/              # 按 UTC 日期归档的应用日志
 ├── skills/            # 用户级技能
@@ -308,6 +347,7 @@ AGENTS.md              # 项目指引规范
 CLAUDE.md              # 项目指引规范（无 AGENTS.md 时的兼容回退）
 
 .ante/
+├── settings.json      # 叠加在用户设置之上的项目设置
 ├── skills/            # 项目专属技能
 └── agents/            # 项目专属子智能体
 
@@ -344,5 +384,6 @@ CLAUDE.md              # 项目指引规范（无 AGENTS.md 时的兼容回退�
 配置按以下顺序解析生效（后生效者覆盖前者）：
 
 1. 内置默认值
-2. `~/.ante/settings.json`
-3. 命令行参数（`--model`、`--provider` 等）
+2. `~/.ante/settings.json`（使用 `--profile` 时为 `~/.ante/<name>.settings.json`）
+3. 项目的 `.ante/settings.json`，仅限其[允许设置的键](#project-settings)
+4. 命令行参数（`--model`、`--provider` 等）

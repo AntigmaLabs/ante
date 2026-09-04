@@ -22,6 +22,7 @@ Ante 将配置与状态持久化保存在本地文件系统中。本页面为 An
 | `~/.ante/projects/<project-id>/memory/` | 各项目的专属自动记忆库 |
 | `~/.ante/cache/` | WebFetch 超大响应溢出暂存文件；启动时会自动清理超过 48 小时的条目 |
 | `~/.ante/run/jobs/<proc-id>/` | 后台 Bash 任务句柄：`status.json`、`stdout.txt` 和 `stderr.txt` |
+| `~/.ante/run/serve.sock` | [`ante serve --sock`](/reference/cli-reference#ante-serve) 的默认 Unix 套接字；同级的 `serve.sock.lock` 持有宿主的排他锁 |
 | `~/.ante/tmp/` | 一次性暂存文件；启动时会自动清理超过 48 小时的条目 |
 | `~/.ante/logs/<YYYY-MM-DD>/` | 应用程序与崩溃日志，按 UTC 日期归档（`ante.<pid>.log` 与 `ante.<pid>.crash.log`） |
 | `~/.ante/logs/llama-server.log` | 本地推理服务器日志 |
@@ -35,6 +36,7 @@ Ante 将配置与状态持久化保存在本地文件系统中。本页面为 An
 | `~/.ante/tip_history.json` | [加载状态技巧提示](/usage/tui#spinner-tips)的展示历史（删除可重置轮播） |
 | `~/.ante/installation-id` | 用于[遥测](/configuration/preference#identity)的随机安装标识（仅在配置遥测时写入；删除可重置身份标识） |
 | `AGENTS.md` | 与全局指引一同注入的项目级行为规范 |
+| `.ante/settings.json` | 叠加在用户设置之上的[项目设置](/configuration/preference#project-settings)，从会话目录最近的上级目录解析得到 |
 | `.ante/` | 项目本地配置（技能、子智能体） |
 | `.agents/`, `.claude/` | 兼容的项目本地技能/子智能体目录 |
 
@@ -76,6 +78,8 @@ Ante 将配置与状态持久化保存在本地文件系统中。本页面为 An
 ```
 
 命名 Profile 文件具有相同的 Schema，但在运行时全量替换 `settings.json`；它们不会从 `settings.json` 继承缺失的字段。关于 Profile 机制及完整字段参考，请参阅[偏好设置](/configuration/preference#named-profiles)。
+
+项目的 `.ante/settings.json` 使用同一 Schema，但以*叠加*方式作用于用户设置文件：只有它显式设置的键会被覆盖。由于它属于仓库内容，只能收紧或固定、不能放宽，因此 `permission_mode`、`permissions.allow`、`mcp_servers`、`system_prompt`、`model`、`provider` 会被丢弃并给出提示。参见[项目设置](/configuration/preference#project-settings)。
 
 ## `catalog.json` {#catalogjson}
 
@@ -135,8 +139,10 @@ Ante 将配置与状态持久化保存在本地文件系统中。本页面为 An
 │           └── MEMORY.md
 ├── cache/              # WebFetch 超长网页暂存（48 小时）
 ├── run/
-│   └── jobs/
-│       └── <proc-id>/  # 后台 Bash 状态与输出
+│   ├── jobs/
+│   │   └── <proc-id>/  # 后台 Bash 状态与输出
+│   ├── serve.sock      # `ante serve --sock` 监听套接字
+│   └── serve.sock.lock # 上述套接字的所有权锁
 ├── tmp/                # 一次性暂存目录（48 小时）
 ├── logs/
 │   ├── <YYYY-MM-DD>/   # ante.<pid>.log 与崩溃日志
@@ -151,6 +157,7 @@ Ante 将配置与状态持久化保存在本地文件系统中。本页面为 An
 AGENTS.md               # 项目行为指引规范
 
 .ante/
+├── settings.json       # 叠加在用户设置之上的项目设置
 ├── skills/             # 项目专属技能
 └── agents/             # 项目专属子智能体
 
