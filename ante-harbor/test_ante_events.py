@@ -72,6 +72,72 @@ class EventStreamTests(unittest.TestCase):
 
         self.assertEqual(ante_events.events_from_text(output), [first, second])
 
+    def test_tool_call_stats_count_errors_and_malformed_calls(self):
+        events = [
+            _event("ToolStart", {"id": "ok", "name": "Read", "args": {}}),
+            _event(
+                "ToolEnd",
+                {"tool_use_id": "ok", "status": "Completed", "result_json": {}},
+            ),
+            _event(
+                "ToolStart",
+                {
+                    "id": "bad-json",
+                    "name": "Bash",
+                    "args": {},
+                    "malformed_args": {
+                        "raw": "{",
+                        "error": "EOF while parsing an object",
+                    },
+                },
+            ),
+            _event(
+                "ToolEnd",
+                {
+                    "tool_use_id": "bad-json",
+                    "status": "Failed",
+                    "result_json": {
+                        "error": "invalid_tool_arguments",
+                    },
+                },
+            ),
+            _event(
+                "ToolStart",
+                {
+                    "id": "missing-name",
+                    "name": "missing_function_name",
+                    "args": {},
+                    "malformed_args": {
+                        "raw": "{}",
+                        "error": "stream never delivered a function name",
+                    },
+                },
+            ),
+            _event(
+                "ToolEnd",
+                {
+                    "tool_use_id": "missing-name",
+                    "status": "Failed",
+                    "result_json": {"error": "missing_function_name"},
+                },
+            ),
+            _event(
+                "ToolEnd",
+                {
+                    "tool_use_id": "orphan",
+                    "status": "Denied",
+                    "result_json": "not approved",
+                },
+            ),
+        ]
+
+        stats = ante_events.tool_call_stats_from_events(events)
+
+        self.assertEqual(
+            stats,
+            {"total": 4, "errors": 3, "malformed": 2},
+        )
+
     def test_usage_aggregation_preserves_optional_cache_creation(self):
         events = [
             _usage(

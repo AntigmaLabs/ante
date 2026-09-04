@@ -1,5 +1,25 @@
 # Changelog
 
+## v0.preview.94 - 2026-09-03
+
+### Added
+- Project-level settings: an `.ante/settings.json` in the nearest ancestor of the session directory layers over your user settings when a session starts. Because it is repository content, it may pin or narrow only — `permission_mode`, `permissions.allow`, `mcp_servers`, `system_prompt`, `model` and `provider` are dropped with a notice. `ante doctor` shows a `project` row, and `ante rage` includes the file redacted
+- `ante serve --sock [PATH]` hosts Ante on a Unix socket (default `run/serve.sock` in the ante home). Ownership is an exclusive lock on a `.lock` sibling, so a second host refuses to start and leaves the live socket alone, while a stale socket file is replaced. One client's `Shutdown` ends only its own connection; the process exits on SIGINT or SIGTERM
+- `crates/ante-sdk` — the Ante client for external programs: `connect(endpoint, options)` with the endpoint grammar `stdio` | `unix:<path>` | `ws://<addr>`, yielding the same `Client` on every path. `stdio` spawns `ante serve --stdio` as its own child; `ws://` is not connectable yet
+- Sessions can carry a title: `/rename <title>` sets it, bare `/rename` clears it. The title shows in the resume picker instead of the first message, follows into the terminal tab, and survives a resume
+- Claude Fable 5.1 replaces Fable 5 across the Anthropic, Anthropic subscription, Antix, and OpenRouter catalogs
+- Gemini 3.8 Flash on the Gemini API, Vertex AI, and OpenRouter, with Gemini 3.7/3.8's exact low/medium/high reasoning ladder; Muse Spark 1.3 replaces 1.2 on OpenRouter
+
+### Fixed
+- The TUI reserves the spinner, tip, and todo rows in one height calculation, fixing the pinned layout and the archive gap during an active turn
+
+### Wire
+- `SessionRequest`, `SessionUpdate` and `SessionInfo` gain an optional `title` (omitted when unset); `SessionUpdate { title: "" }` clears it
+- `SessionInitialized` is renamed `SessionInfo` — a Rust type name only, the JSON is unchanged
+
+### Changed
+- Dependency updates
+
 ## v0.preview.93 - 2026-09-02
 
 ### Changed

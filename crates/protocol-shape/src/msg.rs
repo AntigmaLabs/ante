@@ -20,6 +20,17 @@ pub struct OpMsg {
     pub id: Id,
 }
 
+/// `op` stamped with a fresh op id.
+pub fn op_msg(op: Op) -> OpMsg {
+    OpMsg { op, id: Id::op() }
+}
+
+/// `event` stamped with a fresh event id and the current time, correlated
+/// to the op it answers (`parent`), if any.
+pub fn event_msg(event: Evt, parent: Option<Id>) -> EventMsg {
+    EventMsg { timestamp: Utc::now(), id: Id::evt(), event, parent }
+}
+
 #[allow(clippy::large_enum_variant)]
 #[derive(Debug, Clone, Deserialize, Serialize)]
 pub enum Op {
@@ -111,8 +122,8 @@ pub enum AmbientKind {
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum Evt {
-    SessionStart(Box<SessionInitialized>),
-    SessionUpdated(Box<SessionInitialized>),
+    SessionStart(Box<SessionInfo>),
+    SessionUpdated(Box<SessionInfo>),
     ExtensionRefreshed(Box<ExtensionRefreshed>),
     /// The session span closed. Mirrors `TurnEnd`: carries the span's
     /// identity, why it ended, and its final usage accounting.
@@ -218,7 +229,7 @@ pub enum TurnPauseReason {
 pub enum SessionEndReason {
     /// The session was replaced by a new or resumed session.
     Replaced,
-    /// The daemon is shutting down.
+    /// The connection is closing: the client sent `Shutdown` or went away.
     Shutdown,
 }
 
@@ -333,7 +344,7 @@ pub struct ProviderSpec {
 /// (`SessionStart`, `SessionUpdated`) plus the capabilities it was equipped
 /// with, which are fixed for the session's lifetime.
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct SessionInitialized {
+pub struct SessionInfo {
     pub model: ModelSpec,
     pub provider: ProviderSpec,
     pub session_id: Id,
@@ -345,6 +356,10 @@ pub struct SessionInitialized {
     /// The subagents this session can delegate to. Empty when absent.
     #[serde(default)]
     pub subagents: Vec<SubagentMetadata>,
+    /// The session's title, when one is set: a display name chosen by the
+    /// user (or the client), never derived from the conversation.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub title: Option<String>,
 }
 
 /// Partial update to a live session's mutable state. Each field is optional so
@@ -361,6 +376,10 @@ pub struct SessionUpdate {
     /// aborting an in-flight one.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub permission_mode: Option<PermissionMode>,
+    /// Rename the session. The text is trimmed; an empty (or whitespace-only)
+    /// text clears the title.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub title: Option<String>,
 }
 
 /// The session's MCP servers and their tools, sent for `session_id` as the
@@ -441,6 +460,9 @@ pub struct SessionRequest {
     /// Whether the session writes a transcript and a resumable snapshot.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub save_session: Option<bool>,
+    /// A title for the session (see `SessionUpdate::title` for the rules).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub title: Option<String>,
 }
 
 impl SessionRequest {
@@ -466,6 +488,7 @@ impl SessionRequest {
             short_prompt,
             no_skills,
             save_session,
+            title,
         } = patch;
         SessionRequest {
             model: model.or(self.model),
@@ -482,6 +505,7 @@ impl SessionRequest {
             short_prompt: short_prompt.or(self.short_prompt),
             no_skills: no_skills.or(self.no_skills),
             save_session: save_session.or(self.save_session),
+            title: title.or(self.title),
         }
     }
 }
@@ -778,10 +802,27 @@ pub enum Scope {
 mod tests {
     use super::{
         Effort, Evt, ExtensionRefreshed, Id, ModelSpec, Op, PermissionMode, ProviderSpec,
-        ReviewDecision, SessionInitialized, SessionRequest, SessionUpdate, ToolDecision, ToolUse,
-        Usage, WeightClass,
+        ReviewDecision, SessionInfo, SessionRequest, SessionUpdate, ToolDecision, ToolUse, Usage,
+        WeightClass, event_msg, op_msg,
     };
     use std::path::PathBuf;
+
+    #[test]
+    fn op_msg_assigns_runtime_id() {
+        let msg = op_msg(Op::Interrupt);
+
+        assert!(msg.id.to_string().starts_with("op_"));
+        assert!(matches!(msg.op, Op::Interrupt));
+    }
+
+    #[test]
+    fn event_msg_assigns_runtime_metadata() {
+        let event = event_msg(Evt::Info("hello".to_string()), None);
+
+        assert!(event.id.to_string().starts_with("evt_"));
+        assert!(matches!(event.event, Evt::Info(message) if message == "hello"));
+        assert!(event.parent.is_none());
+    }
 
     fn model_spec(name: &str) -> ModelSpec {
         ModelSpec {
@@ -919,6 +960,7 @@ mod tests {
             short_prompt: Some(true),
             no_skills: Some(true),
             save_session: Some(true),
+            title: Some("pinned title".to_string()),
             ..Default::default()
         }
     }
@@ -947,6 +989,30 @@ mod tests {
         assert_eq!(patched.system_prompt.as_deref(), Some("base prompt"));
         assert_eq!(patched.effort, Some(Effort::Medium));
         assert_eq!(patched.save_session, Some(true));
+        assert_eq!(patched.title.as_deref(), Some("pinned title"));
+    }
+
+    #[test]
+    fn session_initialized_title_is_optional_on_the_wire() {
+        let mut payload = SessionInfo {
+            model: model_spec("m"),
+            provider: provider_spec("p"),
+            session_id: Id::new("ses"),
+            cwd: PathBuf::from("/tmp"),
+            permission_mode: PermissionMode::default(),
+            skills: vec![],
+            subagents: vec![],
+            title: None,
+        };
+
+        let json = serde_json::to_value(&payload).unwrap();
+        assert!(json.get("title").is_none(), "an unset title is omitted: {json}");
+        let decoded: SessionInfo = serde_json::from_value(json).unwrap();
+        assert_eq!(decoded.title, None);
+
+        payload.title = Some("fix".to_string());
+        let json = serde_json::to_value(&payload).unwrap();
+        assert_eq!(json["title"], "fix");
     }
 
     #[test]
@@ -1092,6 +1158,7 @@ mod tests {
                 ..model_spec("gpt-5.4")
             }),
             permission_mode: Some(PermissionMode::Yolo),
+            title: Some("renamed".to_string()),
         });
 
         let json = serde_json::to_string(&op).expect("serialize UpdateSession");
@@ -1102,10 +1169,12 @@ mod tests {
             Op::UpdateSession(SessionUpdate {
                 model: Some(model),
                 permission_mode: Some(PermissionMode::Yolo),
+                title: Some(title),
             })
                 if model.id == "gpt-5.4"
                     && model.temperature == Some(0.2)
                     && model.effort == Some(super::Effort::High)
+                    && title == "renamed"
         ));
     }
 
@@ -1147,7 +1216,7 @@ mod tests {
     #[test]
     fn session_updated_event_serde_roundtrip() {
         let session_id = Id::new("ses");
-        let event = Evt::SessionUpdated(Box::new(SessionInitialized {
+        let event = Evt::SessionUpdated(Box::new(SessionInfo {
             model: model_spec("claude-sonnet-4-6"),
             provider: provider_spec("anthropic"),
             session_id,
@@ -1155,6 +1224,7 @@ mod tests {
             permission_mode: PermissionMode::default(),
             skills: vec![],
             subagents: vec![],
+            title: None,
         }));
 
         let json = serde_json::to_string(&event).expect("serialize SessionUpdated");

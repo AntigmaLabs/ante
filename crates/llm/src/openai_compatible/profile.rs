@@ -386,7 +386,7 @@ const GLM_53_RUNGS: &[(Effort, ReasoningEffort)] = &[
 /// that mandatory floor until Moonshot exposes more levels.
 const KIMI_K3_RUNGS: &[(Effort, ReasoningEffort)] = &[(Effort::Max, ReasoningEffort::Max)];
 
-/// Muse Spark 1.1 always reasons. OpenRouter exposes five named levels, with
+/// Muse Spark always reasons. OpenRouter exposes five named levels, with
 /// `minimal` as the mandatory floor and `xhigh` as the ceiling.
 const MUSE_SPARK_RUNGS: &[(Effort, ReasoningEffort)] = &[
     (Effort::Min, ReasoningEffort::Minimal),
@@ -603,7 +603,7 @@ mod tests {
         let kimi_k3 = profile("openrouter", "moonshotai/kimi-k3");
         assert_eq!(kimi_k3.thinking_dialect, ThinkingDialect::KimiK3ReasoningEffort);
 
-        let muse_spark = profile("openrouter", "meta/muse-spark-1.2");
+        let muse_spark = profile("openrouter", "meta/muse-spark-1.3");
         assert_eq!(muse_spark.thinking_dialect, ThinkingDialect::MuseSparkReasoningEffort);
 
         let mistral = profile("openrouter", "mistralai/devstral-small");
@@ -814,7 +814,7 @@ mod tests {
         ];
         for (requested, expected) in cases {
             let params =
-                profile("openrouter", "meta/muse-spark-1.2").thinking_params(Some(requested));
+                profile("openrouter", "meta/muse-spark-1.3").thinking_params(Some(requested));
             assert_eq!(params.reasoning_effort, Some(expected), "Muse Spark {requested}");
         }
     }
@@ -843,7 +843,7 @@ mod tests {
             vec![Effort::Low, Effort::High, Effort::Max],
         );
         assert_eq!(
-            effort_levels("openrouter", "meta/muse-spark-1.2"),
+            effort_levels("openrouter", "meta/muse-spark-1.3"),
             vec![Effort::Min, Effort::Low, Effort::Medium, Effort::High, Effort::XHigh],
         );
         assert_eq!(

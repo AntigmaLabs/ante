@@ -35,6 +35,11 @@ CACHE_CREATION_METADATA_KEY = "n_cache_creation_tokens"
 FAILURE_CLASS_METADATA_KEY = "failure_class"
 STEPS_METADATA_KEY = "steps"
 
+MALFORMED_TOOL_ERROR_CODES = {
+    "invalid_tool_arguments",
+    "missing_function_name",
+}
+
 DIAGNOSTIC_FAILURE_CLASS_PRIORITY = (
     "invalid_multimodal_payload",
     "vision_unsupported",
@@ -193,6 +198,45 @@ def event_from_line(line: str) -> dict[str, Any] | None:
 def events_from_text(output: str) -> list[dict[str, Any]]:
     """Parse Ante's mixed stdout/log stream into EventMsg objects once."""
     return [event for line in output.splitlines() if (event := event_from_line(line))]
+
+
+def tool_call_stats_from_events(events: Iterable[dict[str, Any]]) -> dict[str, Any]:
+    """Count tool calls, error results, and malformed model calls."""
+    calls = set()
+    errors = set()
+    malformed = set()
+
+    for event_msg in events:
+        name, data = _event_name_data(event_msg)
+        if name == "ToolStart" and isinstance(data, dict):
+            call_id = _id_text(data.get("id"))
+            if call_id is None:
+                continue
+            calls.add(call_id)
+            if (
+                isinstance(data.get("malformed_args"), dict)
+                or data.get("name") == "missing_function_name"
+            ):
+                malformed.add(call_id)
+        elif name == "ToolEnd" and isinstance(data, dict):
+            call_id = _id_text(data.get("tool_use_id"))
+            if call_id is None:
+                continue
+            calls.add(call_id)
+            if data.get("status") != "Completed":
+                errors.add(call_id)
+            result = data.get("result_json")
+            if (
+                isinstance(result, dict)
+                and result.get("error") in MALFORMED_TOOL_ERROR_CODES
+            ):
+                malformed.add(call_id)
+
+    return {
+        "total": len(calls),
+        "errors": len(errors),
+        "malformed": len(malformed),
+    }
 
 
 def _is_invalid_multimodal_payload(text: str) -> bool:
