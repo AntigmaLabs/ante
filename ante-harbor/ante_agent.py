@@ -49,6 +49,8 @@ from harbor.utils.trajectory_utils import format_trajectory_json
 _AGENT_LOG = Path("/logs/agent/ante.txt")
 _SETUP_LOG = _AGENT_LOG.parent / "setup" / "stdout.txt"
 _INSTRUCTION_PATH = Path("/tmp/instruction.md")
+_INSTALLER_URL = "https://download.ante.run/install.sh"
+_INSTALLER_MAX_BYTES = 1024 * 1024
 
 ENABLE_ATIF_ENV = "ANTE_ENABLE_ATIF"
 
@@ -95,28 +97,22 @@ def _populate_context_from_events(
             if is_number(value):
                 setattr(context, field, value)
 
-    effort = resolved_model_effort_from_events(events)
+    metadata_fields: dict[str, Any] = {}
+    if effort := resolved_model_effort_from_events(events):
+        metadata_fields[EFFORT_METADATA_KEY] = effort
     cache_creation = usage.get("n_cache_creation_tokens") if usage else None
-    steps = total_steps_from_events(events)
-    if (
-        not effort
-        and not is_number(cache_creation)
-        and steps is None
-        and not diagnostic_failure_class
-    ):
+    if is_number(cache_creation):
+        metadata_fields[CACHE_CREATION_METADATA_KEY] = cache_creation
+    if (steps := total_steps_from_events(events)) is not None:
+        metadata_fields[STEPS_METADATA_KEY] = steps
+    if diagnostic_failure_class:
+        metadata_fields[FAILURE_CLASS_METADATA_KEY] = diagnostic_failure_class
+    if not metadata_fields:
         return
 
     metadata = _metadata_dict(context)
-    if metadata is None:
-        return
-    if effort:
-        metadata[EFFORT_METADATA_KEY] = effort
-    if is_number(cache_creation):
-        metadata[CACHE_CREATION_METADATA_KEY] = cache_creation
-    if steps is not None:
-        metadata[STEPS_METADATA_KEY] = steps
-    if diagnostic_failure_class:
-        metadata[FAILURE_CLASS_METADATA_KEY] = diagnostic_failure_class
+    if metadata is not None:
+        metadata.update(metadata_fields)
 
 
 def setup_log_command(command: str, *, append: bool = True) -> str:
@@ -137,11 +133,24 @@ def setup_log_command(command: str, *, append: bool = True) -> str:
 def install_command_from_args(install_args: str) -> str:
     """Build a robust in-sandbox install.sh command for published Ante builds."""
     quoted_args = " ".join(shlex.quote(arg) for arg in shlex.split(install_args or ""))
-    install_line = (
-        "curl -fsSL https://download.ante.run/install.sh | "
-        f"ANTE_INSTALL_DIR=/usr/local/bin NO_MODIFY_PATH=true bash -s -- {quoted_args}"
-    ).rstrip()
-    return install_line
+    execute = (
+        'ANTE_INSTALL_DIR=/usr/local/bin NO_MODIFY_PATH=true bash -- "$installer_path"'
+    )
+    if quoted_args:
+        execute = f"{execute} {quoted_args}"
+    return "\n".join(
+        [
+            "set -eu",
+            'installer_path="$(mktemp "${TMPDIR:-/tmp}/ante-install.XXXXXX")"',
+            "trap 'rm -f \"$installer_path\"' EXIT",
+            "curl --fail --silent --show-error --location \\",
+            "  --retry 3 --retry-delay 1 --retry-max-time 120 \\",
+            "  --connect-timeout 10 --max-time 120 \\",
+            f'  --max-filesize {_INSTALLER_MAX_BYTES} --output "$installer_path" \\',
+            f"  {shlex.quote(_INSTALLER_URL)}",
+            execute,
+        ]
+    )
 
 
 def split_extra_ante_args(ante_args: str) -> list[str]:
@@ -275,22 +284,16 @@ class AnteAgent(BaseInstalledAgent):
             self.logger.debug("Ante is already available at the requested version")
             return
 
-        if self._install_command is not None or self._install_args is not None:
-            await self.ensure_system_dependencies(environment, ("curl", "bash"))
+        install_command = self._install_command
+        if install_command is None and self._install_args is not None:
+            install_command = install_command_from_args(self._install_args)
 
-        if self._install_command is not None:
-            # Reuse mode: provision ante from within the sandbox (e.g. download a
-            # published build via install.sh). No runner-built binary required.
+        if install_command is not None:
+            # Provision ante from within the sandbox: a raw command, or install.sh
+            # for a published build. No runner-built binary required.
+            await self.ensure_system_dependencies(environment, ("curl", "bash"))
             await self.exec_as_root(
-                environment,
-                command=setup_log_command(self._install_command, append=False),
-            )
-        elif self._install_args is not None:
-            await self.exec_as_root(
-                environment,
-                command=setup_log_command(
-                    install_command_from_args(self._install_args), append=False
-                ),
+                environment, command=setup_log_command(install_command, append=False)
             )
         else:
             # Default mode: upload the binary staged next to this file by the

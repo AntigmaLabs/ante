@@ -2,7 +2,7 @@
 
 use ante_protocol_shape::{EventMsg, Evt, Op, OpMsg, op_msg};
 use thiserror::Error;
-use tokio::sync::mpsc::{Receiver, Sender, error::TrySendError};
+use tokio::sync::mpsc::{Sender, UnboundedReceiver, error::TrySendError};
 
 /// The connection is gone: the host end no longer receives ops.
 #[derive(Debug, Error, Clone, Copy, PartialEq, Eq)]
@@ -38,7 +38,10 @@ impl OpSender {
     }
 }
 
-pub type EventReceiver = Receiver<EventMsg>;
+/// Events from the host. The channel is unbounded: the host neither waits
+/// on nor drops for a slow client, so a client that stops reading builds a
+/// backlog rather than losing events.
+pub type EventReceiver = UnboundedReceiver<EventMsg>;
 
 /// One connection to an Ante host, seen from the client. Which session it
 /// drives is decided by the ops sent over it (`StartSession`,
@@ -97,13 +100,13 @@ mod tests {
     #[tokio::test]
     async fn close_stops_at_goodbye_and_tolerates_a_gone_host() {
         let (op_tx, op_rx) = tokio::sync::mpsc::channel(1);
-        let (evt_tx, evt_rx) = tokio::sync::mpsc::channel(4);
+        let (evt_tx, evt_rx) = tokio::sync::mpsc::unbounded_channel();
         // The host end is already gone: sending Shutdown fails, and the
         // pre-queued events end with Goodbye ahead of a trailing event that
         // must not be waited for.
         drop(op_rx);
         for event in [Evt::Info("bye".into()), Evt::Goodbye, Evt::Info("late".into())] {
-            evt_tx.try_send(event_msg(event, None)).expect("queue event");
+            evt_tx.send(event_msg(event, None)).expect("queue event");
         }
 
         let client = Client::from_parts(OpSender::new(op_tx), evt_rx);

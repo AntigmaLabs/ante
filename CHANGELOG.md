@@ -1,5 +1,21 @@
 # Changelog
 
+## v0.preview.95 - 2026-09-08
+
+### Added
+- GPT-6 Astra in the OpenAI API catalog, supporting reasoning efforts from `low` through `max`
+- `ante serve` accepts concurrent client connections over `--sock` and `--ws`, running each peer in its own task so handshakes do not block other connections, while client shutdowns end only the calling connection
+
+### Changed
+- Offline inference uses llama.cpp router mode behind a shared runtime across CLI, TUI, and startup callers. Model switches no longer restart the server process, load and unload track native progress events, and workers are cleaned up reliably on cancellation, stop, or exit
+- Gemini 3.8 Flash replaces older Gemini Flash and Pro entries across Gemini API, Vertex AI, OpenRouter, and Antix (supporting low/medium/high reasoning effort) as the default Gemini model; Gemini 3.5 Flash Lite is retained as the Feather option on Gemini API and Vertex AI
+- All built-in tools ignore unknown argument fields instead of rejecting the call, preventing errors from model envelope wrappers or flag aliases, and tool error messages format cause chains onto a single line without backtrace noise
+- Protocol event channels and `crates/ante-sdk`'s `EventReceiver` are now unbounded, warning on backlog rather than dropping events under heavy streaming bursts
+
+### Fixed
+- Compaction aligns fold input boundaries to conversation steps so a `tool_result` is never included without its preceding `tool_use`, preventing invalid request errors and persistent compaction failures on tool-dense dialogs
+- The TUI dead-reckons cursor positions locally when a terminal does not answer cursor position queries (`CSI 6n`), preventing startup and resize crashes on CPR-dead terminals
+
 ## v0.preview.94 - 2026-09-03
 
 ### Added

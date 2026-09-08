@@ -7,7 +7,7 @@ use thiserror::Error;
 use tokio::{
     io::{AsyncBufReadExt, AsyncRead, AsyncWrite, AsyncWriteExt, BufReader},
     process::Command,
-    sync::mpsc::{self, Receiver, Sender},
+    sync::mpsc::{self, Receiver, UnboundedSender},
 };
 
 use crate::{Client, Endpoint, OpSender};
@@ -50,9 +50,9 @@ pub enum ConnectError {
     },
 }
 
-/// Depths of the bridge between the client and the host's byte stream.
+/// Depth of the op bridge between the client and the host's byte stream.
+/// Events are unbounded (see [`crate::EventReceiver`]).
 const OP_CHANNEL: usize = 256;
-const EVENT_CHANNEL: usize = 4096;
 
 /// Connect to the host at `endpoint`. Success is transport-level: the pipe
 /// opened or the socket dialed. There is no greeting yet, so the first op's
@@ -97,7 +97,7 @@ fn connect_stdio(options: ConnectOptions) -> Result<Client, ConnectError> {
     let stdout = child.stdout.take().ok_or(ConnectError::MissingPipe)?;
 
     let (op_tx, op_rx) = mpsc::channel(OP_CHANNEL);
-    let (evt_tx, evt_rx) = mpsc::channel(EVENT_CHANNEL);
+    let (evt_tx, evt_rx) = mpsc::unbounded_channel();
     tokio::spawn(pump_ops(op_rx, stdin));
     tokio::spawn(async move {
         pump_events(stdout, evt_tx).await;
@@ -122,7 +122,7 @@ async fn connect_unix(path: PathBuf) -> Result<Client, ConnectError> {
     let (reader, writer) = stream.into_split();
 
     let (op_tx, op_rx) = mpsc::channel(OP_CHANNEL);
-    let (evt_tx, evt_rx) = mpsc::channel(EVENT_CHANNEL);
+    let (evt_tx, evt_rx) = mpsc::unbounded_channel();
     tokio::spawn(pump_ops(op_rx, writer));
     tokio::spawn(pump_events(reader, evt_tx));
 
@@ -151,7 +151,7 @@ async fn pump_ops<W: AsyncWrite + Unpin>(mut ops: Receiver<OpMsg>, mut writer: W
 
 /// Parse each line the host writes into an event, until the stream ends.
 /// Dropping `events` at the end is what ends the client's event stream.
-async fn pump_events<R: AsyncRead + Unpin>(reader: R, events: Sender<EventMsg>) {
+async fn pump_events<R: AsyncRead + Unpin>(reader: R, events: UnboundedSender<EventMsg>) {
     let mut reader = BufReader::new(reader);
     let mut line = Vec::new();
     loop {
@@ -165,7 +165,7 @@ async fn pump_events<R: AsyncRead + Unpin>(reader: R, events: Sender<EventMsg>) 
                 }
                 match serde_json::from_slice::<EventMsg>(frame) {
                     Ok(msg) => {
-                        if events.send(msg).await.is_err() {
+                        if events.send(msg).is_err() {
                             // The client stopped listening. Keep the stream
                             // drained so a host blocked on a full write
                             // buffer can still notice the peer going away.

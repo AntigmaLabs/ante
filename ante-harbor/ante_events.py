@@ -423,17 +423,12 @@ def _usage_from_payloads(payloads: Iterable[dict[str, Any] | None]) -> dict[str,
     }
 
 
-def accumulate_usage_from_text(output: str) -> dict[str, Any] | None:
-    """Sum token usage from Ante's JSON event stream text.
+def accumulate_usage_from_events(events: Iterable[dict[str, Any]]) -> dict[str, Any] | None:
+    """Sum token usage from parsed Ante EventMsg objects.
 
     Missing cache-write fields stay None, so providers that do not report them
     do not look like they explicitly reported zero.
     """
-    return accumulate_usage_from_events(events_from_text(output))
-
-
-def accumulate_usage_from_events(events: Iterable[dict[str, Any]]) -> dict[str, Any] | None:
-    """Sum token usage from parsed Ante EventMsg objects."""
     return _usage_from_payloads(
         usage_from_event(event) for event in events if isinstance(event, dict)
     )
