@@ -79,9 +79,10 @@ impl Client {
 
     /// End this connection's session and wait for the host to confirm.
     /// Sends `Shutdown`, then drains events until `Goodbye` or the end of
-    /// the stream; the host emits `Goodbye` only after the session has been
-    /// torn down and persisted. A failed send is not an error here: a closed
-    /// channel means the connection already ended.
+    /// the stream. `Goodbye` confirms connection closure, even if session
+    /// teardown failed; this method discards preceding events, including
+    /// errors. A failed send is not an error here: a closed channel means
+    /// the connection already ended.
     pub async fn close(mut self) {
         let _ = self.send(Op::Shutdown).await;
         while let Some(msg) = self.receiver.recv().await {

@@ -1,5 +1,25 @@
 # Changelog
 
+## v0.preview.96 - 2026-09-09
+
+### Added
+- GPT-6 Astra, GPT-5.6 Sol, Terra, and Luna in the Antix catalog, with 1,050,000-token context windows, 128,000-token output limits, vision support, and reasoning effort controls
+- Restored Gemini 3.7 Flash and Gemini 3.1 Pro Preview alongside Gemini 3.8 Flash in the Antix catalog
+
+### Changed
+- Subagents run under the Auto permission mode with an unattended policy rather than bypassing all permissions: destructive commands like `rm -rf` are denied at admission, while safe tools run without prompting
+- Unattended sessions deny tool calls that require approval at admission instead of pausing the turn on an unanswerable prompt. Headless sessions default to unattended and honor explicit `--permission-mode` flags rather than forcing Yolo mode
+- Managed offline inference standardizes on `llama serve` for launches across all platforms, and existing saved `llama-server` paths automatically resolve to `llama`
+- Offline state reporting uses lifecycle snapshots instead of an overlapping presentation event stream, and model settings (context length, temperature, reasoning budget) are resolved once against presets and published to the catalog
+- Claude Fable 5.1 default reasoning effort on Antix aligns to `high` per upstream documentation
+
+### Fixed
+- Session actor failures (panics or aborts) during teardown are reported through `Host::close` instead of being silently discarded
+- Z.ai exhausted-balance errors (HTTP 429 with error code 1113) are classified as terminal quota errors instead of being retried as transient rate limits
+
+### Wire
+- `SessionRequest` and `Op::ResumeSession` add an optional `unattended` field indicating that approval prompts cannot be answered and should be denied immediately at admission
+
 ## v0.preview.95 - 2026-09-08
 
 ### Added

@@ -55,8 +55,12 @@ pub enum Op {
     /// Continue a saved conversation from its persisted snapshot: what the
     /// host persisted is restored, and everything the snapshot does not pin
     /// resolves like a fresh session from the host's current defaults.
+    /// `unattended` is the resuming client's declaration, with the meaning
+    /// of `SessionRequest::unattended`; absent means false.
     ResumeSession {
         session_id: Id,
+        #[serde(default)]
+        unattended: bool,
     },
     RegisterLocalProvider {
         port: u16,
@@ -460,6 +464,11 @@ pub struct SessionRequest {
     /// Whether the session writes a transcript and a resumable snapshot.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub save_session: Option<bool>,
+    /// Whether no one can answer an approval prompt for this session. When
+    /// true, a tool call that would pause the turn for approval is denied
+    /// instead of pausing. Absent means false.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub unattended: Option<bool>,
     /// A title for the session (see `SessionUpdate::title` for the rules).
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub title: Option<String>,
@@ -488,6 +497,7 @@ impl SessionRequest {
             short_prompt,
             no_skills,
             save_session,
+            unattended,
             title,
         } = patch;
         SessionRequest {
@@ -505,6 +515,7 @@ impl SessionRequest {
             short_prompt: short_prompt.or(self.short_prompt),
             no_skills: no_skills.or(self.no_skills),
             save_session: save_session.or(self.save_session),
+            unattended: unattended.or(self.unattended),
             title: title.or(self.title),
         }
     }
@@ -960,6 +971,7 @@ mod tests {
             short_prompt: Some(true),
             no_skills: Some(true),
             save_session: Some(true),
+            unattended: Some(true),
             title: Some("pinned title".to_string()),
             ..Default::default()
         }
@@ -989,7 +1001,22 @@ mod tests {
         assert_eq!(patched.system_prompt.as_deref(), Some("base prompt"));
         assert_eq!(patched.effort, Some(Effort::Medium));
         assert_eq!(patched.save_session, Some(true));
+        assert_eq!(patched.unattended, Some(true));
         assert_eq!(patched.title.as_deref(), Some("pinned title"));
+    }
+
+    #[test]
+    fn unattended_is_optional_on_the_wire() {
+        // A request without the field, and a resume op written before the
+        // field existed, both read as attended.
+        let request: SessionRequest = serde_json::from_value(serde_json::json!({})).unwrap();
+        assert_eq!(request.unattended, None);
+
+        let op = Op::ResumeSession { session_id: Id::new("ses"), unattended: true };
+        let mut json = serde_json::to_value(&op).unwrap();
+        json["ResumeSession"].as_object_mut().unwrap().remove("unattended");
+        let decoded: Op = serde_json::from_value(json).unwrap();
+        assert!(matches!(decoded, Op::ResumeSession { unattended: false, .. }));
     }
 
     #[test]
