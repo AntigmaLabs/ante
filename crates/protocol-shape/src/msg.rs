@@ -289,6 +289,9 @@ impl ToolEndStatus {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ToolEnd {
     pub tool_use_id: String,
+    /// Tool name, including when execution never started. Empty in older events.
+    #[serde(default)]
+    pub tool_name: String,
     pub status: ToolEndStatus,
     pub result_json: serde_json::Value,
 }
@@ -813,8 +816,8 @@ pub enum Scope {
 mod tests {
     use super::{
         Effort, Evt, ExtensionRefreshed, Id, ModelSpec, Op, PermissionMode, ProviderSpec,
-        ReviewDecision, SessionInfo, SessionRequest, SessionUpdate, ToolDecision, ToolUse, Usage,
-        WeightClass, event_msg, op_msg,
+        ReviewDecision, SessionInfo, SessionRequest, SessionUpdate, ToolDecision, ToolEnd,
+        ToolEndStatus, ToolUse, Usage, WeightClass, event_msg, op_msg,
     };
     use std::path::PathBuf;
 
@@ -865,6 +868,23 @@ mod tests {
         assert!(tool_use.malformed_args.is_none());
         let encoded = serde_json::to_value(tool_use).unwrap();
         assert!(encoded.get("malformed_args").is_none());
+    }
+
+    #[test]
+    fn tool_end_without_name_remains_backward_compatible() {
+        let legacy = serde_json::json!({
+            "tool_use_id": "call-1",
+            "status": "Denied",
+            "result_json": "Tool call denied by policy and was not executed."
+        });
+        let mut end: ToolEnd = serde_json::from_value(legacy.clone()).unwrap();
+        assert!(end.tool_name.is_empty());
+        assert_eq!(end.status, ToolEndStatus::Denied);
+
+        end.tool_name = "Bash".to_string();
+        let mut expected = legacy;
+        expected["tool_name"] = serde_json::json!("Bash");
+        assert_eq!(serde_json::to_value(end).unwrap(), expected);
     }
 
     #[test]

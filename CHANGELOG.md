@@ -1,5 +1,26 @@
 # Changelog
 
+## v0.preview.97 - 2026-09-10
+
+### Added
+- Fullscreen chat render mode for terminals that drop inline scrollback (Windows consoles and similar): set `ui.render_mode = "fullscreen"` or toggle the **Render mode** row in `/config`. The chat runs on the alternate screen with PgUp/PgDn and mouse-wheel scrolling, drag-to-select copy, and the Ctrl+O, diff pager, and resume overlays return to the chat on close. Inline mode remains the default and is unchanged
+- `--fullscreen` flag starts a single run in fullscreen render mode without persisting the setting
+
+### Changed
+- Pinned llama.cpp for offline inference bumped from `b10612` to `b10826`, which includes the CUDA mmid/mmf race fix; the platform compatibility matrix is unchanged
+- The Ctrl+O transcript and diff pager scroll three lines per mouse-wheel notch instead of one, so physical mouse wheels can move long transcripts
+
+### Fixed
+- Consecutive streamed replies no longer disappear from terminal scrollback in xterm.js-based terminals: the inline renderer scrolls with linefeeds at the bottom margin instead of partial-region scroll sequences
+- `ToolEnd` is emitted as each tool call finishes instead of after the whole concurrent batch settles, so a fast call no longer shows `still working` beside a slow sibling. Every terminal outcome (denied, cancelled, malformed) reports through one path, and a cancellation is never overwritten by a late task result
+- Tool calls denied, cancelled, or rejected before execution now appear in the TUI and headless output instead of arriving as a result with no matching entry
+- The blank spacer line between consecutive tool cells is kept when a running tool's `still working` row appears
+- Scrolling a pager back to the bottom re-pins it so new content follows again (also affected the Ctrl+O overlay)
+- JSONL and WebSocket transports keep reading control operations while an output write is stalled, so `Interrupt` and `Shutdown` are not stuck behind a slow peer. Each write has a 30-second deadline, and reply-queue overflow disconnects the peer instead of blocking input
+
+### Wire
+- `Evt::ToolEnd` adds a `tool_name` field, populated even when execution never started; older events without the field still deserialize with an empty name
+
 ## v0.preview.96 - 2026-09-09
 
 ### Added
