@@ -203,9 +203,9 @@ pub enum Evt {
     },
     UsageUpdate {
         usage: Usage,
-        /// Context-window occupancy for the root session, pre-calculated in core.
-        /// `None` before the first response or when the model's context limit is
-        /// unverified (so clients never render a confidently-wrong percentage).
+        /// Context-window occupancy for the root session. `None` carries no
+        /// context update, including for subagent usage or an unverified model
+        /// limit. Clients retain the last snapshot until the session or model changes.
         #[serde(default, skip_serializing_if = "Option::is_none")]
         context: Option<ContextWindow>,
     },
@@ -464,6 +464,14 @@ pub struct SessionRequest {
     /// advertised, or invocable.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub no_skills: Option<bool>,
+    /// Skills added to the default set; names match exactly. Does not enable
+    /// skill loading when disabled.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub include_skills: Option<Vec<String>>,
+    /// Skills removed from the session; names match exactly. Wins over
+    /// `include_skills`.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub exclude_skills: Option<Vec<String>>,
     /// Whether the session writes a transcript and a resumable snapshot.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub save_session: Option<bool>,
@@ -499,6 +507,8 @@ impl SessionRequest {
             enable_auto_memory,
             short_prompt,
             no_skills,
+            include_skills,
+            exclude_skills,
             save_session,
             unattended,
             title,
@@ -517,6 +527,8 @@ impl SessionRequest {
             enable_auto_memory: enable_auto_memory.or(self.enable_auto_memory),
             short_prompt: short_prompt.or(self.short_prompt),
             no_skills: no_skills.or(self.no_skills),
+            include_skills: include_skills.or(self.include_skills),
+            exclude_skills: exclude_skills.or(self.exclude_skills),
             save_session: save_session.or(self.save_session),
             unattended: unattended.or(self.unattended),
             title: title.or(self.title),
@@ -979,6 +991,22 @@ mod tests {
         assert_eq!(parsed.short_prompt, None);
     }
 
+    #[test]
+    fn skill_filters_are_optional_on_the_wire_and_preserve_empty_overrides() {
+        let absent: SessionRequest = serde_json::from_value(serde_json::json!({})).unwrap();
+        assert_eq!(absent.include_skills, None);
+        assert_eq!(absent.exclude_skills, None);
+        let encoded = serde_json::to_value(absent).unwrap();
+        assert!(encoded.get("include_skills").is_none());
+        assert!(encoded.get("exclude_skills").is_none());
+
+        let json = serde_json::json!({"include_skills": ["Review"], "exclude_skills": []});
+        let parsed: SessionRequest = serde_json::from_value(json.clone()).unwrap();
+        assert_eq!(parsed.include_skills, Some(vec!["Review".to_string()]));
+        assert_eq!(parsed.exclude_skills, Some(Vec::new()));
+        assert_eq!(serde_json::to_value(parsed).unwrap(), json);
+    }
+
     fn pinned_request() -> SessionRequest {
         SessionRequest {
             model: Some("base-model".to_string()),
@@ -990,6 +1018,8 @@ mod tests {
             enable_auto_memory: Some(true),
             short_prompt: Some(true),
             no_skills: Some(true),
+            include_skills: Some(vec!["review".to_string()]),
+            exclude_skills: Some(vec!["noisy".to_string()]),
             save_session: Some(true),
             unattended: Some(true),
             title: Some("pinned title".to_string()),
@@ -1009,6 +1039,7 @@ mod tests {
             permission_mode: Some(PermissionMode::Yolo),
             enable_auto_memory: Some(false),
             short_prompt: Some(false),
+            include_skills: Some(Vec::new()),
             ..Default::default()
         });
         // Overwritten by the patch:
@@ -1016,6 +1047,7 @@ mod tests {
         assert_eq!(patched.permission_mode, Some(PermissionMode::Yolo));
         assert_eq!(patched.enable_auto_memory, Some(false));
         assert_eq!(patched.short_prompt, Some(false));
+        assert_eq!(patched.include_skills, Some(Vec::new()));
         // Untouched (patch unset == keep):
         assert_eq!(patched.provider.as_deref(), Some("anthropic"));
         assert_eq!(patched.system_prompt.as_deref(), Some("base prompt"));
@@ -1023,6 +1055,7 @@ mod tests {
         assert_eq!(patched.save_session, Some(true));
         assert_eq!(patched.unattended, Some(true));
         assert_eq!(patched.title.as_deref(), Some("pinned title"));
+        assert_eq!(patched.exclude_skills, Some(vec!["noisy".to_string()]));
     }
 
     #[test]

@@ -441,10 +441,11 @@ const OPENROUTER_RUNGS: &[(Effort, ReasoningEffort)] = &[
 ];
 
 fn deepseek_max_reasoning_effort(provider_id: &str, model_id: &str) -> ReasoningEffort {
-    // OpenRouter's April preview accepted `xhigh`; the 0813 GA model advertises
-    // DeepSeek's native `max` spelling.
+    // OpenRouter's April preview accepted `xhigh`; Pro 0813 and V4.1 Flash
+    // advertise DeepSeek's native `max` spelling.
     if provider_id.eq_ignore_ascii_case("openrouter")
         && !model_id.eq_ignore_ascii_case("deepseek/deepseek-v4-pro-0813")
+        && !model_id.eq_ignore_ascii_case("deepseek/deepseek-v4.1-flash")
     {
         ReasoningEffort::XHigh
     } else {
@@ -653,7 +654,7 @@ mod tests {
         let qwen_unset = profile("openai-compatible", "qwen3.7-max").thinking_params(None);
         assert_eq!(qwen_unset.enable_thinking, Some(true));
 
-        let deepseek = profile("deepseek", "deepseek-v4-pro").thinking_params(Some(Effort::Max));
+        let deepseek = profile("deepseek", "deepseek-flash").thinking_params(Some(Effort::Max));
         assert!(matches!(deepseek.reasoning_effort, Some(ReasoningEffort::Max)));
         assert_eq!(deepseek.thinking.unwrap().thinking_type, "enabled");
 
@@ -666,6 +667,11 @@ mod tests {
             .thinking_params(Some(Effort::Max));
         assert!(matches!(openrouter_deepseek_ga.reasoning_effort, Some(ReasoningEffort::Max)));
         assert_eq!(openrouter_deepseek_ga.thinking.unwrap().thinking_type, "enabled");
+
+        let openrouter_deepseek_v41 = profile("openrouter", "deepseek/deepseek-v4.1-flash")
+            .thinking_params(Some(Effort::Max));
+        assert!(matches!(openrouter_deepseek_v41.reasoning_effort, Some(ReasoningEffort::Max)));
+        assert_eq!(openrouter_deepseek_v41.thinking.unwrap().thinking_type, "enabled");
 
         // The middle of the DeepSeek scale rides on "high", its known-good level.
         let deepseek_mid =

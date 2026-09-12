@@ -1,5 +1,24 @@
 # Changelog
 
+## v0.preview.98 - 2026-09-11
+
+### Added
+- Configurable provider `thinking_display` (`off`, `concise`, `detailed`) in the catalog spec to request readable reasoning summaries, with built-in presets defaulting to `detailed` and support across OpenAI Responses, Anthropic, and Gemini
+- DeepSeek V4.1 Flash in DeepSeek and OpenRouter catalogs, with vision support, 384,000-token output limits, and maximum reasoning effort
+- `--include-skills` and `--exclude-skills` CLI flags override skill filters for a session without modifying saved settings
+
+### Changed
+- Subagent token and cache usage is forwarded to the parent session so turn usage totals include delegated work; child context snapshots remain private, preserving the root context reading in the TUI
+- Removed DeepSeek V4 Pro presets from DeepSeek, Antix, and OpenRouter catalogs
+- Dependency updates: indexmap to 2.14.2, rmcp to 3.2.0
+
+### Fixed
+- Stream idle timeouts measure silence directly at transport reads instead of waiting for usable output, preventing timeouts during keepalives, lifecycle events, or slow tool-call argument streaming
+
+### Wire
+- `SessionRequest` adds optional `include_skills` and `exclude_skills` fields to override skill filters
+- `Evt::UsageUpdate` context snapshot is omitted (`None`) on subagent usage updates
+
 ## v0.preview.97 - 2026-09-10
 
 ### Added
