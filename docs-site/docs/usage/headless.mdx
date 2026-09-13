@@ -50,14 +50,16 @@ ante [OPTIONS] [--prompt <PROMPT>]
 | `--provider <PROVIDER>` | Override the API provider (e.g. `anthropic`, `openai`, `gemini`, `xai`, `openrouter`, `local`) |
 | `--profile <NAME>` | Process-wide selection of an existing `~/.ante/<name>.settings.json`; `ANTE_PROFILE` is equivalent, an unknown name falls back to `settings.json`, and the built-in `bare` profile disables ambient features, skills, MCP servers, session saving, and auto-memory |
 | `--effort <LEVEL>` | Override the model's [effort level](/usage/models-and-thinking#effort): `min`, `low`, `medium`, `high`, `xhigh`, or `max` |
-| `--yolo` | Skip all tool approval prompts |
-| `--permission-mode <MODE>` | Accepted for CLI compatibility, but headless runs always use `yolo` because there is no interactive approval prompt |
+| `--yolo` | Use `yolo` permission mode, auto-approving tool calls |
+| `--permission-mode <MODE>` | Use `strict`, `auto`, or `yolo`. Headless defaults to `yolo`; under `strict` or `auto`, a call that would require an interactive approval is denied immediately instead of pausing forever |
 | `--output-format <FORMAT>` | Output format: `json`, `human`, `minimal` (default: `minimal`) |
 | `--system-prompt <PROMPT>` | Replace the default system prompt entirely. Conflicts with `--system-prompt-file` |
 | `--system-prompt-file <PATH>` | Read the replacement system prompt from a UTF-8 file. Conflicts with `--system-prompt` |
 | `--append-system-prompt <TEXT>` | Append text to the system prompt |
 | `--short-prompt` | Use the compact prompt set: a condensed system prompt and shorter built-in tool descriptions |
 | `--skills` / `--no-skills` | Load or skip skill discovery, overriding the `skills` setting. With `--no-skills`, no skills are advertised or invocable |
+| `--include-skills <SKILLS>` | Add exact skill names for this run, replacing the `include_skills` setting. Use a comma-separated value or repeat the flag |
+| `--exclude-skills <SKILLS>` | Remove exact skill names for this run, replacing the `exclude_skills` setting. Use a comma-separated value or repeat the flag; exclusions win |
 | `--enable-auto-memory` / `--disable-auto-memory` | Turn [auto-memory](/extend/memory) on or off, overriding the `auto_memory` setting (headless default: off) |
 | `--tools <TOOLS>` | Replace the default tool set with exactly these tools. Use a comma-separated value or repeat the flag; the removed `--allowed-tools` name is rejected |
 | `--include-tools <TOOLS>` | Add tools on top of the default set, or on top of the `--tools` base set. Use a comma-separated value or repeat the flag |
@@ -65,7 +67,7 @@ ante [OPTIONS] [--prompt <PROMPT>]
 | `-r`, `--resume <SESSION_ID>` | Resume a previously saved session by its ID |
 | `--session-save` / `--no-session-save` | Save or skip session persistence, overriding the `session_save` setting. With `--no-session-save`, no transcript or resumable snapshot is written; conflicts with `--resume` |
 | `--check` | Run a verification pass after the main task completes |
-| `--offline-model <PATH>` | Path to a local GGUF file. Boots a local llama-server, points the session at the `local` provider, and tears it down on exit |
+| `--offline-model <PATH>` | Path to a local GGUF file. Starts the managed llama.cpp router with `llama serve`, loads the model, points the session at the `local` provider, and tears it down on exit |
 
 ## Output formats
 
@@ -113,7 +115,7 @@ In headless mode, Ante automatically appends the current directory's folder stru
 ## Headless behavior notes
 
 - **Raw streaming deltas are suppressed** — Output shows complete messages, not the incremental chunks, so logs stay clean
-- **Yolo policy is implied** — All tool calls are auto-approved (no interactive prompts), regardless of `--permission-mode`
+- **Unattended policy is explicit** — The default is `yolo`. An explicit `--permission-mode strict` or `auto` is honored, but any call that would need a prompt is denied at admission because no one can answer it
 - **Authentication is checked eagerly** — If the provider isn't authenticated, Ante exits immediately with an error
 - **Fails fast if the daemon dies** — If the agent process exits before finishing the task, Ante reports an error instead of a success exit code
 

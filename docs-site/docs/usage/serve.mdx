@@ -42,7 +42,7 @@ One host owns a socket path at a time. Ownership is an exclusive lock on a `.loc
 ante serve --ws 127.0.0.1:8080
 ```
 
-The `--ws` flag starts a WebSocket server on the given address. Each client gets its own connection and session on the shared host. The server loops accepting new connections until a client sends a `Shutdown` operation.
+The `--ws` flag starts a WebSocket server on the given address. Each client gets its own connection and session on the shared host. The server keeps accepting connections until the host receives `SIGINT` or `SIGTERM`; a client's `Shutdown` closes only that connection.
 
 :::note
 The transport flags are mutually exclusive — pick one of `--stdio`, `--sock`, or `--ws`.
@@ -59,9 +59,11 @@ The address must be a loopback address (`127.0.0.0/8` or `::1`). Ante refuses to
 3. Send `UserInput` operations to submit prompts
 4. Receive streaming events — thinking deltas, message deltas, tool calls, approvals — on the same connection
 5. Respond to `TurnPause` events with `ApprovalResponse` to approve or deny tool calls
-6. Send `Shutdown` (or disconnect) to close the connection gracefully; on stdio and WebSocket, `Shutdown` also ends the serving process
+6. Send `Shutdown` (or disconnect) to close the connection gracefully. On stdio that also ends the one-connection process; socket and WebSocket hosts continue serving other clients until signalled
 
 See the [Protocol Reference](/reference/protocol-reference) for the complete message catalog and wire format.
+
+Protocol input is read independently from event output, so `Interrupt` and `Shutdown` remain responsive even when a peer stops consuming events. Each event write has a 30-second deadline; a stalled or response-flooding peer is disconnected instead of blocking the host.
 
 ## Example session
 
@@ -153,7 +155,7 @@ The crate's `claude` module is unrelated to the Ante protocol: it drives Claude 
 | **Output** | Formatted text (minimal/human/json) | Raw protocol events (JSONL) |
 | **Transport** | N/A | Stdio (default), Unix socket (`--sock`), or WebSocket (`--ws`) |
 | **Sessions** | Implicit — one per invocation | Explicit — client sends `StartSession` |
-| **Tool approval** | Auto-approved (yolo implied) | Client must respond to `TurnPause` events |
+| **Tool approval** | Defaults to yolo; explicit strict/auto denies calls that would prompt | Client must respond to `TurnPause` events, or declare the session `unattended` to deny them |
 
 ## CLI reference
 
@@ -162,7 +164,7 @@ The crate's `claude` module is unrelated to the Ante protocol: it drives Claude 
 | `--stdio` | Use JSONL over stdin/stdout (default) |
 | `--sock [PATH]` | Serve the protocol over a Unix domain socket (default: `run/serve.sock` in the Ante home) |
 | `--ws <ADDR>` | Serve the protocol over WebSocket on a loopback address |
-| `--offline-model <PATH>` | Boot a local llama-server with this GGUF model and register it as the `local` provider for every connecting client |
+| `--offline-model <PATH>` | Start the shared `llama serve` router with this GGUF model and register it as the `local` provider for every connecting client |
 
 :::note
 The `--prompt` flag cannot be used with `ante serve`. Use `UserInput` operations instead.

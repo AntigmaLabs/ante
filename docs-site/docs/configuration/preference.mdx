@@ -7,7 +7,7 @@ description: "Settings file, environment variables, and directory structure"
 
 Ante stores user preferences in `~/.ante/settings.json`. A repository can layer its own `.ante/settings.json` on top for everyone working in it — see [Project settings](#project-settings).
 
-Most of these settings can also be viewed and changed interactively with the `/config` command in the TUI — a searchable settings dialog with in-place toggles (tips, ambient predictions, grouped tool activity, short prompt, auto compact, resize reflow, default permission mode, update channel) and shortcuts into the dedicated dialogs (theme, model, provider, status line, MCP servers, offline mode). Changes are persisted to `settings.json` immediately; settings consumed at startup, such as `resize_reflow`, are marked "(next session)" in the dialog and take effect on the next session.
+Most of these settings can also be viewed and changed interactively with the `/config` command in the TUI — a searchable settings dialog with in-place toggles (tips, ambient predictions, grouped tool activity, chat render mode, short prompt, auto compact, resize reflow, default permission mode, update channel) and shortcuts into the dedicated dialogs (theme, model, provider, status line, MCP servers, offline mode). Changes are persisted to `settings.json` immediately; render-mode changes apply live, while settings consumed at startup, such as `resize_reflow`, are marked "(next session)" and take effect on the next session.
 
 An example `settings.json`:
 
@@ -37,6 +37,7 @@ An example `settings.json`:
   "auto_compact": true,
   "channel": "stable",
   "resize_reflow": "conservative",
+  "render_mode": "inline",
   "status_line": ["model-name", "current-dir"],
   "status_line_command": {
     "command": "~/.config/ante/statusline.sh",
@@ -70,8 +71,8 @@ An example `settings.json`:
 | `tools` | Base tool set for fresh sessions, replacing the default set (an empty list selects no tools). `--tools` overrides it for a run; `--include-tools` / `--exclude-tools` still apply on top |
 | `auto_memory` | Whether [auto-memory](/extend/memory) is on. When unset, the launch mode decides: on in the TUI, off in headless runs. `--enable-auto-memory` / `--disable-auto-memory` override it for a run |
 | `skills` | Whether [skills](/extend/skills) are discovered and loaded. On unless set to `false`; `--skills` / `--no-skills` override it for a run |
-| `include_skills` | Skill names equipped on top of the session's base skill set — additive, like `--include-tools` for tools. Names match exactly |
-| `exclude_skills` | Skill names removed from every session's skill set. Wins over `include_skills`; names match exactly. See [Selecting individual skills](/extend/skills#selecting-individual-skills) |
+| `include_skills` | Skill names equipped on top of the session's base skill set — additive, like `--include-tools` for tools. Names match exactly; `--include-skills` replaces this list for one run |
+| `exclude_skills` | Skill names removed from every session's skill set. Wins over `include_skills`; names match exactly. `--exclude-skills` replaces this list for one run. See [Selecting individual skills](/extend/skills#selecting-individual-skills) |
 | `session_save` | Whether session transcripts and resumable snapshots are saved. On unless set to `false`; `--session-save` / `--no-session-save` override it for a run |
 | `permission_mode` | Default permission mode (`strict`, `auto`, or `yolo`). `strict` and `auto` are written automatically when you cycle modes with **Shift+Tab** in the TUI; `yolo` remains session-only. Unrecognized values are ignored rather than failing the whole file |
 | `permissions` | Persistent tool permission rules, grouped by `allow`, `ask`, and `deny` matchers (see [Permissions](/configuration/permission)) |
@@ -84,6 +85,7 @@ An example `settings.json`:
 | `auto_compact` | Proactively reduce older history as the dialog nears the context limit: aged tool results are evicted first, then only the older prefix the model will no longer see is summarized. Manual `/compact` targets a tighter working set than this automatic path. On unless set to `false`; `/compact` and overflow recovery still work when disabled. Toggling it in `/config` applies to the running session |
 | `channel` | Release channel `ante update` tracks (`stable` or `nightly`). Defaults to `stable`; legacy `latest` values are treated as `stable`. See [Update & Channels](/start/update). |
 | `resize_reflow` | Scrollback strategy on terminal resize: `conservative` (default) or `purge` (see below) |
+| `render_mode` | Chat rendering strategy: `inline` (default, terminal-owned scrollback) or `fullscreen` (alternate screen with Ante-managed scrolling). Changes in `/config` apply live; `--fullscreen` overrides startup for one run without persisting |
 | `status_line` | Items to display in the TUI status line footer (see below) |
 | `status_line_command` | Shell command that renders a fully custom status line (see below). Takes precedence over `status_line` while set |
 | `model_effort` | Per-model [effort](/usage/models-and-thinking#effort) overrides — keys are model names, values are `min` / `low` / `medium` / `high` / `xhigh` / `max`. Written automatically when you move the effort slider in `/models` |
@@ -227,6 +229,16 @@ printf '\033[36m[%s]\033[0m %s' "$model" "$dir"
 ```
 
 Make it executable (`chmod +x`) before pointing `command` at it. If the command fails — not executable, non-zero exit, or timeout — the footer shows a one-line diagnostic such as `status line: sh: …: Permission denied` based on the script's stderr. Script changes are picked up on the next run, but changes to `settings.json` itself require a restart.
+
+### Chat render mode
+
+The default `inline` mode keeps the chat in your terminal's normal scrollback. Use `fullscreen` when a terminal or console drops inline history: Ante moves the chat to the alternate screen, owns its scrollback, and enables `PgUp` / `PgDn`, mouse-wheel scrolling, and drag-to-copy selection.
+
+```json
+{ "render_mode": "fullscreen" }
+```
+
+Switch **Render mode** in `/config` to apply and persist the change immediately. To start only the current run in fullscreen without changing settings, use `ante --fullscreen`.
 
 ### Resize reflow
 

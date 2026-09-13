@@ -43,7 +43,7 @@ ante serve --sock /tmp/ante.sock
 ante serve --ws 127.0.0.1:8080
 ```
 
-`--ws` 参数在指定地址上启动 WebSocket 服务端。每个客户端在共享主机上拥有独立连接与会话。服务端持续循环接受新连接，直到收到 `Shutdown` 操作指令。
+`--ws` 参数在指定地址上启动 WebSocket 服务端。每个客户端在共享主机上拥有独立连接与会话。服务端会持续接受连接，直到宿主收到 `SIGINT` 或 `SIGTERM`；某个客户端的 `Shutdown` 只关闭该连接。
 
 :::note
 传输方式参数互斥 —— 只能在 `--stdio`、`--sock`、`--ws` 中选择其一。
@@ -60,9 +60,11 @@ ante serve --ws 127.0.0.1:8080
 3. 发送 `UserInput` 操作提交提示词
 4. 在同一连接上接收流式事件 —— 思考增量、消息增量、工具调用、审批请求
 5. 响应 `TurnPause` 事件，发送 `ApprovalResponse` 以批准或拒绝工具调用
-6. 发送 `Shutdown`（或断开连接）以优雅关闭连接；在 stdio 和 WebSocket 模式下，`Shutdown` 还会结束服务进程
+6. 发送 `Shutdown`（或断开连接）以优雅关闭连接。stdio 模式下这也会结束单连接进程；Unix 套接字与 WebSocket 宿主则继续服务其他客户端，直到收到信号
 
 完整消息目录与报文格式请参阅[通信协议参考手册](/reference/protocol-reference)。
+
+协议输入与事件输出相互独立读取，因此即使对端停止消费事件，`Interrupt` 与 `Shutdown` 仍能及时响应。每次事件写入的期限为 30 秒；持续阻塞或用响应淹没队列的对端会被断开，而不会拖住宿主。
 
 ## 调用会话示例 {#example-session}
 
@@ -154,7 +156,7 @@ let client = connect("unix:/tmp/ante.sock".parse()?, ConnectOptions::default()).
 | **输出形式** | 格式化文本（minimal/human/json） | 原始协议事件流（JSONL） |
 | **传输层** | 无 | Stdio（默认）、Unix 套接字 (`--sock`) 或 WebSocket (`--ws`) |
 | **会话管理** | 隐式创建 —— 单次调用对应单会话 | 显式声明 —— 客户端发送 `StartSession` |
-| **工具审批** | 自动批准（默认隐式 yolo） | 客户端必须主动响应 `TurnPause` 事件 |
+| **工具审批** | 默认为 yolo；显式 strict/auto 会拒绝原本需要提示的调用 | 客户端必须响应 `TurnPause`，或将会话声明为 `unattended` 以自动拒绝 |
 
 ## 命令行参数参考 {#cli-reference}
 
@@ -163,7 +165,7 @@ let client = connect("unix:/tmp/ante.sock".parse()?, ConnectOptions::default()).
 | `--stdio` | 通过 stdin/stdout 提供 JSONL 协议服务（默认） |
 | `--sock [PATH]` | 通过 Unix 域套接字提供协议服务（默认为 Ante 主目录下的 `run/serve.sock`） |
 | `--ws <ADDR>` | 在本地回环地址上通过 WebSocket 提供协议服务 |
-| `--offline-model <PATH>` | 自动使用指定的 GGUF 模型拉起本地 llama-server，并将其作为 `local` 提供商注册给所有接入客户端 |
+| `--offline-model <PATH>` | 使用指定 GGUF 模型启动共享的 `llama serve` 路由器，并将其作为 `local` 提供商注册给所有接入客户端 |
 
 :::note
 `--prompt` 参数不能与 `ante serve` 同时使用。请通过 `UserInput` 操作指令传递提示词。

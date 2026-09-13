@@ -49,13 +49,13 @@ Operations (`Op`) are sent from the client to the daemon, wrapped in an `OpMsg` 
 |---|---|---|
 | `StartSession` | `SessionRequest` | Initialize a new session; set fields are pinned and unset fields resolve from the host's current defaults |
 | `UpdateSession` | `SessionUpdate` | Update the active session (e.g. switch models, or rename it) without restarting |
-| `ResumeSession` | `session_id` | Resume a previously persisted session |
+| `ResumeSession` | `session_id`, `unattended?` | Resume a previously persisted session; unattended clients deny calls that would otherwise pause for approval |
 | `UserInput` | `String` | Submit a user prompt |
 | `ShellInput` | `String` | Run a daemon-side shell command without starting an agent turn |
 | `Steer` | `String` | Additional user guidance for the active turn |
 | `ApprovalResponse` | `turn_id`, `responses: [ToolDecision]` | Respond to tool approval requests; a `Deny` may carry a `message` back to the model |
 | `SlashCommand` | `name`, `args` | Invoke a skill by name |
-| `RegisterLocalProvider` | `port`, `model?` | Register a running local llama-server as the `local` provider |
+| `RegisterLocalProvider` | `port`, `model?` | Register a running local inference server or router as the `local` provider |
 | `RestoreLocalProvider` | — | Restore the previously registered local provider |
 | `Compact` | `instructions?` | Compact older conversation history, optionally steering the handoff summary |
 | `ContextReport` | — | Request a per-category context-window usage report |
@@ -84,8 +84,8 @@ Events (`Evt`) are sent from the daemon to the client, wrapped in an `EventMsg` 
 | `ThinkingDelta` | `String` | Streaming thinking content chunk |
 | `ToolStart` | `ToolUse` | Tool execution began |
 | `ToolUpdate` | `tool_use_id`, `seq`, `message` | Tool execution progress update |
-| `ToolEnd` | `tool_use_id`, `status`, `result_json`, `is_error` | Tool execution completed |
-| `UsageUpdate` | `usage` | Token usage statistics |
+| `ToolEnd` | `tool_use_id`, `tool_name`, `status`, `result_json` | Tool execution completed, was denied, was cancelled, or failed |
+| `UsageUpdate` | `usage`, `context?` | Token usage statistics; sub-agent updates omit the private child context snapshot |
 | `CompactStart` | — | Dialog compaction started |
 | `CompactEnd` | `summary?` | Dialog compaction completed; the replacement summary is absent when none was produced |
 | `ExtensionRefreshed` | `session_id`, `skills`, `subagents`, `mcp_servers` | Skills, subagents, and MCP server state refreshed |

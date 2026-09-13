@@ -66,6 +66,10 @@ When the main agent encounters a task that matches a sub-agent's description, it
 
 A sub-agent inherits the [skills](/extend/skills) equipped in the parent session, so skill-driven workflows keep working inside delegated tasks. Delegation is one level deep: a sub-agent never carries the `Agent` tool, so it cannot spawn further sub-agents.
 
+Each sub-agent runs in `auto` permission mode under an unattended policy. Safe calls proceed without prompting; a call that would require approval is denied immediately, and commands classified as destructive are never admitted. The child does not inherit the parent's permission mode or saved allow rules, because there is no visible prompt where a person could approve or persist a grant.
+
+Token and cache usage from a sub-agent is forwarded into the parent session's totals and appears in `/usage`. Its context-window snapshot stays private, so delegated work does not overwrite the root session's context indicator.
+
 ```
 ┌────────────┐     Agent     ┌──────────────┐
 │ Main Agent │ ────────────▶ │  Sub-Agent   │

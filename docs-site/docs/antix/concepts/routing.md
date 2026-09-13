@@ -82,7 +82,7 @@ Antix normalizes requests across these upstream providers. Route to any of them 
 | **Google Gemini** | Gemini 3.x | `google`, `gemini`, `google_ai_studio_gemini` | Native Gemini protocol at `/v1/models/{action}` and `/v1beta`. |
 | **xAI** | Grok | `xai`, `x-ai` | OpenAI-compatible upstream. |
 | **Alibaba Qwen** | `qwen3-max`, `qwen3-coder-plus`, `qwen3-coder-flash`, `qwq-plus`, `qwen-plus`, `qwen-max`, and more | `alibaba`, `qwen`, `dashscope` | Routed via DashScope. No distinctive key prefix — you **must** set `X-Antix-Provider` on BYOK calls. |
-| **DeepSeek** | `deepseek-chat` (V3), `deepseek-reasoner` (R1), `deepseek-v4-pro`, `deepseek-v4-flash` | `deepseek` | OpenAI-compatible upstream API. `deepseek-reasoner` returns a `reasoning_content` field alongside the final answer. |
+| **DeepSeek** | `deepseek-chat` (V3), `deepseek-reasoner` (R1), `deepseek-v4-flash` (V4.1 Flash) | `deepseek` | OpenAI-compatible upstream API. `deepseek-reasoner` returns a `reasoning_content` field alongside the final answer. |
 | **Zai (GLM)** | `glm-5.2`, `glm-5.1`, `glm-4.7` | `zai` | Zhipu AI's GLM model family, OpenAI-compatible upstream. No distinctive key prefix — you **must** set `X-Antix-Provider` on BYOK calls. |
 
 :::note Provider inference

@@ -50,13 +50,16 @@ The TUI needs stdout attached to a terminal. Redirecting or piping it (`ante > l
 | `--provider <PROVIDER>` | Override the API provider by catalog provider name. |
 | `--effort <LEVEL>` | Override the model's [effort level](/usage/models-and-thinking#effort) for this run: `min`, `low`, `medium`, `high`, `xhigh`, or `max`. |
 | `--yolo` | Skip tool approval prompts for the session. |
-| `--permission-mode <MODE>` | Override the permission mode for this run: `strict`, `auto`, or `yolo`. Conflicts with `--yolo`. |
+| `--fullscreen` | Start the TUI chat on the alternate screen with Ante-managed scrollback for this run. Does not persist the `render_mode` setting and is ignored in headless mode. |
+| `--permission-mode <MODE>` | Override the permission mode for this run: `strict`, `auto`, or `yolo`. Conflicts with `--yolo`. Headless runs honor the override and deny calls that would require an interactive approval. |
 | `--system-prompt <PROMPT>` | Replace the default system prompt entirely. Conflicts with `--system-prompt-file`. Persist a default with the `system_prompt` [setting](/configuration/preference). |
 | `--system-prompt-file <PATH>` | Read the replacement system prompt from a UTF-8 file. Conflicts with `--system-prompt`. |
 | `--append-system-prompt <TEXT>` | Append content to the default system prompt. Persist a default with the `append_system_prompt` [setting](/configuration/preference). |
 | `--short-prompt` | Use the compact prompt set for this run: a condensed system prompt and shorter built-in tool descriptions. Persist the default with the `short_prompt` [setting](/configuration/preference). |
 | `--skills` | Load skills for this run, overriding the `skills` setting. Conflicts with `--no-skills`. |
 | `--no-skills` | Skip skill discovery for this run, overriding the `skills` setting. No skills are advertised to the model or available as slash commands. |
+| `--include-skills <SKILLS>` | Add exact skill names to this session, replacing the `include_skills` setting. Pass a comma-separated value or repeat the flag. Does not re-enable skills when `--no-skills` or `"skills": false` is active. |
+| `--exclude-skills <SKILLS>` | Remove exact skill names from this session, replacing the `exclude_skills` setting. Pass a comma-separated value or repeat the flag; exclusions win over inclusions. |
 | `--enable-auto-memory` | Enable auto-memory for this run, overriding the `auto_memory` setting. Conflicts with `--disable-auto-memory`. |
 | `--disable-auto-memory` | Disable auto-memory for this run, overriding the `auto_memory` setting. Conflicts with `--enable-auto-memory`. |
 | `--tools <TOOLS>` | Replace the default tool set with exactly these tools. Pass a comma-separated value or repeat the flag; a space-separated list is rejected. Overrides the `tools` setting. The old `--allowed-tools` name has been removed. |
@@ -191,7 +194,7 @@ The update command checks for a newer Ante release and installs it when one is a
 | Flag | Description |
 |---|---|
 | `--channel <CHANNEL>` | Release channel to update from. Equivalent to the positional form. |
-| `--version <VERSION>` | Install an exact release instead of the channel's newest release. Accepts values with or without a leading `v`, such as `v0.preview.93` or `0.preview.93`. Conflicts with channel arguments. |
+| `--version <VERSION>` | Install an exact release instead of the channel's newest release. Accepts values with or without a leading `v`, such as `v0.preview.98` or `0.preview.98`. Conflicts with channel arguments. |
 | `-h`, `--help` | Print command help. |
 
 ### Examples
@@ -200,7 +203,7 @@ The update command checks for a newer Ante release and installs it when one is a
 ante update
 ante update nightly
 ante update --channel stable
-ante update --version v0.preview.93
+ante update --version v0.preview.98
 ante --profile work update
 ```
 

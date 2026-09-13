@@ -4,7 +4,7 @@ sidebar_label: "通信协议"
 description: "Ante 客户端与守护进程之间的消息协议、报文传输格式与类型定义的完整参考手册"
 ---
 
-Ante 在客户端（Client）与守护进程（Daemon）之间采用强类型的消息传递协议。在同进程内（In-Process）通过有界异步通道交换消息，外部客户端则通过标准输入输出（stdin/stdout）上的 JSON Lines 格式进行通信。
+Ante 在客户端（Client）与守护进程（Daemon）之间采用强类型的消息传递协议。同进程客户端使用有界操作通道和无界事件通道；外部客户端则通过 JSON Lines 或 WebSocket 帧交换相同消息。
 
 ## 传输协议格式 {#wire-format}
 
@@ -75,7 +75,10 @@ Ante 在客户端（Client）与守护进程（Daemon）之间采用强类型的
       "enable_auto_memory": null,
       "short_prompt": null,
       "no_skills": null,
+      "include_skills": null,
+      "exclude_skills": null,
       "save_session": null,
+      "unattended": null,
       "title": null
     }
   },
@@ -100,7 +103,10 @@ Ante 在客户端（Client）与守护进程（Daemon）之间采用强类型的
 | `enable_auto_memory` | `bool?` | 智能体是否记录并唤起[自动记忆（auto-memory）](/extend/memory)。`null` 时采用守护进程默认值（交互式会话开启） |
 | `short_prompt` | `bool?` | 启用紧凑工具描述与系统提示词以减小上下文占用。`null` 时采用配置默认值 |
 | `no_skills` | `bool?` | 为 `true` 时跳过所有技能发现，不声明或调用任何技能。`null` 时采用会话默认值 |
+| `include_skills` | `string[]?` | 添加到会话基础集的精确技能名称。提供列表时替换主机的 `include_skills` 设置；`no_skills` 为 `true` 时不会重新启用技能发现 |
+| `exclude_skills` | `string[]?` | 从会话移除的精确技能名称。提供列表时替换主机的 `exclude_skills` 设置，且优先级高于 `include_skills` |
 | `save_session` | `bool?` | 是否写入对话记录与可恢复快照。`null` 保留主机的会话保存默认值 |
+| `unattended` | `bool?` | 声明没有客户端可以回答审批提示。为 `true` 时，需要审批的调用会被拒绝而不是暂停；省略或设为 `null` 表示 `false` |
 | `title` | `string?` | 会话的展示名称，在恢复选择器中替代首条消息显示。文本两端会被裁剪，裁剪后为空即视为无标题。`null` 表示会话以无标题启动 |
 
 `SessionRequest` 在 `v0.preview.92` 中取代旧名称 `SessionOverrides`。JSON 字段名保持不变，但对 `StartSession` 而言，缺省值现在只有一个明确含义：立即解析主机默认值，而不是“保留上一会话不变”。实现 `/clear` 的客户端应自行保留并重新发送其请求，同时合并用户做过的模型或权限模式变更；协议中没有独立的重启操作。
@@ -135,12 +141,13 @@ Ante 在客户端（Client）与守护进程（Daemon）之间采用强类型的
 根据会话 ID 恢复此前持久化保存的会话。守护进程会还原已保存的对话以及固定的模型、提供商与思考深度；快照未固定的配置从主机当前默认值解析。随后重新发现扩展项并回放最近事件，以便客户端重建视图。
 
 ```json
-{ "op": { "ResumeSession": { "session_id": "ses_01ARZ..." } }, "id": "op_..." }
+{ "op": { "ResumeSession": { "session_id": "ses_01ARZ...", "unattended": false } }, "id": "op_..." }
 ```
 
 | 字段 | 类型 | 说明 |
 |---|---|---|
 | `session_id` | `Id` | 要恢复的会话标识符 |
+| `unattended` | `bool` | 恢复后的当前会话是否无人可回答审批提示。省略时默认为 `false`；为 `true` 时，原本需要提示的调用会在准入阶段被拒绝 |
 
 成功时守护进程会针对当前会话（若有）触发 `SessionEnd`，随后为恢复的会话触发 `SessionStart` 和 `ExtensionRefreshed`，并回放最多 200 条历史事件。失败时触发 `Error` 事件。
 
@@ -272,7 +279,7 @@ Ante 在客户端（Client）与守护进程（Daemon）之间采用强类型的
 
 ### RegisterLocalProvider {#registerlocalprovider}
 
-将运行中的本地推理服务（例如客户端启动的离线 `llama-server`）注册为此守护进程的 `local` 提供商。模型参数为可选 —— 提供时将本地提供商锁定为特定的 `ModelSpec`；否则本地提供商托管该服务提供的任意模型。
+将运行中的本地推理端点（例如 Ante 托管的 `llama serve` 路由器，或外部运行的 `llama-server`）注册为此守护进程的 `local` 提供商。模型参数为可选 —— 提供时将本地提供商锁定为特定的 `ModelSpec`；否则本地提供商托管该端点提供的任意模型。
 
 ```json
 {
@@ -288,7 +295,7 @@ Ante 在客户端（Client）与守护进程（Daemon）之间采用强类型的
 
 | 字段 | 类型 | 说明 |
 |---|---|---|
-| `port` | `u16` | 本地 llama-server 监听的端口号 |
+| `port` | `u16` | 本地推理服务器或路由器监听的端口号 |
 | `model` | `ModelSpec?` | 可选的模型规格，用于锁定提供商 |
 
 ### RestoreLocalProvider {#restorelocalprovider}
@@ -546,9 +553,9 @@ Ante 在客户端（Client）与守护进程（Daemon）之间采用强类型的
   "event": {
     "ToolEnd": {
       "tool_use_id": "tool_use_abc123",
+      "tool_name": "Read",
       "status": "Completed",
-      "result_json": { "content": "fn main() { ... }" },
-      "is_error": false
+      "result_json": { "content": "fn main() { ... }" }
     }
   }
 }
@@ -562,6 +569,8 @@ Ante 在客户端（Client）与守护进程（Daemon）之间采用强类型的
 | `Cancelled` | 工具执行被取消 |
 | `Denied` | 工具调用被用户拒绝 |
 | `Failed` | 工具执行发生错误失败 |
+
+即使工具尚未开始执行，`tool_name` 也会填充，因此客户端无需从前置事件重建名称，即可展示被拒绝、取消或参数异常的调用。旧事件反序列化时该字段可能为空字符串。协议中没有单独的 `is_error` 字段：可根据 `status` 推导（只有 `Completed` 不是错误）。每个已接受的工具调用都会收到终态 `ToolEnd`；并发调用会在各自完成时独立发送。
 
 ### 上下文压缩事件 {#compaction-events}
 
@@ -626,7 +635,7 @@ Skills 技能、子智能体或 MCP 服务器刷新时触发。`SessionStart` �
 
 #### UsageUpdate {#usageupdate}
 
-会话的 Token 消耗统计。在首条回复前或模型上下文限制未知时省略 `context`。仅包含原始测量数据 —— `used_tokens`（包含缓存的窗口占用）与 `limit_tokens`（模型原始上下文限制）；百分比由客户端自行计算。在提供商支持时，`usage` 还包含 `cache_read_tokens` 与 `cache_creation_tokens`。
+会话的 Token 消耗统计。在首条回复前、模型上下文限制未知或用量来自子智能体时省略 `context`。客户端应将每个 `usage` 累加进总计，但在 `context` 缺失时保留最后一次根会话上下文快照；委派任务不得覆盖根会话指示器。存在的 `context` 仅包含原始测量数据 —— `used_tokens`（包含缓存的窗口占用）与 `limit_tokens`（模型原始上下文限制）；百分比由客户端自行计算。在提供商支持时，`usage` 还包含 `cache_read_tokens` 与 `cache_creation_tokens`。
 
 ```json
 {
@@ -763,7 +772,7 @@ Skills 技能、子智能体或 MCP 服务器刷新时触发。`SessionStart` �
 
 ### 离线模式与协议边界 {#offline-mode-and-the-protocol}
 
-本地模型管理（引擎安装、模型发现、llama-server 生命周期）属于**客户端侧职责**。它是通过进程内的 `OfflineSubsystem` API 驱动的，而非通过守护进程协议。离线模式面向守护进程的唯一接口是 `RegisterLocalProvider` / `RestoreLocalProvider` —— 客户端自行启动 llama-server，随后向守护进程注册其端口号（及可选的 `ModelSpec`）。
+本地模型管理（引擎安装、模型发现及本地路由器生命周期）属于**客户端侧职责**。它是通过进程内的 `OfflineSubsystem` API 驱动的，而非通过守护进程协议。离线模式面向守护进程的唯一接口是 `RegisterLocalProvider` / `RestoreLocalProvider` —— 客户端启动托管的 `llama serve` 路由器（或连接外部服务器），随后向守护进程注册其端口号及可选的 `ModelSpec`。
 
 关于面向用户的工作流及 `--offline-model` CLI 参数，请参阅[离线模式](/local/offline)。
 
@@ -771,12 +780,14 @@ Skills 技能、子智能体或 MCP 服务器刷新时触发。`SessionStart` �
 
 ### 进程内通道 {#in-process-channels}
 
-当客户端与守护进程运行在同一进程内（TUI 或无头模式）时，通过 Tokio 有界异步 mpsc 通道通信：
+当客户端与守护进程运行在同一进程内（TUI 或无头模式）时，通过 Tokio 异步 mpsc 通道通信：
 
-| 通道 | 方向 | 缓冲区容量 |
+| 通道 | 方向 | 容量 |
 |---|---|---|
 | Op 操作指令通道 | 客户端 → 守护进程 | 256 条消息 |
-| Event 事件通道 | 守护进程 → 客户端 | 4096 条消息 |
+| Event 事件通道 | 守护进程 → 客户端 | 无界；待处理积压达到 4096 条时发出警告，并在排空时记录恢复 |
+
+事件不会因同进程客户端读取缓慢而丢失或阻塞。停止读取的客户端会累积内存积压，因此消费者即使在处理其他工作时也应持续排空事件接收器。
 
 ### Stdio 传输（JSONL） {#stdio-transport-jsonl}
 
@@ -803,9 +814,10 @@ Skills 技能、子智能体或 MCP 服务器刷新时触发。`SessionStart` �
 
 - 每个 WebSocket 客户端在共享主机上拥有独立连接与会话
 - 消息通过文本帧传输相同的 `OpMsg` 与 `EventMsg` JSON 对象
-- **客户端断开连接** → 当前连接与会话关闭，服务端接受下一个客户端
-- **收到 `Op::Shutdown`** → 连接与服务端一同关闭退出
-- 服务端持续循环接受新连接直至收到 `Shutdown`
+- **客户端断开连接** → 当前连接与会话关闭，其他客户端与宿主继续运行
+- **收到 `Op::Shutdown`** → 仅关闭该连接
+- 宿主并发接受客户端，直到收到 `SIGINT` 或 `SIGTERM`
+- 即使事件写入阻塞也会继续读取输入；每次写入的期限为 30 秒，响应队列溢出只会断开违规对端
 
 ## 完整交互生命周期示例 {#complete-flow-example}
 

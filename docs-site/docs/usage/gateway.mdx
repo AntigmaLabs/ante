@@ -110,10 +110,10 @@ ante gateway [--config PATH] [--model MODEL] [--provider PROVIDER] [--output-for
 | `--model` | `local` | LLM model to use for every session |
 | `--provider` | `local` | Provider for the chosen model |
 | `--output-format` | `minimal` | Gateway stdout format: `minimal`, `human`, or `json` |
-| `--offline-model` | — | Path to a local GGUF file. Boots a shared llama-server before accepting messages and routes every conversation through it (forces `--provider local --model local`) |
+| `--offline-model` | — | Path to a local GGUF file. Starts a shared `llama serve` router before accepting messages and routes every conversation through it (forces `--provider local --model local`) |
 
 :::tip
-The defaults assume a local llama-server. To use a hosted provider, pass `--provider` and `--model` explicitly (e.g. `ante gateway --provider anthropic --model claude-sonnet-5`).
+The defaults assume a local llama.cpp server or router. To use a hosted provider, pass `--provider` and `--model` explicitly (e.g. `ante gateway --provider anthropic --model claude-sonnet-5`).
 :::
 
 ### Output formats

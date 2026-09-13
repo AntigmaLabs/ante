@@ -51,14 +51,16 @@ ante [OPTIONS] [--prompt <PROMPT>]
 | `--provider <PROVIDER>` | 覆盖 API 模型提供商（例如 `anthropic`、`openai`、`gemini`、`xai`、`openrouter`、`local`） |
 | `--profile <NAME>` | 使用 `~/.ante/<name>.settings.json` 替代默认的 `settings.json`；也可通过环境变量 `ANTE_PROFILE` 指定；内置的 `bare` Profile 会禁用环境感知特性、技能、MCP 服务器、会话持久化与自动记忆 |
 | `--effort <LEVEL>` | 覆盖模型的[思考深度等级](/usage/models-and-thinking#effort)：`min`、`low`、`medium`、`high`、`xhigh` 或 `max` |
-| `--yolo` | 跳过所有工具调用的审批确认提示 |
-| `--permission-mode <MODE>` | 为兼容 CLI 保留接受；由于无头模式没有交互式审批提示，无头执行时始终自动以 `yolo` 运行 |
+| `--yolo` | 使用 `yolo` 权限模式，自动批准工具调用 |
+| `--permission-mode <MODE>` | 使用 `strict`、`auto` 或 `yolo`。无头模式默认使用 `yolo`；显式选择 `strict` 或 `auto` 时，需要交互审批的调用会被立即拒绝，而不会无限暂停等待 |
 | `--output-format <FORMAT>` | 输出格式：`json`、`human`、`minimal`（默认：`minimal`） |
 | `--system-prompt <PROMPT>` | 完全替换默认的系统提示词（与 `--system-prompt-file` 互斥） |
 | `--system-prompt-file <PATH>` | 从 UTF-8 文本文件中读取系统提示词替换内容（与 `--system-prompt` 互斥） |
 | `--append-system-prompt <TEXT>` | 向系统提示词末尾追加额外内容 |
 | `--short-prompt` | 启用紧凑提示词集：采用精简版系统提示词和更简短的内置工具描述 |
 | `--skills` / `--no-skills` | 加载或跳过技能发现（覆盖 `skills` 配置）；使用 `--no-skills` 时不会加载或声明任何技能 |
+| `--include-skills <SKILLS>` | 为本次运行添加精确匹配的技能名称，并替换 `include_skills` 设置。可传入逗号分隔值或重复使用参数 |
+| `--exclude-skills <SKILLS>` | 从本次运行移除精确匹配的技能名称，并替换 `exclude_skills` 设置。可传入逗号分隔值或重复使用参数；排除优先 |
 | `--enable-auto-memory` / `--disable-auto-memory` | 启用或禁用[自动记忆](/extend/memory)（覆盖 `auto_memory` 设置，无头模式默认关闭） |
 | `--tools <TOOLS>` | 用这些工具精确替换默认工具集。传入逗号分隔的值或重复使用参数；空格分隔列表会报错。旧参数名 `--allowed-tools` 已移除 |
 | `--include-tools <TOOLS>` | 在默认工具集或 `--tools` 基础集之上添加工具。传入逗号分隔的值或重复使用参数 |
@@ -66,7 +68,7 @@ ante [OPTIONS] [--prompt <PROMPT>]
 | `-r`, `--resume <SESSION_ID>` | 根据会话 ID 恢复之前保存的历史会话 |
 | `--session-save` / `--no-session-save` | 保存或跳过会话持久化（覆盖 `session_save` 设置）。使用 `--no-session-save` 时不写入记录快照；与 `--resume` 互斥 |
 | `--check` | 在主任务完成后自动执行一轮自我验证检查 |
-| `--offline-model <PATH>` | 本地 GGUF 文件路径。自动拉起本地 llama-server 并将提供商切换至 `local`，退出时自动销毁 |
+| `--offline-model <PATH>` | 本地 GGUF 文件路径。通过 `llama serve` 启动托管的 llama.cpp 路由器、加载模型并将提供商切换至 `local`，退出时自动关闭 |
 
 ## 输出格式（Output formats） {#output-formats}
 
@@ -114,7 +116,7 @@ ante --check -p "refactor the auth module to use async/await"
 ## 无头模式行为特性（Headless behavior notes） {#headless-behavior-notes}
 
 - **抑制原始流式增量（Raw streaming deltas are suppressed）** — 输出展示完整的消息而非增量片段，使日志保持整洁
-- **默认隐式使用 Yolo 策略（Yolo policy is implied）** — 所有工具调用均自动放行（无交互式提示），无论 `--permission-mode` 为何值
+- **明确的无人值守策略（Unattended policy）** — 默认使用 `yolo`。显式传入 `--permission-mode strict` 或 `auto` 时会按其执行，但任何需要提示确认的调用都会在准入阶段被拒绝，因为无头运行中无人可以回答
 - **启动时即检查认证状态（Authentication is checked eagerly）** — 若提供商未通过认证，Ante 会立即报错退出
 - **守护进程异常时快速失败（Fails fast if the daemon dies）** — 若智能体进程在任务完成前异常退出，Ante 会报告错误而非返回成功退出码
 

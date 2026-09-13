@@ -113,10 +113,10 @@ ante gateway [--config PATH] [--model MODEL] [--provider PROVIDER] [--output-for
 | `--model` | `local` | 所有会话使用的大语言模型 |
 | `--provider` | `local` | 所选模型的提供商 |
 | `--output-format` | `minimal` | 网关 stdout 输出格式：`minimal`、`human` 或 `json` |
-| `--offline-model` | — | 本地 GGUF 文件路径。在接受消息前拉起共享的 llama-server 并将所有对话路由至该服务（强制使用 `--provider local --model local`） |
+| `--offline-model` | — | 本地 GGUF 文件路径。在接受消息前启动共享的 `llama serve` 路由器，并将所有对话路由至该服务（强制使用 `--provider local --model local`） |
 
 :::tip
-默认配置假定使用本地 llama-server。若需使用云端托管提供商，请显式传入 `--provider` 和 `--model`（例如 `ante gateway --provider anthropic --model claude-sonnet-5`）。
+默认配置假定使用本地 llama.cpp 服务器或路由器。若需使用云端托管提供商，请显式传入 `--provider` 和 `--model`（例如 `ante gateway --provider anthropic --model claude-sonnet-5`）。
 :::
 
 ### 输出格式 {#output-formats}

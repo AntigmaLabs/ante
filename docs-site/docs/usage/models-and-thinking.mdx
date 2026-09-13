@@ -50,6 +50,10 @@ Your effort choice is remembered per model in `~/.ante/settings.json`, and you c
 ante --effort high
 ```
 
+## Readable reasoning
+
+Effort controls how much reasoning the model performs; a provider's `thinking_display` controls how much readable reasoning it returns. Set it to `off`, `concise`, or `detailed` in `~/.ante/catalog.json`. Turning the display off does not turn reasoning off, and requesting a detailed display does not raise effort. See [Thinking display](/reference/catalog-reference#thinking-display) for provider mappings and override behavior.
+
 :::tip
 You can also set your default model and provider via CLI flags: `ante --provider openai --model gpt-5.6-sol`, or configure defaults in your [preferences](/configuration/preference).
 :::

@@ -1,42 +1,40 @@
 ---
 title: Custom Engines
-description: "Use your own llama.cpp build, tune the launch command, or attach Ante to a server you already run"
+description: "Use your own llama.cpp build, tune managed inference, or attach Ante to a server you already run"
 ---
 
-[Offline mode](/local/offline) works out of the box with the engine Ante installs and supervises. Every layer of that is replaceable: the binary, the launch flags, or the server itself.
+[Offline mode](/local/offline) works out of the box with the engine Ante installs and supervises. You can replace the binary, customize model and GPU options, or attach a server you run yourself.
 
 ## Use your own llama.cpp build
 
 Ante resolves the engine binary in this order:
 
-1. The managed install at `~/.ante/llama.cpp/current`
-2. Binary paths pinned in `offline-config.json` (below)
-3. `llama-server` on your `PATH`
+1. A binary path pinned in `offline-config.json` (below)
+2. The managed `~/.ante/llama.cpp/current/llama` multiplexer
 
-So if you already have llama.cpp installed (say via `brew install llama.cpp`) and skip the managed install, Ante picks it up from `PATH`. To pin specific binaries explicitly, set both paths under `llama_cpp.binaries` in `~/.ante/offline-config.json`:
+Ante does not discover an arbitrary PATH installation for managed mode. To use your own build, point `llama_cpp.binaries.server` at its `llama` multiplexer in `~/.ante/offline-config.json`:
 
 ```json
 {
   "llama_cpp": {
     "binaries": {
-      "server": "/opt/llama.cpp/build/bin/llama-server",
-      "cli": "/opt/llama.cpp/build/bin/llama-cli"
+      "server": "/opt/llama.cpp/build/bin/llama"
     }
   }
 }
 ```
 
-Both files must exist for the override to take effect. The server binary must accept standard `llama-server` flags: Ante launches it with its own arguments (`--host 127.0.0.1 --port <port> -c <context> --jinja -ngl <gpu-layers>`, plus per-model flags such as `--temp` and `--mmproj`).
+The file must exist and support `llama serve`. Older saved paths ending in `llama-server` automatically resolve to a sibling `llama`, so existing managed installs migrate without a config rewrite. If that sibling multiplexer does not exist, install the supported engine with `ante offline install` or update the custom path.
 
 :::note
 Ante normally writes these fields itself during installation. If you point them at a custom build, the version check may offer an "upgrade" back to the pinned build — decline it to keep yours.
 :::
 
-## Tune the launch command
+## Tune managed inference {#tune-the-launch-command}
 
-Two knobs shape the command Ante runs:
+Two knobs shape managed inference:
 
-**Per-model extra flags.** Set `extra_args` in a model's [preferences](/local/offline#model-preferences) to append any `llama-server` flags. The string is parsed shell-style (quoting works) and appended after Ante's own flags, so on conflict your value wins:
+**Per-model extra flags.** Set `extra_args` in a model's [preferences](/local/offline#model-preferences) to add llama.cpp model options. The string is parsed shell-style (quoting works) and translated into that model's router preset, so a supplied value overrides Ante's model default without restarting the shared server:
 
 ```json
 {
@@ -48,6 +46,8 @@ Two knobs shape the command Ante runs:
   }
 }
 ```
+
+Router-owned or identity-changing options such as `--host`, `--port`, `--model`, and `--alias` are rejected. Malformed values also fail explicitly instead of producing a preset whose effective context, temperature, or reasoning state differs from what Ante reports.
 
 **GPU offload.** `llama_cpp.server_defaults.gpu_layers` controls the `-ngl` value. The default `-1` offloads all layers to the GPU; lower it if your VRAM is tight:
 

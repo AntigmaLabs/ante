@@ -84,9 +84,9 @@ for your machine.
 
 ## Detach behavior
 
-When Ante starts `llama-server`, it owns that process and can stop it. When Ante
-attaches to an external server, stopping offline mode only detaches Ante from
-the endpoint; the external server keeps running.
+When Ante starts its managed `llama serve` router, it owns that process and can
+stop it. When Ante attaches to an external `llama-server`, stopping offline mode
+only detaches Ante from the endpoint; the external server keeps running.
 
 The `local` provider exists in the catalog only while a server is registered —
 managed or attached. After a detach, `local` leaves the catalog, and selecting

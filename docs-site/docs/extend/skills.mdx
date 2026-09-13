@@ -119,6 +119,15 @@ To drop or add specific skills instead of all of them, set `exclude_skills` / `i
 
 Both take exact skill names. `exclude_skills` removes the named skills from every session and wins over `include_skills`; `include_skills` adds names on top of the session's base skill set, like `--include-tools` for tools. The selection applies to fresh and resumed sessions alike.
 
+Override either saved list for one run with a comma-separated value or a repeated flag:
+
+```bash
+ante --include-skills deploy-checklist,release-notes
+ante --exclude-skills noisy-skill --exclude-skills deploy-prod
+```
+
+`--include-skills` replaces the saved `include_skills` list, and `--exclude-skills` replaces the saved `exclude_skills` list. Exclusions still win after both lists are applied. These are filters, not enable switches: `--no-skills` or `"skills": false` keeps discovery off even when an include list is present.
+
 ## Bundled skills
 
 Ante ships a few skills at the system level:

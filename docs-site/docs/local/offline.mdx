@@ -19,7 +19,7 @@ When you select offline mode, Ante:
 2. Discovers GGUF models on your system
 3. Detects llama servers already running on local ports
 4. Estimates memory requirements from model size and context window
-5. Boots and supervises the inference server for you
+5. Starts and supervises one shared llama.cpp router with `llama serve`; switching managed models loads and unloads workers without restarting that process
 
 Prefer your own llama.cpp build, extra server flags, or a server you started yourself? See [Custom Engines](/local/custom-engines).
 
@@ -44,7 +44,7 @@ Prefer your own llama.cpp build, extra server flags, or a server you started you
    ```bash
    ante --offline-model /path/to/model.gguf "your prompt here"
    ```
-   Ante boots the llama-server, waits for it to be ready, then runs the session. Useful in scripts or CI.
+   Ante starts the llama.cpp router, loads the model, waits for it to be ready, then runs the session. Useful in scripts or CI.
 
 Once a model is loaded, it is registered as the `local` provider in the catalog, so you can also switch to it with `/providers` or target it with `--provider local`. The entry exists only while a server is registered: when the server stops, `local` leaves the catalog. Starting with a saved `local` selection and no server running gates the session with a notice (run `/offline-mode` to start or attach one); headless runs fail fast with the same message. See [mixing local and frontier](/local/overview#mixing-local-and-frontier).
 
@@ -60,7 +60,7 @@ ante --offline-model ~/.ante/models/Qwen3.5-9B-Q4_K_M.gguf "Explain this code"
 
 <img src="/assets/offline-headless.gif" alt="Headless offline mode running a one-shot prompt against a local GGUF model" style={{width: '100%', borderRadius: '8px', margin: '16px 0'}} />
 
-Ante starts the llama-server, waits for it to become ready, runs the session, then shuts the server down automatically.
+Ante starts the `llama serve` router, loads the model, waits for it to become ready, runs the session, then shuts the router down automatically.
 
 Headless runs never prompt to install the engine. On a machine that doesn't have it yet, the run fails fast and tells you to run `ante offline install` first — useful to bake into scripts and CI images.
 
@@ -74,7 +74,7 @@ ante serve --ws 127.0.0.1:9000 --offline-model ~/.ante/models/Qwen3.5-9B-Q4_K_M.
 
 <img src="/assets/offline-serve.gif" alt="Serve mode with a shared offline model across WebSocket clients" style={{width: '100%', borderRadius: '8px', margin: '16px 0'}} />
 
-The llama-server starts before accepting connections, and each WebSocket client uses the same running server. The server shuts down cleanly on `Ctrl+C` or `SIGTERM`.
+The `llama serve` router starts and loads the model before Ante accepts connections, and each WebSocket client uses the same running process. The router shuts down cleanly on `Ctrl+C` or `SIGTERM`.
 
 ## Loading progress
 
@@ -107,7 +107,7 @@ Per-model settings, saved automatically in the offline config:
 | `context_window` | Context window size (minimum 32K tokens) |
 | `thinking` | Enable/disable chain-of-thought |
 | `temperature` | Sampling temperature (unset means the model default) |
-| `extra_args` | Extra llama-server flags, appended to the launch command — see [Custom Engines](/local/custom-engines#tune-the-launch-command) |
+| `extra_args` | Extra llama.cpp model options, translated into the shared router's per-model preset — see [Custom Engines](/local/custom-engines#tune-the-launch-command) |
 
 ## Vision models
 
@@ -159,7 +159,7 @@ All offline mode configuration is stored in `~/.ante/offline-config.json`:
 | Field | Description | Default |
 |---|---|---|
 | `model_directory` | Where to look for local GGUF models | `~/.ante/models` |
-| `port` | Starting port for the llama server | `8080` |
+| `port` | Starting port for the managed llama.cpp router or attached server | `8080` |
 | `last_model` | Last used model (auto-saved) | — |
 | `model_preferences` | Per-model settings (see above) | — |
 | `llama_cpp` | Engine install details, binary paths, and server defaults — see [Custom Engines](/local/custom-engines) | managed by Ante |

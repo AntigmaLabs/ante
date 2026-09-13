@@ -68,7 +68,7 @@ docker run --rm \
 
 ## 断开连接行为 {#detach-behavior}
 
-当 Ante 自行启动 `llama-server` 时，Ante 拥有该进程并在停止时关闭它。当 Ante 接入外部服务端时，停止离线模式仅会与该端点断开连接（Detach）；外部服务端保持继续运行。
+当 Ante 启动托管的 `llama serve` 路由器时，Ante 拥有该进程并在停止时关闭它。当 Ante 接入外部 `llama-server` 时，停止离线模式仅会与该端点断开连接（Detach）；外部服务端保持继续运行。
 
 `local` 提供商仅在服务端注册期间（托管或外部接入）存在于目录中。断开后，`local` 离开目录；在无服务运行时选择它会弹出提示而非盲目重试失效端点；运行 `/offline-mode` 可重新启动或接入服务。
 

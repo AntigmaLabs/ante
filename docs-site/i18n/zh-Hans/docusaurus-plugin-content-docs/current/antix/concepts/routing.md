@@ -82,7 +82,7 @@ Antix 在这些上游提供商之间将请求标准化。您可以通过模型�
 | **Google Gemini** | Gemini 3.x | `google`, `gemini`, `google_ai_studio_gemini` | `/v1/models/{action}` 和 `/v1beta` 的原生 Gemini 协议。 |
 | **xAI** | Grok | `xai`, `x-ai` | 兼容 OpenAI 的上游。 |
 | **Alibaba Qwen** | `qwen3-max`, `qwen3-coder-plus`, `qwen3-coder-flash`, `qwq-plus`, `qwen-plus`, `qwen-max`, 等等 | `alibaba`, `qwen`, `dashscope` | 通过 DashScope 路由。没有独特的密钥前缀——您**必须**在 BYOK 调用中设置 `X-Antix-Provider`。 |
-| **DeepSeek** | `deepseek-chat` (V3), `deepseek-reasoner` (R1), `deepseek-v4-pro`, `deepseek-v4-flash` | `deepseek` | 兼容 OpenAI 的上游 API。`deepseek-reasoner` 会在最终答案旁返回 `reasoning_content` 字段。 |
+| **DeepSeek** | `deepseek-chat` (V3), `deepseek-reasoner` (R1), `deepseek-v4-flash`（V4.1 Flash） | `deepseek` | 兼容 OpenAI 的上游 API。`deepseek-reasoner` 会在最终答案旁返回 `reasoning_content` 字段。 |
 | **Zai (GLM)** | `glm-5.2`, `glm-5.1`, `glm-4.7` | `zai` | 智谱 AI 的 GLM 模型系列，兼容 OpenAI 的上游。没有独特的密钥前缀——您**必须**在 BYOK 调用中设置 `X-Antix-Provider`。 |
 
 :::note 提供商推断

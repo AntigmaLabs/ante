@@ -11,7 +11,7 @@ ante
 
 ## Overview
 
-The TUI is built with [ratatui](https://ratatui.rs/) and provides a rich chat interface directly in your terminal. It renders inline (up to 24 lines) and uses debounced rendering at approximately 100fps for smooth output.
+The TUI is built with [ratatui](https://ratatui.rs/) and provides a rich chat interface directly in your terminal. It renders inline (up to 24 lines) by default and uses debounced rendering at approximately 100fps for smooth output. If your terminal drops inline scrollback, run `ante --fullscreen` or switch **Render mode** in `/config`; fullscreen mode uses the alternate screen with Ante-managed scrolling and can be toggled live.
 
 ## Key features
 
@@ -54,11 +54,11 @@ After compaction — manual `/compact` or [automatic](/configuration/preference#
 
 ### Selecting and copying text
 
-The fullscreen views — the transcript, the [diff view](#diff-view), and `/diff` output — capture the mouse for wheel scrolling, so they handle selection themselves instead of leaving it to the terminal. Drag across the text and it copies on release; the footer confirms with `copied N lines`. Double-click selects a word, counting `_-./~+@#$%&=:` as word characters so a path or URL comes out whole, and triple-click selects the logical line. Dragging on the top or bottom row scrolls and keeps extending the selection past the viewport.
+The fullscreen views — fullscreen chat, the transcript, the [diff view](#diff-view), and `/diff` output — capture the mouse for wheel scrolling, so they handle selection themselves instead of leaving it to the terminal. Drag across the text and it copies on release; the footer confirms with `copied N lines`. Double-click selects a word, counting `_-./~+@#$%&=:` as word characters so a path or URL comes out whole, and triple-click selects the logical line. Dragging on the top or bottom row scrolls and keeps extending the selection past the viewport. In fullscreen chat, `PgUp` / `PgDn` also scroll the conversation; reaching the bottom re-pins the view so new output follows again.
 
 Copies rejoin soft-wrapped rows into the lines they came from, so a wrapped command or URL pastes back intact. Tool output, code blocks, tables, and diffs copy as displayed. Copies go to the OS clipboard and also as an OSC 52 escape, so they work over SSH and inside tmux; selections above 100 KB skip the OSC 52 channel. Clicking outside the content clears the selection, and a whitespace-only grab never touches the clipboard.
 
-The inline chat view is unchanged. It does not capture the mouse, so your terminal's own selection still applies there.
+Inline mode does not capture the mouse, so your terminal's own selection and scrollback still apply there.
 
 ### Model and provider selection
 
@@ -87,7 +87,7 @@ Turns: 12 · Model calls: 2
 
 Each row splits into four buckets: `input` counts only the uncached part of the prompt, with the cached part reported separately as cache reads and cache writes. The hit rate is cache reads as a share of the gross input across every model.
 
-The TUI counts these itself, from the usage each response reports, so they cover only what reaches the client. Spend that never emits a usage event is missing: sub-agent sessions, failed calls, and the goal judge. `/clear` starts the count over, and a resumed session counts only the part of its event log that replays. Treat it as a read on the session and your provider's dashboard as the billing record.
+The TUI counts these itself from the usage events that reach the client. Sub-agent token and cache usage is forwarded into the parent session totals, but the child's context snapshot stays private so the root context indicator does not jump. Failed calls and the goal judge can still be absent when they emit no usage. `/clear` starts the count over, and a resumed session counts only the part of its event log that replays. Treat it as a read on the session and your provider's dashboard as the billing record.
 
 ## Goal-driven sessions
 

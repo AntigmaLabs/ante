@@ -116,6 +116,15 @@ my-skill/
 
 两者均接受精确的技能名称。`exclude_skills` 从所有会话中排除指定技能且优先级高于 `include_skills`；`include_skills` 在会话基础技能集之上额外引入技能（类似于工具的 `--include-tools`）。该选择对全新会话和恢复会话均有效。
 
+可通过逗号分隔值或重复参数，为单次运行覆盖任一已保存列表：
+
+```bash
+ante --include-skills deploy-checklist,release-notes
+ante --exclude-skills noisy-skill --exclude-skills deploy-prod
+```
+
+`--include-skills` 替换已保存的 `include_skills` 列表，`--exclude-skills` 替换已保存的 `exclude_skills` 列表；应用两者后仍由排除项优先。这些参数只是过滤器而非启用开关：即使存在包含列表，`--no-skills` 或 `"skills": false` 仍会保持技能发现关闭。
+
 ## 内置系统级技能 {#bundled-skills}
 
 Ante 在系统级别内置了以下技能：

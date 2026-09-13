@@ -51,6 +51,10 @@ Anthropic API 规定：开启 Extended Thinking 时 `temperature` 必须为 `1`�
 ante --effort high
 ```
 
+## 可读推理输出 {#readable-reasoning}
+
+思考深度决定模型执行多少推理；提供商的 `thinking_display` 则决定返回多少可读推理内容。可在 `~/.ante/catalog.json` 中设为 `off`、`concise` 或 `detailed`。关闭显示不会关闭模型推理，请求详细显示也不会提高思考深度。各提供商映射与覆盖规则参见[推理显示](/reference/catalog-reference#thinking-display)。
+
 :::tip
 也可以通过命令行参数指定默认模型与提供商：`ante --provider openai --model gpt-5.6-sol`，或在[偏好设置](/configuration/preference)中配置全局默认值。
 :::

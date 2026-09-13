@@ -49,13 +49,13 @@ Ante 在客户端（TUI 或无头运行器）与守护进程 Daemon 之间采用
 |---|---|---|
 | `StartSession` | `SessionRequest` | 初始化新会话；已设置字段会固定，未设置字段从主机当前默认值解析 |
 | `UpdateSession` | `SessionUpdate` | 在不重启的情况下原地更新活跃会话（例如切换模型，或重命名会话） |
-| `ResumeSession` | `session_id` | 恢复此前持久化保存的历史会话 |
+| `ResumeSession` | `session_id`, `unattended?` | 恢复此前持久化保存的历史会话；无人值守客户端会拒绝原本需要暂停等待审批的调用 |
 | `UserInput` | `String` | 提交用户输入的提示词内容 |
 | `ShellInput` | `String` | 在守护进程端运行 Shell 命令，不启动智能体轮次 |
 | `Steer` | `String` | 向当前正在运行的轮次注入额外的用户引导指令 |
 | `ApprovalResponse` | `turn_id`, `responses: [ToolDecision]` | 响应工具审批请求；`Deny` 拒绝时可携带返回给模型的 `message` 反馈 |
 | `SlashCommand` | `name`, `args` | 按名称调用 Skill 技能 |
-| `RegisterLocalProvider` | `port`, `model?` | 将运行中的本地 llama-server 注册为 `local` 提供商 |
+| `RegisterLocalProvider` | `port`, `model?` | 将运行中的本地推理服务器或路由器注册为 `local` 提供商 |
 | `RestoreLocalProvider` | — | 恢复此前注册的本地提供商 |
 | `Compact` | `instructions?` | 压缩较早的对话历史，可选指令可引导交接摘要 |
 | `ContextReport` | — | 请求按类别拆分的上下文窗口占用报告 |
@@ -84,8 +84,8 @@ Ante 在客户端（TUI 或无头运行器）与守护进程 Daemon 之间采用
 | `ThinkingDelta` | `String` | 增量流式思考内容片段 |
 | `ToolStart` | `ToolUse` | 工具调用开始执行 |
 | `ToolUpdate` | `tool_use_id`, `seq`, `message` | 工具执行进度更新 |
-| `ToolEnd` | `tool_use_id`, `status`, `result_json`, `is_error` | 工具执行完成 |
-| `UsageUpdate` | `usage` | Token 消耗与统计数据更新 |
+| `ToolEnd` | `tool_use_id`, `tool_name`, `status`, `result_json` | 工具执行完成、被拒绝、被取消或失败 |
+| `UsageUpdate` | `usage`, `context?` | Token 消耗与统计数据更新；子智能体更新省略其私有上下文快照 |
 | `CompactStart` | — | 对话历史压缩开始 |
 | `CompactEnd` | `summary?` | 对话历史压缩完成；未生成替换摘要时为空 |
 | `ExtensionRefreshed` | `session_id`, `skills`, `subagents`, `mcp_servers` | Skills、子智能体与 MCP 服务器状态已刷新 |

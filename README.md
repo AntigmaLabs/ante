@@ -159,7 +159,7 @@ ante update
 ante update --channel nightly
 
 # Roll back or pin to an exact release
-ante update --version v0.preview.93
+ante update --version v0.preview.98
 ```
 
 ## One binary, many agents
@@ -186,10 +186,10 @@ Bring your own API key, subscription, or local model; no account required, not e
 | Provider | Example Models |
 |----------|---------------|
 | Anthropic | Claude Sonnet 5, Opus 5, Fable 5.1 (API key or subscription OAuth) |
-| OpenAI | GPT-5.6 family (API key or ChatGPT/Codex OAuth) |
+| OpenAI | GPT-6 Astra and the GPT-5.6 family (API key; GPT-5.6 also via ChatGPT/Codex OAuth) |
 | Google Gemini | Gemini 3.x family (Gemini API or Vertex AI) |
 | Grok (xAI) | Grok 4.5 |
-| DeepSeek | DeepSeek V4 |
+| DeepSeek | DeepSeek V4.1 Flash |
 | Open Router | Any Open Router model, over three wire styles |
 | Local (GGUF) | Any GGUF model via built-in llama.cpp |
 | ...and more | Zai, Ali Coding Plan, Antix, OpenAI-compatible |

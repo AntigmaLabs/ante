@@ -8,7 +8,7 @@ description: "配置文件、环境变量、遥测机制与目录结构详解"
 
 Ante 将用户偏好设置保存在 `~/.ante/settings.json` 中。仓库还可以在其之上叠加自己的 `.ante/settings.json`，对所有在其中工作的人生效 —— 参见[项目设置](#project-settings)。
 
-大部分设置都可以通过 TUI 中的 `/config` 命令进行可视化查看与修改 —— 该交互式设置面板支持原地开关切换（技巧提示、环境感知预测、紧凑工具折叠、短提示词、自动压缩、重排策略、默认权限模式、更新通道），并提供直达主题、模型、提供商、状态栏、MCP 服务器及离线模式的专属弹窗入口。修改会即时持久化到 `settings.json` 中；在启动阶段读取的参数（如 `resize_reflow`）会在面板中标记为 "(next session)" 并在下次会话中生效。
+大部分设置都可以通过 TUI 中的 `/config` 命令进行可视化查看与修改 —— 该交互式设置面板支持原地开关切换（技巧提示、环境感知预测、紧凑工具折叠、聊天渲染模式、短提示词、自动压缩、重排策略、默认权限模式、更新通道），并提供直达主题、模型、提供商、状态栏、MCP 服务器及离线模式的专属弹窗入口。修改会即时持久化到 `settings.json` 中；渲染模式会实时切换，而在启动阶段读取的参数（如 `resize_reflow`）会标记为 "(next session)" 并在下次会话中生效。
 
 `settings.json` 示例：
 
@@ -38,6 +38,7 @@ Ante 将用户偏好设置保存在 `~/.ante/settings.json` 中。仓库还可�
   "auto_compact": true,
   "channel": "stable",
   "resize_reflow": "conservative",
+  "render_mode": "inline",
   "status_line": ["model-name", "current-dir"],
   "status_line_command": {
     "command": "~/.config/ante/statusline.sh",
@@ -71,8 +72,8 @@ Ante 将用户偏好设置保存在 `~/.ante/settings.json` 中。仓库还可�
 | `tools` | 全新会话的基础工具集，替换默认工具集（空列表表示不选任何工具）。`--tools` 可临时覆盖；`--include-tools` / `--exclude-tools` 仍在此基础上叠加生效 |
 | `auto_memory` | 是否启用[自动记忆（auto-memory）](/extend/memory)。未设置时由启动模式决定：TUI 默认开启，无头模式默认关闭。`--enable-auto-memory` / `--disable-auto-memory` 可临时覆盖 |
 | `skills` | 是否发现并加载 [Skills 技能](/extend/skills)。除非设为 `false` 否则默认开启；`--skills` / `--no-skills` 可临时覆盖 |
-| `include_skills` | 在会话基础技能集之上额外配备的技能名称列表 —— 增量加载，类似 `--include-tools`。名称需精确匹配 |
-| `exclude_skills` | 从所有会话的技能集中排除的技能名称列表。优先级高于 `include_skills`；名称需精确匹配。参见[按需选择特定技能](/extend/skills#selecting-individual-skills) |
+| `include_skills` | 在会话基础技能集之上额外配备的技能名称列表 —— 增量加载，类似 `--include-tools`。名称需精确匹配；`--include-skills` 可为单次运行替换该列表 |
+| `exclude_skills` | 从所有会话的技能集中排除的技能名称列表。优先级高于 `include_skills`；名称需精确匹配。`--exclude-skills` 可为单次运行替换该列表。参见[按需选择特定技能](/extend/skills#selecting-individual-skills) |
 | `session_save` | 是否持久化保存会话记录与可恢复快照。除非设为 `false` 否则默认开启；`--session-save` / `--no-session-save` 可临时覆盖 |
 | `permission_mode` | 默认权限模式（`strict`、`auto` 或 `yolo`）。在 TUI 中按 **Shift+Tab** 切换为 `strict` 或 `auto` 时会自动回写此配置；`yolo` 仅在当前会话生效。未识别的值会被忽略而不会导致整个文件加载失败 |
 | `permissions` | 持久化工具权限规则，分为 `allow`、`ask` 和 `deny` 匹配器（参见[权限控制](/configuration/permission)） |
@@ -85,6 +86,7 @@ Ante 将用户偏好设置保存在 `~/.ante/settings.json` 中。仓库还可�
 | `auto_compact` | 是否在接近模型上下文上限时主动自动对历史对话生成摘要。除非设为 `false` 否则默认开启；禁用时手动 `/compact` 和溢出恢复机制依然可用。在 `/config` 中切换可直接作用于当前会话 |
 | `channel` | `ante update` 跟踪的发布通道（`stable` 或 `nightly`）。默认为 `stable`；历史 `latest` 值会被视为 `stable`。参见[版本更新与通道](/start/update) |
 | `resize_reflow` | 终端窗口大小调整时的滚屏历史/回滚缓冲区（Scrollback）重排策略：`conservative`（保守，默认）或 `purge`（清除重放，见下文） |
+| `render_mode` | 聊天渲染策略：`inline`（默认，由终端管理滚动历史）或 `fullscreen`（备用屏幕，由 Ante 管理滚动）。在 `/config` 中修改会实时生效；`--fullscreen` 仅覆盖本次启动且不持久化 |
 | `status_line` | TUI 底部状态栏顶部一行展示的元素列表（见下文） |
 | `status_line_command` | 执行 Shell 脚本以渲染完全自定义状态栏（见下文）。设置后优先级高于 `status_line` |
 | `model_effort` | 各模型的[思考深度（Effort）](/usage/models-and-thinking#effort)覆盖映射 —— 键为模型名，值为 `min` / `low` / `medium` / `high` / `xhigh` / `max`。在 `/models` 中拖动滑块时自动写入 |
@@ -227,6 +229,16 @@ printf '\033[36m[%s]\033[0m %s' "$model" "$dir"
 ```
 
 在将 `command` 指向脚本前请赋予执行权限（`chmod +x`）。若命令执行失败（无执行权限、非零退出码或超时），底部会根据 stderr 显示单行诊断提示（如 `status line: sh: …: Permission denied`）。
+
+### 聊天渲染模式 {#chat-render-mode}
+
+默认的 `inline` 模式将聊天保留在终端自身的滚动历史中。如果终端或控制台会丢失内联历史，可使用 `fullscreen`：Ante 会将聊天切换到备用屏幕，自行管理滚动，并支持 `PgUp` / `PgDn`、鼠标滚轮以及拖拽选择复制。
+
+```json
+{ "render_mode": "fullscreen" }
+```
+
+在 `/config` 中切换 **Render mode** 会立即应用并持久化。若只想让当前运行全屏而不修改设置，请使用 `ante --fullscreen`。
 
 ### 终端缩放重排 {#resize-reflow}
 

@@ -55,6 +55,7 @@ ante --provider anthropic --model claude-sonnet-5
 
 | 模型 ID | 说明 | 上下文大小 |
 |---|---|---|
+| `gpt-6-astra` | OpenAI 面向复杂智能体任务的最强模型 | 1.05M |
 | `gpt-5.6-sol` | GPT-5.6 旗舰模型，擅长复杂推理与系统级编码 | 1.05M |
 | `gpt-5.6-terra` | GPT-5.6 智能水平与 Token 成本的极佳平衡 | 1.05M |
 | `gpt-5.6-luna` | 面向高效、大规模高吞吐任务的 GPT-5.6 模型 | 1.05M |
@@ -131,6 +132,7 @@ ante --provider xai --model grok-4.6
 | 模型 ID | 说明 | 上下文大小 |
 |---|---|---|
 | `glm-5.3` | 最新 GLM-5.3 模型，适用于编程与智能体任务 | 1M |
+| `glm-5.3-flash` | 快速、低成本的 GLM-5.3 多模态模型 | 1M |
 
 ```bash
 ante --provider zai --model glm-5.3
@@ -156,10 +158,11 @@ Open Router 拆分为共享同一 API 密钥的三个提供商（按协议方言
 | `xiaomi/mimo-v2.5-pro` | 小米 MiMo-V2.5-Pro 旗舰智能体模型 | 1.05M |
 | `xiaomi/mimo-v2.5` | 小米 MiMo-V2.5 全模态模型 | 1.05M |
 | `z-ai/glm-5.3` | 通过 OpenRouter 调用的 GLM 5.3 编程与智能体推理模型 | 1.05M |
+| `z-ai/glm-5.3-flash` | 通过 OpenRouter 调用的快速 GLM 5.3 多模态模型 | 1.05M |
 | `moonshotai/kimi-k3` | 月之暗面 Kimi K3 旗舰多模态推理模型 | 1.05M |
 | `moonshotai/kimi-k2.7-code` | 支持视觉的 Kimi K2.7 Code 代码推理模型 | 262K |
 | `minimax/minimax-m3` | MiniMax M3 多模态模型 | 512K |
-| `deepseek/deepseek-v4-pro-0813` | DeepSeek V4 Pro 0813 正式版 | 1.05M |
+| `deepseek/deepseek-v4.1-flash` | 支持视觉的 DeepSeek V4.1 Flash | 1.05M |
 
 `openrouter-responses` 提供 `openai/gpt-5.6-sol`、`openai/gpt-5.6-sol-pro`、`openai/gpt-5.6-terra`、`openai/gpt-5.6-terra-pro`、`openai/gpt-5.6-luna` 和 `openai/gpt-5.6-luna-pro`（1.05M 上下文），以及 `openai/gpt-5.3-codex`（400K 上下文）。带有 `-pro` 后缀的 ID 会走 OpenRouter 的专业推理路由。
 
@@ -168,7 +171,7 @@ Open Router 拆分为共享同一 API 密钥的三个提供商（按协议方言
 每个提供商还可以通过完整 ID 调用 [Open Router 模型列表](https://openrouter.ai/models) 中的任意模型，只要其符合该提供商的协议格式即可。
 
 ```bash
-ante --provider openrouter --model deepseek/deepseek-v4-pro-0813
+ante --provider openrouter --model deepseek/deepseek-v4.1-flash
 ante --provider openrouter-responses --model openai/gpt-5.6-sol
 ante --provider openrouter-anthropic --model anthropic/claude-fable-5.1
 ```
@@ -177,11 +180,11 @@ ante --provider openrouter-anthropic --model anthropic/claude-fable-5.1
 
 | 模型 ID | 说明 | 上下文大小 |
 |---|---|---|
-| `deepseek-v4-flash` | DeepSeek V4 Flash 快速模型 | 1M |
-| `deepseek-v4-pro` | DeepSeek V4 Pro 旗舰深度思考模型 | 1M |
+| `deepseek-flash` | 支持视觉的 DeepSeek V4.1 Flash | 1M |
+| `deepseek-v4-flash` | DeepSeek V4.1 Flash 的历史兼容别名 | 1M |
 
 ```bash
-ante --provider deepseek --model deepseek-v4-flash
+ante --provider deepseek --model deepseek-flash
 ```
 
 需配置环境变量 `DEEPSEEK_API_KEY`，可选配置 `DEEPSEEK_BASE_URL`。
@@ -228,6 +231,7 @@ ante --provider ali-coding-plan --model qwen3.5-plus
 
 | 模型 ID | 说明 | 上下文大小 |
 |---|---|---|
+| `gemini-3.8-flash` | Gemini 3.8 Flash，适用于长程编码与自主智能体 | 1.05M |
 | `gemini-3.7-flash` | Gemini 3.7 Flash，适用于快速智能体与多模态工作流 | 1M |
 | `grok-4.5` | Grok 4.5，xAI 专为代码与智能体打造的旗舰 | 500K |
 | `grok-4.6` | Grok 4.6 旗舰推理模型 | 500K |
@@ -239,11 +243,14 @@ ante --provider ali-coding-plan --model qwen3.5-plus
 | `claude-sonnet-5` | 速度与智能的最佳平衡 | 1M |
 | `claude-opus-5` | 复杂智能体编码与企业级任务 | 1M |
 | `claude-fable-5-1` | 最强大的 Claude 模型 | 1M |
+| `gpt-6-astra` | OpenAI 面向复杂智能体任务的最强模型 | 1.05M |
+| `gpt-5.6-sol` | GPT-5.6 旗舰模型，擅长复杂推理与编码 | 1.05M |
+| `gpt-5.6-terra` | GPT-5.6 智能水平与成本的平衡模型 | 1.05M |
+| `gpt-5.6-luna` | 面向高效、高吞吐任务的 GPT-5.6 模型 | 1.05M |
 | `gpt-5.3-codex` | 针对代码深度优化的 Codex 模型 | — |
 | `gpt-5.4-mini` | 更快、更经济的 GPT-5.4 模型 | 400K |
 | `gpt-5.4-nano` | GPT-5.4 家族最小轻量模型 | 400K |
 | `deepseek-v4-flash` | 高速 DeepSeek V4 Flash | 1M |
-| `deepseek-v4-pro` | 具备深度思考的 DeepSeek V4 Pro | 1M |
 | `glm-5.3` | 最新 GLM-5.3 模型，适用于编程与智能体任务 | 1M |
 | `glm-5.3-flash` | 快速 GLM-5.3 Flash，适用于编程与智能体任务 | 1M |
 
@@ -287,9 +294,10 @@ ante --provider local
 | `auth` | — | 认证方式（参见[身份认证](#authentication)）。无需密钥的提供商可省略 |
 | `http_headers` | — | 随每次请求发送的额外自定义 HTTP Header 映射表（string→string） |
 | `extra_body` | — | 合并到每个 Chat 和 Streaming 请求体顶层的专属 JSON 字段（参见[额外请求字段](#extra-request-fields)） |
+| `thinking_display` | — | 可读推理输出：`off`、`concise` 或 `detailed`，与思考深度独立（参见[推理显示](#thinking-display)） |
 | `supports_web_search` | — | 该提供商是否提供原生网络搜索功能。为 `true` 时自动向该提供商的会话添加 `WebSearch` 工具；为 `false`（默认）时不提供 |
 | `preferred_models` | — | 在选择器中展示并作为默认模型的推荐列表（参见[模型字段](#model-fields)）。对于内置提供商，匹配的模型 ID 会被合并修改，新 ID 会被追加；省略时保持内置列表不变 |
-| `stream_idle_timeout_secs` | — | 提供商请求在超时报错前允许的最长空闲时间（秒）。流式调用涵盖等待首个事件及 SSE/WebSocket 后续事件间隔；缓冲调用则限制收集响应期间的整个请求时长。默认 `300` 秒。慢速本地模型或代理端点可适当调大 |
+| `stream_idle_timeout_secs` | — | 提供商请求在超时报错前允许的最长空闲时间（秒）。流式调用中，Keepalive、生命周期事件及部分工具参数等任意传输读取都会重置计时器；只有传输层完全静默才算空闲。缓冲调用则限制收集响应期间的整个请求时长。默认 `300` 秒。慢速本地模型或代理端点可适当调大 |
 
 ```json
 {
@@ -306,7 +314,8 @@ ante --provider local
           "description": "My fine-tuned model",
           "max_tokens": 32000,
           "context_limit": 200000,
-          "effort": "medium"
+          "effort": "medium",
+          "supported_efforts": ["low", "medium", "high"]
         }
       ]
     }
@@ -327,6 +336,21 @@ ante --provider local
   }
 }
 ```
+
+### 推理显示 {#thinking-display}
+
+`thinking_display` 控制可读推理输出，与[思考深度](/usage/models-and-thinking#effort)相互独立。可选值为 `off`、`concise` 和 `detailed`。内置托管提供商预设默认为 `detailed`；覆盖内置项时省略该字段会保留预设，设为 `null` 则清除预设并交由端点决定。新增自定义提供商在未设置时不会发送显示参数。
+
+```json
+{
+  "providers": {
+    "openai": { "thinking_display": "concise" },
+    "anthropic": { "thinking_display": "off" }
+  }
+}
+```
+
+该设置不会改变思考深度或延续状态。OpenAI Responses 会分别映射为不返回摘要、简洁摘要和详细摘要；Anthropic 将 `off` 映射为省略可读推理，并将两个可读档位映射为摘要；Gemini 在 `concise` 与 `detailed` 时启用思考摘要。通用 OpenAI-compatible Chat Completions 没有标准显示参数，因此会忽略该字段；端点专属控制仍可放入 `extra_body`。
 
 ### 额外请求字段 {#extra-request-fields}
 

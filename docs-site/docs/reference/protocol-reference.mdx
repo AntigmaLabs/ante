@@ -3,7 +3,7 @@ title: "Protocol Reference"
 description: "Complete reference for Ante's client-daemon message protocol, wire format, and type definitions"
 ---
 
-Ante uses a typed message-passing protocol between the client and daemon. Messages are exchanged over bounded async channels (in-process) or as JSON Lines over stdin/stdout (external clients).
+Ante uses a typed message-passing protocol between the client and daemon. In-process clients use a bounded operation channel and an unbounded event channel; external clients exchange the same messages over JSON Lines or WebSocket frames.
 
 ## Wire format
 
@@ -74,7 +74,10 @@ Initialize a new session, replacing any session already running. A field supplie
       "enable_auto_memory": null,
       "short_prompt": null,
       "no_skills": null,
+      "include_skills": null,
+      "exclude_skills": null,
       "save_session": null,
+      "unattended": null,
       "title": null
     }
   },
@@ -99,7 +102,10 @@ Initialize a new session, replacing any session already running. A field supplie
 | `enable_auto_memory` | `bool?` | Whether the agent records and recalls [auto-memory](/extend/memory). `null` leaves the daemon default (on for interactive sessions) |
 | `short_prompt` | `bool?` | Use compact tool descriptions and system prompt to shrink the context footprint. `null` leaves the settings default |
 | `no_skills` | `bool?` | When `true`, skip all skill discovery so no skills are advertised or invocable. `null` leaves the session default |
+| `include_skills` | `string[]?` | Exact skill names added to the session's base set. A supplied list replaces the host's `include_skills` setting and does not enable discovery when `no_skills` is true |
+| `exclude_skills` | `string[]?` | Exact skill names removed from the session. A supplied list replaces the host's `exclude_skills` setting and wins over `include_skills` |
 | `save_session` | `bool?` | Whether to write a transcript and resumable snapshot. `null` leaves the host's session-saving default |
+| `unattended` | `bool?` | Declare that no client can answer approval prompts. When `true`, a call that would require approval is denied instead of pausing. Omitted or `null` means `false` |
 | `title` | `string?` | A display name for the session, shown in place of the first message in resume pickers. Trimmed; empty after trimming means no title. `null` starts the session untitled |
 
 `SessionRequest` replaced the former `SessionOverrides` name in `v0.preview.92`. The JSON field names stayed the same, but absence now has one explicit meaning for `StartSession`: resolve the host's default now, never “leave the previous session unchanged.” A client implementing `/clear` should retain and resend its own request, applying any model or permission-mode changes it made; there is no separate restart operation.
@@ -134,12 +140,13 @@ Update the active session without restarting it (e.g. switch models or permissio
 Resume a previously persisted session by its ID. The daemon restores the saved dialog and pinned model, provider, and effort, resolves anything the snapshot did not pin from the host's current defaults, re-discovers extensions, and replays recent events so the client can rebuild its view.
 
 ```json
-{ "op": { "ResumeSession": { "session_id": "ses_01ARZ..." } }, "id": "op_..." }
+{ "op": { "ResumeSession": { "session_id": "ses_01ARZ...", "unattended": false } }, "id": "op_..." }
 ```
 
 | Field | Type | Description |
 |---|---|---|
 | `session_id` | `Id` | The session identifier to resume |
+| `unattended` | `bool` | Whether no client can answer approval prompts for this resumed incarnation. Defaults to `false` when absent; when `true`, would-be prompts are denied at admission |
 
 On success the daemon emits `SessionEnd` for the current session (if any), then `SessionStart` and `ExtensionRefreshed` for the resumed session, followed by up to 200 replayed historical events. On failure it emits an `Error` event.
 
@@ -271,7 +278,7 @@ Request a graceful shutdown.
 
 ### RegisterLocalProvider
 
-Register a running local inference server (e.g. an offline `llama-server` started by the client) as the `local` provider for this daemon. The model is optional — if provided, it pins the local provider to a specific `ModelSpec`; otherwise the local provider serves whatever model the server is hosting.
+Register a running local inference endpoint (for example, Ante's managed `llama serve` router or an externally run `llama-server`) as the `local` provider for this daemon. The model is optional — if provided, it pins the local provider to a specific `ModelSpec`; otherwise the local provider serves whatever model the endpoint is hosting.
 
 ```json
 {
@@ -287,7 +294,7 @@ Register a running local inference server (e.g. an offline `llama-server` starte
 
 | Field | Type | Description |
 |---|---|---|
-| `port` | `u16` | Port the local llama-server is listening on |
+| `port` | `u16` | Port the local inference server or router is listening on |
 | `model` | `ModelSpec?` | Optional model spec to pin the provider to |
 
 ### RestoreLocalProvider
@@ -545,9 +552,9 @@ Emitted when a tool execution completes.
   "event": {
     "ToolEnd": {
       "tool_use_id": "tool_use_abc123",
+      "tool_name": "Read",
       "status": "Completed",
-      "result_json": { "content": "fn main() { ... }" },
-      "is_error": false
+      "result_json": { "content": "fn main() { ... }" }
     }
   }
 }
@@ -561,6 +568,8 @@ Emitted when a tool execution completes.
 | `Cancelled` | Tool execution was cancelled |
 | `Denied` | Tool was denied by the user |
 | `Failed` | Tool execution failed |
+
+`tool_name` is populated even when execution never starts, so clients can render denied, cancelled, and malformed calls without reconstructing the name from a preceding event. Older events may deserialize it as an empty string. There is no separate `is_error` field: derive it from `status` (`Completed` is the only non-error status). Every accepted tool call gets a terminal `ToolEnd`, and concurrently running calls emit it independently as each one settles.
 
 ### Compaction events
 
@@ -625,7 +634,7 @@ Each entry in `mcp_servers` reflects what was actually launched and discovered: 
 
 #### UsageUpdate
 
-Token usage statistics for the session. `context` is omitted before the first response or when the model context limit is unknown. It carries raw measurements only — `used_tokens` (cache-inclusive window occupancy) and `limit_tokens` (the raw model context limit); any percentage is derived by the client. `usage` may also include `cache_read_tokens` and `cache_creation_tokens` when the provider reports them.
+Token usage statistics for the session. `context` is omitted before the first response, when the model context limit is unknown, and on usage forwarded from a sub-agent. A client should add every `usage` value to its totals but retain the last root-session context snapshot when `context` is absent; delegated work must not replace the root indicator. A present context carries raw measurements only — `used_tokens` (cache-inclusive window occupancy) and `limit_tokens` (the raw model context limit); any percentage is derived by the client. `usage` may also include `cache_read_tokens` and `cache_creation_tokens` when the provider reports them.
 
 ```json
 {
@@ -762,7 +771,7 @@ An ephemeral ambient hint produced off the main conversation on a cheap model �
 
 ### Offline mode and the protocol
 
-Local-model management (engine installation, model discovery, llama-server lifecycle) is **client-side**. It is driven through the in-process `OfflineSubsystem` API, not through the daemon protocol. The only daemon-facing surface for offline mode is `RegisterLocalProvider` / `RestoreLocalProvider` — the client starts a llama-server itself, then registers its port (and an optional `ModelSpec`) with the daemon.
+Local-model management (engine installation, model discovery, and local-router lifecycle) is **client-side**. It is driven through the in-process `OfflineSubsystem` API, not through the daemon protocol. The only daemon-facing surface for offline mode is `RegisterLocalProvider` / `RestoreLocalProvider` — the client starts the managed `llama serve` router (or connects to an external server), then registers its port and an optional `ModelSpec` with the daemon.
 
 See the [Offline Mode](/local/offline) page for the user-facing flows and the `--offline-model` CLI flag.
 
@@ -770,12 +779,14 @@ See the [Offline Mode](/local/offline) page for the user-facing flows and the `-
 
 ### In-process channels
 
-When the client and daemon run in the same process (TUI or headless mode), they communicate via bounded Tokio mpsc channels:
+When the client and daemon run in the same process (TUI or headless mode), they communicate via Tokio mpsc channels:
 
-| Channel | Direction | Buffer size |
+| Channel | Direction | Capacity |
 |---|---|---|
 | Op channel | Client → Daemon | 256 messages |
-| Event channel | Daemon → Client | 4096 messages |
+| Event channel | Daemon → Client | Unbounded; Ante warns when the pending backlog reaches 4096 and reports when it drains |
+
+Events are never dropped or blocked behind a slow in-process client. A client that stops reading accumulates a memory backlog, so consumers should keep draining the event receiver even while handling other work.
 
 ### Stdio transport (JSONL)
 
@@ -802,9 +813,10 @@ For networked or browser-based clients using `ante serve --ws <ADDR>`, `WsTransp
 
 - Each WebSocket client gets its own connection and session on the shared host
 - Messages are the same `OpMsg` and `EventMsg` JSON objects, sent as text frames
-- **Client disconnect** → That connection and session shut down; the server accepts the next client
-- **`Op::Shutdown` received** → Connection and server both exit
-- The server loops accepting new connections until a `Shutdown` is received
+- **Client disconnect** → That connection and session shut down; other clients and the host continue running
+- **`Op::Shutdown` received** → Only that connection exits
+- The host accepts clients concurrently until it receives `SIGINT` or `SIGTERM`
+- Input remains readable while an event write is stalled; each write has a 30-second deadline, and reply-queue overflow disconnects only the offending peer
 
 ## Complete flow example
 
