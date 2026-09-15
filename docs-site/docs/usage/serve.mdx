@@ -144,6 +144,8 @@ Every path yields the same `Client`, and a process that hosts sessions itself ge
 let client = connect("unix:/tmp/ante.sock".parse()?, ConnectOptions::default()).await?;
 ```
 
+For a complete client, [`examples/tui.rs`](https://github.com/AntigmaLabs/ante/blob/main/crates/ante-sdk/examples/tui.rs) in the crate is a one-file chat TUI: it streams `MessageDelta`s, answers `TurnPause` approvals with `y`/`n`, and sends `Interrupt` on Esc. Run it with `cargo run --example tui` from `crates/ante-sdk`.
+
 The crate's `claude` module is unrelated to the Ante protocol: it drives Claude Code as a child process.
 
 ## Differences from headless mode

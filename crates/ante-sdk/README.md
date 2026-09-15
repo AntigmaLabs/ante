@@ -22,4 +22,12 @@ A process that hosts sessions itself obtains the same `Client` type from its
 host directly; the in-process channel carries the same wire types the remote
 codecs serialize.
 
+`examples/tui.rs` is a chat TUI in one file: it connects over `stdio`,
+streams the reply, and answers tool approvals with `y`/`n`. It needs a
+working `ante` on `PATH`; model and provider come from your settings.
+
+```sh
+cargo run --example tui
+```
+
 The `claude` module is unrelated: it drives Claude Code as a child process.
