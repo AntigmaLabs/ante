@@ -1,8 +1,7 @@
 //! Minimal chat TUI on top of `ante-sdk`: type a prompt, watch the reply
 //! stream in, approve tool calls with `y`/`n`.
 //!
-//! Run with:
-//!   cargo run --example tui
+//! Run with `cargo run` from this directory.
 //!
 //! Keys: Enter sends, Esc interrupts the running turn, Ctrl+C quits.
 //! Model and provider resolve from your `~/.ante/settings.json`.

@@ -4,6 +4,7 @@ on:
   pull_request:
     paths:
       - 'crates/**'
+      - 'examples/**'
       - 'ante-acp/**'
       - 'rustfmt.toml'
       - '.github/workflows/public-crates.yml'
@@ -11,6 +12,7 @@ on:
     branches: [main]
     paths:
       - 'crates/**'
+      - 'examples/**'
       - 'ante-acp/**'
       - 'rustfmt.toml'
       - '.github/workflows/public-crates.yml'
@@ -45,6 +47,9 @@ jobs:
           - crate: ante-acp
             manifest: ante-acp/Cargo.toml
             workspace: ante-acp
+          - crate: mini-tui
+            manifest: examples/mini-tui/Cargo.toml
+            workspace: examples/mini-tui
 
     steps:
       - uses: actions/checkout@v7

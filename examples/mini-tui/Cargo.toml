@@ -1,0 +1,15 @@
+[package]
+name = "mini-tui"
+version = "0.1.0"
+edition = "2024"
+rust-version = "1.88"
+description = "Minimal chat TUI built on ante-sdk"
+license = "Apache-2.0"
+publish = false
+
+[dependencies]
+ante-sdk = { path = "../../crates/ante-sdk" }
+crossterm = { version = "0.29", features = ["event-stream"] }
+futures = "0.3"
+ratatui = { version = "0.30", features = ["unstable-rendered-line-info"] }
+tokio = { version = "1.52", features = ["macros", "rt-multi-thread"] }
