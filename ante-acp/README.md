@@ -4,8 +4,12 @@
 [Ante](https://github.com/AntigmaLabs/ante). ACP clients such as Zed and the
 JetBrains IDEs launch it over stdio; it drives an installed `ante` binary.
 
-Status: work in progress. It answers `initialize` today; sessions and prompts
-follow.
+Status: work in progress. It answers `initialize` and runs sessions
+(`session/new`, `session/set_mode`, `session/cancel`), each on its own
+`ante serve --stdio` child; prompts follow. Ante's permission modes (strict,
+auto, yolo) appear as the session's modes, starting from the user's settings.
+MCP servers and additional directories passed by the client are ignored for
+now.
 
 ## Run
 

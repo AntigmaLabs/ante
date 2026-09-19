@@ -11,8 +11,9 @@ repository = "https://github.com/AntigmaLabs/ante"
 
 [dependencies]
 agent-client-protocol = "2.2"
+ante-sdk = { version = "0.2", default-features = false }
 anyhow = "1"
 clap = { version = "4.5", features = ["derive"] }
-tokio = { version = "1.52", features = ["macros", "process", "rt-multi-thread", "time"] }
+tokio = { version = "1.52", features = ["macros", "process", "rt-multi-thread", "sync", "time"] }
 tracing = "0.1"
 tracing-subscriber = { version = "0.3", features = ["env-filter"] }
