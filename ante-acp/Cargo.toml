@@ -2,6 +2,7 @@
 name = "ante-acp"
 version = "0.1.0"
 edition = "2024"
+rust-version = "1.88"
 description = "Agent Client Protocol support for Ante"
 license = "Apache-2.0"
 documentation = "https://docs.rs/ante-acp"
@@ -9,3 +10,9 @@ homepage = "https://antigma.ai"
 repository = "https://github.com/AntigmaLabs/ante"
 
 [dependencies]
+agent-client-protocol = "2.2"
+anyhow = "1"
+clap = { version = "4.5", features = ["derive"] }
+tokio = { version = "1.52", features = ["macros", "process", "rt-multi-thread", "time"] }
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }
