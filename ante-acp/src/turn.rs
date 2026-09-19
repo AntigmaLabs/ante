@@ -4,9 +4,10 @@ use std::path::PathBuf;
 
 use agent_client_protocol::schema::v1::{
     ContentBlock, ContentChunk, CurrentModeUpdate, SessionUpdate, StopReason, TextContent,
+    ToolCallUpdate,
 };
 use agent_client_protocol::{Error, ErrorCode};
-use ante_sdk::protocol::{Evt, TurnEndStatus};
+use ante_sdk::protocol::{Evt, Id, TurnEndStatus, TurnPauseReason};
 use serde_json::json;
 
 use crate::session::mode_id;
@@ -20,6 +21,8 @@ pub enum Out {
     TurnStarted,
     /// The turn ended: the answer to every prompt request that rode it.
     TurnEnded(Result<StopReason, Error>),
+    /// The turn is paused until the client approves or rejects these calls.
+    Approval { turn_id: Id, calls: Vec<ToolCallUpdate> },
 }
 
 /// Per-session translation state. The host streams deltas and then repeats
@@ -68,6 +71,10 @@ impl Translator {
                 self.tools.update(update).map(|update| Out::Update(Box::new(update)))
             }
             Evt::ToolEnd(end) => Some(Out::Update(Box::new(self.tools.end(end)))),
+            Evt::TurnPause { turn_id, reason: TurnPauseReason::Approval { tools, .. } } => {
+                let calls = tools.iter().map(|tool| self.tools.pending(tool)).collect();
+                Some(Out::Approval { turn_id, calls })
+            }
             Evt::SessionUpdated(info) => {
                 Some(Out::Update(Box::new(SessionUpdate::CurrentModeUpdate(
                     CurrentModeUpdate::new(mode_id(info.permission_mode)),
@@ -215,6 +222,30 @@ mod tests {
         };
         assert_eq!(error.code, ErrorCode::InternalError);
         assert_eq!(error.message, "rate limited");
+    }
+
+    #[test]
+    fn an_approval_pause_describes_every_waiting_call() {
+        use ante_sdk::protocol::ToolUse;
+        let tools = vec![
+            ToolUse::new("a", "Bash", serde_json::json!({ "command": "ls" })),
+            ToolUse::new(
+                "b",
+                "Write",
+                serde_json::json!({ "file_path": "/work/x", "content": "" }),
+            ),
+        ];
+        let pause = Evt::TurnPause {
+            turn_id: Id::new("turn"),
+            reason: TurnPauseReason::Approval { tools, message: "approve".into() },
+        };
+        let Some(Out::Approval { calls, .. }) =
+            Translator::new(PathBuf::from("/work")).handle(pause)
+        else {
+            panic!("expected an approval");
+        };
+        let ids: Vec<&str> = calls.iter().map(|call| &*call.tool_call_id.0).collect();
+        assert_eq!(ids, ["a", "b"]);
     }
 
     #[test]

@@ -28,9 +28,6 @@ pub async fn start(client: Client, cwd: PathBuf) -> Result<Started> {
         cwd: Some(cwd),
         // Nothing can answer a question yet, so the tool stays out.
         exclude_tools: Some(vec!["AskUser".to_string()]),
-        // Nothing can answer an approval yet either: a call that would pause
-        // for one is denied instead, until permission requests land.
-        unattended: Some(true),
         ..Default::default()
     };
     client.send(Op::StartSession(request)).await.context("host connection closed")?;

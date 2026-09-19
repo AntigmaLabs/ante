@@ -6,6 +6,7 @@
 
 pub mod agent;
 pub mod ante_bin;
+pub mod permission;
 pub mod prompt;
 pub mod session;
 pub mod tools;

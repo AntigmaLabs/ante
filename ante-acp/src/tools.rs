@@ -27,18 +27,47 @@ impl Tools {
     pub fn start(&mut self, tool: ToolUse) -> SessionUpdate {
         let kind = kind(&tool.name);
         self.announced.insert(tool.id.clone(), kind);
+        let (content, locations) = self.describe(&tool);
         let mut call = ToolCall::new(tool.id.clone(), tool.name.clone())
             .kind(kind)
             .status(ToolCallStatus::InProgress)
             .raw_input(tool.args.clone());
-        if let Some(path) = tool.args.get("file_path").and_then(Value::as_str) {
-            let path = self.cwd.join(path);
-            if let Some(diff) = diff(&tool, &path) {
-                call = call.content(vec![ToolCallContent::Diff(diff)]);
-            }
-            call = call.locations(vec![ToolCallLocation::new(path)]);
+        if let Some(content) = content {
+            call = call.content(content);
+        }
+        if let Some(locations) = locations {
+            call = call.locations(locations);
         }
         SessionUpdate::ToolCall(call)
+    }
+
+    /// Describe a call awaiting approval so the client can show it with the
+    /// permission prompt, before the host has started it.
+    pub fn pending(&mut self, tool: &ToolUse) -> ToolCallUpdate {
+        let kind = kind(&tool.name);
+        self.announced.insert(tool.id.clone(), kind);
+        let (content, locations) = self.describe(tool);
+        let fields = ToolCallUpdateFields::new()
+            .title(tool.name.clone())
+            .kind(kind)
+            .status(ToolCallStatus::Pending)
+            .raw_input(tool.args.clone())
+            .content(content)
+            .locations(locations);
+        ToolCallUpdate::new(tool.id.clone(), fields)
+    }
+
+    /// The file a call touches and, for an edit, the change it makes.
+    fn describe(
+        &self,
+        tool: &ToolUse,
+    ) -> (Option<Vec<ToolCallContent>>, Option<Vec<ToolCallLocation>>) {
+        let Some(path) = tool.args.get("file_path").and_then(Value::as_str) else {
+            return (None, None);
+        };
+        let path = self.cwd.join(path);
+        let content = diff(tool, &path).map(|diff| vec![ToolCallContent::Diff(diff)]);
+        (content, Some(vec![ToolCallLocation::new(path)]))
     }
 
     /// A progress line replaces the call's content until it ends. An edit's
@@ -192,6 +221,23 @@ mod tests {
         tools.start(edit("t1"));
         let progress = ToolUpdate { tool_use_id: "t1".into(), seq: 0, message: "writing".into() };
         assert!(tools.update(progress).is_none());
+    }
+
+    #[test]
+    fn a_pending_call_is_described_for_the_permission_prompt() {
+        let mut tools = tools();
+        let pending = tools.pending(&edit("t1"));
+        assert_eq!(&*pending.tool_call_id.0, "t1");
+        assert_eq!(pending.fields.status, Some(ToolCallStatus::Pending));
+        assert_eq!(pending.fields.kind, Some(ToolKind::Edit));
+        assert_eq!(pending.fields.title.as_deref(), Some("Edit"));
+        assert_eq!(pending.fields.locations.as_ref().map(Vec::len), Some(1));
+        assert!(matches!(pending.fields.content.as_deref(), Some([ToolCallContent::Diff(_)])));
+
+        // The client has seen it: a later denial updates it instead of announcing it.
+        let denied = json!({ "text": "Tool call denied by user and was not executed." });
+        let fields = update_fields(tools.end(end("t1", "Edit", ToolEndStatus::Denied, denied)));
+        assert_eq!(fields.status, Some(ToolCallStatus::Failed));
     }
 
     #[test]

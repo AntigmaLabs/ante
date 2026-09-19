@@ -8,19 +8,20 @@ use agent_client_protocol::schema::ProtocolVersion;
 use agent_client_protocol::schema::v1::{
     AgentCapabilities, CancelNotification, Implementation, InitializeRequest, InitializeResponse,
     NewSessionRequest, NewSessionResponse, PromptCapabilities, PromptRequest, PromptResponse,
-    SessionNotification, SetSessionModeRequest, SetSessionModeResponse,
+    RequestPermissionRequest, SessionNotification, SetSessionModeRequest, SetSessionModeResponse,
+    ToolCallUpdate,
 };
 use agent_client_protocol::{
     Agent, ConnectionTo, Error, ErrorCode, Responder, Stdio, on_receive_notification,
     on_receive_request,
 };
-use ante_sdk::protocol::{Op, op_msg};
+use ante_sdk::protocol::{Id, Op, ReviewDecision, ToolDecision, op_msg};
 use ante_sdk::{ConnectOptions, Endpoint, EventReceiver, OpSender};
 use tokio::sync::Mutex;
 use tracing::{info, warn};
 
 use crate::turn::{Out, Translator};
-use crate::{ante_bin, prompt, session};
+use crate::{ante_bin, permission, prompt, session};
 
 /// What every handler shares: the `ante` to drive and the live sessions of
 /// this connection, keyed by ACP session id.
@@ -208,6 +209,18 @@ async fn pump(
                     session.turn_live = true;
                 }
             }
+            Some(Out::Approval { turn_id, calls }) => {
+                let Some(ops) = state.sessions.lock().await.get(&id).map(|s| s.ops.clone()) else {
+                    continue;
+                };
+                tokio::spawn(request_permissions(
+                    id.clone(),
+                    turn_id,
+                    calls,
+                    connection.clone(),
+                    ops,
+                ));
+            }
             Some(Out::TurnEnded(outcome)) => {
                 let pending = match state.sessions.lock().await.get_mut(&id) {
                     Some(session) => {
@@ -235,6 +248,44 @@ async fn pump(
         ));
     }
     info!(session = %id, "ante session ended");
+}
+
+/// Ask the client about every paused call at once and answer the host in one
+/// go. A cancelled answer denies its call and interrupts the turn.
+async fn request_permissions(
+    session_id: String,
+    turn_id: Id,
+    calls: Vec<ToolCallUpdate>,
+    connection: ConnectionTo<agent_client_protocol::Client>,
+    ops: OpSender,
+) {
+    let asks = calls.into_iter().map(|call| {
+        let tool_use_id = call.tool_call_id.0.to_string();
+        let request =
+            RequestPermissionRequest::new(session_id.clone(), call, permission::options());
+        let sent = connection.send_request(request);
+        async move { (tool_use_id, sent.block_task().await) }
+    });
+    let mut cancelled = false;
+    let mut responses = Vec::new();
+    for (tool_use_id, answer) in futures::future::join_all(asks).await {
+        let decision = match answer {
+            Ok(response) => permission::decision(&response.outcome),
+            Err(error) => {
+                warn!(session = %session_id, %error, "permission request failed; denying");
+                Some(ReviewDecision::Deny)
+            }
+        };
+        let decision = decision.unwrap_or_else(|| {
+            cancelled = true;
+            ReviewDecision::Deny
+        });
+        responses.push(ToolDecision { tool_use_id, decision, message: None });
+    }
+    let _ = ops.send(op_msg(Op::ApprovalResponse { turn_id, responses })).await;
+    if cancelled {
+        let _ = ops.send(op_msg(Op::Interrupt)).await;
+    }
 }
 
 fn error_with(code: ErrorCode, message: String) -> Error {

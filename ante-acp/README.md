@@ -10,13 +10,14 @@ Status: work in progress. It answers `initialize`, runs sessions
 embedded selections, and images reach Ante, and the reply streams back as
 message and thought chunks. A prompt sent while a turn is running steers that
 turn. Tool calls show up as they run, with their kind, the file they touch,
-a diff for Edit and Write, progress lines, and their result. Ante's
+a diff for Edit and Write, progress lines, and their result. When Ante
+needs approval for a call, the client gets a permission request with Allow,
+Always allow in this session, and Reject; cancelling the turn denies it. Ante's
 permission modes (strict, auto, yolo) appear as the session's modes,
 starting from the user's settings.
 
-Not yet: a tool call that would need approval is denied until permission
-requests land. MCP servers and additional directories passed by the client
-are ignored.
+Not yet: MCP servers and additional directories passed by the client are
+ignored.
 
 ## Run
 
