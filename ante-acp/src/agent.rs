@@ -177,21 +177,22 @@ async fn new_session(
         ..Default::default()
     };
     let client = ante_sdk::connect(Endpoint::Stdio, options).await?;
-    let started = session::start(client, cwd).await?;
+    let started = session::start(client, cwd.clone()).await?;
     let session = Session { ops: started.ops, turn_live: false, pending: Vec::new() };
     state.sessions.lock().await.insert(started.id.clone(), session);
     info!(session = %started.id, "ante session started");
-    tokio::spawn(pump(started.id.clone(), started.events, connection, state.clone()));
+    tokio::spawn(pump(started.id.clone(), cwd, started.events, connection, state.clone()));
     Ok((started.id, started.mode))
 }
 
 async fn pump(
     id: String,
+    cwd: PathBuf,
     mut events: EventReceiver,
     connection: ConnectionTo<agent_client_protocol::Client>,
     state: Arc<State>,
 ) {
-    let mut translator = Translator::default();
+    let mut translator = Translator::new(cwd);
     while let Some(msg) = events.recv().await {
         match translator.handle(msg.event) {
             Some(Out::Update(update)) => {

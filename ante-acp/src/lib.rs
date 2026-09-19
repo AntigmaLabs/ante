@@ -8,4 +8,5 @@ pub mod agent;
 pub mod ante_bin;
 pub mod prompt;
 pub mod session;
+pub mod tools;
 pub mod turn;

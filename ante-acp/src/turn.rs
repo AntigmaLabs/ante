@@ -1,5 +1,7 @@
 //! Translating a session's host events into client updates and prompt outcomes.
 
+use std::path::PathBuf;
+
 use agent_client_protocol::schema::v1::{
     ContentBlock, ContentChunk, CurrentModeUpdate, SessionUpdate, StopReason, TextContent,
 };
@@ -8,6 +10,7 @@ use ante_sdk::protocol::{Evt, TurnEndStatus};
 use serde_json::json;
 
 use crate::session::mode_id;
+use crate::tools::Tools;
 
 /// What one host event means to the client.
 pub enum Out {
@@ -22,17 +25,23 @@ pub enum Out {
 /// Per-session translation state. The host streams deltas and then repeats
 /// the full text in a final event; a stream that was delivered as deltas
 /// has its final event dropped.
-#[derive(Default)]
 pub struct Translator {
     streamed_message: bool,
     streamed_thinking: bool,
+    tools: Tools,
 }
 
 impl Translator {
+    /// `cwd` is the session's working directory, for tool paths.
+    pub fn new(cwd: PathBuf) -> Self {
+        Self { streamed_message: false, streamed_thinking: false, tools: Tools::new(cwd) }
+    }
+
     pub fn handle(&mut self, event: Evt) -> Option<Out> {
         match event {
             Evt::TurnStart { .. } => {
-                *self = Self::default();
+                self.streamed_message = false;
+                self.streamed_thinking = false;
                 Some(Out::TurnStarted)
             }
             Evt::TurnEnd { status, .. } => Some(Out::TurnEnded(outcome(status))),
@@ -54,6 +63,11 @@ impl Translator {
             | Evt::InfoBlockStart { header: text, .. }
             | Evt::InfoBlockAppend { detail: text, .. } => thought(text),
             Evt::Error(text) => message(format!("Error: {text}")),
+            Evt::ToolStart(tool) => Some(Out::Update(Box::new(self.tools.start(tool)))),
+            Evt::ToolUpdate(update) => {
+                self.tools.update(update).map(|update| Out::Update(Box::new(update)))
+            }
+            Evt::ToolEnd(end) => Some(Out::Update(Box::new(self.tools.end(end)))),
             Evt::SessionUpdated(info) => {
                 Some(Out::Update(Box::new(SessionUpdate::CurrentModeUpdate(
                     CurrentModeUpdate::new(mode_id(info.permission_mode)),
@@ -120,7 +134,7 @@ mod tests {
 
     #[test]
     fn streamed_text_is_not_repeated_by_its_final_event() {
-        let mut translator = Translator::default();
+        let mut translator = Translator::new(PathBuf::from("/work"));
         assert!(matches!(
             translator.handle(Evt::TurnStart { turn_id: Id::new("turn") }),
             Some(Out::TurnStarted)
@@ -145,7 +159,7 @@ mod tests {
 
     #[test]
     fn unstreamed_final_text_is_delivered() {
-        let mut translator = Translator::default();
+        let mut translator = Translator::new(PathBuf::from("/work"));
         // An empty delta is not a delivery.
         assert!(translator.handle(Evt::MessageDelta(String::new())).is_none());
         assert_eq!(
@@ -161,7 +175,7 @@ mod tests {
 
     #[test]
     fn turn_end_maps_to_stop_reasons_and_errors() {
-        let mut translator = Translator::default();
+        let mut translator = Translator::new(PathBuf::from("/work"));
 
         let Some(Out::TurnEnded(Ok(reason))) =
             translator.handle(turn_end(TurnEndStatus::Completed))
@@ -205,7 +219,7 @@ mod tests {
 
     #[test]
     fn notices_become_thought_or_error_chunks() {
-        let mut translator = Translator::default();
+        let mut translator = Translator::new(PathBuf::from("/work"));
         assert_eq!(
             chunk_text(translator.handle(Evt::Info("settings notice".into()))),
             Some((true, "settings notice".into()))
@@ -242,7 +256,7 @@ mod tests {
             title: None,
         };
         let Some(Out::Update(update)) =
-            Translator::default().handle(Evt::SessionUpdated(Box::new(info)))
+            Translator::new(PathBuf::from("/work")).handle(Evt::SessionUpdated(Box::new(info)))
         else {
             panic!("expected an update");
         };
