@@ -3,9 +3,7 @@
 use std::path::PathBuf;
 use std::time::Duration;
 
-use agent_client_protocol::schema::v1::{
-    CurrentModeUpdate, SessionMode, SessionModeState, SessionUpdate,
-};
+use agent_client_protocol::schema::v1::{SessionMode, SessionModeState};
 use ante_sdk::protocol::{Evt, Op, PermissionMode, SessionRequest};
 use ante_sdk::{Client, EventReceiver, OpSender};
 use anyhow::{Context, Result, bail};
@@ -30,6 +28,9 @@ pub async fn start(client: Client, cwd: PathBuf) -> Result<Started> {
         cwd: Some(cwd),
         // Nothing can answer a question yet, so the tool stays out.
         exclude_tools: Some(vec!["AskUser".to_string()]),
+        // Nothing can answer an approval yet either: a call that would pause
+        // for one is denied instead, until permission requests land.
+        unattended: Some(true),
         ..Default::default()
     };
     client.send(Op::StartSession(request)).await.context("host connection closed")?;
@@ -47,16 +48,6 @@ pub async fn start(client: Client, cwd: PathBuf) -> Result<Started> {
     .await
     .context("host did not announce the session in time")??;
     Ok(Started { id: info.session_id.to_string(), mode: info.permission_mode, ops, events })
-}
-
-/// The client-facing update for a host event, if it has one.
-pub fn update_for(event: &Evt) -> Option<SessionUpdate> {
-    match event {
-        Evt::SessionUpdated(info) => Some(SessionUpdate::CurrentModeUpdate(
-            CurrentModeUpdate::new(mode_id(info.permission_mode)),
-        )),
-        _ => None,
-    }
 }
 
 /// Ante's permission modes, offered to the client as session modes.
@@ -177,17 +168,5 @@ mod tests {
         let state = mode_state(PermissionMode::Yolo);
         assert_eq!(&*state.current_mode_id.0, "yolo");
         assert_eq!(state.available_modes.len(), 3);
-    }
-
-    #[test]
-    fn a_mode_change_becomes_a_current_mode_update() {
-        let info = session_info(PermissionMode::Yolo);
-        let Some(SessionUpdate::CurrentModeUpdate(update)) =
-            update_for(&Evt::SessionUpdated(Box::new(info)))
-        else {
-            panic!("expected a mode update");
-        };
-        assert_eq!(&*update.current_mode_id.0, "yolo");
-        assert!(update_for(&Evt::Info("noise".into())).is_none());
     }
 }

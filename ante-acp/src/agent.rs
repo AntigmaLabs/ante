@@ -6,40 +6,55 @@ use std::sync::Arc;
 
 use agent_client_protocol::schema::ProtocolVersion;
 use agent_client_protocol::schema::v1::{
-    CancelNotification, Implementation, InitializeRequest, InitializeResponse, NewSessionRequest,
-    NewSessionResponse, SessionNotification, SetSessionModeRequest, SetSessionModeResponse,
+    AgentCapabilities, CancelNotification, Implementation, InitializeRequest, InitializeResponse,
+    NewSessionRequest, NewSessionResponse, PromptCapabilities, PromptRequest, PromptResponse,
+    SessionNotification, SetSessionModeRequest, SetSessionModeResponse,
 };
 use agent_client_protocol::{
-    Agent, ConnectionTo, Error, ErrorCode, Stdio, on_receive_notification, on_receive_request,
+    Agent, ConnectionTo, Error, ErrorCode, Responder, Stdio, on_receive_notification,
+    on_receive_request,
 };
 use ante_sdk::protocol::{Op, op_msg};
 use ante_sdk::{ConnectOptions, Endpoint, EventReceiver, OpSender};
 use tokio::sync::Mutex;
 use tracing::{info, warn};
 
-use crate::{ante_bin, session};
+use crate::turn::{Out, Translator};
+use crate::{ante_bin, prompt, session};
 
 /// What every handler shares: the `ante` to drive and the live sessions of
 /// this connection, keyed by ACP session id.
 struct State {
     executable: PathBuf,
-    sessions: Mutex<HashMap<String, OpSender>>,
+    sessions: Mutex<HashMap<String, Session>>,
+}
+
+struct Session {
+    ops: OpSender,
+    /// A turn is running: further prompts steer it instead of starting one.
+    turn_live: bool,
+    /// Prompt requests answered when the current turn ends.
+    pending: Vec<Responder<PromptResponse>>,
 }
 
 /// Serve ACP on this process's stdin/stdout until the client closes them.
 pub async fn run(executable: PathBuf) -> Result<(), Error> {
     let state = Arc::new(State { executable, sessions: Mutex::new(HashMap::new()) });
-    let (init, new, mode, cancel) = (state.clone(), state.clone(), state.clone(), state);
+    let (init, new, prompt, mode, cancel) =
+        (state.clone(), state.clone(), state.clone(), state.clone(), state);
     Agent
         .builder()
         .name("ante-acp")
         .on_receive_request(
             async move |_request: InitializeRequest, responder, _connection| {
                 match ante_bin::check_version(&init.executable).await {
-                    Ok(()) => responder
-                        .respond(InitializeResponse::new(ProtocolVersion::V1).agent_info(
-                            Implementation::new("ante-acp", env!("CARGO_PKG_VERSION")),
-                        )),
+                    Ok(()) => responder.respond(
+                        InitializeResponse::new(ProtocolVersion::V1)
+                            .agent_info(Implementation::new("ante-acp", env!("CARGO_PKG_VERSION")))
+                            .agent_capabilities(AgentCapabilities::new().prompt_capabilities(
+                                PromptCapabilities::new().image(true).embedded_context(true),
+                            )),
+                    ),
                     Err(error) => responder.respond_with_error(error_with(
                         ErrorCode::InternalError,
                         format!("{error:#}"),
@@ -77,6 +92,40 @@ pub async fn run(executable: PathBuf) -> Result<(), Error> {
             on_receive_request!(),
         )
         .on_receive_request(
+            async move |request: PromptRequest, responder, _connection| {
+                let text = match prompt::flatten(request.prompt, &prompt::image_cache_dir()) {
+                    Ok(text) => text,
+                    Err(error) => {
+                        return responder.respond_with_error(error_with(
+                            ErrorCode::InvalidParams,
+                            format!("{error:#}"),
+                        ));
+                    }
+                };
+                let mut sessions = prompt.sessions.lock().await;
+                let Some(session) = sessions.get_mut(&*request.session_id.0) else {
+                    return responder.respond_with_error(unknown_session(&request.session_id.0));
+                };
+                // A prompt during a live turn steers it; every request that
+                // rode the turn is answered when it ends. Known gap: a prompt
+                // landing after the host ended the turn but before the pump
+                // saw it is still treated as steering that turn.
+                let op = if session.turn_live { Op::Steer(text) } else { Op::UserInput(text) };
+                // Awaited so a gone host fails the prompt instead of parking
+                // it; the channel only fills if the host stops taking ops.
+                if session.ops.send(op_msg(op)).await.is_err() {
+                    return responder.respond_with_error(error_with(
+                        ErrorCode::InternalError,
+                        "ante exited".to_string(),
+                    ));
+                }
+                session.turn_live = true;
+                session.pending.push(responder);
+                Ok(())
+            },
+            on_receive_request!(),
+        )
+        .on_receive_request(
             async move |request: SetSessionModeRequest, responder, _connection| {
                 let Some(permission_mode) = session::parse_mode(&request.mode_id.0) else {
                     return responder.respond_with_error(error_with(
@@ -84,7 +133,8 @@ pub async fn run(executable: PathBuf) -> Result<(), Error> {
                         format!("unknown mode `{}`", request.mode_id.0),
                     ));
                 };
-                let Some(ops) = mode.sessions.lock().await.get(&*request.session_id.0).cloned()
+                let Some(ops) =
+                    mode.sessions.lock().await.get(&*request.session_id.0).map(|s| s.ops.clone())
                 else {
                     return responder.respond_with_error(unknown_session(&request.session_id.0));
                 };
@@ -103,7 +153,7 @@ pub async fn run(executable: PathBuf) -> Result<(), Error> {
             async move |notification: CancelNotification, _connection| {
                 let id = &*notification.session_id.0;
                 match cancel.sessions.lock().await.get(id) {
-                    Some(ops) => ops.try_send(op_msg(Op::Interrupt)),
+                    Some(session) => session.ops.try_send(op_msg(Op::Interrupt)),
                     None => warn!(session = id, "cancel for an unknown session"),
                 }
                 Ok(())
@@ -128,7 +178,8 @@ async fn new_session(
     };
     let client = ante_sdk::connect(Endpoint::Stdio, options).await?;
     let started = session::start(client, cwd).await?;
-    state.sessions.lock().await.insert(started.id.clone(), started.ops);
+    let session = Session { ops: started.ops, turn_live: false, pending: Vec::new() };
+    state.sessions.lock().await.insert(started.id.clone(), session);
     info!(session = %started.id, "ante session started");
     tokio::spawn(pump(started.id.clone(), started.events, connection, state.clone()));
     Ok((started.id, started.mode))
@@ -140,16 +191,48 @@ async fn pump(
     connection: ConnectionTo<agent_client_protocol::Client>,
     state: Arc<State>,
 ) {
+    let mut translator = Translator::default();
     while let Some(msg) = events.recv().await {
-        if let Some(update) = session::update_for(&msg.event)
-            && let Err(error) =
-                connection.send_notification(SessionNotification::new(id.clone(), update))
-        {
-            warn!(session = %id, %error, "could not notify the client");
-            break;
+        match translator.handle(msg.event) {
+            Some(Out::Update(update)) => {
+                if let Err(error) =
+                    connection.send_notification(SessionNotification::new(id.clone(), *update))
+                {
+                    warn!(session = %id, %error, "could not notify the client");
+                    break;
+                }
+            }
+            Some(Out::TurnStarted) => {
+                if let Some(session) = state.sessions.lock().await.get_mut(&id) {
+                    session.turn_live = true;
+                }
+            }
+            Some(Out::TurnEnded(outcome)) => {
+                let pending = match state.sessions.lock().await.get_mut(&id) {
+                    Some(session) => {
+                        session.turn_live = false;
+                        std::mem::take(&mut session.pending)
+                    }
+                    None => Vec::new(),
+                };
+                for responder in pending {
+                    let _ = match &outcome {
+                        Ok(reason) => responder.respond(PromptResponse::new(*reason)),
+                        Err(error) => responder.respond_with_error(error.clone()),
+                    };
+                }
+            }
+            None => {}
         }
     }
-    state.sessions.lock().await.remove(&id);
+    // The host is gone: nothing will answer what is still pending.
+    let pending = state.sessions.lock().await.remove(&id).map(|s| s.pending).unwrap_or_default();
+    for responder in pending {
+        let _ = responder.respond_with_error(error_with(
+            ErrorCode::InternalError,
+            "ante exited before the turn ended".to_string(),
+        ));
+    }
     info!(session = %id, "ante session ended");
 }
 
