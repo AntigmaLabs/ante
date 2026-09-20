@@ -16,8 +16,14 @@ Always allow in this session, and Reject; cancelling the turn denies it. Ante's
 permission modes (strict, auto, yolo) appear as the session's modes,
 starting from the user's settings.
 
-Not yet: MCP servers and additional directories passed by the client are
-ignored.
+Not yet:
+
+- Reopening a session. A client that tries to restore an earlier thread (Zed
+  does this for a project's last thread on relaunch) is told that loading
+  sessions is not supported; open a new thread instead.
+- Questions from the model. Ante's AskUser tool is left out of the session,
+  so the model decides on its own instead of asking you to choose.
+- MCP servers and additional directories passed by the client are ignored.
 
 ## Run
 
