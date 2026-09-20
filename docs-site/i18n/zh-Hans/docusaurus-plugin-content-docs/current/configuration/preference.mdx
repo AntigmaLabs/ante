@@ -35,6 +35,7 @@ Ante 将用户偏好设置保存在 `~/.ante/settings.json` 中。仓库还可�
   "tips": true,
   "group_tool_activity": true,
   "short_prompt": false,
+  "max_concurrent_subagents": 0,
   "auto_compact": true,
   "channel": "stable",
   "resize_reflow": "conservative",
@@ -83,6 +84,7 @@ Ante 将用户偏好设置保存在 `~/.ante/settings.json` 中。仓库还可�
 | `tips` | TUI 是否在智能体思考动画下方展示[功能技巧提示行](/usage/tui#spinner-tips)。除非设为 `false` 否则默认开启 |
 | `group_tool_activity` | 是否将连续的静默工具调用折叠为聊天视图中的单个紧凑汇总摘要。除非设为 `false` 否则默认开启；**Ctrl+O** 完整记录视图中始终保留逐次调用的全部细节。修改仅对新调用生效 |
 | `short_prompt` | 是否为新会话和恢复会话启用紧凑提示词集（精简系统提示词和更短的内置工具描述）。除非设为 `true` 否则默认关闭；`--short-prompt` 可临时启用 |
+| `max_concurrent_subagents` | 单个会话同时运行的子代理数量上限。当模型在一条消息中发起的 `Agent` 调用超过此值时，多出的调用会等待空闲槽位（TUI 显示 `waiting for a subagent slot`）而不是立即启动，且 `Agent` 工具描述会告知模型此上限。未设置或为 `0` 表示不限制。对于一次只能处理一个请求的本地模型，建议设为 `1`，避免排队的子代理在服务端队列中等待直至触发 [`stream_idle_timeout_secs`](/reference/catalog-reference#provider-fields) |
 | `auto_compact` | 是否在接近模型上下文上限时主动自动对历史对话生成摘要。除非设为 `false` 否则默认开启；禁用时手动 `/compact` 和溢出恢复机制依然可用。在 `/config` 中切换可直接作用于当前会话 |
 | `channel` | `ante update` 跟踪的发布通道（`stable` 或 `nightly`）。默认为 `stable`；历史 `latest` 值会被视为 `stable`。参见[版本更新与通道](/start/update) |
 | `resize_reflow` | 终端窗口大小调整时的滚屏历史/回滚缓冲区（Scrollback）重排策略：`conservative`（保守，默认）或 `purge`（清除重放，见下文） |
@@ -140,7 +142,7 @@ ANTE_PROFILE=review ante -p "审查本次改动"
 | `model` | 仓库不能把你的请求改道到其他模型 |
 | `provider` | 仓库不能把你的请求改道到其他提供商 |
 
-其余会话字段正常叠加。项目可以设置 `append_system_prompt`、`tools`、`auto_memory`、`skills`、`include_skills`、`exclude_skills`、`session_save`、`short_prompt`、`model_effort`，以及收紧权限的 `permissions.ask` / `permissions.deny`。`auto_compact`、`theme`、`channel`、状态栏设置和环境感知功能等 UI 与设备偏好会被忽略并显示通知。
+其余会话字段正常叠加。项目可以设置 `append_system_prompt`、`tools`、`auto_memory`、`skills`、`include_skills`、`exclude_skills`、`session_save`、`short_prompt`、`max_concurrent_subagents`、`model_effort`，以及收紧权限的 `permissions.ask` / `permissions.deny`。`auto_compact`、`theme`、`channel`、状态栏设置和环境感知功能等 UI 与设备偏好会被忽略并显示通知。
 
 #### 查看实际生效的配置 {#checking-what-applied}
 

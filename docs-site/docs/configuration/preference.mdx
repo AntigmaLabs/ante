@@ -34,6 +34,7 @@ An example `settings.json`:
   "tips": true,
   "group_tool_activity": true,
   "short_prompt": false,
+  "max_concurrent_subagents": 0,
   "auto_compact": true,
   "channel": "stable",
   "resize_reflow": "conservative",
@@ -82,6 +83,7 @@ An example `settings.json`:
 | `tips` | Whether the TUI shows a [tip line](/usage/tui#spinner-tips) under the spinner while the agent works. On unless set to `false` |
 | `group_tool_activity` | Collapse contiguous quiet tool calls into a single activity summary in the chat. On unless set to `false`; full per-call details remain in the **Ctrl+O** transcript. Changes apply to new tool activity only |
 | `short_prompt` | Use the compact prompt set — a condensed system prompt and shorter built-in tool descriptions — for new and resumed sessions. Off unless set to `true`; the `--short-prompt` CLI flag enables it for a single run |
+| `max_concurrent_subagents` | Cap on how many subagents a session runs at once. When the model spawns more `Agent` calls than this in one message, the extra calls wait for a slot (the TUI shows `waiting for a subagent slot`) instead of starting immediately, and the `Agent` tool description tells the model about the cap. Unset or `0` means no cap. Set it to `1` for a local model that serves one request at a time, so queued subagents don't sit in the server's queue until [`stream_idle_timeout_secs`](/reference/catalog-reference#provider-fields) fires |
 | `auto_compact` | Proactively reduce older history as the dialog nears the context limit: aged tool results are evicted first, then only the older prefix the model will no longer see is summarized. Manual `/compact` targets a tighter working set than this automatic path. On unless set to `false`; `/compact` and overflow recovery still work when disabled. Toggling it in `/config` applies to the running session |
 | `channel` | Release channel `ante update` tracks (`stable` or `nightly`). Defaults to `stable`; legacy `latest` values are treated as `stable`. See [Update & Channels](/start/update). |
 | `resize_reflow` | Scrollback strategy on terminal resize: `conservative` (default) or `purge` (see below) |
@@ -140,7 +142,7 @@ Because `.ante/settings.json` is repository content, it can be written by anyone
 | `model` | A repository cannot redirect your traffic to a different model |
 | `provider` | A repository cannot redirect your traffic to a different provider |
 
-The remaining session fields layer normally. A project may set `append_system_prompt`, `tools`, `auto_memory`, `skills`, `include_skills`, `exclude_skills`, `session_save`, `short_prompt`, `model_effort`, and the narrowing `permissions.ask` / `permissions.deny` rules. UI and device preferences such as `auto_compact`, `theme`, `channel`, status-line settings, and ambient features are ignored with a notice.
+The remaining session fields layer normally. A project may set `append_system_prompt`, `tools`, `auto_memory`, `skills`, `include_skills`, `exclude_skills`, `session_save`, `short_prompt`, `max_concurrent_subagents`, `model_effort`, and the narrowing `permissions.ask` / `permissions.deny` rules. UI and device preferences such as `auto_compact`, `theme`, `channel`, status-line settings, and ambient features are ignored with a notice.
 
 #### Checking what applied
 
