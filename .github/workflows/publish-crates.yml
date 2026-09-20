@@ -1,0 +1,60 @@
+name: Publish Crates
+
+on:
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: 'Dry run (verify packaging without uploading)'
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+jobs:
+  publish:
+    name: Publish ${{ matrix.crate }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - crate: ante-acp
+            manifest: ante-acp/Cargo.toml
+          - crate: ante-gateway
+            manifest: ante-gateway/Cargo.toml
+
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions-rust-lang/setup-rust-toolchain@v2.0.0
+        with:
+          toolchain: stable
+
+      - name: Publish to crates.io
+        env:
+          CARGO_REGISTRY_TOKEN: ${{ secrets.CARGO_REGISTRY_TOKEN || secrets.CRATES_IO_TOKEN }}
+          MANIFEST: ${{ matrix.manifest }}
+        run: |
+          CRATE_NAME=$(cargo metadata --no-deps --format-version 1 --manifest-path "$MANIFEST" | jq -r '.packages[0].name')
+          VERSION=$(cargo metadata --no-deps --format-version 1 --manifest-path "$MANIFEST" | jq -r '.packages[0].version')
+
+          echo "Checking if $CRATE_NAME $VERSION is already published on crates.io..."
+          PUBLISHED=$(curl -s -H "User-Agent: ante-ci" "https://crates.io/api/v1/crates/$CRATE_NAME/$VERSION" | jq -r '.version.num // empty')
+
+          if [ "$PUBLISHED" = "$VERSION" ]; then
+            echo "$CRATE_NAME $VERSION is already published on crates.io, skipping."
+            exit 0
+          fi
+
+          if [ -z "$CARGO_REGISTRY_TOKEN" ] && [ "${{ inputs.dry_run }}" != "true" ]; then
+            echo "Error: CARGO_REGISTRY_TOKEN is not set" >&2
+            exit 1
+          fi
+
+          echo "Publishing $CRATE_NAME $VERSION to crates.io..."
+          ARGS=()
+          if [ "${{ inputs.dry_run }}" = "true" ]; then
+            ARGS+=(--dry-run)
+          fi
+          cargo publish --manifest-path "$MANIFEST" "${ARGS[@]}"
