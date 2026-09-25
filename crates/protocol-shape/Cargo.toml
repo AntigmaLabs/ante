@@ -1,6 +1,6 @@
 [package]
 name = "ante-protocol-shape"
-version = "0.2.4"
+version = "0.2.5"
 edition = "2024"
 rust-version = "1.88"
 description = "Protocol schema and wire message shapes for Ante"

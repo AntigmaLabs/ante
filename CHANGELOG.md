@@ -1,5 +1,30 @@
 # Changelog
 
+## v0.2.5 - 2026-09-24
+
+### Added
+- Switch a session's provider in place, keeping its ID, messages, title, and permission state
+
+### Changed
+- MCP server startup and protocol compatibility are stricter
+- WebFetch points the model toward URLs it has already found
+- Pruned outdated entries from the built-in model catalog
+- TUI shows tabs instead of dropping them
+- Grep keeps the match visible when it clips a long line
+- Simplified the LLM provider layer
+- Dependency updates
+
+### Fixed
+- Abandoned MCP calls are cancelled, and rich MCP results are kept
+- Throttled web searches recover within the call budget
+- Oversized tool results are attributed to the calls that produced them
+
+### Wire
+- `SessionUpdate.provider` added: switches the session to a named catalog provider on the next turn. An unknown provider, or a switch while a turn is running, returns `Error`
+
+### Crates
+- Public crates published as 0.2.5: ante-protocol-shape, ante-llm, ante-exec, ante-sdk
+
 ## v0.2.4 - 2026-09-22
 
 ### Added

@@ -1,6 +1,6 @@
 [package]
 name = "ante-llm"
-version = "0.2.4"
+version = "0.2.5"
 edition = "2024"
 rust-version = "1.88"
 description = "Provider profiles and shared LLM primitives for Ante"
@@ -9,6 +9,6 @@ repository = "https://github.com/AntigmaLabs/ante"
 readme = "README.md"
 
 [dependencies]
-ante-protocol-shape = { version = "=0.2.4", path = "../protocol-shape" }
+ante-protocol-shape = { version = "=0.2.5", path = "../protocol-shape" }
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"

@@ -1,6 +1,6 @@
 [package]
 name = "ante-sdk"
-version = "0.2.4"
+version = "0.2.5"
 edition = "2024"
 rust-version = "1.88"
 description = "Rust SDK for Ante: connect to a host and drive sessions over the Op/Evt protocol"
@@ -22,7 +22,7 @@ ws = ["dep:tokio-tungstenite", "dep:futures-util"]
 wss = ["ws", "tokio-tungstenite/rustls-tls-webpki-roots", "dep:rustls", "dep:webpki-roots"]
 
 [dependencies]
-ante-protocol-shape = { version = "=0.2.4", path = "../protocol-shape" }
+ante-protocol-shape = { version = "=0.2.5", path = "../protocol-shape" }
 futures-util = { version = "0.3", default-features = false, features = ["sink", "std"], optional = true }
 rustls = { version = "0.23", default-features = false, features = ["aws-lc-rs", "std"], optional = true }
 serde_json = "1.0"

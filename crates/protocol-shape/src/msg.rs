@@ -439,7 +439,7 @@ pub struct ProviderSpec {
 /// A session's announced state: its identity and mutable settings
 /// (`SessionStart`, `SessionUpdated`) plus the capabilities it was equipped
 /// with, which are fixed for the session's lifetime.
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
 pub struct SessionInfo {
     pub model: ModelSpec,
     pub provider: ProviderSpec,
@@ -463,9 +463,19 @@ pub struct SessionInfo {
 /// Catalog-dependent fields are resolved before the update takes effect.
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]
 pub struct SessionUpdate {
+    /// Provider change, taking effect on the next turn: the conversation
+    /// continues on the named catalog provider, keeping the session id,
+    /// messages, title and permission state. `model` then names a model on that
+    /// provider; absent, the provider's default. Naming the current provider is
+    /// not a switch. Refused whole, answered with `Error` instead of
+    /// `SessionUpdated`, for an unknown provider id or for another provider
+    /// while a turn is in flight; never re-routed.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub provider: Option<String>,
     /// Model change, taking effect on the next turn. The spec carries the
     /// whole request, `effort` included: a set `effort` overrides the
-    /// catalog default; unset fields resolve from the catalog.
+    /// catalog default; unset fields resolve from the catalog. Resolved on
+    /// the session's provider — the one `provider` names when both are set.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub model: Option<ModelSpec>,
     /// Permission mode change, taking effect on the next turn without
@@ -1334,6 +1344,7 @@ mod tests {
     #[test]
     fn session_update_op_serde_roundtrip() {
         let op = Op::UpdateSession(SessionUpdate {
+            provider: Some("openai".to_string()),
             model: Some(ModelSpec {
                 temperature: Some(0.2),
                 effort: Some(super::Effort::High),
@@ -1349,11 +1360,13 @@ mod tests {
         assert!(matches!(
             decoded,
             Op::UpdateSession(SessionUpdate {
+                provider: Some(provider),
                 model: Some(model),
                 permission_mode: Some(PermissionMode::Yolo),
                 title: Some(title),
             })
-                if model.id == "gpt-5.4"
+                if provider == "openai"
+                    && model.id == "gpt-5.4"
                     && model.temperature == Some(0.2)
                     && model.effort == Some(super::Effort::High)
                     && title == "renamed"
