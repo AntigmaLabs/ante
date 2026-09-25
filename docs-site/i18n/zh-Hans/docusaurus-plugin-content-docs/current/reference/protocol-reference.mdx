@@ -113,12 +113,15 @@ Ante 在客户端（Client）与守护进程（Daemon）之间采用强类型的
 
 ### UpdateSession {#updatesession}
 
-在不重启的情况下原地更新活跃会话（例如在会话中切换模型或权限模式）。每个字段均为可选；省略的字段保持不变。权限模式的变更（如 TUI 中按 `Shift+Tab` 循环切换）会立即生效，适用于当前正在运行以及后续的轮次；模型变更在下一轮 Turn 开始时生效。`title` 变更立即生效，并通过 `SessionUpdated` 事件回传。其他会话选项必须在 `StartSession` 时设定。
+在不重启的情况下原地更新活跃会话（例如在会话中切换提供商、模型或权限模式）。每个字段均为可选；省略的字段保持不变。权限模式的变更（如 TUI 中按 `Shift+Tab` 循环切换）会立即生效，适用于当前正在运行以及后续的轮次；提供商或模型变更在下一轮 Turn 开始时生效。`title` 变更立即生效，并通过 `SessionUpdated` 事件回传。其他会话选项必须在 `StartSession` 时设定。
+
+`provider` 变更会在指定的目录提供商上继续当前对话，保留会话 ID、消息、标题与权限状态。此时 `model` 指定该提供商上的模型；省略时使用该提供商的默认模型。指定当前提供商不视为切换。若提供商 ID 未知，或在有 Turn 正在运行时请求切换到其他提供商，整个更新将被拒绝——以 `Error` 而非 `SessionUpdated` 回应；会话绝不会被自动改路由到其他提供商。如需从故障或触发限流的提供商切走，请先中断正在运行的 Turn。自 v0.2.5 起可用。
 
 ```json
 {
   "op": {
     "UpdateSession": {
+      "provider": "openai",
       "model": { "id": "gpt-5.4", "temperature": 0.2, "effort": "high" },
       "permission_mode": "auto",
       "title": "auth refactor"
@@ -132,7 +135,8 @@ Ante 在客户端（Client）与守护进程（Daemon）之间采用强类型的
 
 | 字段 | 类型 | 说明 |
 |---|---|---|
-| `model` | `ModelSpec?` | 要使用的新模型规格。携带完整请求参数（包含 `effort`）：设置的 `effort` 将覆盖目录默认值；未设置的字段从目录中解析 |
+| `provider` | `string?` | 要切换到的目录提供商 ID（例如 `"openai"`），保留当前对话。提供商 ID 未知或有 Turn 正在运行时以 `Error` 拒绝 |
+| `model` | `ModelSpec?` | 要使用的新模型规格。携带完整请求参数（包含 `effort`）：设置的 `effort` 将覆盖目录默认值；未设置的字段从目录中解析。在会话的提供商上解析——同时设置 `provider` 时即为其指定的提供商 |
 | `permission_mode` | `PermissionMode?` | 新的权限模式（`"strict"`、`"auto"` 或 `"yolo"`） |
 | `title` | `string?` | 重命名会话。文本两端会被裁剪；传入空字符串或仅含空白的字符串即清除标题 |
 

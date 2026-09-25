@@ -48,7 +48,7 @@ Operations (`Op`) are sent from the client to the daemon, wrapped in an `OpMsg` 
 | Op | Payload | Description |
 |---|---|---|
 | `StartSession` | `SessionRequest` | Initialize a new session; set fields are pinned and unset fields resolve from the host's current defaults |
-| `UpdateSession` | `SessionUpdate` | Update the active session (e.g. switch models, or rename it) without restarting |
+| `UpdateSession` | `SessionUpdate` | Update the active session (e.g. switch providers or models, or rename it) without restarting |
 | `ResumeSession` | `session_id`, `unattended?` | Resume a previously persisted session; unattended clients deny calls that would otherwise pause for approval |
 | `UserInput` | `String` | Submit a user prompt |
 | `ShellInput` | `String` | Run a daemon-side shell command without starting an agent turn |

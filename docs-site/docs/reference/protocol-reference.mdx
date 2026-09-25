@@ -112,12 +112,15 @@ Initialize a new session, replacing any session already running. A field supplie
 
 ### UpdateSession
 
-Update the active session without restarting it (e.g. switch models or permission mode mid-session). Each field is optional; an absent field is left unchanged. A permission-mode change — what `Shift+Tab` cycling sends from the TUI — takes effect immediately, applying to the turn already in flight as well as later ones; a model change applies on the next turn. A `title` change applies at once and is echoed back on the `SessionUpdated` event. Other session options must be set at `StartSession` time.
+Update the active session without restarting it (e.g. switch providers, models, or permission mode mid-session). Each field is optional; an absent field is left unchanged. A permission-mode change — what `Shift+Tab` cycling sends from the TUI — takes effect immediately, applying to the turn already in flight as well as later ones; a provider or model change applies on the next turn. A `title` change applies at once and is echoed back on the `SessionUpdated` event. Other session options must be set at `StartSession` time.
+
+A `provider` change continues the conversation on the named catalog provider, keeping the session ID, messages, title, and permission state. `model` then names a model on that provider; when it is absent, the provider's default model is used. Naming the current provider is not a switch. The whole update is refused — answered with an `Error` instead of `SessionUpdated` — if the provider ID is unknown, or if a turn is in flight when a different provider is requested; the session is never re-routed to another provider. Interrupt the running turn first to switch away from a failing or rate-limited provider. Available since v0.2.5.
 
 ```json
 {
   "op": {
     "UpdateSession": {
+      "provider": "openai",
       "model": { "id": "gpt-5.4", "temperature": 0.2, "effort": "high" },
       "permission_mode": "auto",
       "title": "auth refactor"
@@ -131,7 +134,8 @@ Update the active session without restarting it (e.g. switch models or permissio
 
 | Field | Type | Description |
 |---|---|---|
-| `model` | `ModelSpec?` | New model specification to use. Carries the whole request, `effort` included: a set `effort` overrides the catalog default; unset fields resolve from the catalog |
+| `provider` | `string?` | Catalog provider ID to switch to (e.g. `"openai"`), keeping the conversation. Refused with `Error` for an unknown ID or while a turn is in flight |
+| `model` | `ModelSpec?` | New model specification to use. Carries the whole request, `effort` included: a set `effort` overrides the catalog default; unset fields resolve from the catalog. Resolved on the session's provider — the one `provider` names when both are set |
 | `permission_mode` | `PermissionMode?` | New permission mode (`"strict"`, `"auto"`, or `"yolo"`) |
 | `title` | `string?` | Rename the session. The text is trimmed; an empty or whitespace-only string clears the title |
 
