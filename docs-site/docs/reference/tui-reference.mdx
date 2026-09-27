@@ -168,6 +168,15 @@ When a Claude Code or Codex session in the current directory was active within t
 | `Ctrl+V` / `Ctrl+Shift+V` | Paste text or an image from the clipboard |
 | `Escape` | Close a popup, or interrupt the active turn when none is open |
 
+Inside tmux the kitty keyboard protocol is not available, so Ante asks tmux for xterm's extended keys instead. That needs tmux 3.5 or newer with two server options in `~/.tmux.conf` (restart the tmux server afterwards):
+
+```
+set -s extended-keys on
+set -s extended-keys-format csi-u
+```
+
+With those, `Ctrl+Enter` inserts a newline inside tmux. `Shift+Enter` still sends a plain Enter there, because terminals report Shift on Enter only through the kitty protocol; use `Ctrl+Enter` or `Alt+Enter`.
+
 ### Line editing
 
 The composer supports readline-style editing with multi-step undo/redo:
