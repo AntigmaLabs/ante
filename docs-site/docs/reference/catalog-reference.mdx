@@ -264,6 +264,48 @@ export TOGETHER_API_KEY="..."
 ante --provider together --model moonshotai/Kimi-K2-Instruct
 ```
 
+### Add Tsubasa
+
+[Tsubasa](https://tsubasa.sh) uses the existing `OpenAiCompatible` transport. Merge this entry into `~/.ante/catalog.json` and set `TSUBASA_API_KEY` in your environment:
+
+```json
+{
+  "providers": {
+    "tsubasa": {
+      "display_name": "Tsubasa",
+      "base_url": "https://api.tsubasa.sh/v1",
+      "wire_style": "OpenAiCompatible",
+      "auth": { "bearer": { "env_key": "TSUBASA_API_KEY" } },
+      "preferred_models": [
+        {
+          "id": "tsubasa-fast",
+          "context_limit": 32768,
+          "max_tokens": 512,
+          "supported_efforts": [],
+          "support_vision": false
+        },
+        {
+          "id": "tsubasa-pro",
+          "context_limit": 32768,
+          "max_tokens": 512,
+          "supported_efforts": [],
+          "support_vision": false
+        }
+      ]
+    }
+  }
+}
+```
+
+Start with a small project and a bounded prompt:
+
+```bash
+ante --provider tsubasa --model tsubasa-fast --short-prompt \
+  --no-skills --disable-auto-memory --permission-mode strict
+```
+
+Use `tsubasa-pro` to select the other alias. These are text-only profiles with no reasoning-effort parameter. The 32,768-token context includes the system prompt, tool definitions, conversation, and reserved output; the 512-token output setting is a conservative starting point. Additional instructions, MCP tools, file content, or history can exceed that budget. Tool use also requires the selected model's current tool capability; check the provider's model listing before an agent session.
+
 ### Declare the effort levels a model accepts
 
 The [effort slider](/usage/models-and-thinking#effort)'s ladder is built in per provider and model family, so a model on a custom endpoint may get a ladder that doesn't match what the endpoint really accepts. Declare the true set with `supported_efforts` — the slider then shows exactly those levels, and OpenAI-compatible providers send the selected level as the same-named `reasoning_effort`:
