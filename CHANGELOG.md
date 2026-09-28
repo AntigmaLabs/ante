@@ -1,5 +1,21 @@
 # Changelog
 
+## v0.2.6 - 2026-09-27
+
+### Changed
+- OpenRouter now defaults to DeepSeek V4.1 Flash; the older V4 Flash preset is gone
+- DeepSeek V4 Pro stays in the Antix catalog
+- NVIDIA Nemotron 3.5 Lightning removed from the OpenRouter catalog
+- The TUI spinner now pulses with a pause between beats, and the mascot has new poses
+- The bundled `ante-guide` and `add-provider` skills are now cheat sheets tied to the installed version, including an "After an update" section
+
+### Fixed
+- Output requests are capped to the context that remains, so large-context sessions no longer get rejected for asking for too much output
+- When an image or document is dropped to fit the content budget, the message now says it was omitted entirely
+- Shift+Enter inserts a newline inside tmux, and in zellij after closing fullscreen overlays such as `/resume`, the transcript or `/diff`
+- The provider is saved after an OAuth connect
+- Raw MCP server stderr is logged at debug level
+
 ## v0.2.5 - 2026-09-24
 
 ### Added

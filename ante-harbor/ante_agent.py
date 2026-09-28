@@ -133,7 +133,7 @@ def setup_log_command(command: str, *, append: bool = True) -> str:
 
 
 def install_command_from_args(install_args: str) -> str:
-    """Build a robust in-sandbox install.sh command for published Ante builds."""
+    """Build a bounded, retrying in-sandbox installer command."""
     quoted_args = " ".join(shlex.quote(arg) for arg in shlex.split(install_args or ""))
     execute = (
         'ANTE_INSTALL_DIR=/usr/local/bin NO_MODIFY_PATH=true bash -- "$installer_path"'
