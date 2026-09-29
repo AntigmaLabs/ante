@@ -134,6 +134,8 @@ ante --resume ses_01ARZ3NDEKTSV4RRFFQ69G5FAV -p "now add tests"
 
 使用 `--no-session-save` 启动的会话绝不会持久化保存，因此无法在后续恢复。
 
+无头模式必须提供会话 ID：不带 ID 的 `--resume` 仅适用于交互式 TUI，与 `-p` 或管道输入一起使用时会报错。
+
 ## 使用示例（Examples） {#examples}
 
 ### CI 流程：代码检查与修复（CI: lint and fix） {#ci-lint-and-fix}

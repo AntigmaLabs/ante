@@ -133,6 +133,8 @@ The session ID is printed when a TUI session exits (`Resume this session with: a
 
 Sessions started with `--no-session-save` are never persisted, so they cannot be resumed later.
 
+Headless mode requires a session ID: bare `--resume` is only available in the interactive TUI and returns an error when combined with `-p` or piped input.
+
 ## Examples
 
 ### CI: lint and fix

@@ -625,6 +625,16 @@ Emitted when a tool execution completes.
 
 `tool_name` is populated even when execution never starts, so clients can render denied, cancelled, and malformed calls without reconstructing the name from a preceding event. Older events may deserialize it as an empty string. There is no separate `is_error` field: derive it from `status` (`Completed` is the only non-error status). Every accepted tool call gets a terminal `ToolEnd`, and concurrently running calls emit it independently as each one settles.
 
+#### TaskEnd
+
+Emitted when tracked work handed off by a tool call finishes, such as a Bash command that outlived its inline wait window. Available since v0.2.3. The earlier `ToolEnd` completes the tool call and returns the background handle; it does not mean the process has exited.
+
+```json
+{ "event": { "TaskEnd": { "tool_use_id": "tool_use_abc123", "exit_code": 0 } } }
+```
+
+`tool_use_id` identifies the original call. `exit_code` is the process exit code (`128 + signal` for signal termination), or `null` if the exit could not be observed. Clients can use it to settle the original running-job display. The event is persisted and replayed when the session resumes.
+
 ### Compaction events
 
 #### CompactStart

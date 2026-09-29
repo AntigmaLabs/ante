@@ -193,7 +193,7 @@ With session saving enabled (the default), you can exit with `/exit` and return 
   <img src="/assets/cookbook/resume-demo-1.gif" alt="Choosing a saved conversation with /resume and continuing it with a new message" className="cookbook-demo" loading="lazy" />
 </a>
 
-Ante restores the saved conversation and uses your current permission settings. You can also launch directly with `ante --resume <SESSION_ID>`. Sessions started with `--no-session-save` aren't available to resume.
+Ante restores the saved conversation and uses your current permission settings. You can also run `ante --resume` (or `ante -r`) to open the picker directly, or `ante --resume <SESSION_ID>` to choose a session by ID. If the current directory has no saved sessions, bare `--resume` exits with a message. Sessions started with `--no-session-save` aren't available to resume.
 
 ### Continue work from Claude Code or Codex {#coming-from-claude-code-or-codex}
 

@@ -59,20 +59,26 @@ MCP tools obey the same `--tools` / `--include-tools` / `--exclude-tools` filter
 In the interactive TUI, MCP warm-up runs **lazily** in the background so the daemon stays responsive. When a session starts:
 
 1. `SessionStart` and the initial `ExtensionRefreshed` fire immediately — the input is usable right away.
-2. A background task connects to all configured servers in parallel. Each server gets a 15-second initialization deadline and a separate 15-second tool-list deadline.
-3. As each server's tools are discovered they are added to the live tool registry; tools that come online become callable on the **next turn** (in-flight turns hold a frozen snapshot).
+2. A background task connects to all configured servers in parallel. Each handshake attempt gets a 15-second deadline, followed by a separate 15-second deadline for listing all pages of tools.
+3. Once discovery finishes across all servers, successfully discovered tools are registered together and become callable on the **next turn** (in-flight turns hold a frozen snapshot).
 4. A second `ExtensionRefreshed` is emitted once warm-up finishes so the `/mcp` panel populates with each server's discovered tool list.
 
 Progress is surfaced to the user via a grouped notification (an `InfoBlockStart` plus follow-up `InfoBlockAppend` events — see the [protocol reference](/reference/protocol-reference#infoblockstart)):
 
 ```
-* Warming up 4 MCP servers in the background — tools will become available as they connect.
+* Warming up 4 MCP servers — tools become available as servers connect.
   └ MCP ready: 4/4 servers connected, 60 tools registered.
 ```
 
 Servers that fail to connect (or fail to list their tools) are logged, skipped, and reported as a child line under the warm-up block. Server processes are kept alive for the duration of the session and terminated when the daemon exits.
 
 Headless runs (`ante -p`) block before their first prompt until MCP warm-up finishes. A turn's tool schema is frozen when that turn starts, so this ensures configured MCP tools are present for a one-turn headless task. `ante doctor` skips MCP warm-up entirely.
+
+### Protocol compatibility
+
+Ante tries `initialize` first. If the server refuses with a JSON-RPC error, Ante restarts the subprocess and tries `server/discover` for revision `2026-07-28`, with a fresh 15-second deadline. Timeouts, disconnects, and other handshake failures are reported without that fallback. Keep protocol messages on stdout and diagnostics on stderr.
+
+Ante answers server pings but does not advertise sampling, elicitation, or roots capabilities. Sampling requests receive method-not-found, elicitation is declined, and roots are empty.
 
 ### Tool-call timeout
 
@@ -83,6 +89,12 @@ ANTE_MCP_TOOL_TIMEOUT=120 ante
 ```
 
 Zero, negative, or unparseable values keep the 600-second default. This setting covers `tools/call`; it does not change the initialization or tool-list deadlines above.
+
+Timeouts and interrupted calls send a best-effort `notifications/cancelled` for that request while preserving the shared server connection. A cancellation notification does not guarantee that the server has stopped its work.
+
+## Tool results
+
+Text-only results remain readable strings in `ToolEnd.result_json`. Rich results retain the full MCP result object, including content blocks, `structuredContent`, and error status. Ante also supplies supported text, images, and embedded PDFs to the model. Structured data is included without duplicating an equivalent JSON text block. Resource links are described, not fetched automatically; audio and unsupported binary content remain in the client result with a text notice to the model. Images are validated and resized before entering model history; invalid images produce an omission notice while their original data remains in the client result.
 
 ## The `/mcp` command
 

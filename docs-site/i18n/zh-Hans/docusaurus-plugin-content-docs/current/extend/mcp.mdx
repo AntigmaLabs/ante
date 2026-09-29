@@ -62,20 +62,26 @@ MCP 工具同样遵循 `--tools` / `--include-tools` / `--exclude-tools` 命令�
 在交互式 TUI 中，MCP 服务的初始化在后台**异步惰性（lazily）**进行，确保守护进程保持即时响应。当会话启动时：
 
 1. `SessionStart` 与初始的 `ExtensionRefreshed` 会立即触发 —— 输入框可即时使用。
-2. 后台任务并发连接所有配置的 MCP 服务端。每个服务具有 15 秒初始化超时及 15 秒获取工具列表超时。
-3. 发现工具后动态注册进运行工具注册表，新上线的工具在**下一轮 Turn** 中即可调用（当前正在运行的轮次保持工具 Schema 冻结快照）。
+2. 后台任务并发连接所有配置的 MCP 服务端。每次握手尝试有 15 秒截止时间，之后另有 15 秒用于获取全部工具列表分页。
+3. 所有服务的发现流程完成后，成功发现的工具会一起注册，并在**下一轮 Turn** 中可用（当前正在运行的轮次保持工具 Schema 冻结快照）。
 4. 预热完成后触发第二次 `ExtensionRefreshed`，使得 `/mcp` 面板填充展示每个服务发现的工具列表。
 
 进度通过分组信息通知展示给用户（`InfoBlockStart` 加上后续的 `InfoBlockAppend` 事件 —— 参见[协议参考手册](/reference/protocol-reference#infoblockstart)）：
 
 ```
-* Warming up 4 MCP servers in the background — tools will become available as they connect.
+* Warming up 4 MCP servers — tools become available as servers connect.
   └ MCP ready: 4/4 servers connected, 60 tools registered.
 ```
 
 连接失败（或获取工具列表失败）的服务端会被记录到日志并跳过，作为预热通知块下的子行提示。服务进程在整个会话期间保持存活，并在守护进程退出时终止。
 
 无头单次运行（`ante -p`）会在首个提示词前阻塞等待直至 MCP 预热完成。轮次的工具 Schema 在轮次开始时冻结，以此确保配置的 MCP 工具在单轮无头任务中立即可用。`ante doctor` 完全跳过 MCP 预热。
+
+### 协议兼容性 {#protocol-compatibility}
+
+Ante 先尝试 `initialize`。若服务端以 JSON-RPC 错误拒绝，Ante 会重新启动子进程，并尝试 `2026-07-28` 版本的 `server/discover`，另给 15 秒截止时间。超时、断连和其他握手失败会直接报告，不走此回退。协议消息应输出到 stdout，诊断信息应输出到 stderr。
+
+Ante 会响应服务端 ping，但不会声明 sampling、elicitation 或 roots 能力。采样请求返回 method-not-found，信息征询被拒绝，根目录列表为空。
 
 ### 工具调用超时 {#tool-call-timeout}
 
@@ -86,6 +92,12 @@ ANTE_MCP_TOOL_TIMEOUT=120 ante
 ```
 
 零、负数或无法解析的值保持 600 秒默认值。该配置仅针对 `tools/call`；不改变上述的初始化或工具列表获取超时。
+
+调用超时或被中断时，Ante 会尽力针对该请求发送 `notifications/cancelled`，同时保留共享服务连接。取消通知并不保证服务端已停止执行任务。
+
+## 工具结果 {#tool-results}
+
+纯文本结果在 `ToolEnd.result_json` 中仍为可读字符串。富内容结果保留完整的 MCP 结果对象，包括内容块、`structuredContent` 与错误状态。Ante 还会将支持的文本、图片及内嵌 PDF 传给模型；结构化数据会补充到模型输入中，但不会重复等价的 JSON 文本块。资源链接只提供描述，不会自动抓取；音频及不支持的二进制内容保留在客户端结果中，并向模型提供文本提示。图片在进入模型历史前会验证并缩放；无效图片会被替换为省略提示，原始数据仍保留在客户端结果中。
 
 ## `/mcp` 命令面板 {#the-mcp-command}
 

@@ -626,6 +626,16 @@ Ante 在客户端（Client）与守护进程（Daemon）之间采用强类型的
 
 即使工具尚未开始执行，`tool_name` 也会填充，因此客户端无需从前置事件重建名称，即可展示被拒绝、取消或参数异常的调用。旧事件反序列化时该字段可能为空字符串。协议中没有单独的 `is_error` 字段：可根据 `status` 推导（只有 `Completed` 不是错误）。每个已接受的工具调用都会收到终态 `ToolEnd`；并发调用会在各自完成时独立发送。
 
+#### TaskEnd {#taskend}
+
+工具移交的受跟踪任务完成时触发，例如超过内联等待窗口的 Bash 命令。自 v0.2.3 起可用。先前的 `ToolEnd` 表示工具调用已完成并返回后台句柄，并不表示进程已退出。
+
+```json
+{ "event": { "TaskEnd": { "tool_use_id": "tool_use_abc123", "exit_code": 0 } } }
+```
+
+`tool_use_id` 标识原始调用。`exit_code` 是进程退出码（信号终止时为 `128 + signal`）；无法观测退出结果时为 `null`。客户端可据此更新原始运行任务的显示状态。此事件会持久化，并在恢复会话时回放。
+
 ### 上下文压缩事件 {#compaction-events}
 
 #### CompactStart {#compactstart}

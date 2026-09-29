@@ -191,7 +191,7 @@ Ante 会持续检查进展是否满足条件。使用 `/goal` 查看状态，使
   <img src="/assets/cookbook/resume-demo-1.gif" alt="使用 /resume 选择已保存的对话并发送新消息继续工作" className="cookbook-demo" loading="lazy" />
 </a>
 
-Ante 会恢复保存的对话，并使用当前权限设置。也可以直接运行 `ante --resume <SESSION_ID>`。使用 `--no-session-save` 启动的会话无法恢复。
+Ante 会恢复保存的对话，并使用当前权限设置。也可以运行 `ante --resume`（或 `ante -r`）直接打开选择器，或用 `ante --resume <SESSION_ID>` 按 ID 指定会话。若当前目录没有已保存的会话，不带 ID 的 `--resume` 会提示后退出。使用 `--no-session-save` 启动的会话无法恢复。
 
 ### 接续 Claude Code 或 Codex 的工作 {#coming-from-claude-code-or-codex}
 

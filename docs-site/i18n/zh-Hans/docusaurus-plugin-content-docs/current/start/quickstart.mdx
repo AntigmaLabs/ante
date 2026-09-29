@@ -89,7 +89,7 @@ cat src/lib.rs | ante -p "review this code for bugs"
 
 ```bash
 # 覆盖模型和提供商
-ante --provider openai --model gpt-5.6-sol -p "refactor this function"
+ante --provider openai --model gpt-6-sol -p "refactor this function"
 ```
 
 ### 跳过工具审批 {#skip-tool-approvals}
@@ -116,7 +116,7 @@ ante update
 ante update nightly
 
 # 回滚或锁定到指定发布版本
-ante update --version v0.2.2
+ante update --version v0.2.5
 ```
 
 ## 下一步 {#whats-next}

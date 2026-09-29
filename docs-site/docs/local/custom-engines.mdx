@@ -41,13 +41,15 @@ Two knobs shape managed inference:
   "model_preferences": {
     "Qwen3.6-27B-Q4_K_M.gguf": {
       "model_id": "Qwen3.6-27B-Q4_K_M.gguf",
-      "extra_args": "--threads 12 --no-mmap --cache-type-k q8_0"
+      "extra_args": "--threads 12 --load-mode mmap --cache-type-k q8_0"
     }
   }
 }
 ```
 
 Router-owned or identity-changing options such as `--host`, `--port`, `--model`, and `--alias` are rejected. Malformed values also fail explicitly instead of producing a preset whose effective context, temperature, or reasoning state differs from what Ante reports.
+
+Ante v0.2.5 pins llama.cpp to `b11046`. The old loading flags `--mlock`, `--mmap`, `--no-mmap`, `--dio` / `--direct-io`, and `--ndio` / `--no-direct-io` are rejected. Replace them in saved `extra_args` with `--load-mode` and a mode supported by your engine, such as `--load-mode mmap` above.
 
 **GPU offload.** `llama_cpp.server_defaults.gpu_layers` controls the `-ngl` value. The default `-1` offloads all layers to the GPU; lower it if your VRAM is tight:
 

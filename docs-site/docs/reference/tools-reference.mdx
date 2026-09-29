@@ -39,6 +39,8 @@ Search file contents with ripgrep regular expressions. Its modes return matching
 
 Grep reports skipped unreadable, undecodable, oversized, or failed files in its footer. Like Glob, a timeout returns matches already found as a clearly marked partial page and becomes an error only when there are no matches to return.
 
+In content mode, each long line is clipped to 500 characters including truncation markers. Matching lines keep the start of the first match in view; context lines keep their prefix. Use Read for the full line.
+
 ## Shell
 
 ### Bash
@@ -48,6 +50,8 @@ Execute shell commands. Each call runs in a fresh non-interactive process — sh
 If the command finishes inside the window, Ante returns its output inline and explicitly discards the handle files. After a background handle has been returned, the job survives Ante restarts and is never collected while live; once settled, its directory is collected on a later startup after sitting unchanged for 24 hours. When a background job exits, its completion notification automatically re-enters the session at the model's next step boundary or turn start (delivering a notification block with exit code, duration, output tails, and file paths), removing the need for manual polling loops or long wait windows. Interrupting a Bash call before it returns a handle terminates the whole process group, including child and grandchild processes. To stop an already-backgrounded job, send a signal to its process group with `kill -- -<pid>`. Requires approval.
 
 Results begin with `status: exited` and an explicit `exit_code`, followed by separate `stdout` and `stderr` sections when those streams are non-empty. A background result instead begins with `status: running` and names its process id and handle files. Signal-terminated commands use the shell convention `128 + signal` for the exit code.
+
+Clients receive a [`TaskEnd`](/reference/protocol-reference#taskend) event when tracked background work finishes, keyed to the original tool call. The TUI updates that call’s job status in place.
 
 For interactive programs and persistent shells, the agent drives durable named tmux sessions (`ante-*`) through ordinary Bash calls, guided by a bundled `tmux` skill — every keystroke it sends goes through normal Bash permission checks. Watch or type in any of those sessions with [`/term <name>`](/usage/tui#terminal-sessions).
 
@@ -61,13 +65,19 @@ Spawn a sub-agent to handle a task autonomously. The agent picks which sub-agent
 
 Ask structured multiple-choice questions (one to four questions) mid-turn to clarify ambiguity or confirm decisions. The TUI renders questions in place of the composer with option previews, free-text notes, and multi-select support; Enter selects the recommended option, Esc skips so the model proceeds on its own judgment, and "Chat about this" returns to conversation. In channel gateways (Slack/Discord), questions render as numbered choices. Subagents do not receive `AskUser`, and unattended sessions never pause for questions.
 
+Each question accepts one to four options. A single-option question is valid, though plain conversation is usually clearer when there is no meaningful choice. Invalid AskUser calls show their error in chat.
+
 ### WebFetch
 
 Fetch a URL and return its contents directly for the active model to analyze, converting HTML to markdown. The input is URL-only; WebFetch does not run a second extraction model. Oversized responses spill to a temporary cache file in the OS cache directory that the agent can read in slices instead of being truncated. Requests identify themselves as `ante/<version>`, and an unsuccessful HTTP response includes up to 2 KB of textual response-body detail when available. Requires approval.
 
+Prefer URLs supplied by the user or discovered in files, tool output, or search results. If the URL is uncertain, search for it before fetching.
+
 ### WebSearch
 
 Search the web and return results with citations. Requires approval. Uses the provider's native web search, so it is available only on a provider that advertises `supports_web_search` (Anthropic, OpenAI, Gemini, Grok, OpenRouter, and Antix). On those providers it is added to the tool set automatically; on others it is not offered. A search is capped at 90 seconds — past that it fails with an error suggesting a narrower query instead of hanging the tool batch.
+
+Transient search failures are retried up to three times beyond the provider client’s own retries, honoring `Retry-After` when the wait fits within the same 90-second budget. If throttling cannot recover in time, the error advises continuing with known information or fetching a known URL instead of immediately searching again.
 
 ## Opt-in tools
 
@@ -79,7 +89,7 @@ Track progress on multi-step work with a task list. Default TUI sessions omit th
 
 ### ViewImage
 
-Read and analyze an image with a natural-language instruction.
+Read a local image for the current model using `file_path` and optional `detail`. The default `high` detail caps the longest edge at 2000 pixels; `low` caps it at 768 pixels, and `original` preserves the resolution. Images still pass format, file-size, and decode-limit validation.
 
 ## MCP tools
 
