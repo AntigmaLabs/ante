@@ -29,6 +29,6 @@ jobs:
           python-version: '3.12'
           enable-cache: false
       - name: Run unit tests
-        run: uv run --no-project python -m unittest discover -s ante-harbor -p 'test_*.py' -v
+        run: uv run --no-project --python 3.12 --with "harbor==0.23.0" python -m unittest discover -s ante-harbor -p "test_*.py" -v
       - name: Compile adapter modules
         run: uv run --no-project python -m py_compile ante-harbor/ante_agent.py ante-harbor/ante_events.py
