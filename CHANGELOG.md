@@ -1,5 +1,28 @@
 # Changelog
 
+## v0.2.7 - 2026-09-29
+
+### Added
+- Claude Sonnet 5.5 on Anthropic and OpenRouter; Qwen 3.8 Max and GLM 5.3 FlashX on Antix; xAI moves to Grok 4.7
+
+### Changed
+- Resumed sessions keep the system prompts they were started with (including `--system-prompt`, `--append-system-prompt` and `--short-prompt`) instead of rebuilding them from current settings; if the date has changed, the model is told on the next turn
+- Dates given to the model use the local day instead of UTC
+- `/resume` inside a running TUI starts on a fresh screen with the resumed session's header
+- Offline model preferences are loaded during discovery; edits to `offline-config.json` take effect on the next reopen
+- llama.cpp engine bumped to b11200
+
+### Fixed
+- Provider errors for an exhausted credit balance are reported as quota errors, with billing guidance
+
+### Wire
+- `Op::RewindSession { to }` rewinds the active session to just before input `to` and answers `Evt::SessionRewound { to }`
+- `Op::ForkSession { at }` saves a new session from the conversation at input `at` (or from the whole conversation) without starting it, and answers `Evt::SessionForked { forked_from, session_id, at }`
+- `SessionInfo.forked_from` names the session a fork came from
+
+### Crates
+- Public crates published as 0.2.7: ante-protocol-shape, ante-llm, ante-exec, ante-sdk
+
 ## v0.2.6 - 2026-09-27
 
 ### Changed
