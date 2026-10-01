@@ -50,6 +50,15 @@ Headless runs imply yolo mode, which skips permission rules including the Bash a
 
 [Agent Skills](https://agentskills.io) folders, each with a `SKILL.md`. Copy a folder into `~/.ante/skills/` for all projects, or `.ante/skills/` for one project. See the [skills docs](https://docs.antigma.ai/extend/skills).
 
+### you-web
+
+Web search and URL reading through the You.com MCP server (bridged via
+`mcp-remote`, since the server is remote HTTP and Ante speaks stdio). Useful
+when the session's provider has no native web search — Ante only offers the
+built-in `WebSearch` tool on providers that advertise `supports_web_search`.
+A keyless endpoint gives basic search with no API key; an authenticated one
+adds page-content extraction.
+
 ## Contributing
 
 Open a PR that adds your profile or skill where it would live in `~/.ante/`. Include a line or two on what it does and when to reach for it: in the skill's `description` frontmatter, or a short section in this README for a profile. New categories are welcome; add a folder and explain it here.
