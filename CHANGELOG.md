@@ -1,5 +1,27 @@
 # Changelog
 
+## v0.2.8 - 2026-10-02
+
+### Added
+- `/rewind` (or Esc Esc on an empty composer) opens a picker over the inputs still in reach; picking one rewinds the conversation to just before it and puts that prompt back in the composer for editing
+- `/fork` saves a copy of the conversation cut at a chosen input, or the whole conversation, and switches to it; a forked session names the session it came from under its header, and `/resume` returns to the parent
+- `ante serve --sock` and `--ws` print a readable transcript of connections, sessions, tool calls and turn status; a nonempty `NO_COLOR` disables styling
+- GPT-6.1 Sol on OpenAI and OpenRouter
+
+### Changed
+- A session resumed under a different OS or shell, or on a later day, is told what changed in one notice on its next turn; resuming in the same environment tells nothing
+- The session picker orders sessions by last use instead of start time
+- Every provider call streams, so compaction, the goal judge and ambient hints share the turn's timeouts and error handling
+- Catalog pruned: GPT-6 Sol on direct OpenAI; GPT-6 Sol, Sol Pro and the GPT-5.6 Sol/Terra/Luna Pro routes on OpenRouter; deprecated GPT-5.3 Codex and GPT-5.4 Nano
+- Release binaries are built with full LTO and are about 6% smaller
+- Dependency updates
+
+### Fixed
+- `/usage` refreshes an expired access token instead of reporting the session expired, labels OpenAI quota windows by their length (a 7-day window is "Weekly limit", not "Current session"), and shows the Anthropic plan name without the rate tier
+- Responses API rejections of an oversized request that carry no specific error code are treated as context overflows and recovered by compaction
+- A cancelled call on an OpenAI WebSocket session discards its connection, so the next request no longer reads the abandoned response
+- A provider that accepts a request and never answers, or sends an error status and then stalls, fails at the idle timeout instead of hanging; the OAuth token refresh has its own timeout
+
 ## v0.2.7 - 2026-09-29
 
 ### Added
