@@ -163,6 +163,7 @@ ANTE_PROFILE=review ante -p "审查本次改动"
 | `git-branch` | 当前 Git 分支，显示为 `⑂ main`（不可用时省略） |
 | `pr-link` | 当前分支关联的 GitHub PR 链接（需要系统安装 `gh`） |
 | `context-used` | 上下文窗口使用情况，显示为窗口剩余百分比 `N% ctx`（未知时省略） |
+| `context-tokens` | 上下文窗口使用情况，以 token 数显示为 `76k/200k ctx`（已用/窗口上限，与 `/context` 显示的数字一致；未知时省略；默认关闭） |
 | `terminals` | 活跃的 `ante-*` tmux 会话名称（无运行中会话或 tmux 不可用时省略） |
 
 当两对条目同时启用时，它们会自动折叠为复合项：思考深度折叠进模型名（如 `gpt-5.6(high)`，包含 `min` 在内的所有级别），Git 分支折叠进目录名（如 `project(⑂ main)`）。因此默认底部状态栏显示为：
@@ -173,7 +174,7 @@ gpt-5.6(high) · openai · project(⑂ main) · 42% ctx
 
 每部分仍保持独立开关 —— 关闭 `model-name` 后，`effort` 会恢复为独立的 `effort: high` 项。
 
-默认值：按上述顺序展示全部条目。可通过 `~/.ante/settings.json` 或 TUI 中的 `/statusline` 命令配置。
+默认值：按上述顺序展示除 `context-tokens` 外的全部条目。可通过 `~/.ante/settings.json` 或 TUI 中的 `/statusline` 命令配置。
 
 ### 脚本自定义状态栏 {#command-based-status-line}
 
