@@ -9,7 +9,7 @@ This page is the exhaustive reference. For sign-in and API-key setup, see [Conne
 
 ## Built-in providers
 
-The presets below match **v0.2.5**: 15 hosted-provider presets, plus `local` when an offline server is running.
+The presets below match **v0.2.8**: 15 hosted-provider presets, plus `local` when an offline server is running.
 
 | Provider | key | Wire style | Authentication |
 |---|---|---|---|
@@ -43,12 +43,12 @@ Each provider ships a set of `preferred_models` — the ids that appear in the m
 | Model | Description | Context |
 |---|---|---|
 | `claude-haiku-4-5` | Fastest model with near-frontier intelligence | 200K |
-| `claude-sonnet-5` | Best combination of speed and intelligence | 1M |
+| `claude-sonnet-5-5` | Best combination of speed and intelligence | 1M |
 | `claude-opus-5-5` | Long-running agentic coding and knowledge work | 1M |
 | `claude-fable-5-1` | Highest capability for demanding reasoning | 1M |
 
 ```bash
-ante --provider anthropic --model claude-sonnet-5
+ante --provider anthropic --model claude-sonnet-5-5
 ```
 
 ### OpenAI
@@ -56,16 +56,14 @@ ante --provider anthropic --model claude-sonnet-5
 | Model | Description | Context |
 |---|---|---|
 | `gpt-6-astra` | OpenAI's most capable model for complex agentic work | 1.05M |
-| `gpt-6-sol` | GPT-6 model for complex coding and agentic workflows | 1.05M |
+| `gpt-6.1-sol` | GPT-6.1 Sol for complex coding and agentic workflows | 1.05M |
 | `gpt-6-luna` | GPT-6 model for focused, high-volume tasks | 1.05M |
 | `gpt-5.5-pro` | Highest reliability on complex problems | 400K |
 | `gpt-5.4-pro` | Highest reliability in the GPT-5.4 family | 400K |
-| `gpt-5.3-codex` | Frontier coding model | 400K |
 | `gpt-5.4-mini` | Faster, cheaper GPT-5.4 model | 400K |
-| `gpt-5.4-nano` | Smallest GPT-5.4 model | 400K |
 
 ```bash
-ante --provider openai --model gpt-6-sol
+ante --provider openai --model gpt-6.1-sol
 ```
 
 The `openai-subscription` provider (ChatGPT/Codex OAuth) offers `gpt-6-astra` (the default), `gpt-5.6-sol`, `gpt-5.6-terra`, and `gpt-5.6-luna`, all with 272K context and image input. GPT-5.5, GPT-5.4, and GPT-5.4 Mini are no longer in the subscription picker.
@@ -91,7 +89,7 @@ Accepted values: `http_sse`, `websocket_auto`. Unknown values warn and fall back
 
 Notes:
 
-- WS only engages on streaming turns (TUI sessions). Headless `--prompt` mode uses non-streaming `chat()` and bypasses WS by design.
+- All model-generation calls use the streaming transport, including TUI turns, headless tasks, compaction, goal judging, and ambient hints. Calls that need a complete response collect that stream, so they can also use WebSocket when enabled. Cancelling a WebSocket call discards its connection so the next request cannot read the abandoned response.
 - Any transient WS failure (connect timeout, network blip) falls back to HTTP/SSE for that turn — users never see hard errors caused by the transport choice. Auth failures (`401`/`403`) flip the entire session to HTTP/SSE for the rest of its lifetime.
 - Works against both `api.openai.com` (API-key) and the ChatGPT subscription backend at `chatgpt.com/backend-api/codex`.
 - To verify which transport is active: in debug builds, toggle the debug panel (`Ctrl+L`) and check the **Info** tab for the `OpenAI Transport:` line. Otherwise grep your session log for `transport selected`:
@@ -117,10 +115,10 @@ ante --provider gemini --model gemini-3.8-flash
 
 | Model | Description | Context |
 |---|---|---|
-| `grok-4.6` | Grok 4.6 flagship reasoning model | 500K |
+| `grok-4.7` | Grok 4.7 flagship reasoning model | 500K |
 
 ```bash
-ante --provider xai --model grok-4.6
+ante --provider xai --model grok-4.7
 ```
 
 ### Zai
@@ -129,6 +127,7 @@ ante --provider xai --model grok-4.6
 |---|---|---|
 | `glm-5.3` | Latest GLM-5.3 model for coding and agentic tasks | 1M |
 | `glm-5.3-flash` | Fast, cost-efficient GLM-5.3 multimodal model | 1M |
+| `glm-5.3-flashx` | High-speed GLM 5.3 FlashX with native vision | 1M |
 
 ```bash
 ante --provider zai --model glm-5.3
@@ -142,7 +141,6 @@ Open Router ships as three providers sharing one API key, split by wire style: `
 
 | Model | Description | Context |
 |---|---|---|
-| `deepseek/deepseek-v4-flash-0731` | DeepSeek V4 Flash 0731 | 1.05M |
 | `google/gemini-3.8-flash` | Gemini 3.8 Flash for long-horizon coding and autonomous agents | 1.05M |
 | `x-ai/grok-4.7` | Grok 4.7 flagship reasoning model via OpenRouter | 500K |
 | `qwen/qwen3.8-max-0902` | Qwen 3.8 flagship multimodal reasoning model | 1M |
@@ -158,18 +156,22 @@ Open Router ships as three providers sharing one API key, split by wire style: `
 | `moonshotai/kimi-k2.7-code` | Kimi K2.7 Code reasoning model with vision | 262K |
 | `minimax/minimax-m3` | MiniMax M3 multimodal model | 512K |
 | `deepseek/deepseek-v4.1-flash` | DeepSeek V4.1 Flash with vision | 1.05M |
-| `nvidia/nemotron-3.5-lightning` | Fast specialized agent tasks; text only | 262K |
+| `qwen/qwen3.8-max-prime` | Higher-throughput Qwen 3.8 Max with vision | 1M |
+| `qwen/qwen3.8-omni-flash` | Qwen 3.8 Omni Flash multimodal reasoning | 1M |
+| `z-ai/glm-5.3-prime` | Higher-throughput GLM 5.3; text only | 1M |
+| `z-ai/glm-5.3-flashx` | High-speed GLM 5.3 FlashX with native vision | 1.05M |
+| `meta/muse-spark-1.3-contributor` | Cost-efficient Muse Spark 1.3 contributor model | 1.05M |
 | `nvidia/nemotron-3-ultra-550b-a55b` | Complex agentic reasoning; text only, medium/high effort | 202.8K |
 
-`openrouter-responses` serves `openai/gpt-6-astra`, `openai/gpt-6-astra-pro`, `openai/gpt-6-sol`, `openai/gpt-6-luna`, `openai/gpt-5.6-sol-pro`, `openai/gpt-5.6-terra-pro`, and `openai/gpt-5.6-luna-pro` (1.05M context), plus `openai/gpt-5.3-codex` (400K). The `-pro` ids select OpenRouter's pro reasoning route.
+`openrouter-responses` serves `openai/gpt-6-astra`, `openai/gpt-6-astra-pro`, `openai/gpt-6.1-sol`, `openai/gpt-6.1-sol-pro`, `openai/gpt-6-luna`, `openai/gpt-6-luna-pro`, all with 1.05M context. The `-pro` ids select OpenRouter's pro reasoning route.
 
-`openrouter-anthropic` serves the Claude family over Anthropic Messages: `anthropic/claude-haiku-4.5` (200K context), plus `anthropic/claude-sonnet-5`, `anthropic/claude-opus-5.5`, and `anthropic/claude-fable-5.1` (1M).
+`openrouter-anthropic` serves the Claude family over Anthropic Messages: `anthropic/claude-haiku-4.5` (200K context), plus `anthropic/claude-sonnet-5.5`, `anthropic/claude-opus-5.5`, and `anthropic/claude-fable-5.1` (1M).
 
 Each provider also accepts any model from Open Router's [full model list](https://openrouter.ai/models) by id, as long as it speaks that provider's wire style.
 
 ```bash
 ante --provider openrouter --model deepseek/deepseek-v4.1-flash
-ante --provider openrouter-responses --model openai/gpt-6-sol
+ante --provider openrouter-responses --model openai/gpt-6.1-sol
 ante --provider openrouter-anthropic --model anthropic/claude-fable-5.1
 ```
 
@@ -196,7 +198,7 @@ Set `DEEPSEEK_API_KEY`, and optionally `DEEPSEEK_BASE_URL`.
 | `grok-4.5` | Grok 4.5, xAI flagship for code and agentic work | 500K |
 | `grok-4.6` | Grok 4.6 flagship reasoning model | 500K |
 | `kimi-k3` | Kimi K3 flagship reasoning model with vision | 1M |
-| `qwen3.7-max` | Latest Qwen 3.7 Max | 1M |
+| `qwen3.8-max` | Latest Qwen 3.8 Max | 1M |
 | `qwen3.7-plus` | Latest Qwen 3.7 Plus | 1M |
 | `gemini-3.1-pro-preview` | Gemini 3.1 Pro with deep thinking | 1M |
 | `claude-haiku-4-5` | Fast and capable | 200K |
@@ -211,8 +213,10 @@ Set `DEEPSEEK_API_KEY`, and optionally `DEEPSEEK_BASE_URL`.
 | `gpt-5.4-mini` | Faster, cheaper GPT-5.4 model | 400K |
 | `gpt-5.4-nano` | Smallest GPT-5.4 model | 400K |
 | `deepseek-flash` | DeepSeek V4.1 Flash with native vision | 1M |
+| `deepseek-v4-pro` | Complex agentic work; text only, low/high/max effort | 1M |
 | `glm-5.3` | Latest GLM-5.3 model for coding and agentic tasks | 1M |
 | `glm-5.3-flash` | Fast GLM-5.3 Flash for coding and agentic tasks | 1M |
+| `glm-5.3-flashx` | High-speed GLM 5.3 FlashX with native vision | 1M |
 
 ```bash
 ante --provider antix --model claude-sonnet-5         # OAuth
@@ -344,9 +348,9 @@ The `models` section patches a model by id without redefining it. Each field you
 ```json
 {
   "models": {
-    "claude-opus-5": { "effort": "max" },
-    "claude-sonnet-5": { "effort": "high", "max_tokens": 64000 },
-    "gpt-5.5": { "temperature": 0.2 }
+    "claude-opus-5-5": { "effort": "max" },
+    "claude-sonnet-5-5": { "effort": "high", "max_tokens": 64000 },
+    "gpt-6.1-sol": { "temperature": 0.2 }
   }
 }
 ```
@@ -362,7 +366,7 @@ The `models` section patches a model by id without redefining it. Each field you
    ```
 3. Use any model from [Open Router's model list](https://openrouter.ai/models):
    ```bash
-   ante --provider openrouter --model deepseek/deepseek-reasoner
+   ante --provider openrouter --model deepseek/deepseek-v4.1-flash
    ```
 
 ### OpenAI-compatible providers
@@ -414,7 +418,7 @@ A `providers` entry whose key matches a built-in (e.g. `openai`) patches that pr
 | `thinking_display` | — | Readable reasoning output: `off`, `concise`, or `detailed`, independent of reasoning effort (see [Thinking display](#thinking-display)). |
 | `supports_web_search` | — | Whether the provider exposes a native web-search affordance. When `true`, the `WebSearch` tool is added to sessions on this provider automatically; when `false` (the default), `WebSearch` is not offered. |
 | `preferred_models` | — | Models shown for this provider in the picker and used as provider defaults (see [Model fields](#model-fields)). For built-in provider overlays, matching model ids are patched and new ids are appended; omitted leaves the preset list unchanged. |
-| `stream_idle_timeout_secs` | — | How long a provider request may remain idle before it fails, in seconds. For streaming calls, the timer resets on any transport read, including keepalives, lifecycle events, and partial tool-call arguments; only complete transport silence counts as idle. For buffered calls, it bounds the whole request while the response is collected. Defaults to `300`. Raise it for a slow local or proxied endpoint; lower it to fail over from a stalled one sooner. |
+| `stream_idle_timeout_secs` | — | Maximum consecutive transport silence in seconds; defaults to `300`. All model-generation calls stream, including calls that collect a complete response for compaction, goal judging, or ambient hints. Every transport read resets the timer, including keepalives, lifecycle events, and partial tool arguments. Waiting for response headers and reading error bodies are also bounded by this timeout. Raise it for slow local or proxied endpoints; lower it to detect stalled requests sooner. |
 
 ```json
 {
@@ -552,7 +556,7 @@ The `models` section patches a model by id wherever it is defined, layering on t
 ```json
 {
   "models": {
-    "claude-sonnet-5": { "effort": "high", "max_tokens": 64000 }
+    "claude-sonnet-5-5": { "effort": "high", "max_tokens": 64000 }
   }
 }
 ```

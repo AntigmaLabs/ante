@@ -57,7 +57,7 @@ ante --effort high
 Effort controls how much reasoning the model performs; a provider's `thinking_display` controls how much readable reasoning it returns. Set it to `off`, `concise`, or `detailed` in `~/.ante/catalog.json`. Turning the display off does not turn reasoning off, and requesting a detailed display does not raise effort. See [Thinking display](/reference/catalog-reference#thinking-display) for provider mappings and override behavior.
 
 :::tip
-You can also set your default model and provider via CLI flags: `ante --provider openai --model gpt-6-sol`, or configure defaults in your [preferences](/configuration/preference).
+You can also set your default model and provider via CLI flags: `ante --provider openai --model gpt-6.1-sol`, or configure defaults in your [preferences](/configuration/preference).
 :::
 
 If you pick a provider without naming a model, Ante starts you on that provider's most capable model and may use a lighter, cheaper one for ambient UI hints such as the spinner's thinking phrase and the next-prompt suggestion — see [weight classes](/reference/catalog-reference#weight-classes). WebFetch itself returns page content to the active session model; it does not invoke a helper model. Vision-capable models are detected automatically, so you can drop images straight into the chat.

@@ -58,7 +58,7 @@ ante --effort high
 思考深度决定模型执行多少推理；提供商的 `thinking_display` 则决定返回多少可读推理内容。可在 `~/.ante/catalog.json` 中设为 `off`、`concise` 或 `detailed`。关闭显示不会关闭模型推理，请求详细显示也不会提高思考深度。各提供商映射与覆盖规则参见[推理显示](/reference/catalog-reference#thinking-display)。
 
 :::tip
-也可以通过命令行参数指定默认模型与提供商：`ante --provider openai --model gpt-6-sol`，或在[偏好设置](/configuration/preference)中配置全局默认值。
+也可以通过命令行参数指定默认模型与提供商：`ante --provider openai --model gpt-6.1-sol`，或在[偏好设置](/configuration/preference)中配置全局默认值。
 :::
 
 如果选择提供商时未指定具体模型，Ante 会自动默认启用该提供商最强大的主力模型，并可能为加载状态语、下一提示词建议等环境感知 UI 提示调用更轻量廉价的辅助模型 —— 参见[权重等级](/reference/catalog-reference#weight-classes)。WebFetch 会把网页内容直接交给当前会话模型，不调用辅助模型。多模态视觉（Vision）模型会自动识别，您可以直接将图片拖拽粘贴到终端中进行分析。

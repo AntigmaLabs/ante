@@ -158,7 +158,7 @@ ante -p "find and fix the failing test in src/auth"
 git diff | ante -p "review this for security issues"
 
 # Use a different provider
-ante --provider openai --model gpt-6-sol -p "refactor the database module"
+ante --provider openai --model gpt-6.1-sol -p "refactor the database module"
 
 # Resume a saved session
 ante --resume ses_01ARZ3NDEKTSV4RRFFQ69G5FAV -p "now add tests"
@@ -177,7 +177,7 @@ ante update
 ante update --channel nightly
 
 # Roll back or pin to an exact release
-ante update --version v0.2.5
+ante update --version v0.2.8
 ```
 
 ## One binary, many agents
@@ -207,10 +207,10 @@ Bring your own API key, subscription, or local model; no account required, not e
 
 | Provider | Example Models |
 |----------|---------------|
-| Anthropic | Claude Sonnet 5, Opus 5.5, Fable 5.1 (API key or subscription OAuth) |
-| OpenAI | GPT-6 Astra, Sol, Luna; GPT-5.6 via subscription (API key or ChatGPT/Codex OAuth) |
+| Anthropic | Claude Sonnet 5.5, Opus 5.5, Fable 5.1 (API key or subscription OAuth) |
+| OpenAI | GPT-6 Astra, GPT-6.1 Sol, GPT-6 Luna; GPT-5.6 via subscription (API key or ChatGPT/Codex OAuth) |
 | Google Gemini | Gemini 3.x family (Gemini API or Vertex AI) |
-| Grok (xAI) | Grok 4.6 |
+| Grok (xAI) | Grok 4.7 |
 | DeepSeek | DeepSeek V4.1 Flash |
 | Open Router | Any Open Router model, over three wire styles |
 | Local (GGUF) | Any GGUF model via built-in llama.cpp |

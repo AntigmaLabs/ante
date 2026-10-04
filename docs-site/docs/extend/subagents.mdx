@@ -9,7 +9,7 @@ Sub-agents are specialized agents that the main agent can spawn to handle comple
 
 For an agent you want to watch, talk to directly, and revisit later, use [`/term`](/usage/tui#terminal-sessions). Ante can launch another Ante instance, Claude Code, or Codex in a named terminal, send it work, read its output, and follow up. You can join the same terminal at any time, detach while it keeps running, and reconnect after restarting the main Ante.
 
-Each terminal agent has its own conversation and process lifetime. Use its native fork command to branch a saved conversation, or ask Ante to hand the task and relevant context to a fresh session. The [TUI walkthrough](/usage/tui#fork-a-conversation) shows both approaches. The built-in `Agent` tool described below handles delegated tasks that return a result to the parent; `/term` sessions are managed through the terminal picker and the program running inside them.
+Each terminal agent has its own conversation and process lifetime. Use its native fork command to branch a saved conversation, or ask Ante to hand the task and relevant context to a fresh session. The [TUI walkthrough](/usage/tui#branch-in-another-terminal) shows both approaches. The built-in `Agent` tool described below handles delegated tasks that return a result to the parent; `/term` sessions are managed through the terminal picker and the program running inside them.
 
 ## Built-in sub-agents
 

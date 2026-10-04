@@ -73,6 +73,22 @@ The message joins a queue. Press `Ctrl+S` to send that guidance into the running
 
 To stop the current approach, press `Escape` when no popup is open, or `Ctrl+C`. Then send a corrected prompt; the conversation keeps its context. See [Interrupting & Steering](/usage/steering) for examples.
 
+## Revise an earlier prompt {#rewind-a-conversation}
+
+Run `/rewind`, or press `Esc` twice quickly with an empty composer and no popup open. The picker lists inputs that can still be restored, newest first. Use the arrow keys to choose, `Enter` to confirm, or `Esc` to cancel.
+
+Ante restores the current conversation to just before the selected input, removes that input and the conversation after it, and puts the prompt text back in the composer for editing. Press `Enter` after editing to start a new turn.
+
+Rewind changes the conversation and model context; **it does not undo file edits, shell commands, or other external actions**. Finish or interrupt the active turn, resolve queued inputs, clear any goal with `/goal clear`, and wait for background jobs to finish before rewinding. Session saving must be enabled. Only inputs from the current run or since the latest resume can be restored, and compaction or a provider switch makes earlier cut points unavailable.
+
+## Fork a conversation {#fork-a-conversation}
+
+Run `/fork` to save an independent conversation and switch to it. Choose **(end of conversation)** to keep everything, or choose a reachable input to branch from just before it and put its prompt text back in the composer. Press `Enter` to confirm or `Esc` to cancel.
+
+The original session stays unchanged. The new session names its source session ID below the header; use `/resume` to return to the parent. Forking requires session saving, no running or queued turn, and no active goal. Input cuts share rewind's restore boundaries; you can still fork the whole conversation when no input is in reach. Forking saves and switches conversations without creating a Git branch or separate working directory, and starts no new task by itself.
+
+To have another agent work at the same time, use a [session in another terminal](#branch-in-another-terminal).
+
 ## Run a command yourself {#bash-mode}
 
 Start a message with `!` to run a shell command directly:
@@ -113,7 +129,7 @@ Ante sends the task, reads the other agent's output, and can follow up while you
 
 Use `/term claude` or `/term codex` for those installed CLIs. Ask Ante to give each agent the same problem and compare their answers, or assign different parts of a task to separate sessions. Each terminal keeps its own conversation, and you can interact with it directly to answer questions or guide the work.
 
-### Fork a conversation {#fork-a-conversation}
+### Explore in another terminal {#branch-in-another-terminal}
 
 To explore another direction from a saved Claude Code or Codex conversation, open a fresh named terminal:
 
@@ -131,7 +147,7 @@ claude --continue --fork-session
 codex fork --last
 ```
 
-The agent's native fork command carries its saved conversation into a new session. To branch work from your current Ante conversation, ask Ante to start another named session with an explicit handoff:
+The agent's native fork command carries its saved conversation into a new session. To work in parallel with your current Ante conversation, ask Ante to start another named session with an explicit handoff:
 
 ```text
 Start another Ante session named edge-cases. Give it our task,
@@ -194,6 +210,8 @@ With session saving enabled (the default), you can exit with `/exit` and return 
 </a>
 
 Ante restores the saved conversation and uses your current permission settings. You can also run `ante --resume` (or `ante -r`) to open the picker directly, or `ante --resume <SESSION_ID>` to choose a session by ID. If the current directory has no saved sessions, bare `--resume` exits with a message. Sessions started with `--no-session-save` aren't available to resume.
+
+The picker lists sessions by last use. Resuming inside the TUI opens a fresh screen with the selected session's header and history. Saved system prompts and prompt mode are preserved; current prompt flags apply only to fresh sessions. If the local date, OS, or shell changed, Ante tells the model once on its next turn.
 
 ### Continue work from Claude Code or Codex {#coming-from-claude-code-or-codex}
 

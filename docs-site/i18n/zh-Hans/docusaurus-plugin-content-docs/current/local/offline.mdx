@@ -167,6 +167,8 @@ Ante 根据模型文件大小、KV 缓存（随上下文窗口伸缩）及分片
 | `model_preferences` | 各模型的专属偏好设置（见上文） | — |
 | `llama_cpp` | 引擎安装详情、二进制路径及服务端默认配置 —— 参见[自定义引擎](/local/custom-engines) | 由 Ante 管理 |
 
+模型偏好在发现阶段读取。修改 `offline-config.json` 后，关闭并重新打开 `/offline-mode` 即可加载新值。
+
 ### 环境变量 {#environment-variables}
 
 | 环境变量 | 说明 |

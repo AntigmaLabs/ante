@@ -18,7 +18,7 @@ Every operation is wrapped in an `OpMsg`:
 
 ```json
 {
-  "op": { "StartSession": { "model": "claude-sonnet-5", "provider": "anthropic" } },
+  "op": { "StartSession": { "model": "claude-sonnet-5-5", "provider": "anthropic" } },
   "id": "op_01ARZ3NDEKTSV4RRFFQ69G5FAV"
 }
 ```
@@ -61,7 +61,7 @@ Initialize a new session, replacing any session already running. A field supplie
 {
   "op": {
     "StartSession": {
-      "model": "claude-sonnet-5",
+      "model": "claude-sonnet-5-5",
       "provider": "anthropic",
       "permission_mode": null,
       "system_prompt": null,
@@ -89,7 +89,7 @@ Initialize a new session, replacing any session already running. A field supplie
 
 | Field | Type | Description |
 |---|---|---|
-| `model` | `string?` | Model name (e.g. `"claude-sonnet-5"`); `null` uses the host default |
+| `model` | `string?` | Model name (e.g. `"claude-sonnet-5-5"`); `null` uses the host default |
 | `provider` | `string?` | Provider name (e.g. `"anthropic"`, `"openai"`, `"gemini"`, `"xai"`, `"openrouter"`, `"local"`); `null` uses the host default |
 | `permission_mode` | `PermissionMode?` | Tool approval mode: `"strict"`, `"auto"`, or `"yolo"`; `null` uses the host default |
 | `system_prompt` | `string?` | Override the default system prompt entirely |
@@ -121,7 +121,7 @@ A `provider` change continues the conversation on the named catalog provider, ke
   "op": {
     "UpdateSession": {
       "provider": "openai",
-      "model": { "id": "gpt-5.4", "temperature": 0.2, "effort": "high" },
+      "model": { "id": "gpt-6.1-sol", "temperature": 0.2, "effort": "high" },
       "permission_mode": "auto",
       "title": "auth refactor"
     }
@@ -143,6 +143,8 @@ A `provider` change continues the conversation on the named catalog provider, ke
 
 Resume a previously persisted session by its ID. The daemon restores the saved dialog and pinned model, provider, and effort, resolves anything the snapshot did not pin from the host's current defaults, re-discovers extensions, and replays the complete persisted conversation so the client can rebuild its view.
 
+Saved system prompts and prompt mode are restored as sent, including replacements, appended instructions, and `short_prompt`. Current launch prompt flags apply only to fresh sessions. A change in local date, OS, or shell is reported to the model once on its next turn; an unchanged environment adds no notice.
+
 Permission mode always resolves from the host's current settings. Older snapshots still load, but their saved permission mode is ignored and omitted on the next save.
 
 ```json
@@ -155,6 +157,26 @@ Permission mode always resolves from the host's current settings. Older snapshot
 | `unattended` | `bool` | Whether no client can answer approval prompts for this resumed incarnation. Defaults to `false` when absent; when `true`, would-be prompts are denied at admission |
 
 On success the daemon emits `SessionEnd` for the current session (if any), then `SessionStart` and `ExtensionRefreshed` for the resumed session, followed by the complete persisted event log in order, excluding session lifecycle events and malformed lines. There is no 200-event cap. On failure it emits an `Error` event.
+
+### RewindSession
+
+Restore the active session's conversation and visible history to just before input `to`. The ID is the `TurnStart.turn_id` for that input (for user input, the submitting operation's ID). The chosen input and everything after it are removed; no new turn starts and no file edits or other external effects are undone.
+
+```json
+{ "op": { "RewindSession": { "to": "op_input_1" } }, "id": "op_rewind_1" }
+```
+
+The session must be saved, with no running or queued turn, active goal, or running background job. The input must be from the current run since start or resume, and still reachable after any compaction or provider switch. A refused request emits `Error` without changing the conversation. Success emits [`SessionRewound`](#sessionrewound).
+
+### ForkSession
+
+Save a new session from the active conversation. Set `at` to a reachable input ID to copy the conversation just before it, using the same cut as `RewindSession`; omit `at` (or pass `null`) to copy the whole conversation.
+
+```json
+{ "op": { "ForkSession": {} }, "id": "op_fork_1" }
+```
+
+The source must be saved with no running or queued turn and no active goal. It stays unchanged. The new session is saved but not started: [`SessionForked`](#sessionforked) returns its ID, and the client sends `ResumeSession` to switch to it. A refused request emits `Error` and creates no session. Forking copies conversation state, not files, a Git worktree, or running processes.
 
 ### Steer
 
@@ -359,7 +381,7 @@ Emitted when a session is initialized. It announces the session identity, mutabl
 {
   "event": {
     "SessionStart": {
-      "model": { "id": "claude-sonnet-5", "max_tokens": 8192 },
+      "model": { "id": "claude-sonnet-5-5", "max_tokens": 8192 },
       "provider": {
         "id": "anthropic",
         "display_name": "Anthropic",
@@ -387,6 +409,7 @@ Emitted when a session is initialized. It announces the session identity, mutabl
 | `skills` | `SkillMetadata[]` | Skills the user can invoke in this session. Defaults to an empty list when absent for backward compatibility |
 | `subagents` | `SubagentMetadata[]` | Subagents this session can delegate to. Defaults to an empty list when absent for backward compatibility |
 | `title` | `string?` | The session's [title](/usage/tui#session-title) when one is set — chosen by the user or the client, never derived from the conversation. Omitted from the payload entirely when unset |
+| `forked_from` | `Id?` | Source session ID for a fork. Omitted for sessions that were not forked; distinct from subagent parentage |
 
 The embedded `ModelSpec` uses the model fields documented in the [Catalog Reference](/reference/catalog-reference#model-fields). Since `v0.preview.92`, its optional `supported_efforts` field carries a custom model's accepted effort ladder; it replaces the old output-only `effort_options` field.
 
@@ -402,6 +425,22 @@ The payload type was named `SessionInitialized` before `v0.preview.94` and is no
 
 `ProviderSpec` deliberately carries only what a client cannot look up for itself. The provider's model list is not on the wire; it is identical for every session and is published by [`ante catalog`](/reference/cli-reference#ante-catalog). Unknown fields are ignored, so payloads from older daemons that still send `preferred_models` decode fine.
 
+#### SessionRewound
+
+Confirms that the active conversation and its persisted history now stand just before `to`. This acknowledgment is never included in resume replay. A client should remove the selected input and later entries from its displayed conversation after receiving it.
+
+```json
+{ "event": { "SessionRewound": { "to": "op_input_1" } }, "parent": "op_rewind_1" }
+```
+
+#### SessionForked
+
+Confirms that `session_id` was saved from `forked_from`, before input `at` when present or from the whole conversation when omitted. It does not announce a running session; resume the returned ID to start using it.
+
+```json
+{ "event": { "SessionForked": { "forked_from": "ses_parent", "session_id": "ses_child" } }, "parent": "op_fork_1" }
+```
+
 #### SessionUpdated
 
 Emitted when the active session is updated in place (e.g. model changed via `UpdateSession`). Carries the same fields as `SessionStart`.
@@ -410,7 +449,7 @@ Emitted when the active session is updated in place (e.g. model changed via `Upd
 {
   "event": {
     "SessionUpdated": {
-      "model": { "id": "gpt-5.4" },
+      "model": { "id": "gpt-6.1-sol" },
       "provider": {
         "id": "openai",
         "display_name": "OpenAI",
@@ -527,7 +566,7 @@ Emitted when a turn completes. `steps` is the number of turn-loop steps attempte
 
 #### AgentMessage
 
-Complete agent text response (non-streaming).
+Complete agent text response, assembled from the stream. Clients displaying deltas should avoid rendering this text a second time.
 
 ```json
 { "event": { "AgentMessage": "The project is a web server that..." } }
@@ -535,7 +574,7 @@ Complete agent text response (non-streaming).
 
 #### Thinking
 
-Complete chain-of-thought block (non-streaming).
+Complete reasoning block, assembled from the stream. Clients displaying reasoning deltas should avoid rendering this text a second time.
 
 ```json
 { "event": { "Thinking": "Let me analyze the codebase structure..." } }

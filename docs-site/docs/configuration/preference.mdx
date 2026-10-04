@@ -13,7 +13,7 @@ An example `settings.json`:
 
 ```json
 {
-  "model": "claude-sonnet-5",
+  "model": "claude-sonnet-5-5",
   "provider": "anthropic",
   "theme": "default",
   "append_system_prompt": "Prefer small, focused commits.",
@@ -46,12 +46,12 @@ An example `settings.json`:
     "refresh_interval": 5
   },
   "model_effort": {
-    "claude-sonnet-5": "medium",
-    "gpt-5.4": "high"
+    "claude-sonnet-5-5": "medium",
+    "gpt-6.1-sol": "high"
   },
   "provider_model": {
-    "anthropic": "claude-sonnet-5",
-    "openai": "gpt-5.6-sol"
+    "anthropic": "claude-sonnet-5-5",
+    "openai": "gpt-6.1-sol"
   },
   "mcp_servers": {
     "filesystem": {
@@ -82,7 +82,7 @@ An example `settings.json`:
 | `ambient_thinking_phrase` | Whether the TUI predicts a [task-specific spinner phrase](/reference/tui-reference#spinner-thinking-phrase) while you type. On unless set to `false` |
 | `tips` | Whether the TUI shows a [tip line](/reference/tui-reference#spinner-tips) under the spinner while the agent works. On unless set to `false` |
 | `group_tool_activity` | Collapse contiguous quiet tool calls into a single activity summary in the chat. On unless set to `false`; full per-call details remain in the **Ctrl+O** transcript. Changes apply to new tool activity only |
-| `short_prompt` | Use the compact prompt set — a condensed system prompt and shorter built-in tool descriptions — for new and resumed sessions. Off unless set to `true`; the `--short-prompt` CLI flag enables it for a single run |
+| `short_prompt` | Use the compact prompt set — a condensed system prompt and shorter built-in tool descriptions — for fresh sessions; resumes retain their saved prompt mode. Off unless set to `true`; the `--short-prompt` CLI flag enables it for a single run |
 | `max_concurrent_subagents` | Cap on how many subagents a session runs at once. When the model spawns more `Agent` calls than this in one message, the extra calls wait for a slot (the TUI shows `waiting for a subagent slot`) instead of starting immediately, and the `Agent` tool description tells the model about the cap. Unset, `null`, or `0` means no cap. Set it to `1` for a local model that serves one request at a time, so queued subagents don't sit in the server's queue until [`stream_idle_timeout_secs`](/reference/catalog-reference#provider-fields) fires. Settings-only, applied when starting or resuming a session; see [Concurrency limit](/extend/subagents#concurrency-limit) |
 | `auto_compact` | Proactively reduce older history as the dialog nears the context limit: aged tool results are evicted first, then only the older prefix the model will no longer see is summarized. Manual `/compact` targets a tighter working set than this automatic path. On unless set to `false`; `/compact` and overflow recovery still work when disabled. Toggling it in `/config` applies to the running session |
 | `channel` | Release channel `ante update` tracks (`stable` or `nightly`). Defaults to `stable`; legacy `latest` values are treated as `stable`. See [Update & Channels](/start/update). |
@@ -93,6 +93,8 @@ An example `settings.json`:
 | `model_effort` | Per-model [effort](/usage/models-and-thinking#effort) overrides — keys are model names, values are `min` / `low` / `medium` / `high` / `xhigh` / `max`. Written automatically when you move the effort slider in `/models` |
 | `provider_model` | Last model used per provider — a provider switch adopts this before falling back to the provider's default model. Written automatically on every model/provider selection |
 | `mcp_servers` | MCP servers to launch on session start (see [MCP Servers](/extend/mcp)) |
+
+Resumed sessions keep their saved system prompts and prompt mode. Changes to `system_prompt`, `append_system_prompt`, or `short_prompt` (including project settings and CLI overrides) apply to fresh sessions, such as those started with `/clear`. Other session settings, including permissions and tool selection, still resolve from current settings.
 
 ### Named profiles
 
@@ -205,8 +207,8 @@ The JSON input is a compatible subset of [Claude Code's statusline input](https:
 {
   "cwd": "/work/repo",
   "session_id": "ses_...",
-  "version": "0.1.0",
-  "model": { "id": "claude-sonnet-5", "display_name": "claude-sonnet-5" },
+  "version": "0.2.8",
+  "model": { "id": "claude-sonnet-5-5", "display_name": "claude-sonnet-5-5" },
   "workspace": { "current_dir": "/work/repo", "project_dir": "/work/repo" },
   "thinking": { "enabled": true },
   "pr": { "number": 7, "url": "https://github.com/..." },

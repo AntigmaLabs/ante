@@ -93,7 +93,7 @@ Turns: 12 · Model calls: 2
 
 Each row splits into four buckets: `input` counts only the uncached part of the prompt, with the cached part reported separately as cache reads and cache writes. The hit rate is cache reads as a share of the gross input across every model.
 
-The TUI counts these itself from the usage events that reach the client. For Anthropic and ChatGPT subscriptions, `/usage` also displays subscription quota bars for the current session and weekly usage limits along with their reset times. Sub-agent token and cache usage is forwarded into the parent session totals, but the child's context snapshot stays private so the root context indicator does not jump. Failed calls and the goal judge can still be absent when they emit no usage. `/clear` starts the count over, and a resumed session counts only the part of its event log that replays. Treat it as a read on the session and your provider's dashboard as the billing record.
+The TUI counts these itself from the usage events that reach the client. For Anthropic and ChatGPT subscriptions, `/usage` also displays quota bars and reset times. OpenAI window labels follow the duration reported by the server (for example, a seven-day window is **Weekly limit**). Opening the dialog fetches fresh quotas and retries an expired access token after refreshing it; an unrefreshable credential is reported as expired. Anthropic displays the plan name without the rate tier. Sub-agent token and cache usage is forwarded into the parent session totals, but the child's context snapshot stays private so the root context indicator does not jump. Failed calls and the goal judge can still be absent when they emit no usage. `/clear` starts the count over, and a resumed session counts only the part of its event log that replays. Treat it as a read on the session and your provider's dashboard as the billing record.
 
 ## Goal-driven sessions
 
@@ -101,19 +101,20 @@ Use `/goal <condition>` to keep Ante working until a concrete success condition 
 
 ## Session resume
 
-Ante persists every session to disk. Use `/resume` to pick up a previous conversation where you left off.
+Ante persists sessions to disk when session saving is enabled (the default). Use `/resume` to pick up a previous conversation where you left off.
 
 ### How it works
 
 1. Type `/resume` to open the session picker
-2. Browse sessions scoped to the current working directory — each entry shows its [title](#session-title), or the first message when it has none, along with the model, message count, and relative time
+2. Browse sessions scoped to the current working directory, ordered by last use — each entry shows its [title](#session-title), or the first message when it has none, along with the model, message count, and relative time
 3. Press **Enter** to select, or **Esc** to cancel
 4. Press **d** (or **Delete**) to delete the selected session — press **d** again to confirm, any other key cancels. The currently active session can't be deleted
 
 On resume, Ante:
 - Restores the full conversation history
 - Re-discovers agents and skills in the project directory (unless the session was started with `--no-skills`)
-- Refreshes system prompts and tool definitions (so new features are available)
+- Preserves the saved system prompts and prompt mode (including `--system-prompt`, `--append-system-prompt`, and `--short-prompt`) while refreshing tool definitions
+- Adds one notice on the next turn if the local date, OS, or shell changed; an unchanged environment adds none
 - Adopts your current permission settings instead of stale saved modes (a session saved in Yolo no longer overrides your Strict or Auto rules on resume)
 - Replays the complete persisted event log to rebuild the conversation view, with no 200-event cap
 
@@ -167,6 +168,7 @@ When a Claude Code or Codex session in the current directory was active within t
 | `Ctrl+S` | Steer queued messages into the running turn |
 | `Ctrl+V` / `Ctrl+Shift+V` | Paste text or an image from the clipboard |
 | `Escape` | Close a popup, or interrupt the active turn when none is open |
+| `Esc Esc` | On an empty composer with no popup, open the [rewind picker](/usage/tui#rewind-a-conversation) |
 
 Inside tmux the kitty keyboard protocol is not available, so Ante asks tmux for xterm's extended keys instead. That needs tmux 3.5 or newer with two server options in `~/.tmux.conf` (restart the tmux server afterwards):
 
@@ -175,7 +177,7 @@ set -s extended-keys on
 set -s extended-keys-format csi-u
 ```
 
-With those, `Ctrl+Enter` inserts a newline inside tmux. `Shift+Enter` still sends a plain Enter there, because terminals report Shift on Enter only through the kitty protocol; use `Ctrl+Enter` or `Alt+Enter`.
+With those options and a terminal that forwards modified keys, both `Ctrl+Enter` and `Shift+Enter` insert a newline inside tmux. Ante restores keyboard reporting after fullscreen overlays close, including in zellij. `Alt+Enter` remains a fallback.
 
 ### Line editing
 
@@ -304,7 +306,7 @@ On by default; disable with `"tips": false` in `~/.ante/settings.json`. Show his
 ## CLI flags for TUI mode
 
 ```bash
-ante --model claude-sonnet-5
+ante --model claude-sonnet-5-5
 ante --provider openai
 ante --profile work
 ante --no-skills

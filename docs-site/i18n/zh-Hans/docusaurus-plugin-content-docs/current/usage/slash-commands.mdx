@@ -27,6 +27,8 @@ description: "在交互式 TUI 终端中用于常用操作的内置命令"
 | `/context` | 以彩色色块网格形式可视化当前上下文 Token 占用分布（按类别分解） |
 | `/usage` | 查看当前会话累计的消耗 —— 各模型 Token 计数、缓存命中率、轮次统计及订阅额度（参见[会话消耗统计](/usage/tui#session-usage)） |
 | `/welcome` | 显示欢迎/引导配置对话框 |
+| `/rewind` | 选择较早的输入，将当前对话恢复到它之前，并将提示词放回输入框（空输入框也可按两次 `Esc`）；参见[回退对话](/usage/tui#rewind-a-conversation) |
+| `/fork` | 从所选输入之前或完整对话创建已保存的新会话并切换；参见[分叉对话](/usage/tui#fork-a-conversation) |
 | `/resume` | 恢复当前目录下此前保存的会话 |
 | `/rename [title]` | 为当前会话设置标题，显示在恢复选择器与终端标签页中；不带参数时清除标题（参见[会话标题](/usage/tui#session-title)） |
 | `/resume-claude [id]` | 在当前目录中继续接管最近的 Claude Code 会话（内置技能 —— 参见[从 Claude Code 或 Codex 迁移](/usage/tui#coming-from-claude-code-or-codex)） |
