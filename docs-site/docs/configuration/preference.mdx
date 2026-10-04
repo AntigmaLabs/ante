@@ -163,6 +163,7 @@ The `status_line` field controls which items appear in the top row of the TUI fo
 | `git-branch` | Current Git branch, as `⑂ main` (omitted when unavailable) |
 | `pr-link` | GitHub pull request link for the current branch (requires `gh`) |
 | `context-used` | Context-window usage, shown as `N% ctx` of the window remaining (omitted until known) |
+| `context-tokens` | Context-window usage in tokens, shown as `76k/200k ctx` (used over the window limit, the same figure as `/context`; omitted until known; off by default) |
 | `terminals` | Live `ante-*` tmux sessions, shown by name (omitted when none are running or tmux is unavailable) |
 
 Two pairs collapse into one compound item when both halves are enabled: effort folds into the model name as `gpt-5.6(high)` (every level, `min` included), and the branch folds into the directory as `project(⑂ main)`. So the default footer reads:
@@ -173,7 +174,7 @@ gpt-5.6(high) · openai · project(⑂ main) · 42% ctx
 
 Each half stays an independent toggle — turn `model-name` off and `effort` goes back to its own `effort: high` item.
 
-Default: all items, in the order above. Configure via `~/.ante/settings.json` or the `/statusline` command in the TUI.
+Default: all items except `context-tokens`, in the order above. Configure via `~/.ante/settings.json` or the `/statusline` command in the TUI.
 
 ### Command-based status line
 
