@@ -52,7 +52,7 @@ Ante 通常会在安装期间自行写入这些字段。若将其指向自定义
 
 `--host`、`--port`、`--model`、`--alias` 等由路由器拥有或会改变模型身份的选项会被拒绝。格式错误的值也会显式失败，避免有效上下文、温度或推理状态与 Ante 上报内容不一致。
 
-Ante v0.2.5 固定使用 llama.cpp `b11046`。旧加载参数 `--mlock`、`--mmap`、`--no-mmap`、`--dio` / `--direct-io` 与 `--ndio` / `--no-direct-io` 已被拒绝。请将已保存的 `extra_args` 中这些参数替换为 `--load-mode` 与引擎支持的模式，例如上面的 `--load-mode mmap`。
+Ante v0.2.8 固定使用 llama.cpp `b11200`。旧加载参数 `--mlock`、`--mmap`、`--no-mmap`、`--dio` / `--direct-io` 与 `--ndio` / `--no-direct-io` 已被拒绝。请将已保存的 `extra_args` 中这些参数替换为 `--load-mode` 与引擎支持的模式，例如上面的 `--load-mode mmap`。
 
 **GPU 卸载层数。** `llama_cpp.server_defaults.gpu_layers` 控制 `-ngl` 参数。默认 `-1` 代表将所有网络层卸载至 GPU；若显存紧张可适当调小数值：
 

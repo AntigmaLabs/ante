@@ -52,7 +52,7 @@ WebFetch 溢出文件使用系统缓存目录：macOS 为 `~/Library/Caches/ante
 
 ```json
 {
-  "model": "claude-sonnet-5",
+  "model": "claude-sonnet-5-5",
   "provider": "anthropic",
   "theme": "default",
   "permission_mode": "strict",
@@ -64,11 +64,11 @@ WebFetch 溢出文件使用系统缓存目录：macOS 为 `~/Library/Caches/ante
   "has_completed_onboarding": true,
   "status_line": ["model-name", "current-dir"],
   "model_effort": {
-    "claude-sonnet-5": "medium",
-    "gpt-5.4": "high"
+    "claude-sonnet-5-5": "medium",
+    "gpt-6.1-sol": "high"
   },
   "provider_model": {
-    "anthropic": "claude-sonnet-5"
+    "anthropic": "claude-sonnet-5-5"
   },
   "mcp_servers": {
     "filesystem": {
@@ -82,6 +82,12 @@ WebFetch 溢出文件使用系统缓存目录：macOS 为 `~/Library/Caches/ante
 命名 Profile 文件具有相同的 Schema，但在运行时全量替换 `settings.json`；它们不会从 `settings.json` 继承缺失的字段。关于 Profile 机制及完整字段参考，请参阅[偏好设置](/configuration/preference#named-profiles)。
 
 项目的 `.ante/settings.json` 使用同一 Schema，但以*叠加*方式作用于用户设置文件：只有它显式设置的键会被覆盖。由于它属于仓库内容，只能收紧或固定、不能放宽，因此 `permission_mode`、`permissions.allow`、`mcp_servers`、`system_prompt`、`model`、`provider` 会被丢弃并给出提示。参见[项目设置](/configuration/preference#project-settings)。
+
+## 已保存的对话 {#saved-conversations}
+
+每个 `~/.ante/sessions/<session-id>/` 目录保存可恢复的对话、事件日志与元数据。元数据包含创建时间和最近活动时间；恢复选择器按最近活动时间排序，旧快照缺少该字段时回退到创建时间。分叉会话还记录来源会话 ID `forked_from`。
+
+回退替换当前历史前，Ante 会在该会话目录的 `abandoned/<rwd-id>/dialog.json` 与 `events.jsonl` 中保留放弃的对话和事件日志。这些是保留副本，不会作为独立会话出现在恢复选择器中。仅恢复对话的边界请参阅[回退与分叉](/usage/tui#rewind-a-conversation)。
 
 ## `catalog.json` {#catalogjson}
 
@@ -98,7 +104,7 @@ WebFetch 溢出文件使用系统缓存目录：macOS 为 `~/Library/Caches/ante
     }
   },
   "models": {
-    "claude-sonnet-5": { "effort": "high", "max_tokens": 64000 }
+    "claude-sonnet-5-5": { "effort": "high", "max_tokens": 64000 }
   }
 }
 ```

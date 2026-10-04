@@ -69,6 +69,8 @@ ante [OPTIONS] [--prompt <PROMPT>]
 | `--check` | Run a verification pass after the main task completes |
 | `--offline-model <PATH>` | Path to a local GGUF file. Starts the managed llama.cpp router with `llama serve`, loads the model, points the session at the `local` provider, and tears it down on exit |
 
+A resumed headless session keeps its saved system prompts and prompt mode; prompt flags affect fresh sessions only. Model calls use the same streaming transport and idle timeout as the TUI, even when the selected output format shows only completed messages.
+
 ## Output formats
 
 ### Minimal (default)
@@ -81,7 +83,7 @@ ante -p "what does this project do"
 
 ### Human
 
-Shows all events in a human-readable format with ANSI colors:
+Shows readable blocks for messages, tool activity, and turn status. ANSI styling is used only on a terminal and is disabled by a nonempty `NO_COLOR`:
 
 ```bash
 ante --output-format human -p "fix the type error in main.rs"
@@ -146,7 +148,7 @@ ante --yolo -p "run cargo clippy and fix all warnings"
 ### Code generation
 
 ```bash
-ante --model claude-sonnet-5 --check \
+ante --model claude-sonnet-5-5 --check \
   -p "add comprehensive unit tests for src/core/session.rs"
 ```
 

@@ -164,6 +164,8 @@ All offline mode configuration is stored in `~/.ante/offline-config.json`:
 | `model_preferences` | Per-model settings (see above) | — |
 | `llama_cpp` | Engine install details, binary paths, and server defaults — see [Custom Engines](/local/custom-engines) | managed by Ante |
 
+Per-model preferences are read during discovery. After editing `offline-config.json`, close and reopen `/offline-mode` to load the new values.
+
 ### Environment variables
 
 | Variable | Description |

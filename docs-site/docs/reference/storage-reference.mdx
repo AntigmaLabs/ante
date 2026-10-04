@@ -51,7 +51,7 @@ Stores user preferences. All fields are optional.
 
 ```json
 {
-  "model": "claude-sonnet-5",
+  "model": "claude-sonnet-5-5",
   "provider": "anthropic",
   "theme": "default",
   "permission_mode": "strict",
@@ -63,11 +63,11 @@ Stores user preferences. All fields are optional.
   "has_completed_onboarding": true,
   "status_line": ["model-name", "current-dir"],
   "model_effort": {
-    "claude-sonnet-5": "medium",
-    "gpt-5.4": "high"
+    "claude-sonnet-5-5": "medium",
+    "gpt-6.1-sol": "high"
   },
   "provider_model": {
-    "anthropic": "claude-sonnet-5"
+    "anthropic": "claude-sonnet-5-5"
   },
   "mcp_servers": {
     "filesystem": {
@@ -81,6 +81,12 @@ Stores user preferences. All fields are optional.
 Named profile files have the same schema but replace `settings.json` wholesale for that run; they do not inherit missing values from it. See [Preferences](/configuration/preference#named-profiles) for profile behavior and the full field reference.
 
 A project's `.ante/settings.json` uses the same schema but *layers* over the user file: only the keys it sets are overridden. As repository content it may pin or narrow only, so `permission_mode`, `permissions.allow`, `mcp_servers`, `system_prompt`, `model`, and `provider` are dropped with a notice. See [Project settings](/configuration/preference#project-settings).
+
+## Saved conversations
+
+Each `~/.ante/sessions/<session-id>/` directory holds the resumable dialog, event log, and metadata. Metadata includes the session's creation time and last activity; the resume picker orders by last activity, falling back to creation time for older snapshots. Forks also record `forked_from`, the source session ID.
+
+Before a rewind replaces the current history, Ante keeps the abandoned dialog and event log under `abandoned/<rwd-id>/dialog.json` and `events.jsonl` inside that session directory. These are retained copies, not separate sessions in the resume picker. See [rewind and fork](/usage/tui#rewind-a-conversation) for the conversation-only restore boundaries.
 
 ## `catalog.json`
 
@@ -97,7 +103,7 @@ Adds or overrides providers and models on top of the built-in catalog. Both top-
     }
   },
   "models": {
-    "claude-sonnet-5": { "effort": "high", "max_tokens": 64000 }
+    "claude-sonnet-5-5": { "effort": "high", "max_tokens": 64000 }
   }
 }
 ```

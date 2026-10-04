@@ -53,6 +53,16 @@ ANTE_SERVE_TOKEN="your-secret-token" ante serve --ws 127.0.0.1:8080
 监听地址必须为本地回环地址（`127.0.0.0/8` 或 `::1`）。Ante 拒绝绑定任何其他地址 —— 传入 `0.0.0.0:8080` 会在绑定前直接报错退出。跨机器访问守护进程时，请通过 SSH 隧道或带身份验证与 TLS 加密（`wss://`）的反向代理转发。
 :::
 
+## 查看服务端记录 {#read-the-server-transcript}
+
+v0.2.8 的 `--sock` 与 `--ws` 会向 stdout 打印可读记录，包含连接、会话开始、消息、工具调用与轮次状态。每条记录带有服务端或客户端标签，便于区分并发连接。可重定向 stdout 保存本地记录：
+
+```bash
+NO_COLOR=1 ante serve --sock > serve-transcript.log
+```
+
+仅在终端中启用样式，任意非空 `NO_COLOR` 都会禁用样式。该记录按尽力而为方式输出：输出管道过慢时可能丢弃部分记录，而不会阻塞协议通信。需要完整事件的客户端应读取协议。`--stdio` 的 stdout 专用于 JSONL，不打印此记录。
+
 ## 工作原理 {#how-it-works}
 
 1. 主机启动并等待所选传输方式上的操作指令
@@ -110,7 +120,7 @@ lines.on("line", (line) => {
 });
 
 send({ StartSession: {
-  model: "claude-sonnet-5",
+  model: "claude-sonnet-5-5",
   provider: "anthropic",
   unattended: true
 } });
@@ -126,7 +136,7 @@ use ante_sdk::{ConnectOptions, connect, protocol::{Evt, Op, SessionRequest}};
 let mut client = connect("stdio".parse()?, ConnectOptions::default()).await?;
 
 client.send(Op::StartSession(SessionRequest {
-    model: Some("claude-sonnet-5".into()),
+    model: Some("claude-sonnet-5-5".into()),
     provider: Some("anthropic".into()),
     unattended: Some(true),
     ..Default::default()

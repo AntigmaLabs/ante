@@ -93,7 +93,7 @@ Turns: 12 · Model calls: 2
 
 数据分为四类：`input` 仅统计未经缓存的输入 Token，已缓存部分分别计为 cache reads 和 cache writes。缓存命中率为 cache reads 占总输入 Token 的百分比。
 
-TUI 根据分发给客户端的用量事件自行统计。对于 Anthropic 和 ChatGPT 订阅，`/usage` 还会显示当前会话与每周用量限额进度条及配额重置时间。子智能体的 Token 与缓存用量会转发并计入父会话总计，但其上下文快照保持私有，因此根会话的上下文指示器不会跳变。失败调用与目标判定器若未产生用量事件，仍可能不在统计中。`/clear` 会重置计数，恢复的会话仅统计回放事件部分。
+TUI 根据分发给客户端的用量事件自行统计。对于 Anthropic 和 ChatGPT 订阅，`/usage` 还会显示额度进度条与重置时间。OpenAI 窗口名称依据服务端返回的时长（例如七天窗口显示 **Weekly limit**）。每次打开都会重新获取额度，访问令牌过期时先刷新再重试；无法刷新时才报告凭据过期。Anthropic 套餐名称不再附带速率层级。子智能体的 Token 与缓存用量会转发并计入父会话总计，但其上下文快照保持私有，因此根会话的上下文指示器不会跳变。失败调用与目标判定器若未产生用量事件，仍可能不在统计中。`/clear` 会重置计数，恢复的会话仅统计回放事件部分。
 
 ## 目标导向型会话 {#goal-driven-sessions}
 
@@ -101,19 +101,20 @@ TUI 根据分发给客户端的用量事件自行统计。对于 Anthropic 和 C
 
 ## 会话恢复 {#session-resume}
 
-Ante 会自动将所有会话持久化到磁盘中。输入 `/resume` 即可随时恢复历史会话。
+启用会话保存时（默认开启），Ante 会将会话持久化到磁盘中。输入 `/resume` 即可随时恢复历史会话。
 
 ### 工作流程 {#how-it-works}
 
 1. 输入 `/resume` 打开会话选择器
-2. 浏览当前工作目录下的历史会话 —— 每条记录显示其[标题](#session-title)（未设置标题时显示首条消息），以及所用模型、消息总数与相对时间
+2. 按最近使用时间浏览当前工作目录下的历史会话 —— 每条记录显示其[标题](#session-title)（未设置标题时显示首条消息），以及所用模型、消息总数与相对时间
 3. 按 **Enter** 选择恢复，按 **Esc** 取消
 4. 按 **d**（或 **Delete**）删除选中的历史会话 —— 再次按 **d** 确认。当前正在活跃的会话无法删除
 
 恢复会话时，Ante 会：
 - 完整还原历史对话记录
 - 重新发现当前项目目录中的 Agent 和 Skills（除非会话是以 `--no-skills` 启动）
-- 刷新系统提示词与工具定义（确保新特性立即可用）
+- 保留已保存的系统提示词及提示词模式（包括 `--system-prompt`、`--append-system-prompt` 与 `--short-prompt`），并刷新工具定义
+- 如果本地日期、操作系统或 Shell 改变，在下一轮用一条通知告知模型；环境未变时不发送通知
 - 采纳您当前的权限配置而非历史保存的旧模式（此前在 Yolo 模式下保存的会话在恢复时会遵从您当前的 Strict 或 Auto 规则）
 - 回放完整的持久化事件日志以重建 TUI 对话视图，不再限制为最近 200 条事件
 
@@ -167,6 +168,16 @@ Ante 会自动将所有会话持久化到磁盘中。输入 `/resume` 即可随�
 | `Ctrl+S` | 将排队的消息实时注入到正在运行的轮次中（Steer 引导） |
 | `Ctrl+V` / `Ctrl+Shift+V` | 从系统剪贴板粘贴文本或图片 |
 | `Escape` | 关闭弹窗；无弹窗时中断当前正在执行的轮次 |
+| `Esc Esc` | 输入框为空且无弹窗时，打开[回退选择器](/usage/tui#rewind-a-conversation) |
+
+tmux 不支持 kitty 键盘协议，Ante 会请求 xterm 扩展按键。需要 tmux 3.5 或更新版本，在 `~/.tmux.conf` 中设置以下选项后重启 tmux 服务：
+
+```
+set -s extended-keys on
+set -s extended-keys-format csi-u
+```
+
+终端支持转发修饰键时，`Ctrl+Enter` 和 `Shift+Enter` 都可在 tmux 中换行。关闭全屏弹窗后（包括 zellij 中），Ante 会恢复键盘报告模式；`Alt+Enter` 可作为备用。
 
 ### 单行编辑快捷键 {#line-editing}
 
@@ -295,7 +306,7 @@ Bash 模式在本地直接执行，无需权限审批 —— 输入 `!` 即代�
 ## TUI 模式的命令行参数 {#cli-flags-for-tui-mode}
 
 ```bash
-ante --model claude-sonnet-5
+ante --model claude-sonnet-5-5
 ante --provider openai
 ante --profile work
 ante --no-skills

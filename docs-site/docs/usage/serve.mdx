@@ -52,6 +52,16 @@ The transport flags are mutually exclusive — pick one of `--stdio`, `--sock`, 
 The address must be a loopback address (`127.0.0.0/8` or `::1`). Ante refuses to bind anything else — `0.0.0.0:8080` exits with an error rather than starting. To access a daemon across machines, dial through an SSH tunnel or an authenticating reverse proxy with TLS (`wss://`).
 :::
 
+## Read the server transcript
+
+In v0.2.8, `--sock` and `--ws` print a readable transcript to stdout: connections, session starts, messages, tool calls, and turn status. Entries carry a server or client label so concurrent connections can be distinguished. Redirect stdout to keep a local transcript:
+
+```bash
+NO_COLOR=1 ante serve --sock > serve-transcript.log
+```
+
+Styling is enabled only on a terminal and disabled by any nonempty `NO_COLOR`. The transcript is best-effort: a slow output pipe can drop transcript entries without holding up protocol traffic. Clients should consume the protocol for complete events. `--stdio` keeps stdout exclusively for JSONL and does not print this transcript.
+
 ## How it works
 
 1. The host starts and waits for operations on the selected transport
@@ -109,7 +119,7 @@ lines.on("line", (line) => {
 });
 
 send({ StartSession: {
-  model: "claude-sonnet-5",
+  model: "claude-sonnet-5-5",
   provider: "anthropic",
   unattended: true
 } });
@@ -125,7 +135,7 @@ use ante_sdk::{ConnectOptions, connect, protocol::{Evt, Op, SessionRequest}};
 let mut client = connect("stdio".parse()?, ConnectOptions::default()).await?;
 
 client.send(Op::StartSession(SessionRequest {
-    model: Some("claude-sonnet-5".into()),
+    model: Some("claude-sonnet-5-5".into()),
     provider: Some("anthropic".into()),
     unattended: Some(true),
     ..Default::default()

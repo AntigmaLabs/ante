@@ -83,13 +83,15 @@ The session flags in this table configure the default TUI/headless run. Supplyin
 ante
 ante -p "explain what this project does"
 git diff | ante -p "review this diff for bugs"
-ante --provider openai --model gpt-6-sol -p "refactor the database module"
+ante --provider openai --model gpt-6.1-sol -p "refactor the database module"
 ante --effort max -p "find the race condition in the scheduler"
 ante --profile work
 ante --profile bare -p "review this repository"
 ante --resume ses_01ARZ3NDEKTSV4RRFFQ69G5FAV -p "now add tests"
 ante -p "summarize this repo" --enable-auto-memory
 ```
+
+When resuming, the saved system prompts and prompt mode take precedence over `--system-prompt`, `--system-prompt-file`, `--append-system-prompt`, and `--short-prompt`. These flags apply to fresh sessions from this launch, including a later `/clear`.
 
 ## `ante auth`
 
@@ -176,7 +178,7 @@ Since v0.2.2, this command dispatches to the separately installed `ante-gateway`
 ```bash
 ante gateway
 ante gateway --connect unix:/tmp/ante.sock
-ante gateway --provider anthropic --model claude-sonnet-5
+ante gateway --provider anthropic --model claude-sonnet-5-5
 ante gateway --config ./channels.json --output-format human
 ```
 
@@ -195,7 +197,7 @@ The update command checks for a newer Ante release and installs it when one is a
 | Flag | Description |
 |---|---|
 | `--channel <CHANNEL>` | Release channel to update from. Equivalent to the positional form. |
-| `--version <VERSION>` | Install an exact release instead of the channel's newest release. Accepts values with or without a leading `v`, such as `v0.2.5` or `0.2.5`. Conflicts with channel arguments. |
+| `--version <VERSION>` | Install an exact release instead of the channel's newest release. Accepts values with or without a leading `v`, such as `v0.2.8` or `0.2.8`. Conflicts with channel arguments. |
 | `-h`, `--help` | Print command help. |
 
 ### Examples
@@ -204,7 +206,7 @@ The update command checks for a newer Ante release and installs it when one is a
 ante update
 ante update nightly
 ante update --channel stable
-ante update --version v0.2.5
+ante update --version v0.2.8
 ante --profile work update
 ```
 

@@ -14,7 +14,7 @@ Ante 将用户偏好设置保存在 `~/.ante/settings.json` 中。仓库还可�
 
 ```json
 {
-  "model": "claude-sonnet-5",
+  "model": "claude-sonnet-5-5",
   "provider": "anthropic",
   "theme": "default",
   "append_system_prompt": "Prefer small, focused commits.",
@@ -47,12 +47,12 @@ Ante 将用户偏好设置保存在 `~/.ante/settings.json` 中。仓库还可�
     "refresh_interval": 5
   },
   "model_effort": {
-    "claude-sonnet-5": "medium",
-    "gpt-5.4": "high"
+    "claude-sonnet-5-5": "medium",
+    "gpt-6.1-sol": "high"
   },
   "provider_model": {
-    "anthropic": "claude-sonnet-5",
-    "openai": "gpt-5.6-sol"
+    "anthropic": "claude-sonnet-5-5",
+    "openai": "gpt-6.1-sol"
   },
   "mcp_servers": {
     "filesystem": {
@@ -83,7 +83,7 @@ Ante 将用户偏好设置保存在 `~/.ante/settings.json` 中。仓库还可�
 | `ambient_thinking_phrase` | TUI 是否在您键入长提示词时后台预测[任务专属加载状态语](/reference/tui-reference#spinner-thinking-phrase)。除非设为 `false` 否则默认开启 |
 | `tips` | TUI 是否在智能体思考动画下方展示[功能技巧提示行](/reference/tui-reference#spinner-tips)。除非设为 `false` 否则默认开启 |
 | `group_tool_activity` | 是否将连续的静默工具调用折叠为聊天视图中的单个紧凑汇总摘要。除非设为 `false` 否则默认开启；**Ctrl+O** 完整记录视图中始终保留逐次调用的全部细节。修改仅对新调用生效 |
-| `short_prompt` | 是否为新会话和恢复会话启用紧凑提示词集（精简系统提示词和更短的内置工具描述）。除非设为 `true` 否则默认关闭；`--short-prompt` 可临时启用 |
+| `short_prompt` | 是否为全新会话启用紧凑提示词集；恢复会话保留已保存的提示词模式（精简系统提示词和更短的内置工具描述）。除非设为 `true` 否则默认关闭；`--short-prompt` 可临时启用 |
 | `max_concurrent_subagents` | 单个会话同时运行的子代理数量上限。当模型在一条消息中发起的 `Agent` 调用超过此值时，多出的调用会等待空闲槽位（TUI 显示 `waiting for a subagent slot`）而不是立即启动，且 `Agent` 工具描述会告知模型此上限。未设置、`null` 或 `0` 表示不限制。对于一次只能处理一个请求的本地模型，建议设为 `1`，避免排队的子代理在服务端队列中等待直至触发 [`stream_idle_timeout_secs`](/reference/catalog-reference#provider-fields)。仅通过设置文件配置，在新建或恢复会话时生效；参阅[并发上限](/extend/subagents#concurrency-limit) |
 | `auto_compact` | 是否在接近模型上下文上限时主动自动对历史对话生成摘要。除非设为 `false` 否则默认开启；禁用时手动 `/compact` 和溢出恢复机制依然可用。在 `/config` 中切换可直接作用于当前会话 |
 | `channel` | `ante update` 跟踪的发布通道（`stable` 或 `nightly`）。默认为 `stable`；历史 `latest` 值会被视为 `stable`。参见[版本更新与通道](/start/update) |
@@ -94,6 +94,8 @@ Ante 将用户偏好设置保存在 `~/.ante/settings.json` 中。仓库还可�
 | `model_effort` | 各模型的[思考深度（Effort）](/usage/models-and-thinking#effort)覆盖映射 —— 键为模型名，值为 `min` / `low` / `medium` / `high` / `xhigh` / `max`。在 `/models` 中拖动滑块时自动写入 |
 | `provider_model` | 各提供商最后选用的模型记录 —— 切换提供商时优先采用此记录，其次回退至该提供商的默认模型。每次选择模型/提供商时自动写入 |
 | `mcp_servers` | 会话启动时拉起的 MCP 服务器配置（参见 [MCP 服务器](/extend/mcp)） |
+
+恢复会话会保留已保存的系统提示词和提示词模式。`system_prompt`、`append_system_prompt`、`short_prompt` 的修改（包括项目设置与 CLI 覆盖）只作用于全新会话，例如通过 `/clear` 创建的会话。权限和工具选择等其他会话设置仍从当前配置解析。
 
 ### 命名 Profile 配置文件 {#named-profiles}
 
@@ -206,8 +208,8 @@ JSON 输入是 [Claude Code statusline 输入](https://code.claude.com/docs/en/s
 {
   "cwd": "/work/repo",
   "session_id": "ses_...",
-  "version": "0.1.0",
-  "model": { "id": "claude-sonnet-5", "display_name": "claude-sonnet-5" },
+  "version": "0.2.8",
+  "model": { "id": "claude-sonnet-5-5", "display_name": "claude-sonnet-5-5" },
   "workspace": { "current_dir": "/work/repo", "project_dir": "/work/repo" },
   "thinking": { "enabled": true },
   "pr": { "number": 7, "url": "https://github.com/..." },

@@ -70,6 +70,8 @@ ante [OPTIONS] [--prompt <PROMPT>]
 | `--check` | 在主任务完成后自动执行一轮自我验证检查 |
 | `--offline-model <PATH>` | 本地 GGUF 文件路径。通过 `llama serve` 启动托管的 llama.cpp 路由器、加载模型并将提供商切换至 `local`，退出时自动关闭 |
 
+无头模式恢复会话时保留已保存的系统提示词及提示词模式；提示词参数只作用于全新会话。模型调用与 TUI 共用流式传输及空闲超时，即使选定输出格式只显示完整消息也是如此。
+
 ## 输出格式（Output formats） {#output-formats}
 
 ### 极简模式（Minimal，默认）（Minimal (default)） {#minimal-default}
@@ -82,7 +84,7 @@ ante -p "what does this project do"
 
 ### 人类易读模式（Human） {#human}
 
-以人类易读的格式和 ANSI 彩色高亮展示所有事件：
+以可读块展示消息、工具活动及轮次状态。仅在终端中使用 ANSI 样式；设置非空 `NO_COLOR` 可禁用样式：
 
 ```bash
 ante --output-format human -p "fix the type error in main.rs"
@@ -147,7 +149,7 @@ ante --yolo -p "run cargo clippy and fix all warnings"
 ### 代码生成（Code generation） {#code-generation}
 
 ```bash
-ante --model claude-sonnet-5 --check \
+ante --model claude-sonnet-5-5 --check \
   -p "add comprehensive unit tests for src/core/session.rs"
 ```
 
