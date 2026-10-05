@@ -1,5 +1,22 @@
 # Changelog
 
+## v0.2.9 - 2026-10-05
+
+### Added
+- `s` in the `/fork` picker opens the forked child in a terminal split beside the parent instead of switching to it, with the cut prompt ready to edit; uses the same split launchers as `/term` (tmux, iTerm2, WezTerm, Kitty, Ghostty)
+- Opt-in `context-tokens` status line item shows the context window as `used/limit ctx` (for example `13.6k/400k ctx`), the same figure `/context` reports; turn it on in `/statusline`
+- A provider's `http_headers` value in `catalog.json` may contain `{session_id}`, filled with the conversation's id on each request (a subagent sends its parent's id), for gateways that need a per-session header
+
+### Changed
+- `/rewind` and `/fork` reach the prompts before a `/resume` and the prompts a fork copied from its parent, back to the last compaction or provider switch, instead of only the current run's
+- Every provider call runs under one timeout owned by the transport: headers, error body, OAuth refresh, retry backoff and the WebSocket-to-HTTP fallback share one budget
+- Catalog pruned: GPT-5.4 Pro on direct OpenAI (GPT-5.5 Pro stays)
+- llama.cpp engine bumped to b11379 (Metal memory-leak fix, Vulkan cache-stride fix, GGUF overflow checks)
+- Compaction logs the fold's configuration and the summary's thinking/text split, to diagnose cut-off summaries on local servers
+
+### Fixed
+- Responses API "input exceeds the context window" rejections are treated as context overflows and recovered by compaction
+
 ## v0.2.8 - 2026-10-02
 
 ### Added
