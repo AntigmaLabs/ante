@@ -39,6 +39,7 @@ An example `settings.json`:
   "channel": "stable",
   "resize_reflow": "conservative",
   "render_mode": "inline",
+  "attention": { "enabled": true },
   "status_line": ["model-name", "current-dir"],
   "status_line_command": {
     "command": "~/.config/ante/statusline.sh",
@@ -88,6 +89,7 @@ An example `settings.json`:
 | `channel` | Release channel `ante update` tracks (`stable` or `nightly`). Defaults to `stable`; legacy `latest` values are treated as `stable`. See [Update & Channels](/start/update). |
 | `resize_reflow` | Scrollback strategy on terminal resize: `conservative` (default) or `purge` (see below) |
 | `render_mode` | Chat rendering strategy: `inline` (default, terminal-owned scrollback) or `fullscreen` (alternate screen with Ante-managed scrolling). Changes in `/config` apply live; `--fullscreen` overrides startup for one run without persisting |
+| `attention` | Desktop notification and bell when a turn ends or needs your input. Off unless `enabled` is `true` (see [Attention notifications](#attention-notifications)) |
 | `status_line` | Items to display in the TUI status line footer (see below) |
 | `status_line_command` | Shell command that renders a fully custom status line (see below). Takes precedence over `status_line` while set |
 | `model_effort` | Per-model [effort](/usage/models-and-thinking#effort) overrides — keys are model names, values are `min` / `low` / `medium` / `high` / `xhigh` / `max`. Written automatically when you move the effort slider in `/models` |
@@ -273,6 +275,41 @@ then scroll up — if the numbers are gone, your terminal honors `3 J` and `purg
 In iTerm2, the capability is toggled under **Settings → Advanced**: search for "3 J" and set **"Prevent CSI 3 J from clearing scrollback history"** to **No** to allow it (required for `purge`), or **Yes** to block it. The change applies immediately — re-run the check above to confirm.
 
 Trade-offs of `purge`: the first resize clears everything in that tab's scrollback, including shell output from before ante started, and only the most recent 2,000 transcript lines are replayed across a resize. Inside tmux or zellij ante always uses the purge strategy regardless of this setting, since both reliably support `3 J`.
+
+### Attention notifications
+
+Ante can call you back when a turn finishes, fails, or stops for an approval or a question — useful when you switch away during a long task:
+
+```json
+{
+  "attention": {
+    "enabled": true,
+    "notifications": true,
+    "sound": true
+  }
+}
+```
+
+| Field | Description |
+|---|---|
+| `enabled` | Turns attention cues on. Off by default |
+| `notifications` | Desktop notification, sent only while the terminal window is not focused. On once `enabled` is set |
+| `sound` | Terminal bell, rung whether or not the window is focused. On once `enabled` is set |
+
+There is no cue for a turn you interrupt yourself, or while a queued message is about to run.
+
+The notification is shown by your terminal, not by Ante: Ante sends the terminal's own notification escape sequence. Ghostty, iTerm2, kitty, WezTerm, Warp, foot, Windows Terminal, and VTE-based terminals are recognized; other terminals get the bell only. Your terminal and operating system decide how the notification looks and may need notification permission for the terminal app.
+
+Ante only notifies when the terminal reports that it lost focus. **Inside tmux**, both of these are off by default and must be enabled, or you get the bell without a notification:
+
+```
+set -g focus-events on
+set -g allow-passthrough on
+```
+
+Add them to `~/.tmux.conf`, then reload it (`tmux source-file ~/.tmux.conf`) and detach and re-attach so your terminal starts sending focus reports.
+
+Attention cues apply to the interactive TUI. For headless runs, chain a command after Ante, for example `ante -p "…"; notify-send "Ante done"`.
 
 Settings can be overridden per-session via CLI flags.
 

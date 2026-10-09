@@ -40,6 +40,7 @@ Ante 将用户偏好设置保存在 `~/.ante/settings.json` 中。仓库还可�
   "channel": "stable",
   "resize_reflow": "conservative",
   "render_mode": "inline",
+  "attention": { "enabled": true },
   "status_line": ["model-name", "current-dir"],
   "status_line_command": {
     "command": "~/.config/ante/statusline.sh",
@@ -89,6 +90,7 @@ Ante 将用户偏好设置保存在 `~/.ante/settings.json` 中。仓库还可�
 | `channel` | `ante update` 跟踪的发布通道（`stable` 或 `nightly`）。默认为 `stable`；历史 `latest` 值会被视为 `stable`。参见[版本更新与通道](/start/update) |
 | `resize_reflow` | 终端窗口大小调整时的滚屏历史/回滚缓冲区（Scrollback）重排策略：`conservative`（保守，默认）或 `purge`（清除重放，见下文） |
 | `render_mode` | 聊天渲染策略：`inline`（默认，由终端管理滚动历史）或 `fullscreen`（备用屏幕，由 Ante 管理滚动）。在 `/config` 中修改会实时生效；`--fullscreen` 仅覆盖本次启动且不持久化 |
+| `attention` | 回合结束或需要您处理时，发送桌面通知并响铃。仅当 `enabled` 为 `true` 时开启（见[提醒通知](#attention-notifications)） |
 | `status_line` | TUI 底部状态栏顶部一行展示的元素列表（见下文） |
 | `status_line_command` | 执行 Shell 脚本以渲染完全自定义状态栏（见下文）。设置后优先级高于 `status_line` |
 | `model_effort` | 各模型的[思考深度（Effort）](/usage/models-and-thinking#effort)覆盖映射 —— 键为模型名，值为 `min` / `low` / `medium` / `high` / `xhigh` / `max`。在 `/models` 中拖动滑块时自动写入 |
@@ -273,6 +275,41 @@ seq 1 200; printf '\033[2J\033[3J\033[H'
 在 iTerm2 中，该功能可在 **Settings → Advanced** 中配置：搜索 "3 J"，将 **"Prevent CSI 3 J from clearing scrollback history"** 设为 **No** 即可允许（启用 `purge` 所需），设为 **Yes** 则为阻止。修改即时生效。
 
 `purge` 的权衡：首次缩放会清空该标签页的全部滚屏历史（包括启动 Ante 前的 Shell 输出），且缩放时仅重放最近 2000 行记录。在 tmux 或 zellij 内部，Ante 始终使用 purge 策略，因为两者均稳定支持 `3 J`。
+
+### 提醒通知 {#attention-notifications}
+
+当回合完成、出错，或因审批、提问而暂停时，Ante 可以提醒您 —— 适合在长任务运行期间切换到其他窗口时使用：
+
+```json
+{
+  "attention": {
+    "enabled": true,
+    "notifications": true,
+    "sound": true
+  }
+}
+```
+
+| 字段 | 说明 |
+|---|---|
+| `enabled` | 开启提醒。默认关闭 |
+| `notifications` | 桌面通知，仅在终端窗口未聚焦时发送。设置 `enabled` 后默认开启 |
+| `sound` | 终端响铃，无论窗口是否聚焦都会响起。设置 `enabled` 后默认开启 |
+
+您主动中断的回合，或即将自动发送排队消息时，不会触发提醒。
+
+通知由终端显示，而非 Ante 本身：Ante 发送的是终端自带的通知转义序列。可识别的终端包括 Ghostty、iTerm2、kitty、WezTerm、Warp、foot、Windows Terminal 以及基于 VTE 的终端；其他终端仅响铃。通知的样式由终端和操作系统决定，终端应用可能需要获得系统的通知权限。
+
+Ante 仅在终端报告失去焦点时才发送通知。**在 tmux 中**，以下两项默认关闭，必须手动开启，否则只会响铃而不会弹出通知：
+
+```
+set -g focus-events on
+set -g allow-passthrough on
+```
+
+将其添加到 `~/.tmux.conf`，重新加载（`tmux source-file ~/.tmux.conf`），然后断开并重新连接会话，让终端开始发送焦点报告。
+
+提醒功能仅适用于交互式 TUI。无头模式下，可在 Ante 之后串联命令，例如 `ante -p "…"; notify-send "Ante done"`。
 
 ## 环境变量参考 {#environment-variables}
 
