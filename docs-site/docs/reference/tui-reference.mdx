@@ -46,6 +46,10 @@ Press `Tab` to preview the proposed diff or request details before deciding.
 
 When the agent needs clarification or your input on a design decision, it presents one to four structured multiple-choice questions in place of the composer. Each question displays option descriptions and optional visual previews. Enter selects the recommended option, arrow keys move between choices, Esc skips so the model proceeds on its own judgment, and "Chat about this" returns to conversation for free-form discussion.
 
+### Attention cues
+
+Opt in to a terminal bell and desktop notifications for completed or failed turns, approval prompts, and questions with `"attention": { "enabled": true }` in your user settings. The bell works regardless of focus; desktop notifications require the terminal to report that it is unfocused. See [Attention settings and terminal setup](/configuration/preference#attention-notifications).
+
 ### Diff view
 
 When the agent proposes file edits, Ante switches to a fullscreen diff view on an alternate screen. You can review the exact changes before approving. Diff views use numbered gutters, full-width added/removed bands, and `+N -M` change counts in their headers. Completed edit results in the conversation view use a 32-row inline budget that preserves complete diff hunks in file order, with remaining changes summarized and accessible in full via `Ctrl+O`. Runs of more than three unchanged context lines keep only their first and last lines, without an “unchanged lines” placeholder; line numbers still reflect their original positions.
@@ -106,7 +110,7 @@ Ante persists sessions to disk when session saving is enabled (the default). Use
 ### How it works
 
 1. Type `/resume` to open the session picker
-2. Browse sessions scoped to the current working directory, ordered by last use — each entry shows its [title](#session-title), or the first message when it has none, along with the model, message count, and relative time
+2. Browse sessions scoped to the current working directory, ordered by last use — each entry shows its [title](#session-title), or the first message when it has none, along with the model, message count, event-log size on disk, and relative time
 3. Press **Enter** to select, or **Esc** to cancel
 4. Press **d** (or **Delete**) to delete the selected session — press **d** again to confirm, any other key cancels. The currently active session can't be deleted
 

@@ -10,7 +10,7 @@ Ante 根据**目录（Catalog）**解析每个提供商与模型：包括本文�
 
 ## 内置提供商列表 {#built-in-providers}
 
-以下预设对应 **v0.2.8**：15 个托管提供商预设，以及离线服务运行时注册的 `local`。
+以下预设对应 **v0.2.10**：15 个托管提供商预设，以及离线服务运行时注册的 `local`。
 
 | 提供商 | key | 通信协议格式 (Wire style) | 身份认证 |
 |---|---|---|---|
@@ -43,7 +43,7 @@ Ante 根据**目录（Catalog）**解析每个提供商与模型：包括本文�
 
 | 模型 ID | 说明 | 上下文大小 |
 |---|---|---|
-| `claude-haiku-4-5` | 极速响应，接近前沿智能水平 | 200K |
+| `claude-haiku-5-5` | 适合高并发智能体任务的快速高效模型 | 1M |
 | `claude-sonnet-5-5` | 速度与智能的最佳平衡 | 1M |
 | `claude-opus-5-5` | 长时间运行的智能体编码与知识工作 | 1M |
 | `claude-fable-5-1` | 针对高要求推理的最强能力 | 1M |
@@ -60,7 +60,6 @@ ante --provider anthropic --model claude-sonnet-5-5
 | `gpt-6.1-sol` | GPT-6.1 Sol，适用于复杂编码与智能体工作流 | 1.05M |
 | `gpt-6-luna` | GPT-6 模型，适用于明确、大规模的任务 | 1.05M |
 | `gpt-5.5-pro` | 复杂问题上的最高稳定性 | 400K |
-| `gpt-5.4-pro` | GPT-5.4 系列中可靠性最高的主力 | 400K |
 | `gpt-5.4-mini` | 更快、更经济的 GPT-5.4 模型 | 400K |
 
 ```bash
@@ -90,7 +89,7 @@ ANTE_OPENAI_TRANSPORT=websocket_auto ante --provider openai --model gpt-5.4-mini
 
 注意事项：
 - 所有模型生成调用都使用流式传输，包括 TUI、无头任务、压缩、目标判定和环境提示。需要完整回复的调用会收集同一条流，因此启用 WebSocket 时这些调用也可使用它。取消 WebSocket 调用后，Ante 会丢弃连接，避免下一次请求读到已放弃的回复。
-- 任何临时的 WS 故障（连接超时、网络抖动）会在该轮次中自动回退至 HTTP/SSE —— 用户绝不会因为传输协议选型而遭遇硬错误。认证失败（`401`/`403`）会将整个会话在其生命周期内永久切换至 HTTP/SSE。
+- 符合回退条件的 WebSocket 故障会在剩余调用预算内回退到 HTTP/SSE；回退不会重置截止时间。预算耗尽时，调用报告超时。认证失败（`401`/`403`）会在本会话剩余生命周期内禁用 WebSocket。
 - 同时适用于 `api.openai.com`（API Key）与 ChatGPT 订阅后端 `chatgpt.com/backend-api/codex`。
 - 验证当前激活的传输方式：在调试构建中按 `Ctrl+L` 打开调试面板查看 **Info** 选项卡中的 `OpenAI Transport:` 行；或在日志中检索 `transport selected`：
 
@@ -165,7 +164,7 @@ Open Router 拆分为共享同一 API 密钥的三个提供商（按协议方言
 
 `openrouter-responses` 提供 `openai/gpt-6-astra`、`openai/gpt-6-astra-pro`、`openai/gpt-6.1-sol`、`openai/gpt-6.1-sol-pro`、`openai/gpt-6-luna`、`openai/gpt-6-luna-pro`，均支持 1.05M 上下文。带有 `-pro` 后缀的 ID 会走 OpenRouter 的专业推理路由。
 
-`openrouter-anthropic` 通过 Anthropic Messages 协议提供 Claude 家族：`anthropic/claude-haiku-4.5`（200K 上下文），以及 `anthropic/claude-sonnet-5.5`、`anthropic/claude-opus-5.5`、`anthropic/claude-fable-5.1`（1M 上下文）。
+`openrouter-anthropic` 通过 Anthropic Messages 协议提供 Claude 家族：`anthropic/claude-haiku-5.5`（1M 上下文），以及 `anthropic/claude-sonnet-5.5`、`anthropic/claude-opus-5.5`、`anthropic/claude-fable-5.1`（1M 上下文）。
 
 每个提供商还可以通过完整 ID 调用 [Open Router 模型列表](https://openrouter.ai/models) 中的任意模型，只要其符合该提供商的协议格式即可。
 
@@ -201,7 +200,7 @@ ante --provider deepseek --model deepseek-flash
 | `qwen3.8-max` | 最新 Qwen 3.8 Max | 1M |
 | `qwen3.7-plus` | 最新 Qwen 3.7 Plus | 1M |
 | `gemini-3.1-pro-preview` | 具备深度思考的 Gemini 3.1 Pro | 1M |
-| `claude-haiku-4-5` | 快速且高能力 | 200K |
+| `claude-haiku-5-5` | 适合高并发、低延迟任务的最快 Claude 模型 | 1M |
 | `claude-sonnet-5` | 速度与智能的最佳平衡 | 1M |
 | `claude-opus-5` | 复杂智能体编码与企业级任务 | 1M |
 | `claude-fable-5-1` | 最强大的 Claude 模型 | 1M |
@@ -317,6 +316,22 @@ ante --provider ollama --model qwen2.5-coder:7b
 }
 ```
 
+### 发送会话请求头 {#send-a-session-header}
+
+若网关需要按对话归类请求，可在 `http_headers` 的值中使用 `{session_id}`。下面的示例修改内置 OpenAI 提供商；配置自己的网关时，请换成该网关的提供商标识：
+
+```json
+{
+  "providers": {
+    "openai": {
+      "http_headers": { "X-Session-ID": "{session_id}" }
+    }
+  }
+}
+```
+
+Ante 为各会话将占位符替换为对话 ID。恢复会话时保留 ID，分叉则使用新会话自己的 ID。子智能体请求沿用父会话 ID，便于网关将委派工作归入父会话。占位符周围的文字保持不变，例如 `ante-{session_id}`。替换仅作用于请求头的值，不作用于请求头名称或 `extra_body`。
+
 ### 传递额外自定义请求体参数 {#send-extra-request-parameters}
 
 网关或自定义代理服务经常需要特定请求参数。将其配置在 `extra_body` 中，会自动合并到该提供商的所有 Chat 和 Streaming 请求体中：
@@ -409,12 +424,12 @@ ante --provider ollama --model qwen2.5-coder:7b
 | `base_url` | 新增提供商：✅ | API 基础 URL |
 | `wire_style` | 新增提供商：✅ | Ante 通信采用的 API 方言 —— `AnthropicMessage`、`OpenAiCompatible`、`OpenAiResponse` 或 `Gemini` |
 | `auth` | — | 认证方式（参见[身份认证](#authentication)）。无需密钥的提供商可省略 |
-| `http_headers` | — | 随每次请求发送的额外自定义 HTTP Header 映射表（string→string） |
+| `http_headers` | — | 随每次请求发送的额外自定义 HTTP Header 映射表（string→string）。值可包含 `{session_id}`，参见[会话请求头](#send-a-session-header) |
 | `extra_body` | — | 合并到每个 Chat 和 Streaming 请求体顶层的专属 JSON 字段（参见[额外请求字段](#extra-request-fields)） |
 | `thinking_display` | — | 可读推理输出：`off`、`concise` 或 `detailed`，与思考深度独立（参见[推理显示](#thinking-display)） |
 | `supports_web_search` | — | 该提供商是否提供原生网络搜索功能。为 `true` 时自动向该提供商的会话添加 `WebSearch` 工具；为 `false`（默认）时不提供 |
 | `preferred_models` | — | 在选择器中展示并作为默认模型的推荐列表（参见[模型字段](#model-fields)）。对于内置提供商，匹配的模型 ID 会被合并修改，新 ID 会被追加；省略时保持内置列表不变 |
-| `stream_idle_timeout_secs` | — | 提供商请求允许连续静默的秒数，默认 `300`。所有模型生成调用（包括收集完整回复的压缩、目标判定与环境提示）都使用流式传输；每次底层读取都会重置计时，包括 keepalive、生命周期事件和工具参数片段。等待响应头以及读取错误响应体时也受此超时约束。慢速本地或代理端点可调高该值，需更快发现停滞时可调低。 |
+| `stream_idle_timeout_secs` | — | 超时秒数，默认 `300`。打开流时，响应头、错误响应体、OAuth 刷新、传输重试与退避，以及 WebSocket 到 HTTP 的回退共用一次预算；非流式 HTTP 调用还需在此预算内读完响应体。流建立后，同一时长限制连续静默，每次底层读取均重置计时，包括 keepalive、生命周期事件和工具参数片段。所有模型生成调用（包括压缩、目标判定和环境提示）都使用流式传输。慢速本地或代理端点可调高该值，需更快发现停滞时可调低。 |
 
 ```json
 {

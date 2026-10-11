@@ -167,7 +167,7 @@ Ante 在客户端（Client）与守护进程（Daemon）之间采用强类型的
 { "op": { "RewindSession": { "to": "op_input_1" } }, "id": "op_rewind_1" }
 ```
 
-会话必须启用保存，且没有运行或排队的轮次、活动目标或运行中的后台任务。输入必须来自本次启动或恢复后的运行，并且未因压缩或切换提供商而失去可恢复性。请求被拒绝时发出 `Error`，不改变对话；成功时发出 [`SessionRewound`](#sessionrewound)。
+会话必须启用保存，且没有运行或排队的轮次、活动目标或运行中的后台任务。输入必须仍可恢复：保存的输入边界在恢复会话后保留，并复制到分叉会话中；成功替换历史的压缩或切换提供商会使之前的边界失效，压缩失败则保留它们。请求被拒绝时发出 `Error`，不改变对话；成功时发出 [`SessionRewound`](#sessionrewound)。
 
 ### ForkSession {#forksession}
 
@@ -687,7 +687,7 @@ Ante 在客户端（Client）与守护进程（Daemon）之间采用强类型的
 
 #### CompactEnd {#compactend}
 
-对话历史压缩完成时触发。`summary` 为替换历史记录并作为后续会话上下文保留的文本；压缩失败（历史未改动）或未生成可展示文本时为 `null`。
+对话历史压缩完成时触发。`summary` 非 `null` 时，表示该文本已提交为压缩历史的替代内容，并作为后续上下文保留；客户端应使之前的回退与分叉目标失效。`null` 表示未提交历史替换，原有目标仍然有效。不要仅因收到 `CompactStart` 就清除目标。
 
 ```json
 { "event": { "CompactEnd": { "summary": "用户要求进行..." } } }

@@ -85,7 +85,7 @@ WebFetch 溢出文件使用系统缓存目录：macOS 为 `~/Library/Caches/ante
 
 ## 已保存的对话 {#saved-conversations}
 
-每个 `~/.ante/sessions/<session-id>/` 目录保存可恢复的对话、事件日志与元数据。元数据包含创建时间和最近活动时间；恢复选择器按最近活动时间排序，旧快照缺少该字段时回退到创建时间。分叉会话还记录来源会话 ID `forked_from`。
+每个 `~/.ante/sessions/<session-id>/` 目录保存可恢复的对话、事件日志与元数据。元数据包含创建时间和最近活动时间；恢复选择器按最近活动时间排序，旧快照缺少该字段时回退到创建时间。分叉会话还记录来源会话 ID `forked_from`。`/resume` 显示的大小是 `events.jsonl` 的文件大小（缺失时为零），并非整个会话目录大小或上下文 Token 数。
 
 回退替换当前历史前，Ante 会在该会话目录的 `abandoned/<rwd-id>/dialog.json` 与 `events.jsonl` 中保留放弃的对话和事件日志。这些是保留副本，不会作为独立会话出现在恢复选择器中。仅恢复对话的边界请参阅[回退与分叉](/usage/tui#rewind-a-conversation)。
 

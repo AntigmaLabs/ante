@@ -146,7 +146,7 @@ Because `.ante/settings.json` is repository content, it can be written by anyone
 | `model` | A repository cannot redirect your traffic to a different model |
 | `provider` | A repository cannot redirect your traffic to a different provider |
 
-The remaining session fields layer normally. A project may set `append_system_prompt`, `tools`, `auto_memory`, `skills`, `include_skills`, `exclude_skills`, `session_save`, `short_prompt`, `max_concurrent_subagents`, `model_effort`, and the narrowing `permissions.ask` / `permissions.deny` rules. UI and device preferences such as `auto_compact`, `theme`, `channel`, status-line settings, and ambient features are ignored with a notice.
+The remaining session fields layer normally. A project may set `append_system_prompt`, `tools`, `auto_memory`, `skills`, `include_skills`, `exclude_skills`, `session_save`, `short_prompt`, `max_concurrent_subagents`, `model_effort`, and the narrowing `permissions.ask` / `permissions.deny` rules. UI and device preferences such as `auto_compact`, `theme`, `channel`, `attention`, status-line settings, and ambient features are ignored with a notice.
 
 #### Checking what applied
 
@@ -210,7 +210,7 @@ The JSON input is a compatible subset of [Claude Code's statusline input](https:
 {
   "cwd": "/work/repo",
   "session_id": "ses_...",
-  "version": "0.2.8",
+  "version": "0.2.10",
   "model": { "id": "claude-sonnet-5-5", "display_name": "claude-sonnet-5-5" },
   "workspace": { "current_dir": "/work/repo", "project_dir": "/work/repo" },
   "thinking": { "enabled": true },
@@ -278,7 +278,7 @@ Trade-offs of `purge`: the first resize clears everything in that tab's scrollba
 
 ### Attention notifications
 
-Ante can call you back when a turn finishes, fails, or stops for an approval or a question — useful when you switch away during a long task:
+Ante can call you back when a turn finishes, fails, or stops for an approval or a question. Add this to `~/.ante/settings.json` (or your selected profile's settings file), then restart Ante:
 
 ```json
 {
@@ -296,7 +296,9 @@ Ante can call you back when a turn finishes, fails, or stops for an approval or 
 | `notifications` | Desktop notification, sent only while the terminal window is not focused. On once `enabled` is set |
 | `sound` | Terminal bell, rung whether or not the window is focused. On once `enabled` is set |
 
-There is no cue for a turn you interrupt yourself, or while a queued message is about to run.
+Set `notifications` or `sound` to `false` to disable that channel. Setting the channel switches alone does not enable attention cues; `"enabled": true` is still required. This is a TUI preference, ignored in project `.ante/settings.json`.
+
+There is no cue for a turn you interrupt yourself, while a queued message is about to run, or when replaying history. Notifications use the session title (or **Ante**) and the reason for the cue; failures include the error headline.
 
 The notification is shown by your terminal, not by Ante: Ante sends the terminal's own notification escape sequence. Ghostty, iTerm2, kitty, WezTerm, Warp, foot, Windows Terminal, and VTE-based terminals are recognized; other terminals get the bell only. Your terminal and operating system decide how the notification looks and may need notification permission for the terminal app.
 

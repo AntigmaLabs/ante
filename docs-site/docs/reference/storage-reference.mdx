@@ -84,7 +84,7 @@ A project's `.ante/settings.json` uses the same schema but *layers* over the use
 
 ## Saved conversations
 
-Each `~/.ante/sessions/<session-id>/` directory holds the resumable dialog, event log, and metadata. Metadata includes the session's creation time and last activity; the resume picker orders by last activity, falling back to creation time for older snapshots. Forks also record `forked_from`, the source session ID.
+Each `~/.ante/sessions/<session-id>/` directory holds the resumable dialog, event log, and metadata. Metadata includes the session's creation time and last activity; the resume picker orders by last activity, falling back to creation time for older snapshots. Forks also record `forked_from`, the source session ID. The size shown in `/resume` is the size of `events.jsonl` (zero if missing), not the entire session directory or its context-token count.
 
 Before a rewind replaces the current history, Ante keeps the abandoned dialog and event log under `abandoned/<rwd-id>/dialog.json` and `events.jsonl` inside that session directory. These are retained copies, not separate sessions in the resume picker. See [rewind and fork](/usage/tui#rewind-a-conversation) for the conversation-only restore boundaries.
 

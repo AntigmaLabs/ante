@@ -146,7 +146,7 @@ ANTE_PROFILE=review ante -p "审查本次改动"
 | `model` | 仓库不能把你的请求改道到其他模型 |
 | `provider` | 仓库不能把你的请求改道到其他提供商 |
 
-其余会话字段正常叠加。项目可以设置 `append_system_prompt`、`tools`、`auto_memory`、`skills`、`include_skills`、`exclude_skills`、`session_save`、`short_prompt`、`max_concurrent_subagents`、`model_effort`，以及收紧权限的 `permissions.ask` / `permissions.deny`。`auto_compact`、`theme`、`channel`、状态栏设置和环境感知功能等 UI 与设备偏好会被忽略并显示通知。
+其余会话字段正常叠加。项目可以设置 `append_system_prompt`、`tools`、`auto_memory`、`skills`、`include_skills`、`exclude_skills`、`session_save`、`short_prompt`、`max_concurrent_subagents`、`model_effort`，以及收紧权限的 `permissions.ask` / `permissions.deny`。`auto_compact`、`theme`、`channel`、`attention`、状态栏设置和环境感知功能等 UI 与设备偏好会被忽略并显示通知。
 
 #### 查看实际生效的配置 {#checking-what-applied}
 
@@ -210,7 +210,7 @@ JSON 输入是 [Claude Code statusline 输入](https://code.claude.com/docs/en/s
 {
   "cwd": "/work/repo",
   "session_id": "ses_...",
-  "version": "0.2.8",
+  "version": "0.2.10",
   "model": { "id": "claude-sonnet-5-5", "display_name": "claude-sonnet-5-5" },
   "workspace": { "current_dir": "/work/repo", "project_dir": "/work/repo" },
   "thinking": { "enabled": true },
@@ -278,7 +278,7 @@ seq 1 200; printf '\033[2J\033[3J\033[H'
 
 ### 提醒通知 {#attention-notifications}
 
-当回合完成、出错，或因审批、提问而暂停时，Ante 可以提醒您 —— 适合在长任务运行期间切换到其他窗口时使用：
+当回合完成、出错，或因审批、提问而暂停时，Ante 可以提醒您。将以下内容加入 `~/.ante/settings.json`（或当前 Profile 的设置文件），然后重启 Ante：
 
 ```json
 {
@@ -296,7 +296,9 @@ seq 1 200; printf '\033[2J\033[3J\033[H'
 | `notifications` | 桌面通知，仅在终端窗口未聚焦时发送。设置 `enabled` 后默认开启 |
 | `sound` | 终端响铃，无论窗口是否聚焦都会响起。设置 `enabled` 后默认开启 |
 
-您主动中断的回合，或即将自动发送排队消息时，不会触发提醒。
+`notifications` 与 `sound` 可分别设为 `false` 关闭对应渠道；仅设置渠道开关不会启用提醒，仍需 `"enabled": true`。这是 TUI 偏好，项目 `.ante/settings.json` 中的该字段会被忽略。
+
+您主动中断的回合、即将自动发送排队消息的回合，以及回放的历史记录均保持静默。通知使用会话标题（未设置时用 **Ante**）及触发原因；失败通知包含错误摘要。
 
 通知由终端显示，而非 Ante 本身：Ante 发送的是终端自带的通知转义序列。可识别的终端包括 Ghostty、iTerm2、kitty、WezTerm、Warp、foot、Windows Terminal 以及基于 VTE 的终端；其他终端仅响铃。通知的样式由终端和操作系统决定，终端应用可能需要获得系统的通知权限。
 

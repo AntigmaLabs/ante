@@ -79,7 +79,7 @@ Run `/rewind`, or press `Esc` twice quickly with an empty composer and no popup 
 
 Ante restores the current conversation to just before the selected input, removes that input and the conversation after it, and puts the prompt text back in the composer for editing. Press `Enter` after editing to start a new turn.
 
-Rewind changes the conversation and model context; **it does not undo file edits, shell commands, or other external actions**. Finish or interrupt the active turn, resolve queued inputs, clear any goal with `/goal clear`, and wait for background jobs to finish before rewinding. Session saving must be enabled. Only inputs from the current run or since the latest resume can be restored, and compaction or a provider switch makes earlier cut points unavailable.
+Rewind changes the conversation and model context; **it does not undo file edits, shell commands, or other external actions**. Finish or interrupt the active turn, resolve queued inputs, clear any goal with `/goal clear`, and wait for background jobs to finish before rewinding. Session saving must be enabled. Reachable inputs survive a resume and are carried into forks, so you can also choose prompts from a previous run or copied from the parent. A successful compaction that replaces history, or a provider switch, makes earlier cut points unavailable; a failed compaction preserves them.
 
 ## Fork a conversation {#fork-a-conversation}
 
@@ -87,7 +87,9 @@ Run `/fork` to save an independent conversation and switch to it. Choose **(end 
 
 The original session stays unchanged. The new session names its source session ID below the header; use `/resume` to return to the parent. Forking requires session saving, no running or queued turn, and no active goal. Input cuts share rewind's restore boundaries; you can still fork the whole conversation when no input is in reach. Forking saves and switches conversations without creating a Git branch or separate working directory, and starts no new task by itself.
 
-To have another agent work at the same time, use a [session in another terminal](#branch-in-another-terminal).
+To keep the parent open and put the child beside it, select a row in `/fork` and press **s**. Ante opens the saved child in a terminal split, with the selected prompt ready to edit and send. Choosing **(end of conversation)** opens the child with an empty composer. Both sessions use the same working directory, so coordinate any file edits between them.
+
+The split needs `tmux` and uses the same launchers as `/term`: tmux, iTerm2, WezTerm, Kitty, or Ghostty. If the launcher fails, the child remains saved; use the printed `ante --resume <SESSION_ID>` command to open it manually. See [terminal sessions](#terminal-sessions) for attaching and detaching the viewer, or [branch in another terminal](#branch-in-another-terminal) for other agent CLIs.
 
 ## Run a command yourself {#bash-mode}
 

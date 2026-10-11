@@ -166,7 +166,7 @@ Restore the active session's conversation and visible history to just before inp
 { "op": { "RewindSession": { "to": "op_input_1" } }, "id": "op_rewind_1" }
 ```
 
-The session must be saved, with no running or queued turn, active goal, or running background job. The input must be from the current run since start or resume, and still reachable after any compaction or provider switch. A refused request emits `Error` without changing the conversation. Success emits [`SessionRewound`](#sessionrewound).
+The session must be saved, with no running or queued turn, active goal, or running background job. The input must still be reachable: saved input boundaries survive resume and are copied into forks, but a successful history-replacing compaction or provider switch invalidates earlier boundaries. Failed compaction leaves them intact. A refused request emits `Error` without changing the conversation. Success emits [`SessionRewound`](#sessionrewound).
 
 ### ForkSession
 
@@ -686,7 +686,7 @@ Emitted when dialog compaction begins.
 
 #### CompactEnd
 
-Emitted when dialog compaction completes. `summary` is the text that replaced the compacted history and carries forward as the session's context; it is `null` when compaction failed (history unchanged) or produced no displayable text.
+Emitted when dialog compaction completes. A non-null `summary` is the text committed as the replacement for compacted history and carried forward as context; clients should invalidate earlier rewind and fork targets. `null` means no history replacement was committed, so those targets remain valid. Do not invalidate targets on `CompactStart` alone.
 
 ```json
 { "event": { "CompactEnd": { "summary": "The user asked to..." } } }
