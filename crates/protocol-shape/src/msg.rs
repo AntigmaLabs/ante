@@ -216,10 +216,9 @@ pub enum Evt {
         exit_code: Option<i32>,
     },
     CompactStart,
-    /// Compaction finished. `summary` is the text that replaced the
-    /// compacted history and carries forward as the session's context;
-    /// `None` when compaction failed (history unchanged) or produced no
-    /// displayable text.
+    /// Compaction finished. A present `summary` is the text that replaced
+    /// the compacted history and carries forward as the session's context.
+    /// `None` means no history replacement was committed.
     CompactEnd {
         #[serde(default)]
         summary: Option<String>,

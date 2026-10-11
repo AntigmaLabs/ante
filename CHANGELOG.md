@@ -1,5 +1,22 @@
 # Changelog
 
+## v0.2.10 - 2026-10-10
+
+### Added
+- Opt-in attention cues for the TUI: with `"attention": { "enabled": true }` in `settings.json`, a turn that finishes or fails, and a pause for approval or a question, ring the terminal bell and, while the terminal reports itself unfocused, post a desktop notification (iTerm2, Ghostty, WezTerm, Kitty, foot, Warp, Windows Terminal and VTE terminals; inside tmux, `focus-events` and `allow-passthrough` must be on). `notifications` and `sound` can each be turned off; interrupted turns, queued follow-ups and replayed history stay silent
+- The `/resume` picker shows each session's size beside its message count and age
+- Claude Haiku 5.5 on Anthropic (API and subscription), OpenRouter and Antix, replacing Haiku 4.5; the lightweight model role now picks Haiku 5.5
+
+### Changed
+- Session logs are read faster on resume and replay; damaged logs still recover line by line
+- Dependency updates
+
+### Fixed
+- A failed compaction no longer removes earlier inputs from `/rewind` and `/fork`, live or when replaying saved history
+
+### Crates
+- Public crates published as 0.2.10: ante-protocol-shape, ante-llm, ante-exec, ante-sdk
+
 ## v0.2.9 - 2026-10-05
 
 ### Added
