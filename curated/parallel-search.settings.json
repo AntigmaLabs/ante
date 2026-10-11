@@ -1,0 +1,21 @@
+{
+  "mcp_servers": {
+    "parallel": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "mcp-remote@0.14.3",
+        "https://search.parallel.ai/mcp",
+        "--transport",
+        "http-only",
+        "--enable-proxy",
+        "--header",
+        "User-Agent: ante-parallel-search/1.0"
+      ],
+      "enabled_tools": [
+        "web_search",
+        "web_fetch"
+      ]
+    }
+  }
+}
