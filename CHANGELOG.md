@@ -1,5 +1,25 @@
 # Changelog
 
+## v0.2.11 - 2026-10-12
+
+### Added
+- `ante offline status`, `ante offline list` and `ante offline use <MODEL>` set up offline mode without the TUI: `status` reports the engine, model directory, default model, running servers and memory; `list` shows local and verified models with size, context and memory fit; `use` saves the default model. `status` and `list` take `--json`
+- `--offline-model [MODEL]` starts the local engine for TUI, headless and `serve` launches. It takes a GGUF path, filename, or verified model name or URL; the bare flag starts the saved default. It can't be combined with `--model` or `--provider`
+
+### Changed
+- If you keep the offline router running when you exit, the next launch reuses it instead of starting a second one; `ante offline status` shows it on a `Router:` line and `ante offline stop` ends it
+- The skills list in the prompt is sized to fit the model's context window, and is resized at every compaction, so switching models or adding MCP tools is accounted for
+- Every subagent prompt is built the same way, with the shared core instructions and the environment block; the bundled Explore agent now learns its working directory
+- Agent prompts base fixes on evidence and the task's scope, and handoffs keep track of pending jobs and unknown outcomes so actions aren't blindly rerun
+- Antix serves Claude Sonnet 5.5 in place of Sonnet 5
+- `ante --resume` lists the session archive once at startup instead of twice
+- Dependency updates
+
+### Fixed
+- Claude Sonnet 5.5 requests that force a tool choice, and Claude Haiku 5.5 requests with a temperature other than 1, now fail before sending with a clear error
+- Poolside "input length exceeds" errors are treated as context overflows and recovered by compaction, including when OpenRouter or a proxy wraps them
+- Compaction no longer clears long `AskUser` answers before the summarizer sees them
+
 ## v0.2.10 - 2026-10-10
 
 ### Added

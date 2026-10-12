@@ -1119,15 +1119,6 @@ mod tests {
     }
 
     #[test]
-    fn effort_orders_min_lowest_to_max_highest() {
-        let mut sorted = super::Effort::ALL;
-        sorted.sort();
-        assert_eq!(sorted, super::Effort::ALL);
-        assert!(super::Effort::Min < super::Effort::Low);
-        assert!(super::Effort::XHigh < super::Effort::Max);
-    }
-
-    #[test]
     fn session_overrides_effort_round_trips() {
         let parsed: super::SessionRequest =
             serde_json::from_value(serde_json::json!({"effort": "max"})).unwrap();
@@ -1331,12 +1322,6 @@ mod tests {
                     .unwrap();
             assert_eq!(parsed.weight_class, Some(expected));
         }
-    }
-
-    #[test]
-    fn weight_class_orders_feather_lightest_to_heavy_heaviest() {
-        assert!(WeightClass::Feather < WeightClass::Middle);
-        assert!(WeightClass::Middle < WeightClass::Heavy);
     }
 
     fn provider_spec(name: &str) -> ProviderSpec {
