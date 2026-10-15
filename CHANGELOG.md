@@ -1,5 +1,29 @@
 # Changelog
 
+## v0.2.12 - 2026-10-15
+
+### Added
+- Remote MCP servers over Streamable HTTP: an `mcpServers` entry takes `url` in place of `command`, with an optional `transport` of `stdio` or `streamable-http` (`http` is a synonym). An entry that mixes `command` and `url`, or names the legacy `sse` transport, fails that server at warm-up with a message saying what to change. `/mcp` shows the URL, and `rage` redacts a URL's query string
+- `ante offline use <MODEL>` takes `--context <TOKENS>`, `--thinking on|off`, `--temperature <T>|default` and `--args "<llama.cpp options>"` to save per-model load preferences; each flag replaces only its own value, they are validated at `use`, and every invocation ends with a `Loads with:` line
+- Gemini 4 Argon in the native Gemini, Vertex and OpenRouter catalogs, with explicit low/medium/high thinking levels; Muse Wonder in the OpenRouter catalog
+
+### Changed
+- The `local` provider is derived from the offline runtime state at the moment a model becomes ready, so a `StartSession` sent on the ready reply always finds it registered
+- Headless runs and subagents are told that no one can answer them and the session ends with the turn
+- llama.cpp bumped to b11540, picking up the router control-pipe fix and CUDA, Vulkan and Metal correctness fixes
+
+### Fixed
+- A session that names a provider without a model now gets that provider's default model instead of the global default, which the named provider could not serve
+- `Read` recognizes PNG and other images saved without an image extension (or as `.bin`) and shows them as images
+- Sharded GGUF models selected by path or saved default are inspected the same way discovery does, reporting the full set; incomplete sets are rejected at resolution
+- `ante offline stop` help and messages say what it does: it stops the home's router whether or not a session is using it
+
+### Wire
+- `McpServerInfo.url` added: the endpoint of a remote MCP server; `command` is empty for such a server
+
+### Crates
+- Public crates published as 0.2.12: ante-protocol-shape, ante-llm, ante-exec, ante-sdk
+
 ## v0.2.11 - 2026-10-12
 
 ### Added

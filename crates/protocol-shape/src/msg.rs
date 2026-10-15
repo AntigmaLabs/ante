@@ -544,11 +544,16 @@ pub struct ExtensionRefreshed {
     pub mcp_servers: Vec<McpServerInfo>,
 }
 
+/// One configured MCP server. A local server is described by `command` and
+/// `args`; a remote one by `url`, with `command` empty. `tools` is empty for a
+/// server that failed to connect or exposed nothing.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct McpServerInfo {
     pub name: String,
     pub command: String,
     pub args: Vec<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub url: Option<String>,
     pub tools: Vec<McpToolInfo>,
 }
 
