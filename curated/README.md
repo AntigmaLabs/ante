@@ -50,10 +50,9 @@ Headless runs imply yolo mode, which skips permission rules including the Bash a
 
 Add free web search and page fetching with [Parallel Search MCP](https://docs.parallel.ai/integrations/mcp/search-mcp). Anonymous searches use Fast mode; no Parallel account or API key is required. The free endpoint is intended for exploration and light use and has rate limits.
 
-Requires Node.js 22+ with `npx` on `PATH`. Ante speaks stdio, so the profile uses [`mcp-remote`](https://github.com/geelen/mcp-remote) to bridge to Parallel's Streamable HTTP endpoint. Preinstall the pinned bridge into the npm cache before starting Ante so package download time does not consume the MCP handshake deadline:
+Requires Ante v0.2.12 or later. The profile connects directly to Parallel's Streamable HTTP endpoint.
 
 ```sh
-npx -y mcp-remote@0.14.3 --help
 mkdir -p ~/.ante
 cp curated/parallel-search.settings.json ~/.ante/
 ante --profile parallel-search
