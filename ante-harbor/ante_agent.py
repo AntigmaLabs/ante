@@ -1,8 +1,11 @@
 from __future__ import annotations
 
+import json
 import os
+import re
 import shlex
 import tempfile
+from collections.abc import Sequence
 from pathlib import Path
 from typing import Annotated, Any
 
@@ -44,6 +47,7 @@ from harbor.agents.installed.base import (
 from harbor.agents.options import Cli, Env, InstalledAgentOptions
 from harbor.environments.base import BaseEnvironment
 from harbor.models.agent.context import AgentContext
+from harbor.models.task.config import MCPServerConfig
 from harbor.models.trial.result import AgentInfo, ModelInfo
 from harbor.utils.trajectory_utils import format_trajectory_json
 
@@ -60,6 +64,46 @@ ENABLE_ATIF_ENV = "ANTE_ENABLE_ATIF"
 # structured inputs owned by the adapter, never part of this string. run.py
 # imports this so the orchestrator and adapter defaults cannot drift.
 DEFAULT_ANTE_ARGS = "--yolo --output-format json --no-session-save --no-skills"
+
+# Skills that ship inside the Ante binary. Evals measure the model plus Ante's
+# base harness, so these stay hidden even when a task supplies its own skills.
+# This list is a floor: the adapter also reads the bundled skill names from the
+# installed binary, so a skill added by a newer Ante is hidden as well.
+BUNDLED_ANTE_SKILLS = (
+    "add-provider",
+    "ante-guide",
+    "resume-claude",
+    "resume-codex",
+    "skill-creator",
+    "tmux",
+)
+# Bundled skills are embedded in the binary under ``skills/<name>/SKILL.md``.
+_BUNDLED_SKILL_PATTERN = r"skills/[a-z0-9][a-z0-9-]*/SKILL\.md"
+
+# Task-supplied skills are copied into Ante's user-level skill directory, which
+# Ante discovers regardless of the session's working directory.
+_ANTE_USER_SKILLS_DIR = "$HOME/.ante/skills"
+_ANTE_USER_SETTINGS = "$HOME/.ante/settings.json"
+_ANTE_USER_CATALOG = "$HOME/.ante/catalog.json"
+
+# Stdlib helper that merges an uploaded JSON payload into an Ante config file
+# inside the sandbox, uploaded next to Harbor's installed-agent files.
+_MERGE_JSON_SOURCE = Path(__file__).with_name("ante_merge_json.py")
+_MERGE_JSON_PATH = "/installed-agent/ante_merge_json.py"
+_MCP_SETTINGS_PAYLOAD_PATH = "/installed-agent/ante-mcp-settings.json"
+_CATALOG_PAYLOAD_PATH = "/installed-agent/ante-catalog.json"
+
+# Ante reaches remote MCP servers natively over Streamable HTTP and does not
+# implement the older HTTP+SSE transport. A task that declares a server as
+# ``sse`` is reconfigured to Streamable HTTP only when its URL is listed here,
+# exactly: each entry names an endpoint verified to serve both transports.
+# Nothing else is rewritten, so an unverified ``sse`` server reaches Ante as
+# declared and Ante reports the unsupported transport at startup.
+VERIFIED_STREAMABLE_HTTP_ENDPOINTS = {
+    # medical-claims-processing (terminal-bench v4.0.0): @playwright/mcp@0.0.64
+    # routes /sse to legacy SSE and /mcp to Streamable HTTP on the same port.
+    "http://playwright-mcp:3080/sse": "http://playwright-mcp:3080/mcp",
+}
 
 _HARBOR_ERROR_BY_EXCEPTION_KIND = {
     "rate_limited": ApiRateLimitError,
@@ -173,19 +217,36 @@ def split_extra_ante_args(ante_args: str) -> list[str]:
     return tokens
 
 
+def with_task_skills(tokens: list[str], hidden_skills: Sequence[str]) -> list[str]:
+    """Turn skill discovery on for task-supplied skills only.
+
+    ``--no-skills`` would hide the copied task skills, so it becomes
+    ``--skills`` plus an exclusion of every skill bundled with Ante.
+    """
+    kept = [token for token in tokens if token not in ("--no-skills", "--skills")]
+    return [*kept, "--skills", "--exclude-skills", ",".join(hidden_skills)]
+
+
 def ante_command(
     model_name: str,
     provider: str | None,
     effort: str | None,
     ante_args: str,
+    *,
+    hidden_skills: Sequence[str] | None = None,
 ) -> str:
-    """Build the final Ante invocation run inside the sandbox."""
+    """Build the final Ante invocation run inside the sandbox.
+
+    ``hidden_skills`` is set when task skills were registered: skills are then
+    enabled with these names excluded.
+    """
     args = ["ante", "--model", model_name]
     if provider:
         args += ["--provider", provider]
     if effort:
         args += ["--effort", effort]
-    args += split_extra_ante_args(ante_args)
+    extra = split_extra_ante_args(ante_args)
+    args += extra if hidden_skills is None else with_task_skills(extra, hidden_skills)
     command = " ".join(shlex.quote(arg) for arg in args)
     escaped_log_dir = shlex.quote(str(_AGENT_LOG.parent))
     escaped_log_path = shlex.quote(str(_AGENT_LOG))
@@ -198,6 +259,140 @@ def ante_command(
         'exit "${PIPESTATUS[0]}"; '
         "}"
     )
+
+
+def register_skills_command(skills_dir: str) -> str:
+    """Copy a task's skills into Ante's user-level skill directory.
+
+    The command prints the task's skill names, one per line.
+    """
+    source = skills_dir.rstrip("/")
+    return (
+        f'mkdir -p "{_ANTE_USER_SKILLS_DIR}" && '
+        f'cp -R {shlex.quote(source + "/.")} "{_ANTE_USER_SKILLS_DIR}/" && '
+        f"ls -1A {shlex.quote(source)}"
+    )
+
+
+def bundled_skills_command() -> str:
+    """List the skill paths embedded in the installed Ante binary."""
+    return f"LC_ALL=C grep -aoE '{_BUNDLED_SKILL_PATTERN}' \"$(command -v ante)\" | sort -u"
+
+
+def bundled_skill_names(output: str) -> set[str]:
+    """Parse ``bundled_skills_command`` output into skill names."""
+    return {
+        match.group(0).split("/")[1] for match in re.finditer(_BUNDLED_SKILL_PATTERN, output)
+    }
+
+
+def mcp_settings(servers: list[MCPServerConfig]) -> dict[str, Any]:
+    """Map Harbor MCP server declarations to Ante's ``mcp_servers`` settings.
+
+    Stdio servers launch directly and Streamable HTTP servers are reached at
+    their URL. An ``sse`` declaration becomes Streamable HTTP only through
+    ``VERIFIED_STREAMABLE_HTTP_ENDPOINTS``; otherwise it is written as
+    declared, which Ante refuses with a message naming the transport.
+    """
+    entries: dict[str, dict[str, Any]] = {}
+    for server in servers:
+        if server.transport == "stdio":
+            entries[server.name] = {"command": server.command, "args": list(server.args)}
+            continue
+        transport, url = server.transport, server.url
+        if transport == "sse" and url in VERIFIED_STREAMABLE_HTTP_ENDPOINTS:
+            transport, url = "streamable-http", VERIFIED_STREAMABLE_HTTP_ENDPOINTS[url]
+        entries[server.name] = {"transport": transport, "url": url}
+    return {"mcp_servers": entries}
+
+
+def remote_mcp_servers(servers: list[MCPServerConfig]) -> list[MCPServerConfig]:
+    """The declared servers Ante reaches over the network rather than stdio."""
+    return [server for server in servers if server.transport != "stdio"]
+
+
+def legacy_sse_servers(servers: list[MCPServerConfig]) -> list[MCPServerConfig]:
+    """The ``sse`` declarations with no verified Streamable HTTP endpoint."""
+    return [
+        server
+        for server in servers
+        if server.transport == "sse" and server.url not in VERIFIED_STREAMABLE_HTTP_ENDPOINTS
+    ]
+
+
+def remote_mcp_support_command() -> str:
+    """Succeed only if the installed Ante knows the Streamable HTTP transport.
+
+    Native support arrived in Ante 0.2.12. An older Ante skips a
+    ``settings.json`` server entry it cannot parse with a log line and nothing
+    else, so a remote server would be missing from the run without any error.
+    The transport's settings name is read from the binary, the way bundled
+    skills are.
+    """
+    return 'LC_ALL=C grep -aq -- "streamable-http" "$(command -v ante)"'
+
+
+def write_json_command(target: str, payload_path: str) -> str:
+    """Write an uploaded JSON payload into an Ante config file under ``$HOME``.
+
+    A fresh sandbox has no such file, so the payload is copied in place and no
+    interpreter is needed. Merging into an existing file needs ``python3``;
+    without it the command fails with a message that names the file.
+    """
+    quoted = f'"{target}"'
+    return (
+        f"mkdir -p \"$(dirname {quoted})\" && "
+        f"if [ ! -s {quoted} ]; then cp {payload_path} {quoted}; "
+        "elif command -v python3 >/dev/null 2>&1; then "
+        f"python3 {_MERGE_JSON_PATH} {quoted} {payload_path}; "
+        f"else echo 'python3 not found: cannot merge into {target}'; exit 127; fi"
+    )
+
+
+def register_mcp_command() -> str:
+    """Write the uploaded MCP payload into Ante's user settings file."""
+    return write_json_command(_ANTE_USER_SETTINGS, _MCP_SETTINGS_PAYLOAD_PATH)
+
+
+def catalog_overlay(
+    provider: str,
+    openrouter_routing: dict[str, Any] | None,
+    stream_idle_timeout_secs: int | None,
+) -> dict[str, Any] | None:
+    """Build a partial ``catalog.json`` that tunes one built-in provider.
+
+    Ante merges a user catalog entry onto the built-in provider of the same id,
+    so only the overridden fields are written. ``openrouter_routing`` becomes
+    the request body's OpenRouter ``provider`` object (``order``, ``only``,
+    ``ignore``, ``quantizations``, ``sort``, ``allow_fallbacks``, ...).
+    """
+    fields: dict[str, Any] = {}
+    if openrouter_routing:
+        fields["extra_body"] = {"provider": openrouter_routing}
+    if stream_idle_timeout_secs is not None:
+        fields["stream_idle_timeout_secs"] = stream_idle_timeout_secs
+    return {"providers": {provider: fields}} if fields else None
+
+
+def missing_catalog_overrides(catalog_output: str, overlay: dict[str, Any]) -> list[str]:
+    """Return the overlay fields that ``ante catalog`` does not report as loaded.
+
+    Ante ignores catalog fields it does not know, so an older build would
+    otherwise run with its default routing and timeouts without any error.
+    """
+    try:
+        start = catalog_output.index("{")
+        loaded, _ = json.JSONDecoder().raw_decode(catalog_output[start:])
+        providers = {entry["id"]: entry for entry in loaded["providers"]}
+    except (ValueError, KeyError, TypeError):
+        return ["<unreadable `ante catalog` output>"]
+    missing = []
+    for provider, fields in overlay["providers"].items():
+        entry = providers.get(provider, {})
+        missing += [
+            f"{provider}.{name}" for name, value in fields.items() if entry.get(name) != value
+        ]
+    return missing
 
 
 async def upload_instruction(environment: BaseEnvironment, instruction: str) -> None:
@@ -226,6 +421,18 @@ class AnteOptions(InstalledAgentOptions):
         default=None,
         description="Arguments to Ante's published install.sh; empty uses its default.",
     )
+    openrouter_routing: dict[str, Any] | None = Field(
+        default=None,
+        description=(
+            "OpenRouter provider-routing object (JSON) sent as the request body's "
+            "`provider` field, e.g. {\"order\": [\"xiaomi\"], \"allow_fallbacks\": false}."
+        ),
+    )
+    stream_idle_timeout_secs: int | None = Field(
+        default=None,
+        gt=0,
+        description="Seconds a model stream may stay silent before Ante reconnects.",
+    )
 
     @field_validator("prompt_template_path", mode="before")
     @classmethod
@@ -238,9 +445,30 @@ class AnteOptions(InstalledAgentOptions):
         split_extra_ante_args(value or "")
         return value
 
+    @field_validator("openrouter_routing", mode="before")
+    @classmethod
+    def parse_openrouter_routing(cls, value: Any) -> Any:
+        """Accept the JSON text Harbor passes for ``--ak openrouter_routing=...``."""
+        if isinstance(value, str):
+            value = json.loads(value) if value.strip() else None
+        if value is not None and not isinstance(value, dict):
+            raise ValueError("openrouter_routing must be a JSON object")
+        return value
+
+
+def supported_capabilities(**flags: bool) -> AgentCapabilities:
+    """Declare only the capability fields this Harbor version defines.
+
+    ``AgentCapabilities`` forbids unknown fields. Harbor 0.24 added ``skills``
+    and ``mcp_servers`` and rejects trials that need them when they are unset;
+    0.23 has neither field and passes skills and MCP servers unconditionally.
+    """
+    fields = AgentCapabilities.model_fields
+    return AgentCapabilities(**{name: on for name, on in flags.items() if name in fields})
+
 
 class AnteAgent(BaseInstalledAgent):
-    capabilities = AgentCapabilities(atif=True)
+    capabilities = supported_capabilities(atif=True, skills=True, mcp_servers=True)
     options_model = AnteOptions
     options: AnteOptions
     _INSTALL_VERSION_COMMAND = "ante --version"
@@ -370,6 +598,142 @@ class AnteAgent(BaseInstalledAgent):
         )
         return (error_type or NonZeroAgentExitCodeError)(detail)
 
+    async def _register_task_extensions(
+        self, environment: BaseEnvironment
+    ) -> tuple[str, ...] | None:
+        """Expose task-supplied skills and MCP servers to Ante.
+
+        Returns the skills to hide when task skills were registered, else None.
+
+        Registration is best effort, as in Harbor's own adapters: a failed step
+        is logged and the run continues without that extension. It calls
+        ``environment.exec`` directly so a failure is not classified as an
+        Ante process error. Steps run as the agent user, which may not be able
+        to append to the root-owned setup log, so output is logged here instead.
+        """
+        hidden_skills = None
+        if self.skills_dir:
+            output = await self._register_step(
+                environment, "skills", register_skills_command(self.skills_dir)
+            )
+            if output is not None:
+                hidden_skills = await self._hidden_skills(environment, output.split())
+        if self.mcp_servers:
+            await self._check_remote_mcp_support(environment)
+            await environment.upload_file(_MERGE_JSON_SOURCE, _MERGE_JSON_PATH)
+            await self._upload_config_text(
+                environment,
+                content=json.dumps(mcp_settings(self.mcp_servers)),
+                remote_path=_MCP_SETTINGS_PAYLOAD_PATH,
+                filename=Path(_MCP_SETTINGS_PAYLOAD_PATH).name,
+            )
+            await self._register_step(environment, "MCP servers", register_mcp_command())
+        return hidden_skills
+
+    async def _check_remote_mcp_support(self, environment: BaseEnvironment) -> None:
+        """Stop the trial when the installed Ante cannot reach a remote server.
+
+        A task that declares a remote server needs it, and an Ante without
+        native Streamable HTTP support would drop the entry silently and run
+        the task without it. Unverified ``sse`` declarations are warned about
+        here and still registered as declared, so Ante's startup output names
+        the unsupported transport instead of the server simply being absent.
+        """
+        remote = remote_mcp_servers(self.mcp_servers)
+        if not remote:
+            return
+        probe = await environment.exec(command=remote_mcp_support_command())
+        if probe.return_code != 0:
+            names = ", ".join(server.name for server in remote)
+            raise RuntimeError(
+                f"This Ante build has no native remote MCP support, so the task's remote "
+                f"MCP servers ({names}) cannot be registered; use Ante 0.2.12 or newer, "
+                "which accepts `url` entries in `mcp_servers`."
+            )
+        for server in legacy_sse_servers(self.mcp_servers):
+            self.logger.warning(
+                f"MCP server {server.name} declares the legacy SSE transport at "
+                f"{server.url}, which Ante does not implement and which has no verified "
+                "Streamable HTTP endpoint; it is registered as declared, so Ante reports "
+                "the refusal at startup and its tools stay unavailable."
+            )
+
+    async def _apply_catalog_overlay(self, environment: BaseEnvironment) -> None:
+        """Write the requested provider overrides into Ante's user catalog.
+
+        Unlike task extensions, these are run settings the operator asked for,
+        so a failure stops the trial rather than silently measuring a
+        different configuration.
+        """
+        if not (self.options.openrouter_routing or self.options.stream_idle_timeout_secs):
+            return
+        if not self.options.provider:
+            raise ValueError(
+                "openrouter_routing and stream_idle_timeout_secs need an explicit provider"
+            )
+        overlay = catalog_overlay(
+            self.options.provider,
+            self.options.openrouter_routing,
+            self.options.stream_idle_timeout_secs,
+        )
+        await environment.upload_file(_MERGE_JSON_SOURCE, _MERGE_JSON_PATH)
+        await self._upload_config_text(
+            environment,
+            content=json.dumps(overlay),
+            remote_path=_CATALOG_PAYLOAD_PATH,
+            filename=Path(_CATALOG_PAYLOAD_PATH).name,
+        )
+        result = await environment.exec(
+            command=write_json_command(_ANTE_USER_CATALOG, _CATALOG_PAYLOAD_PATH)
+        )
+        if result.return_code != 0:
+            output = f"{result.stdout or ''}{result.stderr or ''}".strip()
+            raise RuntimeError(
+                f"Could not write Ante catalog overrides (exit {result.return_code}): "
+                f"{self._truncate_output(output) or '<none>'}"
+            )
+        loaded = await environment.exec(command="ante catalog")
+        if missing := missing_catalog_overrides(loaded.stdout or "", overlay):
+            raise RuntimeError(
+                "This Ante build did not load the requested catalog overrides "
+                f"({', '.join(missing)}); upgrade Ante or drop the overrides."
+            )
+
+    async def _register_step(
+        self, environment: BaseEnvironment, label: str, command: str
+    ) -> str | None:
+        """Run one registration step; return its stdout, or None on failure."""
+        result = await environment.exec(command=command)
+        output = f"{result.stdout or ''}{result.stderr or ''}".strip()
+        if result.return_code != 0:
+            self.logger.warning(
+                f"Could not register task {label} with Ante "
+                f"(exit {result.return_code}); continuing without them. "
+                f"Output: {self._truncate_output(output) or '<none>'}"
+            )
+            return None
+        self.logger.debug(f"Registered task {label} with Ante: {output}")
+        return result.stdout or ""
+
+    async def _hidden_skills(
+        self, environment: BaseEnvironment, task_skills: list[str]
+    ) -> tuple[str, ...]:
+        """Bundled skills to exclude: the known list plus any found in the binary."""
+        result = await environment.exec(command=bundled_skills_command())
+        found = bundled_skill_names(result.stdout or "") if result.return_code == 0 else set()
+        if not found:
+            self.logger.warning(
+                "Could not read bundled skills from the Ante binary; "
+                "hiding the known bundled skills only."
+            )
+        hidden = tuple(sorted(set(BUNDLED_ANTE_SKILLS) | found))
+        if shadowed := sorted(set(task_skills) & set(hidden)):
+            self.logger.warning(
+                f"Task skills {', '.join(shadowed)} share a name with a bundled Ante "
+                "skill and are excluded with it."
+            )
+        return hidden
+
     def populate_context_post_run(self, context: AgentContext) -> None:
         log_text = read_event_log_text(Path(self.logs_dir))
         # A successful exec captured the complete stream even when tee could
@@ -422,11 +786,14 @@ class AnteAgent(BaseInstalledAgent):
         # populates from --ae/--agent-env. The instruction is uploaded as a
         # file so the command only needs shell escaping for flags and paths.
         await upload_instruction(environment, instruction)
+        await self._apply_catalog_overlay(environment)
+        hidden_skills = await self._register_task_extensions(environment)
         command = ante_command(
             model_name,
             self.options.provider,
             self.options.reasoning_effort,
             DEFAULT_ANTE_ARGS if self.options.ante_args is None else self.options.ante_args,
+            hidden_skills=hidden_skills,
         )
 
         result = await self.exec_as_agent(environment, command=command)

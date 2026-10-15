@@ -5,6 +5,7 @@ import asyncio
 import json
 import os
 import shlex
+import shutil
 import subprocess
 import sys
 import tempfile
@@ -28,6 +29,7 @@ from harbor.agents.installed.base import (
     UnknownApiError,
 )
 from harbor.environments.docker.docker import DockerEnvironment
+from harbor.models.task.config import MCPServerConfig
 from harbor.models.agent.context import AgentContext
 
 
@@ -511,6 +513,380 @@ class AnteInstallTests(unittest.TestCase):
                 asyncio.run(cancelled_exec())
 
 
+class RecordingEnvironment:
+    """Records uploads and execs for task-extension registration tests.
+
+    ``responses`` maps a substring of a command to the result it returns.
+    """
+
+    def __init__(self, return_code=0, responses=None):
+        self.return_code = return_code
+        self.responses = responses or {}
+        self.default_user = None
+        self.uploads = {}
+        self.commands = []
+
+    async def upload_file(self, source_path, target_path):
+        self.uploads[target_path] = Path(source_path).read_text(encoding="utf-8")
+
+    async def exec(self, command, **kwargs):
+        self.commands.append(command)
+        for marker, result in self.responses.items():
+            if marker in command:
+                return result
+        return FakeExecResult(return_code=self.return_code)
+
+
+def run_shell(command, home, payload_dir, path=None):
+    """Run a registration command with sandbox paths redirected to temp dirs."""
+    command = command.replace("/installed-agent", str(payload_dir))
+    env = {"HOME": str(home), "PATH": path or os.environ["PATH"]}
+    return subprocess.run(
+        ["/bin/bash", "-c", command], env=env, capture_output=True, text=True, check=False
+    )
+
+
+class TaskExtensionTests(unittest.TestCase):
+    # The medical-claims-processing declaration: legacy SSE on a server verified
+    # to serve Streamable HTTP at /mcp as well.
+    PLAYWRIGHT = MCPServerConfig(
+        name="playwright", transport="sse", url="http://playwright-mcp:3080/sse"
+    )
+    LEGACY = MCPServerConfig(name="legacy", transport="sse", url="http://mcp:3080/sse")
+    REMOTE = MCPServerConfig(name="remote", transport="http", url="http://mcp:3080/mcp")
+    LOCAL = MCPServerConfig(name="local", transport="stdio", command="srv", args=["--x"])
+
+    def test_agent_declares_skills_and_mcp_capabilities_when_harbor_has_them(self):
+        capabilities = ante_agent.AnteAgent.capabilities
+        self.assertTrue(capabilities.atif)
+        for name in ("skills", "mcp_servers"):
+            if name in type(capabilities).model_fields:
+                self.assertTrue(getattr(capabilities, name), name)
+
+    def test_unknown_capability_fields_are_dropped_for_older_harbor(self):
+        capabilities = ante_agent.supported_capabilities(atif=True, not_a_field=True)
+        self.assertTrue(capabilities.atif)
+        self.assertNotIn("not_a_field", type(capabilities).model_fields)
+
+    def test_mcp_settings_write_native_entries_for_every_transport(self):
+        servers = [self.PLAYWRIGHT, self.LEGACY, self.REMOTE, self.LOCAL]
+        settings = ante_agent.mcp_settings(servers)["mcp_servers"]
+
+        self.assertEqual(settings["local"], {"command": "srv", "args": ["--x"]})
+        self.assertEqual(
+            settings["remote"], {"transport": "streamable-http", "url": "http://mcp:3080/mcp"}
+        )
+        # Only the verified endpoint is rewritten, to its exact replacement.
+        self.assertEqual(
+            settings["playwright"],
+            {"transport": "streamable-http", "url": "http://playwright-mcp:3080/mcp"},
+        )
+        self.assertEqual(settings["legacy"], {"transport": "sse", "url": "http://mcp:3080/sse"})
+        self.assertEqual(ante_agent.legacy_sse_servers(servers), [self.LEGACY])
+        self.assertEqual(
+            ante_agent.remote_mcp_servers(servers), [self.PLAYWRIGHT, self.LEGACY, self.REMOTE]
+        )
+
+    def test_verified_endpoint_table_matches_exact_urls_only(self):
+        for url in ("http://playwright-mcp:3080/sse/", "http://playwright-mcp:3081/sse"):
+            server = MCPServerConfig(name="pw", transport="sse", url=url)
+            self.assertEqual(
+                ante_agent.mcp_settings([server])["mcp_servers"]["pw"],
+                {"transport": "sse", "url": url},
+            )
+
+    def test_remote_support_probe_reads_the_transport_name_from_the_binary(self):
+        with tempfile.TemporaryDirectory() as d:
+            binary = Path(d) / "ante"
+            path = f"{d}{os.pathsep}{os.environ['PATH']}"
+            cases = ((b"\x00stdio\x00streamable-http\x00", 0), (b"\x00stdio\x00", 1))
+            for content, expected in cases:
+                binary.write_bytes(content)
+                binary.chmod(0o755)
+                result = run_shell(ante_agent.remote_mcp_support_command(), d, d, path=path)
+                self.assertEqual(result.returncode, expected, content)
+
+    def test_register_skills_copies_task_dir_contents_and_lists_them(self):
+        with tempfile.TemporaryDirectory() as d:
+            source = Path(d) / "task" / "skills"
+            (source / "lint").mkdir(parents=True)
+            (source / "lint" / "SKILL.md").write_text("---\nname: lint\n---\n")
+            (source / "deploy").mkdir()
+            home = Path(d) / "home"
+
+            result = run_shell(ante_agent.register_skills_command(f"{source}/"), home, d)
+
+            self.assertEqual(result.returncode, 0, result.stderr)
+            self.assertEqual(sorted(result.stdout.split()), ["deploy", "lint"])
+            self.assertTrue((home / ".ante" / "skills" / "lint" / "SKILL.md").is_file())
+
+    def test_bundled_skill_names_are_read_from_binary_paths(self):
+        with tempfile.TemporaryDirectory() as d:
+            binary = Path(d) / "ante"
+            binary.write_bytes(
+                b"\x00skills/tmux/SKILL.md\x00junk skills/new-one/SKILL.md---\n"
+                b"skills/Bad/SKILL.md skills/tmux/SKILL.md"
+            )
+            binary.chmod(0o755)
+            command = ante_agent.bundled_skills_command()
+            result = run_shell(command, d, d, path=f"{d}{os.pathsep}{os.environ['PATH']}")
+
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertEqual(ante_agent.bundled_skill_names(result.stdout), {"tmux", "new-one"})
+
+    def write_payload(self, directory, servers):
+        payload = Path(directory) / "ante-mcp-settings.json"
+        payload.write_text(json.dumps(ante_agent.mcp_settings(servers)))
+        shutil.copy(ante_agent._MERGE_JSON_SOURCE, Path(directory) / "ante_merge_json.py")
+
+    def test_mcp_registration_copies_payload_into_fresh_home_without_python(self):
+        with tempfile.TemporaryDirectory() as d:
+            self.write_payload(d, [self.LOCAL])
+            no_python = Path(d) / "bin"
+            no_python.mkdir()
+            for tool in ("mkdir", "dirname", "cp"):
+                (no_python / tool).symlink_to(shutil.which(tool))
+            command = ante_agent.register_mcp_command()
+
+            result = run_shell(command, Path(d) / "home", d, path=str(no_python))
+
+            self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+            settings = json.loads((Path(d) / "home" / ".ante" / "settings.json").read_text())
+        self.assertEqual(settings["mcp_servers"], {"local": {"command": "srv", "args": ["--x"]}})
+
+    def test_mcp_registration_merges_into_existing_settings(self):
+        with tempfile.TemporaryDirectory() as d:
+            self.write_payload(d, [self.PLAYWRIGHT])
+            settings_path = Path(d) / "home" / ".ante" / "settings.json"
+            settings_path.parent.mkdir(parents=True)
+            settings_path.write_text(json.dumps({"theme": "dark"}))
+
+            result = run_shell(ante_agent.register_mcp_command(), Path(d) / "home", d)
+
+            self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+            settings = json.loads(settings_path.read_text())
+        self.assertEqual(settings["theme"], "dark")
+        self.assertEqual(
+            settings["mcp_servers"]["playwright"],
+            {"transport": "streamable-http", "url": "http://playwright-mcp:3080/mcp"},
+        )
+
+    def run_registration(self, agent, return_code=0, responses=None):
+        environment = RecordingEnvironment(return_code, responses)
+        hidden = asyncio.run(agent._register_task_extensions(environment))
+        return environment, hidden
+
+    def test_registration_checks_support_then_uploads_helper_and_payload(self):
+        with tempfile.TemporaryDirectory() as d:
+            agent = ante_agent.AnteAgent(
+                logs_dir=Path(d),
+                skills_dir="/app/site/.agents/skills",
+                mcp_servers=[self.PLAYWRIGHT],
+            )
+            environment, _ = self.run_registration(agent)
+
+        helper = environment.uploads["/installed-agent/ante_merge_json.py"]
+        self.assertIn("def merge_json", helper)
+        payload = json.loads(environment.uploads["/installed-agent/ante-mcp-settings.json"])
+        self.assertEqual(payload["mcp_servers"]["playwright"]["url"], "http://playwright-mcp:3080/mcp")
+        self.assertEqual(len(environment.commands), 4)
+        self.assertIn("cp -R /app/site/.agents/skills/.", environment.commands[0])
+        self.assertIn("grep -aoE", environment.commands[1])
+        self.assertEqual(environment.commands[2], ante_agent.remote_mcp_support_command())
+        self.assertIn("ante_merge_json.py", environment.commands[3])
+
+    def test_stdio_only_servers_skip_the_support_probe(self):
+        with tempfile.TemporaryDirectory() as d:
+            agent = ante_agent.AnteAgent(logs_dir=Path(d), mcp_servers=[self.LOCAL])
+            environment, _ = self.run_registration(agent)
+
+        self.assertEqual(len(environment.commands), 1)
+        self.assertIn("ante_merge_json.py", environment.commands[0])
+
+    def test_remote_servers_on_an_ante_without_native_support_stop_the_trial(self):
+        probe = ante_agent.remote_mcp_support_command()
+        environment = RecordingEnvironment(responses={probe: FakeExecResult(return_code=1)})
+        with tempfile.TemporaryDirectory() as d:
+            agent = ante_agent.AnteAgent(logs_dir=Path(d), mcp_servers=[self.REMOTE, self.LOCAL])
+            with self.assertRaisesRegex(RuntimeError, "no native remote MCP support.*remote"):
+                asyncio.run(agent._register_task_extensions(environment))
+
+        self.assertEqual(environment.uploads, {})
+        self.assertEqual(environment.commands, [probe])
+
+    def test_unverified_sse_servers_are_registered_as_declared_with_a_warning(self):
+        with tempfile.TemporaryDirectory() as d:
+            agent = ante_agent.AnteAgent(logs_dir=Path(d), mcp_servers=[self.LEGACY])
+            with self.assertLogs(agent.logger, level="WARNING") as logs:
+                environment, _ = self.run_registration(agent)
+
+        payload = json.loads(environment.uploads["/installed-agent/ante-mcp-settings.json"])
+        self.assertEqual(payload["mcp_servers"]["legacy"]["transport"], "sse")
+        self.assertIn("legacy SSE transport at http://mcp:3080/sse", logs.output[0])
+        self.assertIn("registered as declared", logs.output[0])
+
+    def test_hidden_skills_add_binary_skills_and_warn_on_shadowed_task_skills(self):
+        responses = {
+            "cp -R": FakeExecResult(stdout="tmux\nlint\n"),
+            "grep -aoE": FakeExecResult(stdout="skills/brand-new/SKILL.md\n"),
+        }
+        with tempfile.TemporaryDirectory() as d:
+            agent = ante_agent.AnteAgent(logs_dir=Path(d), skills_dir="/task/skills")
+            with self.assertLogs(agent.logger, level="WARNING") as logs:
+                _, hidden = self.run_registration(agent, responses=responses)
+
+        self.assertEqual(set(hidden), {*ante_agent.BUNDLED_ANTE_SKILLS, "brand-new"})
+        self.assertNotIn("lint", hidden)
+        self.assertIn("Task skills tmux share a name", logs.output[0])
+
+    def test_unreadable_binary_falls_back_to_known_bundled_skills(self):
+        responses = {"grep -aoE": FakeExecResult(return_code=2)}
+        with tempfile.TemporaryDirectory() as d:
+            agent = ante_agent.AnteAgent(logs_dir=Path(d), skills_dir="/task/skills")
+            with self.assertLogs(agent.logger, level="WARNING"):
+                _, hidden = self.run_registration(agent, responses=responses)
+
+        self.assertEqual(hidden, tuple(sorted(ante_agent.BUNDLED_ANTE_SKILLS)))
+
+    def test_registration_without_extensions_does_nothing(self):
+        with tempfile.TemporaryDirectory() as d:
+            environment, hidden = self.run_registration(ante_agent.AnteAgent(logs_dir=Path(d)))
+
+        self.assertEqual(environment.uploads, {})
+        self.assertEqual(environment.commands, [])
+        self.assertIsNone(hidden)
+
+    def test_failed_registration_warns_with_output_and_keeps_skills_off(self):
+        responses = {"cp -R": FakeExecResult(return_code=1, stderr="cp: /missing: No such file")}
+        with tempfile.TemporaryDirectory() as d:
+            agent = ante_agent.AnteAgent(logs_dir=Path(d), skills_dir="/missing")
+            with self.assertLogs(agent.logger, level="WARNING") as logs:
+                environment, hidden = self.run_registration(agent, responses=responses)
+
+        self.assertIsNone(hidden)
+        self.assertEqual(len(environment.commands), 1)
+        self.assertIn("Could not register task skills", logs.output[0])
+        self.assertIn("No such file", logs.output[0])
+
+
+class CatalogOverlayTests(unittest.TestCase):
+    ROUTING = {"order": ["xiaomi"], "allow_fallbacks": False}
+
+    def test_overlay_writes_only_the_requested_provider_fields(self):
+        self.assertIsNone(ante_agent.catalog_overlay("openrouter", None, None))
+        self.assertEqual(
+            ante_agent.catalog_overlay("openrouter", self.ROUTING, 300),
+            {
+                "providers": {
+                    "openrouter": {
+                        "extra_body": {"provider": self.ROUTING},
+                        "stream_idle_timeout_secs": 300,
+                    }
+                }
+            },
+        )
+        self.assertEqual(
+            ante_agent.catalog_overlay("openrouter", None, 120),
+            {"providers": {"openrouter": {"stream_idle_timeout_secs": 120}}},
+        )
+
+    def test_options_accept_json_text_or_object_and_reject_other_shapes(self):
+        for value in ('{"order": ["xiaomi"], "allow_fallbacks": false}', self.ROUTING):
+            ante_agent.AnteAgent.preflight({"openrouter_routing": value})
+        for kwargs in (
+            {"openrouter_routing": '["xiaomi"]'},
+            {"openrouter_routing": "{not json"},
+            {"stream_idle_timeout_secs": 0},
+        ):
+            with self.subTest(kwargs=kwargs), self.assertRaises(ValueError):
+                ante_agent.AnteAgent.preflight(kwargs)
+
+    def test_overlay_merges_into_existing_catalog_and_keeps_other_providers(self):
+        with tempfile.TemporaryDirectory() as d:
+            payload = Path(d) / "ante-catalog.json"
+            payload.write_text(json.dumps(ante_agent.catalog_overlay("openrouter", None, 300)))
+            shutil.copy(ante_agent._MERGE_JSON_SOURCE, Path(d) / "ante_merge_json.py")
+            catalog = Path(d) / "home" / ".ante" / "catalog.json"
+            catalog.parent.mkdir(parents=True)
+            catalog.write_text(json.dumps({"providers": {"local": {"id": "local"}}}))
+            command = ante_agent.write_json_command(
+                ante_agent._ANTE_USER_CATALOG, ante_agent._CATALOG_PAYLOAD_PATH
+            )
+
+            result = run_shell(command, Path(d) / "home", d)
+
+            self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+            providers = json.loads(catalog.read_text())["providers"]
+        self.assertEqual(providers["local"], {"id": "local"})
+        self.assertEqual(providers["openrouter"], {"stream_idle_timeout_secs": 300})
+
+    def catalog_output(self, **openrouter):
+        providers = [{"id": "local"}, {"id": "openrouter", "base_url": "u", **openrouter}]
+        return json.dumps({"providers": providers}, indent=2) + "\n## Catalog load errors\n"
+
+    def test_missing_overrides_are_reported_by_field(self):
+        overlay = ante_agent.catalog_overlay("openrouter", self.ROUTING, 300)
+        loaded = self.catalog_output(
+            extra_body={"provider": self.ROUTING}, stream_idle_timeout_secs=300
+        )
+
+        self.assertEqual(ante_agent.missing_catalog_overrides(loaded, overlay), [])
+        self.assertEqual(
+            ante_agent.missing_catalog_overrides(
+                self.catalog_output(extra_body={"provider": self.ROUTING}), overlay
+            ),
+            ["openrouter.stream_idle_timeout_secs"],
+        )
+        self.assertEqual(
+            ante_agent.missing_catalog_overrides("ante: not a command", overlay),
+            ["<unreadable `ante catalog` output>"],
+        )
+
+    def apply(self, return_code=0, loaded=None, **options):
+        environment = RecordingEnvironment(
+            return_code, {"ante catalog": FakeExecResult(stdout=loaded or "")}
+        )
+        with tempfile.TemporaryDirectory() as d:
+            agent = ante_agent.AnteAgent(logs_dir=Path(d), **options)
+            asyncio.run(agent._apply_catalog_overlay(environment))
+        return environment
+
+    def test_no_overrides_touch_nothing(self):
+        environment = self.apply(provider="openrouter")
+
+        self.assertEqual((environment.uploads, environment.commands), ({}, []))
+
+    def test_overrides_upload_payload_write_user_catalog_and_verify_it_loaded(self):
+        environment = self.apply(
+            provider="openrouter",
+            openrouter_routing=self.ROUTING,
+            stream_idle_timeout_secs=300,
+            loaded=self.catalog_output(
+                extra_body={"provider": self.ROUTING}, stream_idle_timeout_secs=300
+            ),
+        )
+
+        payload = json.loads(environment.uploads["/installed-agent/ante-catalog.json"])
+        self.assertEqual(payload["providers"]["openrouter"]["extra_body"]["provider"], self.ROUTING)
+        self.assertEqual(len(environment.commands), 2)
+        self.assertIn('"$HOME/.ante/catalog.json"', environment.commands[0])
+        self.assertEqual(environment.commands[1], "ante catalog")
+
+    def test_overrides_an_older_ante_ignores_stop_the_trial(self):
+        with self.assertRaisesRegex(RuntimeError, "openrouter.stream_idle_timeout_secs"):
+            self.apply(
+                provider="openrouter",
+                stream_idle_timeout_secs=300,
+                loaded=self.catalog_output(),
+            )
+
+    def test_failed_write_or_missing_provider_stops_the_trial(self):
+        with self.assertRaisesRegex(RuntimeError, "catalog overrides"):
+            self.apply(return_code=1, provider="openrouter", stream_idle_timeout_secs=300)
+        with self.assertRaisesRegex(ValueError, "explicit provider"):
+            self.apply(stream_idle_timeout_secs=300)
+
+
 class AnteOptionsTests(unittest.TestCase):
     def test_preflight_accepts_the_existing_options_and_declares_atif(self):
         kwargs = {
@@ -782,6 +1158,29 @@ class AnteCommandTests(unittest.TestCase):
         self.assertIn("ante --model deepseek/model --yolo", command)
         self.assertNotIn("--provider", command)
         self.assertNotIn("--effort", command)
+
+    def test_task_skills_replace_no_skills_and_hide_bundled_skills(self):
+        command = ante_agent.ante_command(
+            "anthropic/model",
+            None,
+            None,
+            ante_agent.DEFAULT_ANTE_ARGS,
+            hidden_skills=ante_agent.BUNDLED_ANTE_SKILLS,
+        )
+
+        tokens = shlex.split(command.split(" < ")[0].split("{ ", 1)[1])
+        self.assertNotIn("--no-skills", tokens)
+        self.assertEqual(tokens.count("--skills"), 1)
+        excluded = tokens[tokens.index("--exclude-skills") + 1].split(",")
+        self.assertEqual(excluded, list(ante_agent.BUNDLED_ANTE_SKILLS))
+
+    def test_without_task_skills_default_args_keep_skills_off(self):
+        command = ante_agent.ante_command(
+            "anthropic/model", None, None, ante_agent.DEFAULT_ANTE_ARGS
+        )
+
+        self.assertIn("--no-skills", command)
+        self.assertNotIn("--exclude-skills", command)
 
     def test_extra_args_reject_reserved_flags(self):
         for args in (
