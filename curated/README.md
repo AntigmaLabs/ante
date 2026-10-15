@@ -46,6 +46,26 @@ ante                      # then /resume to execute with full tools
 
 Headless runs imply yolo mode, which skips permission rules including the Bash ask; add `--exclude-tools Bash` for unattended planning. The profile omits `model` and `provider`, so it uses your default credentials. Pin a heavier model or effort by adding those fields to your copy.
 
+### parallel-search
+
+Add free web search and page fetching with [Parallel Search MCP](https://docs.parallel.ai/integrations/mcp/search-mcp). Anonymous searches use Fast mode; no Parallel account or API key is required. The free endpoint is intended for exploration and light use and has rate limits.
+
+Requires Ante v0.2.12 or later. The profile connects directly to Parallel's Streamable HTTP endpoint.
+
+```sh
+mkdir -p ~/.ante
+cp curated/parallel-search.settings.json ~/.ante/
+ante --profile parallel-search
+```
+
+In `/mcp`, check that `parallel` exposes `web_search` and `web_fetch`. Ask Ante to search for current documentation and fetch a page from the results. Headless runs can use the same profile:
+
+```sh
+ante --profile parallel-search -p "Search for Ante's MCP documentation, fetch the MCP page, and summarize its supported transport with a source link."
+```
+
+This profile adds `mcp__parallel__web_search` and `mcp__parallel__web_fetch` without restricting built-in tools or selecting a model. Named profiles replace the whole settings file, so your existing settings and other MCP servers are not inherited. To keep your current setup, merge just the `parallel` entry into the `mcp_servers` map in `~/.ante/settings.json` instead, then restart Ante. Configure your usual model/provider as needed.
+
 ## Skills
 
 [Agent Skills](https://agentskills.io) folders, each with a `SKILL.md`. Copy a folder into `~/.ante/skills/` for all projects, or `.ante/skills/` for one project. See the [skills docs](https://docs.antigma.ai/extend/skills).

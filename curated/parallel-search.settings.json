@@ -1,0 +1,11 @@
+{
+  "mcp_servers": {
+    "parallel": {
+      "url": "https://search.parallel.ai/mcp",
+      "enabled_tools": [
+        "web_search",
+        "web_fetch"
+      ]
+    }
+  }
+}
