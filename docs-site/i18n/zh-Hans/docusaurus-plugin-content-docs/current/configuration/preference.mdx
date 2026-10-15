@@ -95,7 +95,7 @@ Ante 将用户偏好设置保存在 `~/.ante/settings.json` 中。仓库还可�
 | `status_line_command` | 执行 Shell 脚本以渲染完全自定义状态栏（见下文）。设置后优先级高于 `status_line` |
 | `model_effort` | 各模型的[思考深度（Effort）](/usage/models-and-thinking#effort)覆盖映射 —— 键为模型名，值为 `min` / `low` / `medium` / `high` / `xhigh` / `max`。在 `/models` 中拖动滑块时自动写入 |
 | `provider_model` | 各提供商最后选用的模型记录 —— 切换提供商时优先采用此记录，其次回退至该提供商的默认模型。每次选择模型/提供商时自动写入 |
-| `mcp_servers` | 会话启动时拉起的 MCP 服务器配置（参见 [MCP 服务器](/extend/mcp)） |
+| `mcp_servers` | 会话启动时通过 stdio 启动或通过 Streamable HTTP 连接的 MCP 服务器配置（参见 [MCP 服务器](/extend/mcp)） |
 
 恢复会话会保留已保存的系统提示词和提示词模式。`system_prompt`、`append_system_prompt`、`short_prompt` 的修改（包括项目设置与 CLI 覆盖）只作用于全新会话，例如通过 `/clear` 创建的会话。权限和工具选择等其他会话设置仍从当前配置解析。
 
@@ -141,7 +141,7 @@ ANTE_PROFILE=review ante -p "审查本次改动"
 |---|---|
 | `permission_mode` | 仓库不能把你切换到更宽松的审批模式 |
 | `permissions.allow` | 仓库不能代替你预先批准工具调用 |
-| `mcp_servers` | 仓库不能在你的机器上拉起新的服务进程 |
+| `mcp_servers` | 仓库不能添加本地或远程 MCP 服务器 |
 | `system_prompt` | 仓库不能整体替换智能体的系统指令 |
 | `model` | 仓库不能把你的请求改道到其他模型 |
 | `provider` | 仓库不能把你的请求改道到其他提供商 |

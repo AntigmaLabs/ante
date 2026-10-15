@@ -732,7 +732,7 @@ Skills 技能、子智能体或 MCP 服务器刷新时触发。`SessionStart` �
 }
 ```
 
-`mcp_servers` 中的每个条目都反映了实际启动并发现的内容：对于连接失败的服务端，`tools` 列表为空，而 `qualified_name` 是智能体调用该工具时使用的 `mcp__<server>__<tool>` 形式。
+`mcp_servers` 中的每个条目描述一个已配置的服务端及其发现的工具。本地服务通过 `command` 和 `args` 描述；远程服务包含 `url`，其 `command` 为空字符串、`args` 为空列表。可选字段 `url` 在 v0.2.12 中加入，本地服务会省略该字段。连接失败或未暴露工具的服务端，其 `tools` 列表为空；`qualified_name` 是智能体调用该工具时使用的 `mcp__<server>__<tool>` 形式。
 
 ### 提示与信息事件 {#informational-events}
 

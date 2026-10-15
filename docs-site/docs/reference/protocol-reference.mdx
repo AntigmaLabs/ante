@@ -731,7 +731,7 @@ Emitted when skills, subagents, or MCP servers are refreshed. It is sent once im
 }
 ```
 
-Each entry in `mcp_servers` reflects what was actually launched and discovered: the `tools` list is empty for servers that failed to connect, and `qualified_name` is the `mcp__<server>__<tool>` form the agent uses to call the tool.
+Each entry in `mcp_servers` describes a configured server and its discovered tools. Local servers have `command` and `args`; remote servers have `url`, an empty `command`, and empty `args`. The optional `url` field was added in v0.2.12 and is omitted for local servers. The `tools` list is empty for servers that failed to connect or exposed no tools, and `qualified_name` is the `mcp__<server>__<tool>` form the agent uses to call the tool.
 
 ### Informational events
 

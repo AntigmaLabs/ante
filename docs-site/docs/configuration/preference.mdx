@@ -94,7 +94,7 @@ An example `settings.json`:
 | `status_line_command` | Shell command that renders a fully custom status line (see below). Takes precedence over `status_line` while set |
 | `model_effort` | Per-model [effort](/usage/models-and-thinking#effort) overrides — keys are model names, values are `min` / `low` / `medium` / `high` / `xhigh` / `max`. Written automatically when you move the effort slider in `/models` |
 | `provider_model` | Last model used per provider — a provider switch adopts this before falling back to the provider's default model. Written automatically on every model/provider selection |
-| `mcp_servers` | MCP servers to launch on session start (see [MCP Servers](/extend/mcp)) |
+| `mcp_servers` | MCP servers to launch over stdio or connect to over Streamable HTTP at session start (see [MCP Servers](/extend/mcp)) |
 
 Resumed sessions keep their saved system prompts and prompt mode. Changes to `system_prompt`, `append_system_prompt`, or `short_prompt` (including project settings and CLI overrides) apply to fresh sessions, such as those started with `/clear`. Other session settings, including permissions and tool selection, still resolve from current settings.
 
@@ -141,7 +141,7 @@ Because `.ante/settings.json` is repository content, it can be written by anyone
 |---|---|
 | `permission_mode` | A repository cannot move you to a laxer approval mode |
 | `permissions.allow` | A repository cannot pre-approve tool calls on your behalf |
-| `mcp_servers` | A repository cannot launch new server processes on your machine |
+| `mcp_servers` | A repository cannot add local or remote MCP servers |
 | `system_prompt` | A repository cannot replace the agent's instructions wholesale |
 | `model` | A repository cannot redirect your traffic to a different model |
 | `provider` | A repository cannot redirect your traffic to a different provider |
