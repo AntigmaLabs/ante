@@ -1561,6 +1561,46 @@ class TrajectoryConversionTests(unittest.TestCase):
                 {"effort": "xhigh", "n_cache_creation_tokens": 5, "steps": 3},
             )
 
+    def test_pricing_reports_trial_cost_at_each_request_prompt_tier(self):
+        with tempfile.TemporaryDirectory() as d:
+            logs_dir = Path(d)
+            (logs_dir / "ante.txt").write_text(
+                "\n".join(json.dumps(event) for event in synthetic_events()) + "\n",
+                encoding="utf-8",
+            )
+            pricing = {
+                "input": 1.0,
+                "output": 2.0,
+                "cache_read": 0.1,
+                "cache_write": 1.25,
+                "pricing_overrides": [
+                    {
+                        "min_prompt_tokens": 50,
+                        "input": 5.0,
+                        "output": 10.0,
+                        "cache_read": 0.5,
+                        "cache_write": 6.25,
+                    }
+                ],
+            }
+            agent = ante_agent.AnteAgent(
+                logs_dir=logs_dir, model_name="m", pricing=json.dumps(pricing)
+            )
+            context = AgentContext()
+
+            agent.populate_context_post_run(context)
+
+        # One 100-token prompt above the 50-token tier: 85 fresh, 10 cache-read,
+        # 5 cache-write and 20 output tokens at the tier's rates.
+        self.assertAlmostEqual(context.cost_usd, 661.25 / 1_000_000)
+        self.assertEqual(context.n_input_tokens, 100)
+
+    def test_pricing_option_accepts_json_object_only(self):
+        ante_agent.AnteAgent.preflight({"pricing": '{"input": 1, "output": 2}'})
+        for value in ('[1, 2]', "{not json"):
+            with self.subTest(value=value), self.assertRaises(ValueError):
+                ante_agent.AnteAgent.preflight({"pricing": value})
+
     def test_populate_context_classifies_only_final_structured_failure(self):
         with tempfile.TemporaryDirectory() as d:
             logs_dir = Path(d)

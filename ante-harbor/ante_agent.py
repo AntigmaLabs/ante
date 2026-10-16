@@ -9,7 +9,7 @@ from collections.abc import Sequence
 from pathlib import Path
 from typing import Annotated, Any
 
-from pydantic import Field, field_validator
+from pydantic import Field, ValidationInfo, field_validator
 
 from ante_events import (
     CACHE_CREATION_METADATA_KEY,
@@ -17,6 +17,7 @@ from ante_events import (
     FAILURE_CLASS_METADATA_KEY,
     STEPS_METADATA_KEY,
     accumulate_usage_from_events,
+    cost_usd_from_events,
     events_from_text,
     final_turn_failure,
     has_reported_usage,
@@ -134,14 +135,21 @@ def _populate_context_from_events(
     context: AgentContext,
     events: list[dict[str, Any]],
     diagnostic_failure_class: str | None,
+    pricing: dict[str, Any] | None = None,
 ) -> None:
-    """Translate Ante events into the small AgentContext metadata interface."""
+    """Translate Ante events into the small AgentContext metadata interface.
+
+    Ante reports tokens but not cost. With a ``pricing`` row, each request is
+    priced at its prompt-length tier so Harbor (and Hub) record the trial cost.
+    """
     usage = accumulate_usage_from_events(events)
     if has_reported_usage(usage):
         for field in ("cost_usd", "n_input_tokens", "n_output_tokens", "n_cache_tokens"):
             value = usage.get(field)
             if is_number(value):
                 setattr(context, field, value)
+    if pricing and (cost := cost_usd_from_events(events, pricing)) is not None:
+        context.cost_usd = cost
 
     metadata_fields: dict[str, Any] = {}
     if effort := resolved_model_effort_from_events(events):
@@ -433,6 +441,14 @@ class AnteOptions(InstalledAgentOptions):
         gt=0,
         description="Seconds a model stream may stay silent before Ante reconnects.",
     )
+    pricing: dict[str, Any] | None = Field(
+        default=None,
+        description=(
+            "Model price row (JSON, USD per 1M tokens: input, output, cache_read, "
+            "cache_write, optional min_prompt_tokens pricing_overrides) used to "
+            "report each trial's cost; omitted leaves cost unreported."
+        ),
+    )
 
     @field_validator("prompt_template_path", mode="before")
     @classmethod
@@ -445,14 +461,14 @@ class AnteOptions(InstalledAgentOptions):
         split_extra_ante_args(value or "")
         return value
 
-    @field_validator("openrouter_routing", mode="before")
+    @field_validator("openrouter_routing", "pricing", mode="before")
     @classmethod
-    def parse_openrouter_routing(cls, value: Any) -> Any:
-        """Accept the JSON text Harbor passes for ``--ak openrouter_routing=...``."""
+    def parse_json_object(cls, value: Any, info: ValidationInfo) -> Any:
+        """Accept the JSON text Harbor passes for ``--ak <field>=...``."""
         if isinstance(value, str):
             value = json.loads(value) if value.strip() else None
         if value is not None and not isinstance(value, dict):
-            raise ValueError("openrouter_routing must be a JSON object")
+            raise ValueError(f"{info.field_name} must be a JSON object")
         return value
 
 
@@ -745,7 +761,10 @@ class AnteAgent(BaseInstalledAgent):
         failure = final_turn_failure(events)
 
         _populate_context_from_events(
-            context, events, failure.failure_class if failure else None
+            context,
+            events,
+            failure.failure_class if failure else None,
+            self.options.pricing,
         )
 
         if self.options.enable_atif:
