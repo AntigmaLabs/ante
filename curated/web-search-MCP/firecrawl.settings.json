@@ -1,0 +1,8 @@
+{
+  "mcp_servers": {
+    "firecrawl": {
+      "url": "https://mcp.firecrawl.dev/v2/mcp",
+      "enabled_tools": ["firecrawl_scrape", "firecrawl_search", "firecrawl_parse"]
+    }
+  }
+}
