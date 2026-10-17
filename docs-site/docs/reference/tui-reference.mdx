@@ -64,7 +64,7 @@ After compaction — manual `/compact` or [automatic](/configuration/preference#
 
 ### Selecting and copying text
 
-The fullscreen views — fullscreen chat, the transcript, the [diff view](#diff-view), and `/diff` output — capture the mouse for wheel scrolling, so they handle selection themselves instead of leaving it to the terminal. Drag across the text and it copies on release; the footer confirms with `copied N lines`. Double-click selects a word, counting `_-./~+@#$%&=:` as word characters so a path or URL comes out whole, and triple-click selects the logical line. Dragging on the top or bottom row scrolls and keeps extending the selection past the viewport. In fullscreen chat, `PgUp` / `PgDn` also scroll the conversation; reaching the bottom re-pins the view so new output follows again.
+The fullscreen views — fullscreen chat, the transcript, the [diff view](#diff-view), and `/diff` output — capture the mouse for wheel scrolling, so they handle selection themselves instead of leaving it to the terminal. Drag across the text and it copies on release; the footer confirms with `copied N lines`. Double-click selects a word, counting `_-./~+@#$%&=:` as word characters so a path or URL comes out whole, and triple-click selects the logical line. Dragging on the top or bottom row scrolls and keeps extending the selection past the viewport. In fullscreen chat, `PgUp` / `PgDn` also scroll the conversation. While you're scrolled up, a `Jump to bottom (ctrl+l) ↓` pill — or `N new messages (ctrl+l) ↓` once new entries arrive — sits under the conversation; press `Ctrl+L`, click the pill, or send a message to follow new output again. Scrolling back to the bottom also re-pins the view.
 
 Copies rejoin soft-wrapped rows, including notices and user-run shell output, into the lines they came from, so a wrapped command or URL pastes back intact. Tool output, code blocks, tables, and diffs copy as displayed. Copies go to the OS clipboard and also as an OSC 52 escape, so they work over SSH and inside tmux; selections above 100 KB skip the OSC 52 channel. Clicking outside the content clears the selection, and a whitespace-only grab never touches the clipboard.
 
@@ -168,6 +168,7 @@ When a Claude Code or Codex session in the current directory was active within t
 | `Tab` | Complete a command or file path; on empty input, accept the [next-prompt suggestion](#next-prompt-suggestion) |
 | `Shift+Tab` | Cycle permission mode: `strict` → `auto` → `yolo`. Takes effect immediately, including on a turn already running |
 | `Ctrl+R` | Start reverse-i-search through prompt history |
+| `Ctrl+L` | Fullscreen mode: jump to the latest output |
 | `Ctrl+C` | Interrupt the active turn; press twice in a row to exit (or use `/exit`) |
 | `Ctrl+S` | Steer queued messages into the running turn |
 | `Ctrl+V` / `Ctrl+Shift+V` | Paste text or an image from the clipboard |
