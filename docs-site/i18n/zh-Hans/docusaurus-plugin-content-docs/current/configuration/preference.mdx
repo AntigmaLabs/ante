@@ -243,7 +243,7 @@ printf '\033[36m[%s]\033[0m %s' "$model" "$dir"
 
 ### 聊天渲染模式 {#chat-render-mode}
 
-默认的 `inline` 模式将聊天保留在终端自身的滚动历史中。如果终端或控制台会丢失内联历史，可使用 `fullscreen`：Ante 会将聊天切换到备用屏幕，自行管理滚动，并支持 `PgUp` / `PgDn`、鼠标滚轮以及拖拽选择复制。
+默认的 `inline` 模式将聊天保留在终端自身的滚动历史中。如果终端或控制台会丢失内联历史，可使用 `fullscreen`：Ante 会将聊天切换到备用屏幕，自行管理滚动，并支持 `PgUp` / `PgDn`、鼠标滚轮、用 `Ctrl+L` 跳回最新输出以及拖拽选择复制。
 
 ```json
 { "render_mode": "fullscreen" }
