@@ -46,25 +46,34 @@ ante                      # then /resume to execute with full tools
 
 Headless runs imply yolo mode, which skips permission rules including the Bash ask; add `--exclude-tools Bash` for unattended planning. The profile omits `model` and `provider`, so it uses your default credentials. Pin a heavier model or effort by adding those fields to your copy.
 
-### parallel-search
+### [web-search-MCP](./web-search-MCP/)
 
-Add free web search and page fetching with [Parallel Search MCP](https://docs.parallel.ai/integrations/mcp/search-mcp). Anonymous searches use Fast mode; no Parallel account or API key is required. The free endpoint is intended for exploration and light use and has rate limits.
+A collection of third-party web search providers, each with its MCP configuration, so that models without native web search support can reach the web. Each file follows the naming convention of `<provider>.settings.json`; copy one to `~/.ante/` and run `ante --profile <provider>`, or merge its `mcp_servers` entry into your own settings.
 
-Requires Ante v0.2.12 or later. The profile connects directly to Parallel's Streamable HTTP endpoint.
+Based on their authentication requirements, the providers fall into the two groups listed below. Most of the listed providers offer a generous free-tier quota when you are logged in with an account. See the documentation for the default configuration used for each, the available knobs to tune for your use case, and CLI + agent skill alternatives.
 
-```sh
-mkdir -p ~/.ante
-cp curated/parallel-search.settings.json ~/.ante/
-ante --profile parallel-search
-```
+- No authentication requirement
 
-In `/mcp`, check that `parallel` exposes `web_search` and `web_fetch`. Ask Ante to search for current documentation and fetch a page from the results. Headless runs can use the same profile:
+The `exa`, `parallel`, and `firecrawl` examples connect over Streamable HTTP, which requires Ante v0.2.12 or later. The `duckduckgo` example requires `uvx`.
 
-```sh
-ante --profile parallel-search -p "Search for Ante's MCP documentation, fetch the MCP page, and summarize its supported transport with a source link."
-```
+| Provider | Link to documentation | Note |
+| --- | --- | --- |
+| [exa](./web-search-MCP/exa.settings.json) | [doc](https://exa.ai/docs/get-started/exa-mcp) | Rate-limited. |
+| [parallel](./web-search-MCP/parallel.settings.json) | [doc](https://docs.parallel.ai/integrations/mcp/search-mcp) | Rate-limited. |
+| [firecrawl](./web-search-MCP/firecrawl.settings.json) | [github](https://github.com/firecrawl/firecrawl-mcp-server) | A keyless connection gets a limited set of tools, `search` included. |
+| [duckduckgo](./web-search-MCP/duckduckgo.settings.json) | [github](https://github.com/nickclyde/duckduckgo-mcp-server) | Unofficial, community maintained. No account or API key. |
 
-This profile adds `mcp__parallel__web_search` and `mcp__parallel__web_fetch` without restricting built-in tools or selecting a model. Named profiles replace the whole settings file, so your existing settings and other MCP servers are not inherited. To keep your current setup, merge just the `parallel` entry into the `mcp_servers` map in `~/.ante/settings.json` instead, then restart Ante. Configure your usual model/provider as needed.
+- Authentication required
+
+The examples show configurations with API key authentication. Substitute `<your-api-key>` with your actual key. Refer to the documentation if you want to use OAuth authentication instead.
+
+The `tavily` example connects over Streamable HTTP, which requires Ante v0.2.12 or later.
+
+| Provider | Link to documentation |
+| --- | --- |
+| [tavily](./web-search-MCP/tavily.settings.json) | [doc](https://docs.tavily.com/documentation/mcp) |
+| [perplexity](./web-search-MCP/perplexity.settings.json) | [doc](https://docs.perplexity.ai/docs/getting-started/integrations/mcp-server) |
+| [brave](./web-search-MCP/brave.settings.json) | [github](https://github.com/brave/brave-search-mcp-server) |
 
 ## Skills
 
