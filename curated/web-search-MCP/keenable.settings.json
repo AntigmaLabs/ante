@@ -1,0 +1,7 @@
+{
+  "mcp_servers": {
+    "keenable": {
+      "url": "https://api.keenable.ai/mcp"
+    }
+  }
+}
