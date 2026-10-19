@@ -243,7 +243,7 @@ Make it executable (`chmod +x`) before pointing `command` at it. If the command 
 
 ### Chat render mode
 
-The default `inline` mode keeps the chat in your terminal's normal scrollback. Use `fullscreen` when a terminal or console drops inline history: Ante moves the chat to the alternate screen, owns its scrollback, and enables `PgUp` / `PgDn`, mouse-wheel scrolling, and drag-to-copy selection.
+The default `inline` mode keeps the chat in your terminal's normal scrollback. Use `fullscreen` when a terminal or console drops inline history: Ante moves the chat to the alternate screen, owns its scrollback, and enables `PgUp` / `PgDn`, mouse-wheel scrolling, `Ctrl+L` to jump back to the latest output, and drag-to-copy selection.
 
 ```json
 { "render_mode": "fullscreen" }

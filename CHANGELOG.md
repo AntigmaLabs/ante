@@ -1,5 +1,26 @@
 # Changelog
 
+## v0.2.13 - 2026-10-18
+
+### Added
+- Jump-to-bottom pill in fullscreen: while the conversation is scrolled up, its last row shows `N new messages (ctrl+l) ↓`, or `Jump to bottom (ctrl+l) ↓` when nothing new has arrived; Ctrl+L or a click on that row jumps to the latest output, and sending a prompt or a `!command` follows new output again
+- Subagents record their own event log under the parent session, at `sessions/<parent>/subagents/<child>/events.jsonl`; a subagent is not a resumable session, so `/resume` does not list it, and deleting the parent removes its logs. The parent's Agent tool result names the child's session id
+- A warning when session history cannot be saved: a failed event-log or snapshot write shows one notice per session with the path and disk-space/permission guidance, and the conversation keeps running
+- Gemini 4 Argon on Antix; DeepSeek V4.1 Flash 1017, Reflection Beam 1.0 and Muse Spark Open in the OpenRouter catalog
+
+### Changed
+- Compaction's fold call gets room for reasoning: its output cap is twice the summary's budget, bounded by the model's declared `max_tokens` and the context window, so a model that thinks before summarizing no longer has its summary cut off at the cap
+- The fold runs at reasoning effort `low` at most (`min` stays `min`; a model without an effort setting stays without one), since a summary does not need the session's effort
+- Dependency updates
+
+### Fixed
+- A Responses API `response.incomplete` with reason `length` is treated as a max-tokens stop: a cut-off compaction summary reports `summary was cut off at N tokens` instead of an opaque `failed to fold dialog`, and a normal turn continues as it does after `max_output_tokens`
+- Interrupting a turn before the model produces any output attaches the `Interrupted` row to the prompt you just sent instead of the previous answer, and Ctrl+C / Esc between send and the turn's start interrupts the coming turn instead of acting as if the session were idle
+- In fullscreen, a bare click on the conversation (press and release without dragging) no longer stops the view from following new output; a drag selection still holds the view in place
+
+### Crates
+- Public crates published as 0.2.13: ante-protocol-shape, ante-llm, ante-exec, ante-sdk
+
 ## v0.2.12 - 2026-10-15
 
 ### Added
