@@ -187,11 +187,11 @@ Ante's behavior lives in a settings file, and `--profile <name>` swaps that file
 For project-specific workflows, Ante loads `.ante/settings.json` from the nearest ancestor of the session directory, layering tool and skill filters, reasoning effort, and other supported session settings over user preferences. Project settings cannot change the provider or model, add MCP servers, or widen permissions.
 
 Curated profiles demonstrate how flexible this is:
-- [`pi`](curated/pi.settings.json): Strips Ante down to four tools (Read, Write, Edit, Bash) and a [short replacement system prompt](curated/pi.system-prompt.md); file search runs through `rg`, subagents through `ante -p "<task>"`, web access through `curl`.
-- [`plan`](curated/plan.settings.json): A read-only research and planning agent with file mutations disabled, designed to produce an implementation plan before you execute.
+- [`pi`](curated/pi): Strips Ante down to four tools (Read, Write, Edit, Bash) and a [short replacement system prompt](curated/pi/pi.system-prompt.md); file search runs through `rg`, subagents through `ante -p "<task>"`, web access through `curl`.
+- [`plan`](curated/plan): A read-only research and planning agent with file mutations disabled, designed to produce an implementation plan before you execute.
 
 ```sh
-cp curated/pi.settings.json ~/.ante/
+cp curated/pi/pi.settings.json ~/.ante/
 ante --profile pi
 ```
 
@@ -248,7 +248,7 @@ Bring your own API key, subscription, or local model; no account required, not e
 - **Evaluation:**
   - [`ante-harbor/`](ante-harbor) — Harbor agent adapter behind our [Terminal-Bench results](https://antigma.ai/eval).
 - **Profiles & Docs:**
-  - [`curated/`](curated) — Reusable settings profiles (such as [`pi`](curated/pi.settings.json) and [`plan`](curated/plan.settings.json)) and skills.
+  - [`curated/`](curated) — Reusable settings profiles (such as [`pi`](curated/pi) and [`plan`](curated/plan)) and skills.
   - [`docs-site/`](docs-site) — Source for [docs.antigma.ai](https://docs.antigma.ai).
   - [`examples/`](examples) — Example integrations and custom harness implementations.
 
