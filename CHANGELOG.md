@@ -1,5 +1,24 @@
 # Changelog
 
+## v0.2.14 - 2026-10-21
+
+### Added
+- Native MiniMax provider: set `MINIMAX_API_KEY` to use MiniMax M3.1 Flash directly (1M context, vision, `low`–`max` reasoning, `max` by default); `MINIMAX_BASE_URL` overrides the endpoint
+- MiniMax M3.1 Flash in the OpenRouter catalog
+
+### Changed
+- Offline mode defaults to llama.cpp's port 9931 instead of 8080: managed launches try 9931–9940, and user-started servers are discovered on 9931 and 8080 only (previously 8080–8179). A router already running keeps its recorded port, and a server on any other port can still be attached by endpoint
+- A provider `Retry-After` longer than 60s ends the turn and shows the wait (`Provider asks to retry in 48m.`) instead of reconnecting every 60s for about four minutes
+
+### Fixed
+- Gemini accepts MCP tool schemas it used to reject: `enum`/`const` values that are not non-empty strings move into the parameter's description, and requests without a forced tool choice use `AUTO` instead of `VALIDATED`, so very large schemas are no longer refused
+- OpenAI-compatible streams that carry both `reasoning` and `reasoning_content` on one delta, as gateways such as Bifrost send, no longer fail to decode
+- `ante offline use --args` rejects malformed values such as `--ctx invalid` before saving, instead of failing at the next load
+- Bundled TLS trust roots refreshed to webpki 1.0.10, which drops the emSign ECC Root CA - G3; `ante-sdk` now requires `webpki-roots` 1.0.10 or later
+
+### Crates
+- Public crates published as 0.2.14: ante-protocol-shape, ante-llm, ante-exec, ante-sdk
+
 ## v0.2.13 - 2026-10-18
 
 ### Added

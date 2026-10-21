@@ -107,7 +107,9 @@ impl OpenAiCompatProfile {
             thinking_dialect: family.thinking_dialect(provider_id, model_id),
             system_role: family.system_role(),
             search: family.search_policy(provider_id),
-            requires_assistant_reasoning: family.requires_assistant_reasoning(),
+            // MiniMax requires replaying reasoning alongside tool calls.
+            requires_assistant_reasoning: family.requires_assistant_reasoning()
+                || provider_id == "minimax",
         }
     }
 
