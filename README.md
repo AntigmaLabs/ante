@@ -60,6 +60,8 @@ ante --offline-model ~/.ante/models/Qwen3.5-9B-Q4_K_M.gguf \
 
 We think about the engine layer in public too. [**nanochat-rs**](https://github.com/AntigmaLabs/nanochat-rs) is a small GPT inference core we wrote in pure Rust on [candle](https://github.com/huggingface/candle): readable, runnable, and living in the same process as the code that calls it. It is a study project rather than part of the binary, published because in-process inference is where local models get interesting for agents.
 
+Set a reusable default with `ante offline use Qwen3.5-9B`, then launch it with `ante --offline-model` (interactive) or `ante --offline-model -p "your task"` (headless). Run `ante offline list` to see available models and `ante offline status` to inspect the engine. Verified models download on first load; install the engine with `ante offline install` before using the launch flag.
+
 **[Offline mode →](https://docs.antigma.ai/local/offline)** · [nanochat-rs →](https://github.com/AntigmaLabs/nanochat-rs) · [Where this is going →](https://docs.antigma.ai/experimental/agent-native-inference)
 
 ---
@@ -177,7 +179,7 @@ ante update
 ante update --channel nightly
 
 # Roll back or pin to an exact release
-ante update --version v0.2.10
+ante update --version v0.2.12
 ```
 
 ## One binary, many agents
@@ -209,7 +211,7 @@ Bring your own API key, subscription, or local model; no account required, not e
 |----------|---------------|
 | Anthropic | Claude Sonnet 5.5, Opus 5.5, Fable 5.1 (API key or subscription OAuth) |
 | OpenAI | GPT-6 Astra, GPT-6.1 Sol, GPT-6 Luna; GPT-5.6 via subscription (API key or ChatGPT/Codex OAuth) |
-| Google Gemini | Gemini 3.x family (Gemini API or Vertex AI) |
+| Google Gemini | Gemini 4 Argon and 3.x models (Gemini API or Vertex AI) |
 | Grok (xAI) | Grok 4.7 |
 | DeepSeek | DeepSeek V4.1 Flash |
 | Open Router | Any Open Router model, over three wire styles |

@@ -10,7 +10,7 @@ Ante 根据**目录（Catalog）**解析每个提供商与模型：包括本文�
 
 ## 内置提供商列表 {#built-in-providers}
 
-以下预设对应 **v0.2.10**：15 个托管提供商预设，以及离线服务运行时注册的 `local`。
+以下预设对应 **v0.2.12**：15 个托管提供商预设，以及离线服务运行时注册的 `local`。
 
 | 提供商 | key | 通信协议格式 (Wire style) | 身份认证 |
 |---|---|---|---|
@@ -104,11 +104,14 @@ ANTE_OPENAI_TRANSPORT=websocket_auto ante --provider openai --model gpt-5.4-mini
 | 模型 ID | 说明 | 上下文大小 |
 |---|---|---|
 | `gemini-3.8-flash` | Gemini 3.8 Flash，适用于长程编码与自主智能体 | 1.05M |
+| `gemini-4-argon` | Gemini 4 Argon，适用于复杂推理与自主智能体 | 1.05M |
 | `gemini-3.5-flash-lite` | 最快、成本最低的 Gemini 3.5 模型，适用于高吞吐量任务 | 1M |
 
 ```bash
 ante --provider gemini --model gemini-3.8-flash
 ```
+
+仅指定 `--provider gemini` 或 `--provider vertex-gemini` 且命令行和设置均未指定模型时，会选择最高权重的 Gemini 4 Argon。其原生预设最大输出为 32,768 Token；OpenRouter 的 `google/gemini-4-argon` 预设为 65,536 Token。两者均支持图像输入及 `low`、`medium`、`high` 三档思考深度。
 
 ### Grok (xAI) {#grok-xai}
 
@@ -140,11 +143,13 @@ Open Router 拆分为共享同一 API 密钥的三个提供商（按协议方言
 
 | 模型 ID | 说明 | 上下文大小 |
 |---|---|---|
+| `google/gemini-4-argon` | 通过 OpenRouter 提供的 Gemini 4 Argon 复杂推理模型 | 1.05M |
 | `google/gemini-3.8-flash` | Gemini 3.8 Flash，适用于长程编码与自主智能体 | 1.05M |
 | `x-ai/grok-4.7` | 通过 OpenRouter 调用的 Grok 4.7 旗舰推理模型 | 500K |
 | `qwen/qwen3.8-max-0902` | 通义千问 3.8 旗舰多模态推理模型 | 1M |
 | `qwen/qwen3.7-plus` | 高性价比且支持视觉的通义千问 3.7 模型 | 1M |
 | `qwen/qwen3.8-flash` | 通义千问 3.8 Flash 多模态推理模型 | 1M |
+| `meta/muse-wonder` | 面向复杂智能体推理与编码的 Muse Wonder | 1.05M |
 | `meta/muse-spark-1.3` | Muse Spark 1.3 多模态智能体推理模型 | 1.05M |
 | `tencent/hy3` | 腾讯混元 Hy3 智能体推理模型 | 262K |
 | `xiaomi/mimo-v2.6-pro` | 小米 MiMo-V2.6-Pro 多模态智能体模型 | 1.05M |
@@ -201,7 +206,7 @@ ante --provider deepseek --model deepseek-flash
 | `qwen3.7-plus` | 最新 Qwen 3.7 Plus | 1M |
 | `gemini-3.1-pro-preview` | 具备深度思考的 Gemini 3.1 Pro | 1M |
 | `claude-haiku-5-5` | 适合高并发、低延迟任务的最快 Claude 模型 | 1M |
-| `claude-sonnet-5` | 速度与智能的最佳平衡 | 1M |
+| `claude-sonnet-5-5` | 速度与智能的最佳平衡 | 1M |
 | `claude-opus-5` | 复杂智能体编码与企业级任务 | 1M |
 | `claude-fable-5-1` | 最强大的 Claude 模型 | 1M |
 | `gpt-6-astra` | OpenAI 面向复杂智能体任务的最强模型 | 1.05M |
@@ -218,13 +223,13 @@ ante --provider deepseek --model deepseek-flash
 | `glm-5.3-flashx` | 支持原生视觉的高速 GLM 5.3 FlashX | 1M |
 
 ```bash
-ante --provider antix --model claude-sonnet-5         # OAuth
-ante --provider antix-api-key --model claude-sonnet-5 # ANTIX_API_KEY
+ante --provider antix --model claude-sonnet-5-5       # OAuth
+ante --provider antix-api-key --model claude-sonnet-5-5 # ANTIX_API_KEY
 ```
 
 ### Local（本地模型） {#local}
 
-通过内置的 llama.cpp 引擎在本地运行 GGUF 模型 —— 无需 API 密钥。`local` 是通配提供商；其可用模型取决于离线服务端当前加载的模型，且仅在有活跃服务注册时才存在于目录中。在未启动服务时选择 `local` 会弹出提示通知。详见[离线模式](/local/offline)。
+通过内置 llama.cpp 引擎运行本地 GGUF 模型，无需 API 密钥。离线模型就绪时，`local` 提供商可用；对于托管模型，其设置反映当前生效的上下文窗口、思考、温度与视觉能力。卸载模型或停止服务后，`local` 不再可用。使用 `--provider local` 前请先启动或连接模型；该参数本身不会启动引擎。配置方法参见[离线模式](/local/offline)。
 
 ```bash
 ante --provider local
@@ -549,7 +554,7 @@ Skipped 1 entry in ~/.ante/catalog.json:
 | `id` | 模型 ID。在 `preferred_models` 中必填（兼容历史别名 `name`）；在 `models` 下由 key 提供 |
 | `display_name` | 友好展示名称 |
 | `description` | 在模型选择器中展示的简短说明 |
-| `temperature` | 采样温度。在 `AnthropicMessage` 提供商上，开启思考推理时必须为 `1` —— 带有 effort 等级时若设置其他值，轮次会直接显式报错 |
+| `temperature` | 采样温度。在 `AnthropicMessage` 提供商上，开启思考推理时必须为 `1`；Claude Haiku 5.5 无论思考设置如何都要求为 `1`。其他值会在发送请求前报错 |
 | `top_p` | Nucleus 采样截断阈值 |
 | `top_k` | Top-k 采样截断阈值 |
 | `max_tokens` | 单轮最大输出 Token 数。在需要显式思考预算的 `AnthropicMessage` 提供商上，设置思考等级时必须大于 1024 —— API 的最低预算要求 |
@@ -585,16 +590,16 @@ Skipped 1 entry in ~/.ante/catalog.json:
 
 解析模型 ID 时分层覆盖（后生效者覆盖前者）：
 
-1. **规范声明（Canonical spec）** — 目录中首个（按目录顺序）在其 `preferred_models` 中列出该 ID 的提供商。未知 ID 回退为纯基础默认规格。
+1. **提供商的模型声明** — 优先采用所选提供商 `preferred_models` 中的声明；未列出时，使用目录中首个包含该 ID 的提供商声明。未知 ID 回退为基础默认规格。
 2. **`models` 覆盖** — 用户在 `models` 中对该 ID 的局部配置（若有）。
 3. **环境变量覆盖** — 进程环境变量优先级高于一切。
 
 提供商与模型的匹配：
 若仅传入 `--model`，Ante 会挑选已认证且其 `preferred_models` 列表包含该 ID 的提供商，其次回退至没有 `preferred_models` 的已认证提供商，最后回退至默认提供商。
 
-若同时传入 `--provider` 与 `--model`，显式指定的提供商只要通过认证即优先胜出。Ante 仍会首先全局解析模型 ID，因此已知 ID 即使由不同提供商提供，也会继承目录元数据和用户覆盖；未知 ID 作为裸模型规格原样透传。
+若同时传入 `--provider` 与 `--model`，显式指定的提供商只要通过认证即优先胜出。Ante 优先使用该提供商的模型声明，再应用用户与环境变量覆盖；该提供商未列出该 ID 时才全局查找。未知 ID 作为基础模型规格原样透传。
 
-当未传入 `--model` / `--provider` 时，Ante 执行自动检测：按目录顺序选用第一个已认证提供商的最高权重模型（参见[权重等级](#weight-classes)），若均未认证则回退到 `local`。
+当命令行与设置均未指定模型或提供商时，Ante 执行自动检测：按目录顺序选用第一个已认证提供商的最高权重模型（参见[权重等级](#weight-classes)），若均未认证则回退到 `local`。
 
 ## 环境变量覆盖 {#environment-overrides}
 

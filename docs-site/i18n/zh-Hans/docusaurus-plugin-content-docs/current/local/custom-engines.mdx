@@ -39,20 +39,30 @@ Ante 通常会在安装期间自行写入这些字段。若将其指向自定义
 
 **模型专属额外参数。** 在模型的[偏好设置](/local/offline#model-preferences)中设置 `extra_args`，添加 llama.cpp 模型选项。字符串采用 Shell 语法解析并转换为该模型的路由器预设；提供的值会覆盖 Ante 模型默认值，无需重启共享服务：
 
+建议通过 CLI 设置，无需手写偏好键：
+
+```bash
+ante offline use Qwen3.5-9B --args "--threads 12 --load-mode mmap --cache-type-k q8_0"
+```
+
+直接编辑配置时，请使用模型的绝对文件路径或验证模型下载 URL 作为键（见 `ante offline list --json` 的 `reference`）；下方路径仅为示例。
+
 ```json
 {
   "model_preferences": {
-    "Qwen3.6-27B-Q4_K_M.gguf": {
-      "model_id": "Qwen3.6-27B-Q4_K_M.gguf",
+    "/models/Qwen3.6-27B-Q4_K_M.gguf": {
+      "model_id": "/models/Qwen3.6-27B-Q4_K_M.gguf",
+      "context_window": 32768,
+      "thinking_enabled": true,
       "extra_args": "--threads 12 --load-mode mmap --cache-type-k q8_0"
     }
   }
 }
 ```
 
-`--host`、`--port`、`--model`、`--alias` 等由路由器拥有或会改变模型身份的选项会被拒绝。格式错误的值也会显式失败，避免有效上下文、温度或推理状态与 Ante 上报内容不一致。
+请使用已安装 llama.cpp 版本支持的选项。`ante offline use` 会检查基本语法，并拒绝 `--host`、`--port`、`--model`、`--alias` 等保留选项。其他无效选项或参数值可能到加载模型时才报错。
 
-Ante v0.2.10 固定使用 llama.cpp `b11379`。旧加载参数 `--mlock`、`--mmap`、`--no-mmap`、`--dio` / `--direct-io` 与 `--ndio` / `--no-direct-io` 已被拒绝。请将已保存的 `extra_args` 中这些参数替换为 `--load-mode` 与引擎支持的模式，例如上面的 `--load-mode mmap`。
+Ante v0.2.12 固定使用 llama.cpp `b11540`。旧加载参数 `--mlock`、`--mmap`、`--no-mmap`、`--dio` / `--direct-io` 与 `--ndio` / `--no-direct-io` 已被拒绝。请将已保存的 `extra_args` 中这些参数替换为 `--load-mode` 与引擎支持的模式，例如上面的 `--load-mode mmap`。
 
 **GPU 卸载层数。** `llama_cpp.server_defaults.gpu_layers` 控制 `-ngl` 参数。默认 `-1` 代表将所有网络层卸载至 GPU；若显存紧张可适当调小数值：
 

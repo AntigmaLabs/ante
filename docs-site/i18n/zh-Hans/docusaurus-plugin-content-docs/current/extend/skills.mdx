@@ -99,7 +99,7 @@ my-skill/
 6. `.agents/skills/`（项目级）
 7. `.ante/skills/`（项目级）
 
-发现的技能会在附加到首条用户消息的提醒中声明给模型，[子智能体](/extend/subagents)会自动继承父会话的技能。
+Ante 会向模型介绍可用技能，[子智能体](/extend/subagents)会自动继承父会话的技能。上下文空间有限时，提供给模型的技能列表可能会缩短。已配备的技能及其可用斜杠命令保持不变。
 
 启动 Ante 时传入 `--no-skills` 可完全跳过技能发现。不会向模型声明任何系统、用户或项目技能，也不会暴露为斜杠命令，`/resume` 会为恢复的会话保留该选择。若要持久化关闭技能，请在 [`settings.json`](/configuration/preference#settings-file) 中设置 `"skills": false`（`--skills` 可单次重新启用）。内置的 `--profile bare` 同样禁用技能。
 

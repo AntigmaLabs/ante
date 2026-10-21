@@ -26,7 +26,7 @@ description: "经过 Ante 严格测试与基准评测的精选本地 GGUF 模型
 | Qwen3.5 9B | Q4_K_M | 5.7 GB | 256K | Verified |
 | Gemma 4 E4B-it | Q4_K_M | 4.7 GB | 128K | Verified |
 
-“最大上下文”为模型底层架构支持的上限；Ante 默认将初始上下文窗口设置为 32K 以保持内存占用可预测，您可以在[偏好设置](/local/offline#model-preferences)中针对各模型调大，或通过 `ANTE_OFFLINE_CONTEXT` 环境变量覆盖。
+“最大上下文”为模型底层架构支持的上限；Ante 默认将初始上下文窗口设置为 32K 以保持内存占用可预测，您可以在[偏好设置](/local/offline#model-preferences)中针对各模型调大，或在尚无已保存偏好时通过 `ANTE_OFFLINE_CONTEXT` 环境变量覆盖。运行 `ante offline list` 可查看这些模型与发现的本地文件；`ante offline use <MODEL> --context <TOKENS>` 可保存默认模型及加载窗口。
 
 迄今为止的一项完整评测：Qwen3.6 27B 在 89 个 Terminal-Bench 2.1 任务（共 445 次 Trial）中取得了 **56.2%** 的准确率 —— 单个 17 GB 的本地模型在我们用于前沿模型的同一基准测试上展现出扎实实力。
 
@@ -46,7 +46,7 @@ Ante 在启动时会自动将 `~/.ante/verified_models.json` 合并到内置推�
       "kv_cache_bytes_per_token": 131072,
       "support_vision": false
     }
-  }
+  ]
 }
 ```
 

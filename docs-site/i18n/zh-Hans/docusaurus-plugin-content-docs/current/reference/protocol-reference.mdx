@@ -101,7 +101,7 @@ Ante 在客户端（Client）与守护进程（Daemon）之间采用强类型的
 | `cwd` | `string?` | 工作目录。默认采用守护进程所在的进程目录 |
 | `effort` | `Effort?` | [思考深度（Effort）](/usage/models-and-thinking#effort)覆盖值：`"min"`、`"low"`、`"medium"`、`"high"`、`"xhigh"` 或 `"max"`。`null` 时从目录中解析 |
 | `enable_auto_memory` | `bool?` | 智能体是否记录并唤起[自动记忆（auto-memory）](/extend/memory)。`null` 时采用守护进程默认值（交互式会话开启） |
-| `short_prompt` | `bool?` | 启用紧凑工具描述与系统提示词以减小上下文占用。`null` 时采用配置默认值 |
+| `short_prompt` | `bool?` | 使用更短的内置工具描述；系统指令保持不变。`null` 时采用配置默认值 |
 | `no_skills` | `bool?` | 为 `true` 时跳过所有技能发现，不声明或调用任何技能。`null` 时采用会话默认值 |
 | `include_skills` | `string[]?` | 添加到会话基础集的精确技能名称。提供列表时替换主机的 `include_skills` 设置；`no_skills` 为 `true` 时不会重新启用技能发现 |
 | `exclude_skills` | `string[]?` | 从会话移除的精确技能名称。提供列表时替换主机的 `exclude_skills` 设置，且优先级高于 `include_skills` |

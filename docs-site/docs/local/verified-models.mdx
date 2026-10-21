@@ -25,7 +25,7 @@ Models graduate from Verified to Evaled as benchmark runs complete.
 | Qwen3.5 9B | Q4_K_M | 5.7 GB | 256K | Verified |
 | Gemma 4 E4B-it | Q4_K_M | 4.7 GB | 128K | Verified |
 
-"Max context" is what the model supports; Ante caps the default context window at 32K to keep memory predictable, and you can raise it per model in [preferences](/local/offline#model-preferences) or with `ANTE_OFFLINE_CONTEXT`.
+"Max context" is what the model supports; Ante caps the default context window at 32K to keep memory predictable, and you can raise it per model in [preferences](/local/offline#model-preferences) or with `ANTE_OFFLINE_CONTEXT` when no preferences are saved. Run `ante offline list` to see these models alongside discovered local files; `ante offline use <MODEL> --context <TOKENS>` saves a default model and load window.
 
 The one eval so far: Qwen3.6 27B reached **56.2%** accuracy across 89 Terminal-Bench 2.1 tasks with 445 trials — a 17 GB download holding its own on the same benchmark we use for frontier models.
 

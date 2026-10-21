@@ -56,7 +56,7 @@ ante [OPTIONS] [--prompt <PROMPT>]
 | `--system-prompt <PROMPT>` | Replace the default system prompt entirely. Conflicts with `--system-prompt-file` |
 | `--system-prompt-file <PATH>` | Read the replacement system prompt from a UTF-8 file. Conflicts with `--system-prompt` |
 | `--append-system-prompt <TEXT>` | Append text to the system prompt |
-| `--short-prompt` | Use the compact prompt set: a condensed system prompt and shorter built-in tool descriptions |
+| `--short-prompt` | Use shorter built-in tool descriptions; the system instructions are already compact and stay the same |
 | `--skills` / `--no-skills` | Load or skip skill discovery, overriding the `skills` setting. With `--no-skills`, no skills are advertised or invocable |
 | `--include-skills <SKILLS>` | Add exact skill names for this run, replacing the `include_skills` setting. Use a comma-separated value or repeat the flag |
 | `--exclude-skills <SKILLS>` | Remove exact skill names for this run, replacing the `exclude_skills` setting. Use a comma-separated value or repeat the flag; exclusions win |
@@ -67,7 +67,7 @@ ante [OPTIONS] [--prompt <PROMPT>]
 | `-r`, `--resume <SESSION_ID>` | Resume a previously saved session by its ID |
 | `--session-save` / `--no-session-save` | Save or skip session persistence, overriding the `session_save` setting. With `--no-session-save`, no transcript or resumable snapshot is written; conflicts with `--resume` |
 | `--check` | Run a verification pass after the main task completes |
-| `--offline-model <PATH>` | Path to a local GGUF file. Starts the managed llama.cpp router with `llama serve`, loads the model, points the session at the `local` provider, and tears it down on exit |
+| `--offline-model [MODEL]` | Load a local or verified model through `llama serve`, use the `local` provider, and shut the router down on exit. Accepts a path, discovered filename, or verified model name/URL; omit the value for the saved default. Conflicts with `--model` and `--provider` |
 
 A resumed headless session keeps its saved system prompts and prompt mode; prompt flags affect fresh sessions only. Model calls use the same streaming transport and idle timeout as the TUI, even when the selected output format shows only completed messages.
 
@@ -118,6 +118,7 @@ In headless mode, Ante automatically appends the current directory's folder stru
 
 - **Raw streaming deltas are suppressed** — Output shows complete messages, not the incremental chunks, so logs stay clean
 - **Unattended policy is explicit** — The default is `yolo`. An explicit `--permission-mode strict` or `auto` is honored, but any call that would need a prompt is denied at admission because no one can answer it
+- **The default prompt describes a single unattended turn** — It tells the model that no one can answer questions or send another message and that the session ends with the turn. Include the required inputs and output format in your initial prompt
 - **Authentication is checked eagerly** — If the provider isn't authenticated, Ante exits immediately with an error
 - **Fails fast if the daemon dies** — If the agent process exits before finishing the task, Ante reports an error instead of a success exit code
 

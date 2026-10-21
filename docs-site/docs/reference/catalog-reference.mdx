@@ -9,7 +9,7 @@ This page is the exhaustive reference. For sign-in and API-key setup, see [Conne
 
 ## Built-in providers
 
-The presets below match **v0.2.10**: 15 hosted-provider presets, plus `local` when an offline server is running.
+The presets below match **v0.2.12**: 15 hosted-provider presets, plus `local` when an offline server is running.
 
 | Provider | key | Wire style | Authentication |
 |---|---|---|---|
@@ -104,11 +104,14 @@ Notes:
 | Model | Description | Context |
 |---|---|---|
 | `gemini-3.8-flash` | Gemini 3.8 Flash for long-horizon coding and autonomous agents | 1.05M |
+| `gemini-4-argon` | Gemini 4 Argon for complex reasoning and autonomous agents | 1.05M |
 | `gemini-3.5-flash-lite` | Fastest, lowest-cost Gemini 3.5 model for high-throughput work | 1M |
 
 ```bash
 ante --provider gemini --model gemini-3.8-flash
 ```
+
+With no model supplied by CLI flags or settings, `--provider gemini` or `--provider vertex-gemini` selects the heaviest model, Gemini 4 Argon. Its native preset allows up to 32,768 output tokens; the OpenRouter `google/gemini-4-argon` preset allows 65,536. Both support image input and `low`, `medium`, and `high` effort.
 
 ### Grok (xAI)
 
@@ -140,11 +143,13 @@ Open Router ships as three providers sharing one API key, split by wire style: `
 
 | Model | Description | Context |
 |---|---|---|
+| `google/gemini-4-argon` | Gemini 4 Argon for complex reasoning via OpenRouter | 1.05M |
 | `google/gemini-3.8-flash` | Gemini 3.8 Flash for long-horizon coding and autonomous agents | 1.05M |
 | `x-ai/grok-4.7` | Grok 4.7 flagship reasoning model via OpenRouter | 500K |
 | `qwen/qwen3.8-max-0902` | Qwen 3.8 flagship multimodal reasoning model | 1M |
 | `qwen/qwen3.7-plus` | Cost-effective Qwen 3.7 model with vision | 1M |
 | `qwen/qwen3.8-flash` | Qwen 3.8 Flash multimodal reasoning model | 1M |
+| `meta/muse-wonder` | Muse Wonder for complex agentic reasoning and coding | 1.05M |
 | `meta/muse-spark-1.3` | Muse Spark 1.3 multimodal agentic reasoning model | 1.05M |
 | `tencent/hy3` | Tencent Hy3 agentic reasoning model | 262K |
 | `xiaomi/mimo-v2.6-pro` | MiMo-V2.6-Pro multimodal agentic model | 1.05M |
@@ -201,7 +206,7 @@ Set `DEEPSEEK_API_KEY`, and optionally `DEEPSEEK_BASE_URL`.
 | `qwen3.7-plus` | Latest Qwen 3.7 Plus | 1M |
 | `gemini-3.1-pro-preview` | Gemini 3.1 Pro with deep thinking | 1M |
 | `claude-haiku-5-5` | Fastest Claude model for high-volume, latency-sensitive work | 1M |
-| `claude-sonnet-5` | Best combination of speed and intelligence | 1M |
+| `claude-sonnet-5-5` | Best combination of speed and intelligence | 1M |
 | `claude-opus-5` | Complex agentic coding and enterprise work | 1M |
 | `claude-fable-5-1` | Most capable Claude model | 1M |
 | `gpt-6-astra` | OpenAI's most capable model for complex agentic work | 1.05M |
@@ -218,13 +223,13 @@ Set `DEEPSEEK_API_KEY`, and optionally `DEEPSEEK_BASE_URL`.
 | `glm-5.3-flashx` | High-speed GLM 5.3 FlashX with native vision | 1M |
 
 ```bash
-ante --provider antix --model claude-sonnet-5         # OAuth
-ante --provider antix-api-key --model claude-sonnet-5 # ANTIX_API_KEY
+ante --provider antix --model claude-sonnet-5-5       # OAuth
+ante --provider antix-api-key --model claude-sonnet-5-5 # ANTIX_API_KEY
 ```
 
 ### Local
 
-Run GGUF models locally via the built-in llama.cpp engine — no API key required. `local` is a wildcard provider; the available model depends on what the offline server has loaded, and the entry exists in the catalog only while a live server is registered. Selecting `local` with no server running gates the session with a notice until you start or attach one. See [Offline Mode](/local/offline) for setup.
+Run GGUF models locally via the built-in llama.cpp engine — no API key required. The `local` provider is available while an offline model is ready. For managed models, its settings reflect the active context window, thinking, temperature, and vision capabilities. Unloading the model or stopping the server makes `local` unavailable. Start or attach a model before using `--provider local`; the flag by itself does not start the engine. See [Offline Mode](/local/offline) for setup.
 
 ```bash
 ante --provider local
@@ -555,7 +560,7 @@ The same fields describe a model fully inside a provider's `preferred_models` (w
 | `id` | Model id. Required in `preferred_models` (`name` is accepted as a legacy alias); supplied by the map key under `models`. |
 | `display_name` | Friendly name. |
 | `description` | Short description shown in the model picker. |
-| `temperature` | Sampling temperature. On `AnthropicMessage` providers, extended thinking requires `1` — any other value with an effort level set fails the turn with an explicit message. |
+| `temperature` | Sampling temperature. On `AnthropicMessage` providers, must be `1` while thinking is active; Claude Haiku 5.5 requires `1` regardless of thinking settings. Other values fail before the request is sent. |
 | `top_p` | Nucleus sampling cutoff. |
 | `top_k` | Top-k sampling cutoff. |
 | `max_tokens` | Maximum output tokens per turn. On `AnthropicMessage` providers that take an explicit thinking budget, it must exceed 1024 — the API's minimum budget — when an effort level is set. |
@@ -591,15 +596,15 @@ Explicit `--provider` and `--model` flags override the `provider` and `model` va
 
 When Ante resolves a model id it layers three sources, last wins:
 
-1. **Canonical spec** — the first provider (in catalog order) whose `preferred_models` lists that id. An unknown id falls back to a bare default spec.
+1. **Provider model spec** — the selected provider's `preferred_models` entry, if it lists that id. Otherwise, the first matching entry in catalog order. An unknown id falls back to a bare default spec.
 2. **`models` override** — your partial patch for that id, if any.
 3. **Environment overrides** — the process env vars below win over everything.
 
 Providers are matched to models too. If you pass only `--model`, Ante picks an authenticated provider whose `preferred_models` list contains that id, falling back to an authenticated provider with no `preferred_models`, then to the default provider.
 
-If you pass both `--provider` and `--model`, the explicit provider choice wins as long as that provider is authenticated. Ante still resolves the model id globally first, so known ids inherit catalog metadata and user overrides even when served by a different provider; unknown ids are passed through as bare model specs.
+If you pass both `--provider` and `--model`, the explicit provider choice wins as long as that provider is authenticated. Ante uses that provider's model spec before applying user and environment overrides, falling back to a global lookup only when the provider does not list the id. Unknown ids are passed through as bare model specs.
 
-When you don't pass `--model`/`--provider`, Ante auto-detects: it uses the first authenticated provider in catalog order and that provider's heaviest-weight model (see [Weight classes](#weight-classes)), falling back to `local` if nothing is authenticated.
+When neither CLI flags nor settings name a model or provider, Ante auto-detects: it uses the first authenticated provider in catalog order and that provider's heaviest-weight model (see [Weight classes](#weight-classes)), falling back to `local` if nothing is authenticated.
 
 ## Environment overrides
 

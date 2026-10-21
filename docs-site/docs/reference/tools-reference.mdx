@@ -9,7 +9,7 @@ Tools are the capabilities available to the agent during a session. Some tools r
 
 ### Read
 
-Read text files, images, and PDFs. Long lines are returned in full rather than clipped.
+Read text files, images, and PDFs. Long lines are returned in full rather than clipped. Image detection also checks file contents, so a PNG saved without an extension or with a `.bin` suffix is still read as an image.
 
 PDFs are processed client-side — pages are rendered locally and their embedded text extracted, with no network round-trip — and reads are bounded to a page range so large documents can be read in chunks.
 

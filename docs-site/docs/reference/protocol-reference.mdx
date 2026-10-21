@@ -100,7 +100,7 @@ Initialize a new session, replacing any session already running. A field supplie
 | `cwd` | `string?` | Working directory. Defaults to daemon's process directory |
 | `effort` | `Effort?` | [Effort](/usage/models-and-thinking#effort) override: `"min"`, `"low"`, `"medium"`, `"high"`, `"xhigh"`, or `"max"`. `null` resolves from the catalog |
 | `enable_auto_memory` | `bool?` | Whether the agent records and recalls [auto-memory](/extend/memory). `null` leaves the daemon default (on for interactive sessions) |
-| `short_prompt` | `bool?` | Use compact tool descriptions and system prompt to shrink the context footprint. `null` leaves the settings default |
+| `short_prompt` | `bool?` | Use shorter built-in tool descriptions; the system instructions stay the same. `null` leaves the settings default |
 | `no_skills` | `bool?` | When `true`, skip all skill discovery so no skills are advertised or invocable. `null` leaves the session default |
 | `include_skills` | `string[]?` | Exact skill names added to the session's base set. A supplied list replaces the host's `include_skills` setting and does not enable discovery when `no_skills` is true |
 | `exclude_skills` | `string[]?` | Exact skill names removed from the session. A supplied list replaces the host's `exclude_skills` setting and wins over `include_skills` |

@@ -20,6 +20,7 @@ Ante persists configuration and state on the local filesystem. This page is a re
 | `~/.ante/sessions/<session-id>/` | Persisted sessions (for `/resume` and `--resume`) |
 | `~/.ante/projects/<project-id>/memory/` | Per-project auto-memory |
 | `~/.ante/run/jobs/<proc-id>/` | Background Bash job handles: `status.json`, `stdout.txt`, and `stderr.txt` |
+| `~/.ante/run/offline/` | Managed router process record (`router.json`) and model presets (`presets.ini`), retained so a kept router can be reused by a later launch |
 | `~/.ante/run/serve.sock` | Default Unix socket for [`ante serve --sock`](/reference/cli-reference#ante-serve); a `serve.sock.lock` sibling holds the host's exclusive lock |
 | OS cache dir (`~/Library/Caches/ante`, `$XDG_CACHE_HOME/ante`) | Oversized WebFetch response spill files |
 | OS temp dir | Disposable staging files and intermediate downloads |
@@ -114,7 +115,7 @@ See the [Catalog Reference](/reference/catalog-reference#catalogjson-schema) for
 
 ## `AGENTS.md`
 
-Stores persistent instructions for the agent. `~/.ante/AGENTS.md` applies globally, and a project `AGENTS.md` applies to that repository. When both exist, Ante includes both in the first user message of a session.
+Stores persistent instructions for the agent. `~/.ante/AGENTS.md` applies globally, and a project `AGENTS.md` applies to that repository. When both exist, Ante includes both in the session preamble, ahead of the conversation.
 
 See [AGENTS.md](/extend/agents-md) for usage guidance and precedence details.
 
@@ -147,6 +148,9 @@ See [AGENTS.md](/extend/agents-md) for usage guidance and precedence details.
 ├── run/
 │   ├── jobs/
 │   │   └── <proc-id>/  # Background Bash status and output
+│   ├── offline/
+│   │   ├── router.json # Router PID, port, and identity
+│   │   └── presets.ini # Model load presets
 │   ├── serve.sock      # `ante serve --sock` listener
 │   └── serve.sock.lock # Ownership lock for the socket above
 ├── logs/

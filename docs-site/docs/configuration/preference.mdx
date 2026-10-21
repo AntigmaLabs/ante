@@ -83,9 +83,9 @@ An example `settings.json`:
 | `ambient_thinking_phrase` | Whether the TUI predicts a [task-specific spinner phrase](/reference/tui-reference#spinner-thinking-phrase) while you type. On unless set to `false` |
 | `tips` | Whether the TUI shows a [tip line](/reference/tui-reference#spinner-tips) under the spinner while the agent works. On unless set to `false` |
 | `group_tool_activity` | Collapse contiguous quiet tool calls into a single activity summary in the chat. On unless set to `false`; full per-call details remain in the **Ctrl+O** transcript. Changes apply to new tool activity only |
-| `short_prompt` | Use the compact prompt set — a condensed system prompt and shorter built-in tool descriptions — for fresh sessions; resumes retain their saved prompt mode. Off unless set to `true`; the `--short-prompt` CLI flag enables it for a single run |
+| `short_prompt` | Use shorter built-in tool descriptions for fresh sessions; the system instructions are already compact and stay the same. Resumes retain their saved prompt mode. Off unless set to `true`; the `--short-prompt` CLI flag enables it for a single run |
 | `max_concurrent_subagents` | Cap on how many subagents a session runs at once. When the model spawns more `Agent` calls than this in one message, the extra calls wait for a slot (the TUI shows `waiting for a subagent slot`) instead of starting immediately, and the `Agent` tool description tells the model about the cap. Unset, `null`, or `0` means no cap. Set it to `1` for a local model that serves one request at a time, so queued subagents don't sit in the server's queue until [`stream_idle_timeout_secs`](/reference/catalog-reference#provider-fields) fires. Settings-only, applied when starting or resuming a session; see [Concurrency limit](/extend/subagents#concurrency-limit) |
-| `auto_compact` | Proactively reduce older history as the dialog nears the context limit: aged tool results are evicted first, then only the older prefix the model will no longer see is summarized. Manual `/compact` targets a tighter working set than this automatic path. On unless set to `false`; `/compact` and overflow recovery still work when disabled. Toggling it in `/config` applies to the running session |
+| `auto_compact` | Automatically summarize older context as the conversation nears the model's context limit. On unless set to `false`; `/compact` and overflow recovery still work when disabled. Toggling it in `/config` applies to the running session |
 | `channel` | Release channel `ante update` tracks (`stable` or `nightly`). Defaults to `stable`; legacy `latest` values are treated as `stable`. See [Update & Channels](/start/update). |
 | `resize_reflow` | Scrollback strategy on terminal resize: `conservative` (default) or `purge` (see below) |
 | `render_mode` | Chat rendering strategy: `inline` (default, terminal-owned scrollback) or `fullscreen` (alternate screen with Ante-managed scrolling). Changes in `/config` apply live; `--fullscreen` overrides startup for one run without persisting |
@@ -210,7 +210,7 @@ The JSON input is a compatible subset of [Claude Code's statusline input](https:
 {
   "cwd": "/work/repo",
   "session_id": "ses_...",
-  "version": "0.2.10",
+  "version": "0.2.12",
   "model": { "id": "claude-sonnet-5-5", "display_name": "claude-sonnet-5-5" },
   "workspace": { "current_dir": "/work/repo", "project_dir": "/work/repo" },
   "thinking": { "enabled": true },
@@ -344,7 +344,7 @@ Settings can be overridden per-session via CLI flags.
 | `ANTE_HOME` | Override the home config directory (default: `~/.ante`) |
 | `ANTE_PROFILE` | Select a named settings profile for the whole process, including subcommands and external applications; equivalent to `--profile <name>` |
 | `ANTE_INSTALL_DIR` | Installer-only override for the binary install directory (default: `~/.ante/bin`) |
-| `ANTE_OFFLINE_CONTEXT` | Override the local model context-window cap in tokens (see [Offline Mode](/local/offline#environment-variables)) |
+| `ANTE_OFFLINE_CONTEXT` | Override the initial local context window when no model preferences are saved (see [Offline Mode](/local/offline#environment-variables)) |
 | `ANTE_MCP_TOOL_TIMEOUT` | MCP `tools/call` deadline in whole seconds. Defaults to `600`; zero or invalid values keep the default (see [MCP tool-call timeout](/extend/mcp#tool-call-timeout)) |
 | `ANTE_OPENAI_TRANSPORT` | OpenAI Responses transport: `http_sse` (default) or `websocket_auto` (see [OpenAI transports](/reference/catalog-reference#openai-transports)) |
 | `ANTE_TELEMETRY` | Disable OpenTelemetry export with `off`, `false`, `0`, `disable`, or `disabled` (case-insensitive) |

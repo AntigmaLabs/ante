@@ -21,6 +21,7 @@ Ante 将配置与状态持久化保存在本地文件系统中。本页面为 An
 | `~/.ante/sessions/<session-id>/` | 持久化会话数据（供 `/resume` 和 `--resume` 使用） |
 | `~/.ante/projects/<project-id>/memory/` | 各项目的专属自动记忆库 |
 | `~/.ante/run/jobs/<proc-id>/` | 后台 Bash 任务句柄：`status.json`、`stdout.txt` 和 `stderr.txt` |
+| `~/.ante/run/offline/` | 托管路由器的 `router.json` 进程记录和 `presets.ini` 模型预设；保留的路由器靠这些文件供后续启动复用 |
 | `~/.ante/run/serve.sock` | [`ante serve --sock`](/reference/cli-reference#ante-serve) 的默认 Unix 套接字；同级的 `serve.sock.lock` 持有宿主的排他锁 |
 | 系统缓存目录（`~/Library/Caches/ante`、`$XDG_CACHE_HOME/ante`） | WebFetch 超大响应溢出暂存文件 |
 | 系统临时目录 | 一次性暂存文件与中间下载数据 |
@@ -115,7 +116,7 @@ WebFetch 溢出文件使用系统缓存目录：macOS 为 `~/Library/Caches/ante
 
 ## `AGENTS.md` {#agentsmd}
 
-存储智能体的持久化行为指引。`~/.ante/AGENTS.md` 全局生效，项目 `AGENTS.md` 作用于该代码仓库。当两者同时存在时，Ante 会在会话首条用户消息中同时注入两者。
+存储智能体的持久化行为指引。`~/.ante/AGENTS.md` 全局生效，项目 `AGENTS.md` 作用于该代码仓库。当两者同时存在时，Ante 会在对话之前的会话前导提醒中同时注入两者。
 
 使用指南与优先级规则请参阅 [AGENTS.md](/extend/agents-md)。
 
@@ -148,6 +149,9 @@ WebFetch 溢出文件使用系统缓存目录：macOS 为 `~/Library/Caches/ante
 ├── run/
 │   ├── jobs/
 │   │   └── <proc-id>/  # 后台 Bash 状态与输出
+│   ├── offline/
+│   │   ├── router.json # 路由器 PID、端口及身份信息
+│   │   └── presets.ini # 模型加载预设
 │   ├── serve.sock      # `ante serve --sock` 监听套接字
 │   └── serve.sock.lock # 上述套接字的所有权锁
 ├── logs/

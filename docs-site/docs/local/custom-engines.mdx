@@ -34,22 +34,32 @@ Ante normally writes these fields itself during installation. If you point them 
 
 Two knobs shape managed inference:
 
-**Per-model extra flags.** Set `extra_args` in a model's [preferences](/local/offline#model-preferences) to add llama.cpp model options. The string is parsed shell-style (quoting works) and translated into that model's router preset, so a supplied value overrides Ante's model default without restarting the shared server:
+**Per-model extra flags.** Set `extra_args` in a model's [preferences](/local/offline#model-preferences) to add llama.cpp model options. The string is parsed shell-style (quoting works) and translated into that model's router preset, so a supplied value overrides Ante's model default without restarting the shared server.
+
+Use the CLI to set these without writing the preference key by hand:
+
+```bash
+ante offline use Qwen3.5-9B --args "--threads 12 --load-mode mmap --cache-type-k q8_0"
+```
+
+When editing the config directly, use the model's absolute path or verified download URL as the key (`reference` in `ante offline list --json`); the path below is an example.
 
 ```json
 {
   "model_preferences": {
-    "Qwen3.6-27B-Q4_K_M.gguf": {
-      "model_id": "Qwen3.6-27B-Q4_K_M.gguf",
+    "/models/Qwen3.6-27B-Q4_K_M.gguf": {
+      "model_id": "/models/Qwen3.6-27B-Q4_K_M.gguf",
+      "context_window": 32768,
+      "thinking_enabled": true,
       "extra_args": "--threads 12 --load-mode mmap --cache-type-k q8_0"
     }
   }
 }
 ```
 
-Router-owned or identity-changing options such as `--host`, `--port`, `--model`, and `--alias` are rejected. Malformed values also fail explicitly instead of producing a preset whose effective context, temperature, or reasoning state differs from what Ante reports.
+Use options supported by your installed llama.cpp build. `ante offline use` checks basic syntax and rejects reserved options such as `--host`, `--port`, `--model`, and `--alias`. Other invalid options or values may only fail when loading a model.
 
-Ante v0.2.10 pins llama.cpp to `b11379`. The old loading flags `--mlock`, `--mmap`, `--no-mmap`, `--dio` / `--direct-io`, and `--ndio` / `--no-direct-io` are rejected. Replace them in saved `extra_args` with `--load-mode` and a mode supported by your engine, such as `--load-mode mmap` above.
+Ante v0.2.12 pins llama.cpp to `b11540`. The old loading flags `--mlock`, `--mmap`, `--no-mmap`, `--dio` / `--direct-io`, and `--ndio` / `--no-direct-io` are rejected. Replace them in saved `extra_args` with `--load-mode` and a mode supported by your engine, such as `--load-mode mmap` above.
 
 **GPU offload.** `llama_cpp.server_defaults.gpu_layers` controls the `-ngl` value. The default `-1` offloads all layers to the GPU; lower it if your VRAM is tight:
 
