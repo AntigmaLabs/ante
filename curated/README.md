@@ -75,6 +75,37 @@ The `tavily` example connects over Streamable HTTP, which requires Ante v0.2.12 
 | [perplexity](./web-search-MCP/perplexity.settings.json) | [doc](https://docs.perplexity.ai/docs/getting-started/integrations/mcp-server) |
 | [brave](./web-search-MCP/brave.settings.json) | [github](https://github.com/brave/brave-search-mcp-server) |
 
+### sem-code
+
+Optional local code discovery using [Sem](https://github.com/Ataraxy-Labs/sem).
+Install Sem following its upstream instructions (`sem --version`); this profile
+uses its stdio MCP server and exposes only `sem_find` and `sem_grep` to Ante.
+These provide symbol context and source search without selecting a model or
+replacing built-in tools.
+
+Copy `curated/sem-code.settings.json` into `~/.ante/`, then launch with an
+explicit existing Git checkout:
+
+```sh
+SEM_REPO="$(git rev-parse --show-toplevel)" ante --profile sem-code
+```
+
+Run this from the checkout you want to inspect. In `/mcp`, check that `sem`
+connects and lists `sem_find` and `sem_grep`. Ask for a known symbol using
+`mcp__sem__sem_find`, then inspect matching source with `mcp__sem__sem_grep`.
+The first query may create a local index. Sem needs no provider credentials;
+Ante's model inference still needs your usual provider setup.
+
+Named profiles replace the whole settings file rather than extending it. To
+preserve your current setup, copy just the `sem` entry into your existing
+`mcp_servers` map instead. If the launcher does not inherit your shell environment,
+set `env.SEM_REPO` to your checkout path in your local copy. Use an absolute
+`command` path if `sem` is not on Ante's PATH.
+
+The tool allowlist limits what Ante exposes, not OS permissions. Sem may write
+its index; `SEM_REPO` is not a sandbox. The full server also has validation tools
+that can run commands, so retain the allowlist and use trusted checkouts.
+
 ## Skills
 
 [Agent Skills](https://agentskills.io) folders, each with a `SKILL.md`. Copy a folder into `~/.ante/skills/` for all projects, or `.ante/skills/` for one project. See the [skills docs](https://docs.antigma.ai/extend/skills).
