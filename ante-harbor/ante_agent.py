@@ -366,6 +366,7 @@ def catalog_overlay(
     provider: str,
     openrouter_routing: dict[str, Any] | None,
     stream_idle_timeout_secs: int | None,
+    catalog_model: dict[str, Any] | None = None,
 ) -> dict[str, Any] | None:
     """Build a partial ``catalog.json`` that tunes one built-in provider.
 
@@ -373,12 +374,17 @@ def catalog_overlay(
     so only the overridden fields are written. ``openrouter_routing`` becomes
     the request body's OpenRouter ``provider`` object (``order``, ``only``,
     ``ignore``, ``quantizations``, ``sort``, ``allow_fallbacks``, ...).
+    ``catalog_model`` is appended to the provider's built-in
+    ``preferred_models``, e.g. to declare ``supported_efforts`` for a model the
+    built-in catalog does not know, without which Ante drops ``--effort``.
     """
     fields: dict[str, Any] = {}
     if openrouter_routing:
         fields["extra_body"] = {"provider": openrouter_routing}
     if stream_idle_timeout_secs is not None:
         fields["stream_idle_timeout_secs"] = stream_idle_timeout_secs
+    if catalog_model:
+        fields["preferred_models"] = [catalog_model]
     return {"providers": {provider: fields}} if fields else None
 
 
@@ -397,9 +403,20 @@ def missing_catalog_overrides(catalog_output: str, overlay: dict[str, Any]) -> l
     missing = []
     for provider, fields in overlay["providers"].items():
         entry = providers.get(provider, {})
-        missing += [
-            f"{provider}.{name}" for name, value in fields.items() if entry.get(name) != value
-        ]
+        for name, value in fields.items():
+            if name == "preferred_models":
+                # Appended to the built-in list; Ante may add defaults to each.
+                loaded_models = {model.get("id"): model for model in entry.get(name) or []}
+                missing += [
+                    f"{provider}.{name}[{model['id']}]"
+                    for model in value
+                    if any(
+                        loaded_models.get(model["id"], {}).get(key) != field
+                        for key, field in model.items()
+                    )
+                ]
+            elif entry.get(name) != value:
+                missing.append(f"{provider}.{name}")
     return missing
 
 
@@ -441,6 +458,14 @@ class AnteOptions(InstalledAgentOptions):
         gt=0,
         description="Seconds a model stream may stay silent before Ante reconnects.",
     )
+    catalog_model: dict[str, Any] | None = Field(
+        default=None,
+        description=(
+            "Ante catalog model entry (JSON with `id`) appended to the provider's "
+            "`preferred_models`, e.g. to declare `supported_efforts` for a model "
+            "the built-in catalog does not know."
+        ),
+    )
     pricing: dict[str, Any] | None = Field(
         default=None,
         description=(
@@ -461,7 +486,7 @@ class AnteOptions(InstalledAgentOptions):
         split_extra_ante_args(value or "")
         return value
 
-    @field_validator("openrouter_routing", "pricing", mode="before")
+    @field_validator("openrouter_routing", "catalog_model", "pricing", mode="before")
     @classmethod
     def parse_json_object(cls, value: Any, info: ValidationInfo) -> Any:
         """Accept the JSON text Harbor passes for ``--ak <field>=...``."""
@@ -681,16 +706,22 @@ class AnteAgent(BaseInstalledAgent):
         so a failure stops the trial rather than silently measuring a
         different configuration.
         """
-        if not (self.options.openrouter_routing or self.options.stream_idle_timeout_secs):
+        if not (
+            self.options.openrouter_routing
+            or self.options.stream_idle_timeout_secs
+            or self.options.catalog_model
+        ):
             return
         if not self.options.provider:
             raise ValueError(
-                "openrouter_routing and stream_idle_timeout_secs need an explicit provider"
+                "openrouter_routing, stream_idle_timeout_secs and catalog_model "
+                "need an explicit provider"
             )
         overlay = catalog_overlay(
             self.options.provider,
             self.options.openrouter_routing,
             self.options.stream_idle_timeout_secs,
+            self.options.catalog_model,
         )
         await environment.upload_file(_MERGE_JSON_SOURCE, _MERGE_JSON_PATH)
         await self._upload_config_text(
