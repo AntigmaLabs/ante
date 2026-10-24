@@ -75,6 +75,26 @@ The `tavily` example connects over Streamable HTTP, which requires Ante v0.2.12 
 | [perplexity](./web-search-MCP/perplexity.settings.json) | [doc](https://docs.perplexity.ai/docs/getting-started/integrations/mcp-server) |
 | [brave](./web-search-MCP/brave.settings.json) | [github](https://github.com/brave/brave-search-mcp-server) |
 
+### serply-search
+
+Add Google web, news and Scholar search plus page fetching with the [Serply MCP server](https://serply.io/mcp). [Serply](https://serply.io) needs an API key; new accounts get free trial credits ([docs](https://serply.io/docs)).
+
+Native remote connections cannot send custom headers yet, so the profile reaches `https://api.serply.io/mcp` through the [`mcp-remote`](https://www.npmjs.com/package/mcp-remote) stdio bridge, which sends the key as an `X-Api-Key` header. It needs Node.js for `npx`. Copy the profile, then replace `<your-api-key>` in its `env` block with your key:
+
+```sh
+mkdir -p ~/.ante
+cp curated/serply-search.settings.json ~/.ante/
+ante --profile serply-search
+```
+
+In `/mcp`, check that `serply` exposes `google_search`, `google_news_search`, `google_scholar_search` and `scrape_url`. Headless runs can use the same profile:
+
+```sh
+ante --profile serply-search -p "Search Google Scholar for recent papers on speculative decoding and list three with links."
+```
+
+The server offers more tools (Maps, Jobs, Video, Bing, Amazon and Reddit search); remove `enabled_tools` to expose all of them. As with `parallel-search`, a named profile replaces the whole settings file. To keep your current setup, merge just the `serply` entry into the `mcp_servers` map in `~/.ante/settings.json` instead, then restart Ante.
+
 ## Skills
 
 [Agent Skills](https://agentskills.io) folders, each with a `SKILL.md`. Copy a folder into `~/.ante/skills/` for all projects, or `.ante/skills/` for one project. See the [skills docs](https://docs.antigma.ai/extend/skills).
