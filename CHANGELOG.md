@@ -1,5 +1,24 @@
 # Changelog
 
+## v0.2.15 - 2026-10-23
+
+### Added
+- Remote MCP servers can authenticate: `url` servers in `mcp_servers` accept `headers` sent on every request, whose values may reference `${NAME}` from the environment so secrets stay out of the settings file; a bearer token is a plain `Authorization` header
+- OAuth sign-in for remote MCP servers with `ante mcp login <name>` / `ante mcp logout <name>`. It uses dynamic client registration and the server's advertised scopes by default; an optional `oauth` block sets a pre-registered `client_id`/`client_secret` or explicit `scopes`. A server that answers 401 names the login command to run
+- Background jobs view: while jobs run and the composer is empty, ↓ selects the `N bg jobs` footer pill and Enter opens a list of running commands, with status, runtime, the last stdout lines and stderr for each
+
+### Changed
+- The update notice's "What's new" preview links to https://ante.run/changelog instead of pointing at `CHANGELOG.md`
+- OpenRouter's MiniMax M3.1 Flash preset uses the paid `minimax/minimax-m3.1-flash` route; the free route was retired upstream
+- `thinking_budget` set in an OpenAI-compatible provider's `extra_body` is now sent instead of being dropped as a reserved field
+- Dependency updates
+
+### Fixed
+- TLS verification rejects the compromised intermediate keys on rustls-webpki's deny list (0.103.16), including cross-signed certificates
+
+### Crates
+- Public crates published as 0.2.15: ante-protocol-shape, ante-llm, ante-exec, ante-sdk
+
 ## v0.2.14 - 2026-10-21
 
 ### Added

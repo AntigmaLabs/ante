@@ -40,15 +40,14 @@ enum SearchPolicy {
     QwenEnableSearch,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Default)]
 pub struct ThinkingParams {
     pub reasoning_effort: Option<ReasoningEffort>,
     pub thinking: Option<ThinkingConfig>,
     pub enable_thinking: Option<bool>,
-    pub thinking_budget: Option<u32>,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Default)]
 pub struct SearchParams {
     pub enable_search: Option<bool>,
     pub search_options: Option<SearchOptions>,
@@ -120,10 +119,8 @@ impl OpenAiCompatProfile {
     pub fn thinking_params(self, requested: Option<Effort>) -> ThinkingParams {
         match self.thinking_dialect {
             ThinkingDialect::ThinkingObject => ThinkingParams {
-                reasoning_effort: None,
                 thinking: Some(thinking_object(thinking_on(requested))),
-                enable_thinking: None,
-                thinking_budget: None,
+                ..Default::default()
             },
             ThinkingDialect::Glm53ReasoningEffort { native_thinking } => ThinkingParams {
                 reasoning_effort: Some(effort::resolve(
@@ -131,27 +128,20 @@ impl OpenAiCompatProfile {
                     requested.unwrap_or(Effort::Max),
                 )),
                 thinking: native_thinking.then(|| thinking_object(true)),
-                enable_thinking: None,
-                thinking_budget: None,
+                ..Default::default()
             },
             ThinkingDialect::KimiThinkingObject => ThinkingParams {
-                reasoning_effort: None,
                 // Kimi K2.x only takes an explicit "disabled" object; on is the default.
                 thinking: (!thinking_on(requested)).then(|| thinking_object(false)),
-                enable_thinking: None,
-                thinking_budget: None,
+                ..Default::default()
             },
             ThinkingDialect::KimiK3ReasoningEffort => ThinkingParams {
                 reasoning_effort: requested.map(|r| effort::resolve(KIMI_K3_RUNGS, r)),
-                thinking: None,
-                enable_thinking: None,
-                thinking_budget: None,
+                ..Default::default()
             },
             ThinkingDialect::MuseSparkReasoningEffort => ThinkingParams {
                 reasoning_effort: requested.map(|r| effort::resolve(MUSE_SPARK_RUNGS, r)),
-                thinking: None,
-                enable_thinking: None,
-                thinking_budget: None,
+                ..Default::default()
             },
             ThinkingDialect::Qwen38ReasoningEffort => {
                 let setting = requested.map(|r| effort::resolve(QWEN38_RUNGS, r));
@@ -160,68 +150,44 @@ impl OpenAiCompatProfile {
                     Some(Qwen38Setting::ReasoningEffort(effort)) => (Some(effort), None),
                     None => (None, None),
                 };
-                ThinkingParams {
-                    reasoning_effort,
-                    thinking: None,
-                    enable_thinking,
-                    thinking_budget: None,
-                }
+                ThinkingParams { reasoning_effort, enable_thinking, ..Default::default() }
             }
             ThinkingDialect::QwenEnableThinking => ThinkingParams {
-                reasoning_effort: None,
-                thinking: None,
                 enable_thinking: Some(thinking_on(requested)),
-                thinking_budget: None,
+                ..Default::default()
             },
             ThinkingDialect::DeepSeek { max_reasoning_effort } => ThinkingParams {
                 reasoning_effort: requested
                     .and_then(|r| effort::resolve(&deepseek_rungs(max_reasoning_effort), r)),
                 thinking: Some(thinking_object(thinking_on(requested))),
-                enable_thinking: None,
-                thinking_budget: None,
+                ..Default::default()
             },
             ThinkingDialect::ReasoningEffort => ThinkingParams {
                 reasoning_effort: requested
                     .and_then(|r| effort::resolve(REASONING_EFFORT_RUNGS, r)),
-                thinking: None,
-                enable_thinking: None,
-                thinking_budget: None,
+                ..Default::default()
             },
             ThinkingDialect::OpenRouterHighXHigh => ThinkingParams {
                 reasoning_effort: requested.map(|r| effort::resolve(OPENROUTER_RUNGS, r)),
-                thinking: None,
-                enable_thinking: None,
-                thinking_budget: None,
+                ..Default::default()
             },
-            ThinkingDialect::None => ThinkingParams {
-                reasoning_effort: None,
-                thinking: None,
-                enable_thinking: None,
-                thinking_budget: None,
-            },
+            ThinkingDialect::None => ThinkingParams::default(),
         }
     }
 
     pub fn search_params(self) -> SearchParams {
         match self.search {
             SearchPolicy::OpenRouterWebSearchTool => SearchParams {
-                enable_search: None,
-                search_options: None,
-                enable_thinking: None,
                 extra_body: openrouter_web_search_extra_body(),
+                ..Default::default()
             },
             SearchPolicy::QwenEnableSearch => SearchParams {
                 enable_search: Some(true),
                 search_options: Some(SearchOptions { forced_search: true }),
                 enable_thinking: Some(false),
-                extra_body: Map::new(),
+                ..Default::default()
             },
-            SearchPolicy::Unsupported => SearchParams {
-                enable_search: None,
-                search_options: None,
-                enable_thinking: None,
-                extra_body: Map::new(),
-            },
+            SearchPolicy::Unsupported => SearchParams::default(),
         }
     }
 
@@ -465,9 +431,7 @@ pub fn thinking_params_for_supported_efforts(
         reasoning_effort: requested
             .and_then(|requested| effort::resolve_level(supported_efforts, requested))
             .map(reasoning_effort_ident),
-        thinking: None,
-        enable_thinking: None,
-        thinking_budget: None,
+        ..Default::default()
     }
 }
 
