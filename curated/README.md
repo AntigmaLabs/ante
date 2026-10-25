@@ -75,6 +75,16 @@ The `tavily` example connects over Streamable HTTP, which requires Ante v0.2.12 
 | [perplexity](./web-search-MCP/perplexity.settings.json) | [doc](https://docs.perplexity.ai/docs/getting-started/integrations/mcp-server) |
 | [brave](./web-search-MCP/brave.settings.json) | [github](https://github.com/brave/brave-search-mcp-server) |
 
+### [publish-MCP](./publish-MCP/)
+
+MCP servers that put what the agent builds (an HTML report, a demo page, a static site from `dist/`) on a public URL, so you can open it on another device or send someone the link. Each file follows the `<provider>.settings.json` convention used above.
+
+The `deed-page` example connects over Streamable HTTP, which requires Ante v0.2.12 or later. It needs no account or API key: the first `publish_site` call returns the site URL and an owner token, and the agent passes that token to `update_site`, `restore_version` or `delete_site` for the same site later. Anything published is public, so don't publish secrets or private data.
+
+| Provider | Link to documentation | Note |
+| --- | --- | --- |
+| [deed-page](./publish-MCP/deed-page.settings.json) | [doc](https://deed.page/docs) | Keyless. Rate-limited, with size limits on the free plan. |
+
 ## Skills
 
 [Agent Skills](https://agentskills.io) folders, each with a `SKILL.md`. Copy a folder into `~/.ante/skills/` for all projects, or `.ante/skills/` for one project. See the [skills docs](https://docs.antigma.ai/extend/skills).
