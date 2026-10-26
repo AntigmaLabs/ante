@@ -52,22 +52,22 @@ A collection of third-party web search providers, each with its MCP configuratio
 
 Based on their authentication requirements, the providers fall into the two groups listed below. Most of the listed providers offer a generous free-tier quota when you are logged in with an account. See the documentation for the default configuration used for each, the available knobs to tune for your use case, and CLI + agent skill alternatives.
 
-- No authentication requirement
+All examples except `duckduckgo` and `brave` connect over Streamable HTTP, which requires Ante v0.2.12; Ante v0.2.15 is recommended for authentication on remote MCP servers.
 
-The `exa`, `parallel`, and `firecrawl` examples connect over Streamable HTTP, which requires Ante v0.2.12 or later. The `duckduckgo` example requires `uvx`.
+See the [Ante MCP documentation](https://docs.antigma.ai/extend/mcp) for more info.
+
+- No authentication requirement
 
 | Provider | Link to documentation | Note |
 | --- | --- | --- |
 | [exa](./web-search-MCP/exa.settings.json) | [doc](https://exa.ai/docs/get-started/exa-mcp) | Rate-limited. |
 | [parallel](./web-search-MCP/parallel.settings.json) | [doc](https://docs.parallel.ai/integrations/mcp/search-mcp) | Rate-limited. |
 | [firecrawl](./web-search-MCP/firecrawl.settings.json) | [github](https://github.com/firecrawl/firecrawl-mcp-server) | A keyless connection gets a limited set of tools, `search` included. |
-| [duckduckgo](./web-search-MCP/duckduckgo.settings.json) | [github](https://github.com/nickclyde/duckduckgo-mcp-server) | Unofficial, community maintained. No account or API key. |
+| [duckduckgo](./web-search-MCP/duckduckgo.settings.json) | [github](https://github.com/nickclyde/duckduckgo-mcp-server) | Unofficial, community maintained. No account or API key. Requires `uvx`. |
 
 - Authentication required
 
-The examples show configurations with API key authentication. Substitute `<your-api-key>` with your actual key. Refer to the documentation if you want to use OAuth authentication instead.
-
-The `tavily` example connects over Streamable HTTP, which requires Ante v0.2.12 or later.
+The examples show configurations with API key authentication. Substitute `<your-api-key>` with your actual key. For a remote server, you may use `${KEY_NAME}` as a header value to read the key from the environment, so secrets stay out of the settings file. If you want to use OAuth authentication instead, omit the header entry and run `ante mcp login <provider>` after adding the server to your `settings.json`.
 
 | Provider | Link to documentation |
 | --- | --- |
