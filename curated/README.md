@@ -69,11 +69,14 @@ The examples show configurations with API key authentication. Substitute `<your-
 
 The `tavily` example connects over Streamable HTTP, which requires Ante v0.2.12 or later.
 
+The `serply` example reaches its remote MCP server through the [`mcp-remote`](https://www.npmjs.com/package/mcp-remote) stdio bridge, which sends the key as an `X-Api-Key` header, so it requires Node.js for `npx`.
+
 | Provider | Link to documentation |
 | --- | --- |
 | [tavily](./web-search-MCP/tavily.settings.json) | [doc](https://docs.tavily.com/documentation/mcp) |
 | [perplexity](./web-search-MCP/perplexity.settings.json) | [doc](https://docs.perplexity.ai/docs/getting-started/integrations/mcp-server) |
 | [brave](./web-search-MCP/brave.settings.json) | [github](https://github.com/brave/brave-search-mcp-server) |
+| [serply](./web-search-MCP/serply.settings.json) | [doc](https://serply.io/mcp) |
 
 ## Skills
 
