@@ -18,16 +18,16 @@ Ante saves your credentials for future sessions. Use `/connect` again when you n
 
 ## Sign in from the CLI
 
-For Antix, you can complete OAuth sign-in before opening the TUI or running a headless task:
+Sign in before opening the TUI or running a headless task:
 
 ```bash
-ante auth login antix
+ante auth login antix        # or anthropic, openai
 ante --provider antix
 ```
 
-The first command opens your browser. Finish signing in, then return to the terminal to run the second command.
+The first command opens your browser. Finish signing in, then return to the terminal to run the second command. On a remote machine, add `--no-browser` to print the sign-in URL instead.
 
-CLI login currently supports Antix. For Anthropic and OpenAI subscriptions, use `/connect` in the TUI. See [`ante auth`](/reference/cli-reference#ante-auth) for `--no-browser` and `--force` options.
+To add a second account, give it a label: `ante auth login anthropic/work`. `ante auth list` shows what is stored. See [`ante auth`](/reference/cli-reference#ante-auth) for every command.
 
 ## Use an API key
 
@@ -38,11 +38,17 @@ export ANTHROPIC_API_KEY="your-api-key"
 ante --provider anthropic
 ```
 
-The same flow works with any provider configured to read an environment variable. For example, use `OPENAI_API_KEY` with `--provider openai` or `ANTIX_API_KEY` with `--provider antix-api-key`. Find the exact provider names and variables in the [Catalog Reference](/reference/catalog-reference#built-in-providers).
+The same flow works with any provider configured to read an environment variable. For example, use `OPENAI_API_KEY` with `--provider openai` or `ANTIX_API_KEY` with `--provider antix`. Find the exact provider names and variables in the [Catalog Reference](/reference/catalog-reference#built-in-providers).
+
+To store a key instead of exporting it, run `ante auth add <provider>` and paste the key:
+
+```bash
+ante auth add anthropic
+```
 
 ### Paste a key in the TUI {#paste-an-api-key}
 
-Run `/welcome` and choose **Use API key**. Ante detects the provider from the key prefix, masks and validates the key, then stores it under `~/.ante/auth/` with access limited to your user. An environment key takes precedence over a saved key.
+Run `/welcome` and choose **Use API key**. Ante detects the provider from the key prefix, masks and validates the key, then stores it under `~/.ante/auth/` with access limited to your user. On built-in providers, an environment key takes precedence over a stored one.
 
 With Anthropic selected on the API-key step, press `Tab` to sign in to the Anthropic Console in your browser and provision a key automatically.
 
