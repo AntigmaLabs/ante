@@ -14,7 +14,7 @@ ante [OPTIONS] [COMMAND]
 | Command | Description |
 |---|---|
 | `ante` | Start the interactive TUI. If `-p` / `--prompt` is provided, run in headless mode instead. |
-| `ante auth` | Manage provider sign-in without starting an agent session. |
+| `ante auth` | Sign in, store API keys, and manage stored credentials without starting a session. |
 | `ante serve` | Run a long-lived protocol server over stdio, a Unix socket, or WebSocket. |
 | `ante gateway` | Run the Slack / Discord channel gateway. |
 | `ante update` | Check for the latest Ante release and install it if available. |
@@ -98,24 +98,40 @@ When resuming, the saved system prompts and prompt mode take precedence over `--
 ## `ante auth`
 
 ```bash
-ante auth login [PROVIDER] [OPTIONS]
+ante auth list
+ante auth login <NAME> [--no-browser]
+ante auth logout <NAME>
+ante auth add <NAME>
+ante auth rm <REFERENCE>
 ```
 
-Sign in to an OAuth provider without starting a TUI session. Today the supported provider is `antix`, and it is the default when `[PROVIDER]` is omitted.
+Manage the credentials Ante stores, without starting a session. A `NAME` is a provider, OAuth profile, or MCP server name, optionally with a `/label` for a second account (`anthropic/work`).
+
+| Command | Description |
+|---|---|
+| `list` | Show stored credentials: kind, issuer, account, state (`set`, `valid`, `expired`, `invalid`), and the providers that use each one. |
+| `login <NAME>` | Sign in through the browser. `NAME` is an OAuth profile (`anthropic`, `openai`, `antix`, or one of your [`oauth_profiles`](/reference/catalog-reference#oauth-profiles)), a provider that signs in with one (`anthropic-subscription`), or a remote [MCP server](/extend/mcp#authentication). Running it again signs in again. |
+| `logout <NAME>` | Forget a sign-in. |
+| `add <NAME>` | Store an API key, read from stdin (prompted on a terminal). When `NAME` is a provider, Ante checks the key against it first and refuses one the provider rejects. |
+| `rm <REFERENCE>` | Forget a stored credential: a key (`NAME` or `secret:NAME`), a sign-in (`oauth:NAME`), or a helper's saved output (`helper:NAME`, so the [helper](/reference/catalog-reference#helpers) runs again now). |
 
 | Flag | Description |
 |---|---|
-| `--force` | Re-run browser sign-in even when stored credentials already exist. |
-| `--no-browser` | Print the authorization URL instead of opening a browser. |
+| `--no-browser` | `login` only: print the authorization URL instead of opening a browser, for remote machines. |
 | `-h`, `--help` | Print command help. |
 
 ### Examples
 
 ```bash
-ante auth login
-ante auth login antix --force
-ante auth login --no-browser
+ante auth login antix
+ante auth login anthropic/work --no-browser
+ante auth login linear                       # an MCP server in mcp_servers
+echo "$TOGETHER_API_KEY" | ante auth add together
+ante auth rm oauth:anthropic/work
+ante auth list
 ```
+
+Credentials are stored as owner-only files under `~/.ante/auth/`. See [Credentials](/reference/catalog-reference#credentials) for how providers refer to them.
 
 ## `ante serve`
 

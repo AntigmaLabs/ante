@@ -218,7 +218,7 @@ Bring your own API key, subscription, or local model; no account required, not e
 | Local (GGUF) | Any GGUF model via built-in llama.cpp |
 | ...and more | Zai, Antix, OpenAI-compatible |
 
-**A config layer for everything else.** Your own proxy, gateway, or inference engine is one entry in `~/.ante/catalog.json`: a `wire_style` (Ante speaks four API dialects), an auth style (bearer, header, or query, from an env var or OAuth), plus `http_headers` and `extra_body` for whatever else the endpoint expects. The combinations cover most setups without a plugin or a code change:
+**A config layer for everything else.** Your own proxy, gateway, or inference engine is one entry in `~/.ante/catalog.json`: a `wire_style` (Ante speaks four API dialects), a `credential` (an env var, a stored key, an OAuth sign-in, or a helper command), plus `headers` and `extra_body` for whatever else the endpoint expects. The combinations cover most setups without a plugin or a code change:
 
 ```json
 {
@@ -226,8 +226,8 @@ Bring your own API key, subscription, or local model; no account required, not e
     "my-gateway": {
       "base_url": "https://gateway.example.com/v1",
       "wire_style": "OpenAiCompatible",
-      "auth": { "bearer": { "env_key": "MY_GATEWAY_API_KEY" } },
-      "http_headers": { "X-Org": "my-team" },
+      "credential": "env:MY_GATEWAY_API_KEY",
+      "headers": { "X-Org": "my-team" },
       "extra_body": { "service_tier": "priority" }
     }
   }
