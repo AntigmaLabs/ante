@@ -606,7 +606,7 @@ A helper is a command that prints a credential: a token from a vault, a cloud CL
 }
 ```
 
-`command` runs as written, with no shell, and must finish within 15 seconds. The first line of its output is the credential. Ante reuses it for `ttl_secs` seconds (at most a year), and runs the command again when that time is up or when the server rejects the credential. If the command fails, the request fails with the helper's name; Ante never falls back to another credential.
+`command` runs as written, with no shell, and must finish within 15 seconds. The first line of its output is the credential. Ante reuses it for `ttl_secs` seconds (at most a year), and runs the command again when that time is up or when the server rejects the credential. If the command fails, the request fails with the helper's name; Ante never falls back to another credential. See [Use a command for tokens](/usage/custom-sign-ins#helpers) for worked examples.
 
 #### OAuth profiles
 
@@ -631,7 +631,7 @@ An OAuth profile is the recipe for a sign-in. The built-in ones are `anthropic`,
 }
 ```
 
-Then run `ante auth login corp`. `client_id`, `redirect_uri`, `authorize_url`, and `token_url` are required; `redirect_uri` must be on `http://localhost` or `http://127.0.0.1`. Optional fields include `scopes`, `resource`, `authorize_params`, `token_request_encoding` (`json` or `form`), and `account_claim` (the JWT claim shown as the account in `ante auth list`). An entry named like a built-in replaces it whole. An `oauth:` reference to a profile that doesn't exist is an error.
+Then run `ante auth login corp`. `client_id`, `redirect_uri`, `authorize_url`, and `token_url` are required; `redirect_uri` must be on `http://localhost` or `http://127.0.0.1`. Optional fields include `scopes`, `resource`, `authorize_params`, `token_request_encoding` (`json` or `form`), and `account_claim` (the JWT claim shown as the account in `ante auth list`). An entry named like a built-in replaces it whole. An `oauth:` reference to a profile that doesn't exist is an error. [Add an OAuth sign-in](/usage/custom-sign-ins#oauth-profile) walks through a full setup.
 
 #### Templates
 
