@@ -40,6 +40,7 @@ MCP 服务器在 `~/.ante/settings.json` 的 `mcp_servers` 映射表中声明。
 | `transport` | 否 | `stdio`、`streamable-http` 或 `http`（`streamable-http` 的别名）。省略时根据 `command` 或 `url` 推断 |
 | `args` | 否 | 传递给命令的参数列表（仅 stdio） |
 | `env` | 否 | 注入给服务进程的环境变量（仅 stdio） |
+| `headers` | 否 | 每个请求都会携带的 HTTP 请求头（仅 Streamable HTTP）。值支持 `${NAME}`、`${NAME:-default}` 和 `${session_id}`。参见[认证](#authentication) |
 | `enabled_tools` | 否 | 显式白名单工具列表。若为空或省略，则默认暴露该服务的所有工具 |
 
 使用 **stdio** 时，Ante 启动命令子进程，通过其 stdin/stdout 进行 MCP 协议通信，并将 stderr 转发至日志。
@@ -48,7 +49,35 @@ MCP 服务器在 `~/.ante/settings.json` 的 `mcp_servers` 映射表中声明。
 
 `command` 与 `url` 必须且只能设置一个。显式指定的 `transport` 必须与之匹配。旧版 HTTP+SSE（`transport: "sse"`）不受支持。配置冲突、不支持的传输方式，或 URL 服务中非空的 `args`、`env`，会使该服务在预热时失败并显示具体原因。
 
-原生远程连接目前不提供自定义 HTTP 请求头、Bearer Token 或 OAuth 登录的配置。若服务需要这些功能，请使用支持相应认证方式的 stdio 桥接程序。请直接填写端点 URL：Ante 不会跟随 HTTP 重定向。
+请直接填写端点 URL：Ante 不会跟随 HTTP 重定向。
+
+## 认证 {#authentication}
+
+远程服务有两种认证方式。
+
+**OAuth 登录。** 大多数托管服务（Linear、Notion 等）支持 OAuth。只需配置 `url`，然后登录一次：
+
+```bash
+ante auth login linear
+```
+
+Ante 会自动发现该服务的登录方式，打开浏览器，并以服务名称存储登录结果，之后自动刷新。运行 `ante auth logout linear` 可清除登录。若未存储任何凭据，Ante 会以无凭据方式连接，需要登录的服务会提示这一点。
+
+**在 `headers` 中提供 Token。** 对于使用 API 密钥或个人访问令牌的服务，设置 `Authorization` 请求头即可。Ante 会原样发送，并跳过 OAuth 登录。建议从环境变量读取 Token，避免写入设置文件：
+
+```json
+{
+  "mcp_servers": {
+    "linear": { "url": "https://mcp.linear.app/mcp" },
+    "github": {
+      "url": "https://api.githubcopilot.com/mcp/",
+      "headers": { "Authorization": "Bearer ${GITHUB_TOKEN}" }
+    }
+  }
+}
+```
+
+其他请求头同样会被发送，`${session_id}` 会替换为当前会话的 ID。若某个 `${NAME}` 既无值也无默认值，该服务会在连接时失败，并指出缺失的变量。
 
 ## 工具命名规范 {#tool-naming}
 

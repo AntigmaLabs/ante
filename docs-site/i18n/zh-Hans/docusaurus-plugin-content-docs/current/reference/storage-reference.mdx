@@ -12,8 +12,8 @@ Ante 将配置与状态持久化保存在本地文件系统中。本页面为 An
 |---|---|
 | `~/.ante/settings.json` | 用户偏好设置（模型、提供商、主题、MCP 服务器） |
 | `~/.ante/<name>.settings.json` | 通过 `--profile <name>` 或 `ANTE_PROFILE` 选定的完整设置 Profile 文件 |
-| `~/.ante/catalog.json` | 自定义提供商/模型目录 |
-| `~/.ante/auth/` | OAuth 凭据及应用内粘贴的 API 密钥（仅所有者可读权限；环境变量优先级更高） |
+| `~/.ante/catalog.json` | 自定义提供商、OAuth Profile 与凭据 helper |
+| `~/.ante/auth/credentials/` | 已存储的凭据，仅所有者可读：`secret/`（API 密钥）、`oauth/`（登录）、`helper/`（helper 输出）。使用 [`ante auth`](/reference/cli-reference#ante-auth) 管理 |
 | `~/.ante/AGENTS.md` | 注入到每个项目会话中的全局行为指引 |
 | `~/.ante/skills/` | 用户级全局技能（Skills） |
 | `~/.ante/agents/` | 用户级全局子智能体（Sub-agents） |
@@ -92,7 +92,7 @@ WebFetch 溢出文件使用系统缓存目录：macOS 为 `~/Library/Caches/ante
 
 ## `catalog.json` {#catalogjson}
 
-在内置目录的基础上添加或覆盖提供商与模型。两个顶层键均为可选。`my-provider` 键即为传入 `--provider` 的标识。若键匹配内置预设（如 `openai`），则逐字段修改该提供商；若为新键则添加提供商；`models` 下的条目将在模型解析时覆盖对应模型的字段属性。
+在内置目录的基础上添加或修改提供商，并定义 OAuth Profile 与凭据 helper。所有顶层键均为可选。`my-provider` 键即为传入 `--provider` 的标识。若键匹配内置预设（如 `openai`），则逐字段修改该提供商；若为新键则添加提供商。
 
 ```json
 {
@@ -101,18 +101,15 @@ WebFetch 溢出文件使用系统缓存目录：macOS 为 `~/Library/Caches/ante
       "display_name": "My Provider",
       "base_url": "https://api.example.com/v1",
       "wire_style": "OpenAiCompatible",
-      "auth": { "bearer": { "env_key": "MY_PROVIDER_API_KEY" } }
+      "credential": "env:MY_PROVIDER_API_KEY"
     }
-  },
-  "models": {
-    "claude-sonnet-5-5": { "effort": "high", "max_tokens": 64000 }
   }
 }
 ```
 
-格式错误的提供商或模型条目会被单独跳过并在启动时报告。同一文件中的其他有效条目仍会正常加载。
+格式错误的条目会被单独跳过并在启动时报告。同一文件中的其他有效条目仍会正常加载。
 
-完整 Schema、认证格式与解析规则请参阅[目录参考手册](/reference/catalog-reference#catalogjson-schema)，定制配方请参阅[自定义模型目录范例](/reference/catalog-reference#custom-catalog)。
+完整 Schema、[凭据](/reference/catalog-reference#credentials)与解析规则请参阅[目录参考手册](/reference/catalog-reference#catalogjson-schema)，定制配方请参阅[自定义模型目录范例](/reference/catalog-reference#custom-catalog)。
 
 ## `AGENTS.md` {#agentsmd}
 
@@ -128,8 +125,8 @@ WebFetch 溢出文件使用系统缓存目录：macOS 为 `~/Library/Caches/ante
 ~/.ante/
 ├── settings.json       # 用户偏好设置
 ├── <name>.settings.json # 命名 Profile 配置文件
-├── catalog.json        # 自定义提供商/模型目录
-├── auth/               # OAuth 凭证与应用内粘贴的 API 密钥
+├── catalog.json        # 自定义提供商、OAuth Profile、helper
+├── auth/credentials/   # 已存储的密钥、登录与 helper 输出（仅所有者可读）
 ├── AGENTS.md           # 全局行为指引
 ├── installation-id     # 随机遥测安装标识
 ├── user_input_history.jsonl # TUI 提示词历史

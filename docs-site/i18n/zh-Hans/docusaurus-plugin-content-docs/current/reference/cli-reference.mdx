@@ -15,7 +15,7 @@ ante [OPTIONS] [COMMAND]
 | 命令 | 说明 |
 |---|---|
 | `ante` | 启动交互式 TUI 终端。若提供了 `-p` / `--prompt`，则以无头模式运行。 |
-| `ante auth` | 管理提供商的登录认证，无需拉起完整的智能体对话。 |
+| `ante auth` | 登录、存储 API 密钥并管理已存储的凭据，无需启动会话。 |
 | `ante serve` | 运行长寿命的协议服务端，支持 stdio、Unix 套接字或 WebSocket。 |
 | `ante gateway` | 运行接入 Slack / Discord 的消息网关。 |
 | `ante update` | 检查最新版本的 Ante 并自动安装。 |
@@ -88,24 +88,40 @@ ante -p "summarize this repo" --enable-auto-memory
 ## `ante auth` {#ante-auth}
 
 ```bash
-ante auth login [PROVIDER] [OPTIONS]
+ante auth list
+ante auth login <NAME> [--no-browser]
+ante auth logout <NAME>
+ante auth add <NAME>
+ante auth rm <REFERENCE>
 ```
 
-在不启动 TUI 会话的情况下登录 OAuth 提供商。目前支持的提供商为 `antix`（省略 `[PROVIDER]` 时的默认值）。
+在不启动会话的情况下管理 Ante 存储的凭据。`NAME` 为提供商、OAuth Profile 或 MCP 服务器名称，可附加 `/label` 以区分第二个账号（如 `anthropic/work`）。
+
+| 命令 | 说明 |
+|---|---|
+| `list` | 列出已存储的凭据：类型、签发方、账号、状态（`set`、`valid`、`expired`、`invalid`），以及使用该凭据的提供商。 |
+| `login <NAME>` | 通过浏览器登录。`NAME` 可以是 OAuth Profile（`anthropic`、`openai`、`antix` 或你在 [`oauth_profiles`](/reference/catalog-reference#oauth-profiles) 中定义的条目）、通过 OAuth 登录的提供商（`anthropic-subscription`），或远程 [MCP 服务器](/extend/mcp#authentication)。再次运行会重新登录。 |
+| `logout <NAME>` | 清除登录状态。 |
+| `add <NAME>` | 存储 API 密钥，从 stdin 读取（在终端中会提示输入）。若 `NAME` 为提供商，Ante 会先向该提供商校验密钥，被拒绝的密钥不会存储。 |
+| `rm <REFERENCE>` | 删除已存储的凭据：密钥（`NAME` 或 `secret:NAME`）、登录（`oauth:NAME`），或 helper 的缓存输出（`helper:NAME`，使该 [helper](/reference/catalog-reference#helpers) 立即重新运行）。 |
 
 | 参数标识 | 说明 |
 |---|---|
-| `--force` | 即使本地已存在凭证，仍强制重新打开浏览器登录。 |
-| `--no-browser` | 打印授权 URL 而非自动拉起浏览器。 |
+| `--no-browser` | 仅用于 `login`：打印授权 URL 而非自动拉起浏览器，适用于远程机器。 |
 | `-h`, `--help` | 打印帮助信息。 |
 
 ### 使用示例 {#ante-auth-examples}
 
 ```bash
-ante auth login
-ante auth login antix --force
-ante auth login --no-browser
+ante auth login antix
+ante auth login anthropic/work --no-browser
+ante auth login linear                       # an MCP server in mcp_servers
+echo "$TOGETHER_API_KEY" | ante auth add together
+ante auth rm oauth:anthropic/work
+ante auth list
 ```
+
+凭据以仅所有者可读的文件形式存储在 `~/.ante/auth/` 下。提供商如何引用这些凭据，请参阅[凭据](/reference/catalog-reference#credentials)。
 
 ## `ante serve` {#ante-serve}
 

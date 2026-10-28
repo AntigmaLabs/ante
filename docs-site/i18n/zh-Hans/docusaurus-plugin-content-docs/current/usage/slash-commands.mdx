@@ -17,16 +17,15 @@ description: "在交互式 TUI 终端中用于常用操作的内置命令"
 | `/config` | 打开设置对话框 —— 搜索、开关并跳转至主题、模型、提供商、状态栏、MCP 及离线设置（参见[偏好设置](/configuration/preference#settings-file)） |
 | `/theme` | 打开主题选择对话框 |
 | `/diff` | 展示 Git 改动 diff（包含未跟踪的文件） |
-| `/connect` | 通过 OAuth 登录（API 密钥会自动检测） |
 | `/models [model_id]` | 不带参数时，打开当前提供商的模型与思考深度选择器；带模型 ID 时，直接切换至该模型 —— 包含目录未列出的 ID |
-| `/providers` | 为当前会话选择可用的提供商 |
+| `/providers` | 选择提供商，或管理其账户与 API 密钥（`m`） |
 | `/add-provider` | 在 `catalog.json` 中配置自定义提供商 —— 发现端点模型并可探测每个模型支持的思考深度（参见[自定义模型目录](/reference/catalog-reference#custom-catalog)） |
 | `/offline-mode` | 通过内置推理引擎运行本地模型 |
 | `/term [name [args...]]` | 不带名称时，打开终端会话选择器；带名称时，附加或分离该 tmux 会话，当会话为新建时拉起同名命令及参数 —— 参见[终端会话](/usage/tui#terminal-sessions) |
 | `/update [skip \| cancel]` | 安排在退出时安装待更新的版本；`skip` 永久忽略该版本，`cancel` 取消已安排的更新 |
 | `/context` | 以彩色色块网格形式可视化当前上下文 Token 占用分布（按类别分解） |
 | `/usage` | 查看当前会话累计的消耗 —— 各模型 Token 计数、缓存命中率、轮次统计及订阅额度（参见[会话消耗统计](/usage/tui#session-usage)） |
-| `/welcome` | 显示欢迎/引导配置对话框 |
+| `/welcome` | 重新打开引导：当前提供商的访问视图 |
 | `/rewind` | 选择较早的输入，将当前对话恢复到它之前，并将提示词放回输入框（空输入框也可按两次 `Esc`）；参见[回退对话](/usage/tui#rewind-a-conversation) |
 | `/fork` | 从所选输入之前或完整对话创建已保存的新会话；`Enter` 切换到它，**s** 在终端分屏中打开；参见[分叉对话](/usage/tui#fork-a-conversation) |
 | `/resume` | 恢复当前目录下此前保存的会话 |

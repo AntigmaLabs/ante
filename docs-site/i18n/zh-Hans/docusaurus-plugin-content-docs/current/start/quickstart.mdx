@@ -39,7 +39,7 @@ ante
 
 Ante 会检测 `ANTHROPIC_API_KEY`、`OPENAI_API_KEY` 和 `GEMINI_API_KEY` 等密钥。所有受支持的提供商与环境变量请参阅[提供商目录](/reference/catalog-reference#built-in-providers)。
 
-首次在 Ante 中使用账户？输入 `/connect`，选择 **Antix**、**Anthropic Subscription** 或 **OpenAI Subscription**，然后在浏览器中完成登录。也可以通过 `/welcome` 粘贴 API 密钥，或通过 `/providers` 在已连接的提供商之间切换。
+首次在 Ante 中使用账户？输入 `/providers`，选中 **Antix**、**Anthropic Subscription** 或 **OpenAI Subscription**，按 `m`，然后在浏览器中完成登录。在同一视图中也可以填入 API 密钥。
 
 ## 使用 Antix 登录 {#log-in-with-antix}
 
@@ -60,7 +60,7 @@ ante --provider antix
 
 可以先问：`解释这个项目的目录结构，并指出主要入口。`
 
-也可以在 TUI 中登录：运行 `ante`，输入 `/connect` 并选择 **Antix**。其他提供商的 OAuth 登录及 API 密钥配置请参阅[连接提供商](/usage/providers)。
+也可以在 TUI 中登录：运行 `ante`，输入 `/providers`，选中 **Antix** 并按 `m`。其他提供商的 OAuth 登录及 API 密钥配置请参阅[连接提供商](/usage/providers)。
 
 ## 快速示例 {#quick-examples}
 

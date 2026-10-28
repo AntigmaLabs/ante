@@ -93,7 +93,8 @@ Ante 具备跨提供商无关性。每个提供商均实现了发送提示词与
 ### 身份认证 {#authentication}
 
 - **API 密钥** — 通过环境变量配置（`ANTHROPIC_API_KEY`、`OPENAI_API_KEY`、`GEMINI_API_KEY`、`XAI_API_KEY`、`OPENROUTER_API_KEY`、`OPENAI_COMPATIBLE_API_KEY`、`ZAI_API_KEY`、`DEEPSEEK_API_KEY`、`VERTEX_GEMINI_API_KEY`、`ANTIX_API_KEY`）
-- **OAuth** — Anthropic、OpenAI 与 Antix 支持交互式 OAuth 登录，在 TUI 中直接完成向导
+- **OAuth** — 支持 Anthropic、OpenAI、Antix 以及任意 `oauth_profiles` 条目的浏览器登录，可在 TUI 的 `/providers` 中或通过 `ante auth login` 完成
+- **已存储的密钥与 helper** — `ante auth add` 存储密钥；也可由 `helpers` 命令提供密钥。参见[凭据](/reference/catalog-reference#credentials)
 
 ## 工具系统 {#tool-system}
 
