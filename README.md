@@ -92,9 +92,9 @@ Requires `tmux` and whichever agent CLIs you want to run. [**Terminal orchestrat
 <tr>
 <td width="50%">
 
-**[Models, Providers & Thinking](https://docs.antigma.ai/usage/models-and-thinking)**
+**[Providers, Credentials & Models](https://docs.antigma.ai/usage/providers)**
 
-![Switching provider, model, and effort with /providers](docs-site/static/assets/cookbook/providers.gif)
+![Choosing a provider and its credential in /providers, then signing in](docs-site/static/assets/cookbook/providers.gif)
 
 </td>
 <td width="50%">
@@ -115,20 +115,13 @@ Requires `tmux` and whichever agent CLIs you want to run. [**Terminal orchestrat
 </td>
 <td width="50%">
 
-**[Subscription Login](https://docs.antigma.ai/usage/login)**
-
-![Connecting to a provider via /connect](docs-site/static/assets/cookbook/connect.gif)
-
-</td>
-</tr>
-<tr>
-<td width="50%">
-
 **[Sub-Agents](https://docs.antigma.ai/extend/subagents#watch-sub-agents-work)**
 
 ![Watching sub-agents run in parallel and opening one's transcript](docs-site/static/assets/cookbook/subagents.gif)
 
 </td>
+</tr>
+<tr>
 <td width="50%">
 
 **[Background Jobs](https://docs.antigma.ai/usage/tui#background-jobs)**
