@@ -1,5 +1,43 @@
 # Changelog
 
+## v0.3.0 - 2026-10-28
+
+Opens the 0.3 series with one intentional break: credentials are configured with one reference language, shared by providers, MCP servers and `ante auth`. Old shapes are refused by name rather than half-read; see "Upgrading from 0.2" below.
+
+### Upgrading from 0.2
+- Provider `auth` is now `credential`, a `scheme:name` reference or a list of them: `{"bearer":{"env_key":"X"}}` becomes `"env:X"`; a key sent in a custom header adds `"credential_header": "H"`. `http_headers` is now `headers`, and `{session_id}` is now `${session_id}`. An entry still using the old keys is skipped with a warning naming the replacement (`ante catalog`, `ante doctor`)
+- A custom provider that had no `auth` (a local server) now fails with "No credential for <id>": add `"credential": null`
+- The `models` section of `catalog.json` is removed; patch a model under `providers.<id>.preferred_models` instead. A non-empty section is refused at load
+- MCP servers: the `oauth` block is retired; use `ante auth login <server>` or an `Authorization` entry in `headers`. `ante mcp login`/`logout` are replaced by `ante auth login`/`logout`
+- The `antix-api-key` provider is folded into `antix`, which takes a sign-in, `ANTIX_API_KEY`, or a stored key; a saved `antix-api-key` selection falls back to auto-detect
+- Stored sign-ins and `auth/api_keys.json` move to `auth/credentials/` automatically on first run
+
+### Added
+- `ante auth list|login|logout|add|rm` manages every stored credential: OAuth sign-ins, API keys, and helper output. `list` shows each credential's state and the connectors that use it
+- Credential references: `env:NAME`, `secret:NAME` (stored with `ante auth add`), `oauth:PROFILE[/label]` for one of several accounts, and `helper:NAME`, which runs a command from the new `helpers` section of `catalog.json` and caches its output for `ttl_secs`. A list is tried in order; `null` sends nothing
+- `oauth_profiles` in `catalog.json` defines additional OAuth sign-in profiles beside the built-in Anthropic, OpenAI and Antix ones
+- Provider `headers` values and `extra_body` strings take `${NAME}`, `${NAME:-default}` and `${session_id}`; a `null` header removes a built-in one
+- Agents panel: while a turn runs subagents, a panel under the footer lists each with its type, elapsed time and tokens; select a row and press Enter to follow its transcript live
+- `/usage` lists every saved Claude and Codex account, each with its own quota
+- GPT-6.1 Sol, GPT-6.1 Terra and GPT-6 Luna in the OpenAI subscription provider (Luna is the default for auxiliary calls); GPT-6.1 Terra and Terra Pro in the OpenAI and OpenRouter catalogs; Kimi K3.1 Pro on OpenRouter
+
+### Changed
+- `/providers` is one place for choosing a provider, model and credential, signing in, entering keys, and removing accounts; onboarding and sign-in recovery use the same view, and `/connect` remains as an alias. Each row shows where its credential comes from; ←/→ previews another credential of the same provider
+- Antix leads the provider list and is the default when nothing is configured; explicit and saved choices still win, and existing credentials for other providers are detected when Antix is unavailable. Default order: Antix, DeepSeek, OpenAI Subscription, Anthropic Subscription
+- OpenRouter: Kimi K3 and MiniMax M3 are pruned in favor of K3.1 Pro and M3.1 Flash, and the DeepSeek V4.1 Flash October 17 snapshot becomes the default
+- Commands such as `ante auth` and `ante update` exit promptly; telemetry gets at most 250 ms at shutdown
+
+### Fixed
+- Headless `ante --resume <id> --provider <p> --model <m>` uses the given provider and model instead of dropping them, so a session saved on a provider that is no longer connected can be resumed
+- An invalid environment value read by a built-in sign-in profile (e.g. `ANTIX_BASE_URL=not-a-url`) is a catalog warning instead of crashing every command
+- OAuth sign-ins send the redirect URI where the local callback server actually listens
+
+### Wire
+- `SessionInfo.provider.credential` and `SessionUpdate.credential`: an optional credential reference (e.g. `oauth:openai/work`), never a token. Omitted means the configured precedence
+
+### Crates
+- Public crates published as 0.3.0: ante-protocol-shape, ante-llm, ante-exec, ante-sdk
+
 ## v0.2.15 - 2026-10-23
 
 ### Added
