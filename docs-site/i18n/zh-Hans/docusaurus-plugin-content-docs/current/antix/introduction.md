@@ -20,7 +20,7 @@ sidebar_position: 1
     签发具有原子级 `max_budget` 上限且限定范围的 `sk-antix-…` 密钥。严格的执行会在调用上游之前阻断超支。
   </Card>
   <Card title="Ante 控制平面" icon="plug">
-    针对本地编码代理的治理。启动 `ante`，输入 `/connect`，并选择 Antix 以安全地验证您的本地代理，记录每个提示的归属。
+    针对本地编码代理的治理。启动 `ante`，输入 `/providers`，并登录 Antix 以安全地验证您的本地代理，记录每个提示的归属。
   </Card>
   <Card title="自带密钥（BYOK）" icon="key">
     在 `Authorization` 中发送您自己的提供商凭据，并通过 `X-Antix-Provider` 声明提供商。Antix 进行路由和计量，且不会重新计费。

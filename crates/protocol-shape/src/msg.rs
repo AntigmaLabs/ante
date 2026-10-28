@@ -63,8 +63,9 @@ pub enum Op {
         args: String,
     },
     /// Continue a saved conversation from its persisted snapshot: what the
-    /// host persisted is restored, and everything the snapshot does not pin
-    /// resolves like a fresh session from the host's current defaults.
+    /// host persisted is restored — the system instructions included — and
+    /// everything the snapshot does not pin resolves like a fresh session
+    /// from the host's current defaults.
     /// `unattended` is the resuming client's declaration, with the meaning
     /// of `SessionRequest::unattended`; absent means false.
     ResumeSession {
@@ -87,6 +88,30 @@ pub enum Op {
     /// Request a per-category breakdown of the active session's context-window
     /// occupancy. Answered with [`Evt::ContextReport`].
     ContextReport,
+    /// Rewind the active session's conversation — its model context and its
+    /// visible history — to input `to`: how it stood just before that input
+    /// was applied, the input and everything after it gone. `to` is a turn
+    /// id as [`Evt::TurnStart`] reports it: for a user's input, the id of
+    /// the op that submitted it. Answered with [`Evt::SessionRewound`];
+    /// refused with an [`Evt::Error`], changing nothing, while a turn runs
+    /// or is queued, a goal is set, or background jobs run, or when `to`
+    /// cannot be restored: a turn from before the session was resumed, or
+    /// one whose earlier conversation a compaction or provider switch has
+    /// since rewritten. Starts no work and undoes nothing outside the
+    /// conversation.
+    RewindSession {
+        to: Id,
+    },
+    /// Fork the active session's conversation into a new saved session: the
+    /// conversation at input `at`, as [`Op::RewindSession`] to it would leave
+    /// it, or the current conversation when `at` is absent. The active
+    /// session must be idle and is left unchanged; the new session is not
+    /// started. Answered with [`Evt::SessionForked`], or with an
+    /// [`Evt::Error`] that creates nothing.
+    ForkSession {
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        at: Option<Id>,
+    },
     /// Set, clear, or report a goal-driven execution loop on the active
     /// session. A set goal keeps the session working — re-running turns and
     /// judging the condition after each one — until it is met, judged
@@ -191,10 +216,9 @@ pub enum Evt {
         exit_code: Option<i32>,
     },
     CompactStart,
-    /// Compaction finished. `summary` is the text that replaced the
-    /// compacted history and carries forward as the session's context;
-    /// `None` when compaction failed (history unchanged) or produced no
-    /// displayable text.
+    /// Compaction finished. A present `summary` is the text that replaced
+    /// the compacted history and carries forward as the session's context.
+    /// `None` means no history replacement was committed.
     CompactEnd {
         #[serde(default)]
         summary: Option<String>,
@@ -230,6 +254,22 @@ pub enum Evt {
     /// Answer to [`Op::ContextReport`]: a per-category breakdown of the
     /// session's context-window occupancy at the time of the request.
     ContextReport(ContextBreakdown),
+    /// Answer to [`Op::RewindSession`]: the session's conversation, and the
+    /// history a resume of it replays, now stand as they did just before
+    /// input `to`. Never part of a resume replay.
+    SessionRewound {
+        to: Id,
+    },
+    /// Answer to [`Op::ForkSession`]: session `session_id` was forked from
+    /// session `forked_from`: from its conversation at input `at`, or from
+    /// its current conversation when absent. It is saved, not started;
+    /// resuming it switches to it.
+    SessionForked {
+        forked_from: Id,
+        session_id: Id,
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        at: Option<Id>,
+    },
     /// An ephemeral ambient hint produced off the main conversation (a predicted
     /// "thinking phrase" for the draft, or a suggested next prompt — see
     /// [`AmbientKind`]). Never persisted to the event log. `req_id` lets clients
@@ -420,20 +460,19 @@ pub struct SubagentMetadata {
     pub scope: Scope,
 }
 
-/// The provider a session resolved to.
-///
-/// Carries only what a client cannot look up for itself: the id to key state
-/// on, a name to show a user, and the endpoint actually in use — which env
-/// overrides can move away from the published default, so it is a property of
-/// this session rather than of the provider. The provider's model list is not
-/// here; it is the same for every session and is published by `ante catalog`.
-/// Unknown fields are ignored, so payloads still carrying it decode fine.
+/// The resolved provider and its explicit credential choice.
+/// The endpoint includes environment overrides. Model lists are published by
+/// `ante catalog`; unknown fields are ignored.
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]
 pub struct ProviderSpec {
     #[serde(alias = "name")]
     pub id: String,
     pub display_name: String,
     pub base_url: String,
+    /// This provider's explicit credential choice, as a qualified reference
+    /// such as `oauth:antix/work`, never a token. Absent uses configured precedence.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub credential: Option<String>,
 }
 
 /// A session's announced state: its identity and mutable settings
@@ -456,6 +495,10 @@ pub struct SessionInfo {
     /// user (or the client), never derived from the conversation.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub title: Option<String>,
+    /// Set when the session was forked from another (see
+    /// [`Op::ForkSession`]): the session it was forked from.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub forked_from: Option<Id>,
 }
 
 /// Partial update to a live session's mutable state. Each field is optional so
@@ -472,6 +515,12 @@ pub struct SessionUpdate {
     /// while a turn is in flight; never re-routed.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub provider: Option<String>,
+    /// Pin a qualified credential reference on the resulting provider for this
+    /// session. Refused if it is outside that provider's pool, unavailable, or
+    /// a turn is running. Absent keeps the current provider's choice; another
+    /// provider starts from configured precedence.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub credential: Option<String>,
     /// Model change, taking effect on the next turn. The spec carries the
     /// whole request, `effort` included: a set `effort` overrides the
     /// catalog default; unset fields resolve from the catalog. Resolved on
@@ -500,11 +549,16 @@ pub struct ExtensionRefreshed {
     pub mcp_servers: Vec<McpServerInfo>,
 }
 
+/// One configured MCP server. A local server is described by `command` and
+/// `args`; a remote one by `url`, with `command` empty. `tools` is empty for a
+/// server that failed to connect or exposed nothing.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct McpServerInfo {
     pub name: String,
     pub command: String,
     pub args: Vec<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub url: Option<String>,
     pub tools: Vec<McpToolInfo>,
 }
 
@@ -1075,15 +1129,6 @@ mod tests {
     }
 
     #[test]
-    fn effort_orders_min_lowest_to_max_highest() {
-        let mut sorted = super::Effort::ALL;
-        sorted.sort();
-        assert_eq!(sorted, super::Effort::ALL);
-        assert!(super::Effort::Min < super::Effort::Low);
-        assert!(super::Effort::XHigh < super::Effort::Max);
-    }
-
-    #[test]
     fn session_overrides_effort_round_trips() {
         let parsed: super::SessionRequest =
             serde_json::from_value(serde_json::json!({"effort": "max"})).unwrap();
@@ -1171,6 +1216,55 @@ mod tests {
     }
 
     #[test]
+    fn rewind_names_its_input_as_to() {
+        let to = Id::op();
+        let json = serde_json::to_value(Op::RewindSession { to }).unwrap();
+        assert_eq!(json, serde_json::json!({ "RewindSession": { "to": to } }));
+        let op: Op = serde_json::from_value(json).unwrap();
+        assert!(matches!(op, Op::RewindSession { to: decoded } if decoded == to));
+
+        let json = serde_json::to_value(Evt::SessionRewound { to }).unwrap();
+        assert_eq!(json, serde_json::json!({ "SessionRewound": { "to": to } }));
+    }
+
+    #[test]
+    fn fork_at_is_optional_on_the_wire() {
+        let whole: Op = serde_json::from_value(serde_json::json!({ "ForkSession": {} })).unwrap();
+        assert!(matches!(whole, Op::ForkSession { at: None }));
+
+        let at = Id::op();
+        let json = serde_json::to_value(Op::ForkSession { at: Some(at) }).unwrap();
+        assert_eq!(json, serde_json::json!({ "ForkSession": { "at": at } }));
+        let op: Op = serde_json::from_value(json).unwrap();
+        assert!(matches!(op, Op::ForkSession { at: Some(decoded) } if decoded == at));
+
+        let (forked_from, session_id) = (Id::ses(), Id::ses());
+        let forked = Evt::SessionForked { forked_from, session_id, at: None };
+        assert_eq!(
+            serde_json::to_value(forked).unwrap(),
+            serde_json::json!({
+                "SessionForked": { "forked_from": forked_from, "session_id": session_id }
+            })
+        );
+    }
+
+    #[test]
+    fn forked_from_is_optional_on_the_wire() {
+        let source = Id::ses();
+        let info = SessionInfo { forked_from: Some(source), ..Default::default() };
+        let mut json = serde_json::to_value(&info).unwrap();
+        assert_eq!(json["forked_from"], serde_json::json!(source));
+        let decoded: SessionInfo = serde_json::from_value(json.clone()).unwrap();
+        assert_eq!(decoded.forked_from, Some(source));
+
+        // A payload written before the field existed reads as not forked.
+        json.as_object_mut().unwrap().remove("forked_from");
+        let plain: SessionInfo = serde_json::from_value(json).unwrap();
+        assert_eq!(plain.forked_from, None);
+        assert!(serde_json::to_value(&plain).unwrap().get("forked_from").is_none());
+    }
+
+    #[test]
     fn unattended_is_optional_on_the_wire() {
         // A request without the field, and a resume op written before the
         // field existed, both read as attended.
@@ -1195,6 +1289,7 @@ mod tests {
             skills: vec![],
             subagents: vec![],
             title: None,
+            forked_from: None,
         };
 
         let json = serde_json::to_value(&payload).unwrap();
@@ -1239,18 +1334,31 @@ mod tests {
         }
     }
 
-    #[test]
-    fn weight_class_orders_feather_lightest_to_heavy_heaviest() {
-        assert!(WeightClass::Feather < WeightClass::Middle);
-        assert!(WeightClass::Middle < WeightClass::Heavy);
-    }
-
     fn provider_spec(name: &str) -> ProviderSpec {
         ProviderSpec {
             id: name.to_string(),
             display_name: name.to_string(),
             base_url: format!("https://api.{name}.test/v1"),
+            ..Default::default()
         }
+    }
+
+    #[test]
+    fn provider_credential_is_optional_on_the_wire() {
+        let mut info = SessionInfo { provider: provider_spec("antix"), ..Default::default() };
+        info.provider.credential = Some("oauth:antix/work".into());
+
+        let mut json = serde_json::to_value(&info).unwrap();
+        assert!(json.get("credentials").is_none());
+        assert!(json["provider"].get("credentials").is_none());
+        assert_eq!(json["provider"]["credential"], "oauth:antix/work");
+        let decoded: SessionInfo = serde_json::from_value(json.clone()).unwrap();
+        assert_eq!(decoded.provider.credential, info.provider.credential);
+
+        json["provider"].as_object_mut().unwrap().remove("credential");
+        let decoded: SessionInfo = serde_json::from_value(json).unwrap();
+        assert!(decoded.provider.credential.is_none());
+        assert!(serde_json::to_value(decoded).unwrap()["provider"].get("credential").is_none());
     }
 
     #[test]
@@ -1345,6 +1453,7 @@ mod tests {
     fn session_update_op_serde_roundtrip() {
         let op = Op::UpdateSession(SessionUpdate {
             provider: Some("openai".to_string()),
+            credential: Some("oauth:openai/work".to_string()),
             model: Some(ModelSpec {
                 temperature: Some(0.2),
                 effort: Some(super::Effort::High),
@@ -1361,11 +1470,13 @@ mod tests {
             decoded,
             Op::UpdateSession(SessionUpdate {
                 provider: Some(provider),
+                credential: Some(credential),
                 model: Some(model),
                 permission_mode: Some(PermissionMode::Yolo),
                 title: Some(title),
             })
                 if provider == "openai"
+                    && credential == "oauth:openai/work"
                     && model.id == "gpt-5.4"
                     && model.temperature == Some(0.2)
                     && model.effort == Some(super::Effort::High)
@@ -1420,6 +1531,7 @@ mod tests {
             skills: vec![],
             subagents: vec![],
             title: None,
+            forked_from: None,
         }));
 
         let json = serde_json::to_string(&event).expect("serialize SessionUpdated");

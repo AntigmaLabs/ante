@@ -1,5 +1,241 @@
 # Changelog
 
+## v0.3.0 - 2026-10-28
+
+Opens the 0.3 series with one intentional break: credentials are configured with one reference language, shared by providers, MCP servers and `ante auth`. Old shapes are refused by name rather than half-read; see "Upgrading from 0.2" below.
+
+### Upgrading from 0.2
+- Provider `auth` is now `credential`, a `scheme:name` reference or a list of them: `{"bearer":{"env_key":"X"}}` becomes `"env:X"`; a key sent in a custom header adds `"credential_header": "H"`. `http_headers` is now `headers`, and `{session_id}` is now `${session_id}`. An entry still using the old keys is skipped with a warning naming the replacement (`ante catalog`, `ante doctor`)
+- A custom provider that had no `auth` (a local server) now fails with "No credential for <id>": add `"credential": null`
+- The `models` section of `catalog.json` is removed; patch a model under `providers.<id>.preferred_models` instead. A non-empty section is refused at load
+- MCP servers: the `oauth` block is retired; use `ante auth login <server>` or an `Authorization` entry in `headers`. `ante mcp login`/`logout` are replaced by `ante auth login`/`logout`
+- The `antix-api-key` provider is folded into `antix`, which takes a sign-in, `ANTIX_API_KEY`, or a stored key; a saved `antix-api-key` selection falls back to auto-detect
+- Stored sign-ins and `auth/api_keys.json` move to `auth/credentials/` automatically on first run
+
+### Added
+- `ante auth list|login|logout|add|rm` manages every stored credential: OAuth sign-ins, API keys, and helper output. `list` shows each credential's state and the connectors that use it
+- Credential references: `env:NAME`, `secret:NAME` (stored with `ante auth add`), `oauth:PROFILE[/label]` for one of several accounts, and `helper:NAME`, which runs a command from the new `helpers` section of `catalog.json` and caches its output for `ttl_secs`. A list is tried in order; `null` sends nothing
+- `oauth_profiles` in `catalog.json` defines additional OAuth sign-in profiles beside the built-in Anthropic, OpenAI and Antix ones
+- Provider `headers` values and `extra_body` strings take `${NAME}`, `${NAME:-default}` and `${session_id}`; a `null` header removes a built-in one
+- Agents panel: while a turn runs subagents, a panel under the footer lists each with its type, elapsed time and tokens; select a row and press Enter to follow its transcript live
+- `/usage` lists every saved Claude and Codex account, each with its own quota
+- GPT-6.1 Sol, GPT-6.1 Terra and GPT-6 Luna in the OpenAI subscription provider (Luna is the default for auxiliary calls); GPT-6.1 Terra and Terra Pro in the OpenAI and OpenRouter catalogs; Kimi K3.1 Pro on OpenRouter
+
+### Changed
+- `/providers` is one place for choosing a provider, model and credential, signing in, entering keys, and removing accounts; onboarding and sign-in recovery use the same view, and `/connect` remains as an alias. Each row shows where its credential comes from; ←/→ previews another credential of the same provider
+- Antix leads the provider list and is the default when nothing is configured; explicit and saved choices still win, and existing credentials for other providers are detected when Antix is unavailable. Default order: Antix, DeepSeek, OpenAI Subscription, Anthropic Subscription
+- OpenRouter: Kimi K3 and MiniMax M3 are pruned in favor of K3.1 Pro and M3.1 Flash, and the DeepSeek V4.1 Flash October 17 snapshot becomes the default
+- Commands such as `ante auth` and `ante update` exit promptly; telemetry gets at most 250 ms at shutdown
+
+### Fixed
+- Headless `ante --resume <id> --provider <p> --model <m>` uses the given provider and model instead of dropping them, so a session saved on a provider that is no longer connected can be resumed
+- An invalid environment value read by a built-in sign-in profile (e.g. `ANTIX_BASE_URL=not-a-url`) is a catalog warning instead of crashing every command
+- OAuth sign-ins send the redirect URI where the local callback server actually listens
+
+### Wire
+- `SessionInfo.provider.credential` and `SessionUpdate.credential`: an optional credential reference (e.g. `oauth:openai/work`), never a token. Omitted means the configured precedence
+
+### Crates
+- Public crates published as 0.3.0: ante-protocol-shape, ante-llm, ante-exec, ante-sdk
+
+## v0.2.15 - 2026-10-23
+
+### Added
+- Remote MCP servers can authenticate: `url` servers in `mcp_servers` accept `headers` sent on every request, whose values may reference `${NAME}` from the environment so secrets stay out of the settings file; a bearer token is a plain `Authorization` header
+- OAuth sign-in for remote MCP servers with `ante mcp login <name>` / `ante mcp logout <name>`. It uses dynamic client registration and the server's advertised scopes by default; an optional `oauth` block sets a pre-registered `client_id`/`client_secret` or explicit `scopes`. A server that answers 401 names the login command to run
+- Background jobs view: while jobs run and the composer is empty, ↓ selects the `N bg jobs` footer pill and Enter opens a list of running commands, with status, runtime, the last stdout lines and stderr for each
+
+### Changed
+- The update notice's "What's new" preview links to https://ante.run/changelog instead of pointing at `CHANGELOG.md`
+- OpenRouter's MiniMax M3.1 Flash preset uses the paid `minimax/minimax-m3.1-flash` route; the free route was retired upstream
+- `thinking_budget` set in an OpenAI-compatible provider's `extra_body` is now sent instead of being dropped as a reserved field
+- Dependency updates
+
+### Fixed
+- TLS verification rejects the compromised intermediate keys on rustls-webpki's deny list (0.103.16), including cross-signed certificates
+
+### Crates
+- Public crates published as 0.2.15: ante-protocol-shape, ante-llm, ante-exec, ante-sdk
+
+## v0.2.14 - 2026-10-21
+
+### Added
+- Native MiniMax provider: set `MINIMAX_API_KEY` to use MiniMax M3.1 Flash directly (1M context, vision, `low`–`max` reasoning, `max` by default); `MINIMAX_BASE_URL` overrides the endpoint
+- MiniMax M3.1 Flash in the OpenRouter catalog
+
+### Changed
+- Offline mode defaults to llama.cpp's port 9931 instead of 8080: managed launches try 9931–9940, and user-started servers are discovered on 9931 and 8080 only (previously 8080–8179). A router already running keeps its recorded port, and a server on any other port can still be attached by endpoint
+- A provider `Retry-After` longer than 60s ends the turn and shows the wait (`Provider asks to retry in 48m.`) instead of reconnecting every 60s for about four minutes
+
+### Fixed
+- Gemini accepts MCP tool schemas it used to reject: `enum`/`const` values that are not non-empty strings move into the parameter's description, and requests without a forced tool choice use `AUTO` instead of `VALIDATED`, so very large schemas are no longer refused
+- OpenAI-compatible streams that carry both `reasoning` and `reasoning_content` on one delta, as gateways such as Bifrost send, no longer fail to decode
+- `ante offline use --args` rejects malformed values such as `--ctx invalid` before saving, instead of failing at the next load
+- Bundled TLS trust roots refreshed to webpki 1.0.10, which drops the emSign ECC Root CA - G3; `ante-sdk` now requires `webpki-roots` 1.0.10 or later
+
+### Crates
+- Public crates published as 0.2.14: ante-protocol-shape, ante-llm, ante-exec, ante-sdk
+
+## v0.2.13 - 2026-10-18
+
+### Added
+- Jump-to-bottom pill in fullscreen: while the conversation is scrolled up, its last row shows `N new messages (ctrl+l) ↓`, or `Jump to bottom (ctrl+l) ↓` when nothing new has arrived; Ctrl+L or a click on that row jumps to the latest output, and sending a prompt or a `!command` follows new output again
+- Subagents record their own event log under the parent session, at `sessions/<parent>/subagents/<child>/events.jsonl`; a subagent is not a resumable session, so `/resume` does not list it, and deleting the parent removes its logs. The parent's Agent tool result names the child's session id
+- A warning when session history cannot be saved: a failed event-log or snapshot write shows one notice per session with the path and disk-space/permission guidance, and the conversation keeps running
+- Gemini 4 Argon on Antix; DeepSeek V4.1 Flash 1017, Reflection Beam 1.0 and Muse Spark Open in the OpenRouter catalog
+
+### Changed
+- Compaction's fold call gets room for reasoning: its output cap is twice the summary's budget, bounded by the model's declared `max_tokens` and the context window, so a model that thinks before summarizing no longer has its summary cut off at the cap
+- The fold runs at reasoning effort `low` at most (`min` stays `min`; a model without an effort setting stays without one), since a summary does not need the session's effort
+- Dependency updates
+
+### Fixed
+- A Responses API `response.incomplete` with reason `length` is treated as a max-tokens stop: a cut-off compaction summary reports `summary was cut off at N tokens` instead of an opaque `failed to fold dialog`, and a normal turn continues as it does after `max_output_tokens`
+- Interrupting a turn before the model produces any output attaches the `Interrupted` row to the prompt you just sent instead of the previous answer, and Ctrl+C / Esc between send and the turn's start interrupts the coming turn instead of acting as if the session were idle
+- In fullscreen, a bare click on the conversation (press and release without dragging) no longer stops the view from following new output; a drag selection still holds the view in place
+
+### Crates
+- Public crates published as 0.2.13: ante-protocol-shape, ante-llm, ante-exec, ante-sdk
+
+## v0.2.12 - 2026-10-15
+
+### Added
+- Remote MCP servers over Streamable HTTP: an `mcpServers` entry takes `url` in place of `command`, with an optional `transport` of `stdio` or `streamable-http` (`http` is a synonym). An entry that mixes `command` and `url`, or names the legacy `sse` transport, fails that server at warm-up with a message saying what to change. `/mcp` shows the URL, and `rage` redacts a URL's query string
+- `ante offline use <MODEL>` takes `--context <TOKENS>`, `--thinking on|off`, `--temperature <T>|default` and `--args "<llama.cpp options>"` to save per-model load preferences; each flag replaces only its own value, they are validated at `use`, and every invocation ends with a `Loads with:` line
+- Gemini 4 Argon in the native Gemini, Vertex and OpenRouter catalogs, with explicit low/medium/high thinking levels; Muse Wonder in the OpenRouter catalog
+
+### Changed
+- The `local` provider is derived from the offline runtime state at the moment a model becomes ready, so a `StartSession` sent on the ready reply always finds it registered
+- Headless runs and subagents are told that no one can answer them and the session ends with the turn
+- llama.cpp bumped to b11540, picking up the router control-pipe fix and CUDA, Vulkan and Metal correctness fixes
+
+### Fixed
+- A session that names a provider without a model now gets that provider's default model instead of the global default, which the named provider could not serve
+- `Read` recognizes PNG and other images saved without an image extension (or as `.bin`) and shows them as images
+- Sharded GGUF models selected by path or saved default are inspected the same way discovery does, reporting the full set; incomplete sets are rejected at resolution
+- `ante offline stop` help and messages say what it does: it stops the home's router whether or not a session is using it
+
+### Wire
+- `McpServerInfo.url` added: the endpoint of a remote MCP server; `command` is empty for such a server
+
+### Crates
+- Public crates published as 0.2.12: ante-protocol-shape, ante-llm, ante-exec, ante-sdk
+
+## v0.2.11 - 2026-10-12
+
+### Added
+- `ante offline status`, `ante offline list` and `ante offline use <MODEL>` set up offline mode without the TUI: `status` reports the engine, model directory, default model, running servers and memory; `list` shows local and verified models with size, context and memory fit; `use` saves the default model. `status` and `list` take `--json`
+- `--offline-model [MODEL]` starts the local engine for TUI, headless and `serve` launches. It takes a GGUF path, filename, or verified model name or URL; the bare flag starts the saved default. It can't be combined with `--model` or `--provider`
+
+### Changed
+- If you keep the offline router running when you exit, the next launch reuses it instead of starting a second one; `ante offline status` shows it on a `Router:` line and `ante offline stop` ends it
+- The skills list in the prompt is sized to fit the model's context window, and is resized at every compaction, so switching models or adding MCP tools is accounted for
+- Every subagent prompt is built the same way, with the shared core instructions and the environment block; the bundled Explore agent now learns its working directory
+- Agent prompts base fixes on evidence and the task's scope, and handoffs keep track of pending jobs and unknown outcomes so actions aren't blindly rerun
+- Antix serves Claude Sonnet 5.5 in place of Sonnet 5
+- `ante --resume` lists the session archive once at startup instead of twice
+- Dependency updates
+
+### Fixed
+- Claude Sonnet 5.5 requests that force a tool choice, and Claude Haiku 5.5 requests with a temperature other than 1, now fail before sending with a clear error
+- Poolside "input length exceeds" errors are treated as context overflows and recovered by compaction, including when OpenRouter or a proxy wraps them
+- Compaction no longer clears long `AskUser` answers before the summarizer sees them
+
+## v0.2.10 - 2026-10-10
+
+### Added
+- Opt-in attention cues for the TUI: with `"attention": { "enabled": true }` in `settings.json`, a turn that finishes or fails, and a pause for approval or a question, ring the terminal bell and, while the terminal reports itself unfocused, post a desktop notification (iTerm2, Ghostty, WezTerm, Kitty, foot, Warp, Windows Terminal and VTE terminals; inside tmux, `focus-events` and `allow-passthrough` must be on). `notifications` and `sound` can each be turned off; interrupted turns, queued follow-ups and replayed history stay silent
+- The `/resume` picker shows each session's size beside its message count and age
+- Claude Haiku 5.5 on Anthropic (API and subscription), OpenRouter and Antix, replacing Haiku 4.5; the lightweight model role now picks Haiku 5.5
+
+### Changed
+- Session logs are read faster on resume and replay; damaged logs still recover line by line
+- Dependency updates
+
+### Fixed
+- A failed compaction no longer removes earlier inputs from `/rewind` and `/fork`, live or when replaying saved history
+
+### Crates
+- Public crates published as 0.2.10: ante-protocol-shape, ante-llm, ante-exec, ante-sdk
+
+## v0.2.9 - 2026-10-05
+
+### Added
+- `s` in the `/fork` picker opens the forked child in a terminal split beside the parent instead of switching to it, with the cut prompt ready to edit; uses the same split launchers as `/term` (tmux, iTerm2, WezTerm, Kitty, Ghostty)
+- Opt-in `context-tokens` status line item shows the context window as `used/limit ctx` (for example `13.6k/400k ctx`), the same figure `/context` reports; turn it on in `/statusline`
+- A provider's `http_headers` value in `catalog.json` may contain `{session_id}`, filled with the conversation's id on each request (a subagent sends its parent's id), for gateways that need a per-session header
+
+### Changed
+- `/rewind` and `/fork` reach the prompts before a `/resume` and the prompts a fork copied from its parent, back to the last compaction or provider switch, instead of only the current run's
+- Every provider call runs under one timeout owned by the transport: headers, error body, OAuth refresh, retry backoff and the WebSocket-to-HTTP fallback share one budget
+- Catalog pruned: GPT-5.4 Pro on direct OpenAI (GPT-5.5 Pro stays)
+- llama.cpp engine bumped to b11379 (Metal memory-leak fix, Vulkan cache-stride fix, GGUF overflow checks)
+- Compaction logs the fold's configuration and the summary's thinking/text split, to diagnose cut-off summaries on local servers
+
+### Fixed
+- Responses API "input exceeds the context window" rejections are treated as context overflows and recovered by compaction
+
+## v0.2.8 - 2026-10-02
+
+### Added
+- `/rewind` (or Esc Esc on an empty composer) opens a picker over the inputs still in reach; picking one rewinds the conversation to just before it and puts that prompt back in the composer for editing
+- `/fork` saves a copy of the conversation cut at a chosen input, or the whole conversation, and switches to it; a forked session names the session it came from under its header, and `/resume` returns to the parent
+- `ante serve --sock` and `--ws` print a readable transcript of connections, sessions, tool calls and turn status; a nonempty `NO_COLOR` disables styling
+- GPT-6.1 Sol on OpenAI and OpenRouter
+
+### Changed
+- A session resumed under a different OS or shell, or on a later day, is told what changed in one notice on its next turn; resuming in the same environment tells nothing
+- The session picker orders sessions by last use instead of start time
+- Every provider call streams, so compaction, the goal judge and ambient hints share the turn's timeouts and error handling
+- Catalog pruned: GPT-6 Sol on direct OpenAI; GPT-6 Sol, Sol Pro and the GPT-5.6 Sol/Terra/Luna Pro routes on OpenRouter; deprecated GPT-5.3 Codex and GPT-5.4 Nano
+- Release binaries are built with full LTO and are about 6% smaller
+- Dependency updates
+
+### Fixed
+- `/usage` refreshes an expired access token instead of reporting the session expired, labels OpenAI quota windows by their length (a 7-day window is "Weekly limit", not "Current session"), and shows the Anthropic plan name without the rate tier
+- Responses API rejections of an oversized request that carry no specific error code are treated as context overflows and recovered by compaction
+- A cancelled call on an OpenAI WebSocket session discards its connection, so the next request no longer reads the abandoned response
+- A provider that accepts a request and never answers, or sends an error status and then stalls, fails at the idle timeout instead of hanging; the OAuth token refresh has its own timeout
+
+## v0.2.7 - 2026-09-29
+
+### Added
+- Claude Sonnet 5.5 on Anthropic and OpenRouter; Qwen 3.8 Max and GLM 5.3 FlashX on Antix; xAI moves to Grok 4.7
+
+### Changed
+- Resumed sessions keep the system prompts they were started with (including `--system-prompt`, `--append-system-prompt` and `--short-prompt`) instead of rebuilding them from current settings; if the date has changed, the model is told on the next turn
+- Dates given to the model use the local day instead of UTC
+- `/resume` inside a running TUI starts on a fresh screen with the resumed session's header
+- Offline model preferences are loaded during discovery; edits to `offline-config.json` take effect on the next reopen
+- llama.cpp engine bumped to b11200
+
+### Fixed
+- Provider errors for an exhausted credit balance are reported as quota errors, with billing guidance
+
+### Wire
+- `Op::RewindSession { to }` rewinds the active session to just before input `to` and answers `Evt::SessionRewound { to }`
+- `Op::ForkSession { at }` saves a new session from the conversation at input `at` (or from the whole conversation) without starting it, and answers `Evt::SessionForked { forked_from, session_id, at }`
+- `SessionInfo.forked_from` names the session a fork came from
+
+### Crates
+- Public crates published as 0.2.7: ante-protocol-shape, ante-llm, ante-exec, ante-sdk
+
+## v0.2.6 - 2026-09-27
+
+### Changed
+- OpenRouter now defaults to DeepSeek V4.1 Flash; the older V4 Flash preset is gone
+- DeepSeek V4 Pro stays in the Antix catalog
+- NVIDIA Nemotron 3.5 Lightning removed from the OpenRouter catalog
+- The TUI spinner now pulses with a pause between beats, and the mascot has new poses
+- The bundled `ante-guide` and `add-provider` skills are now cheat sheets tied to the installed version, including an "After an update" section
+
+### Fixed
+- Output requests are capped to the context that remains, so large-context sessions no longer get rejected for asking for too much output
+- When an image or document is dropped to fit the content budget, the message now says it was omitted entirely
+- Shift+Enter inserts a newline inside tmux, and in zellij after closing fullscreen overlays such as `/resume`, the transcript or `/diff`
+- The provider is saved after an OAuth connect
+- Raw MCP server stderr is logged at debug level
+
 ## v0.2.5 - 2026-09-24
 
 ### Added

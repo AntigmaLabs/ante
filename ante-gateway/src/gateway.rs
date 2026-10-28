@@ -691,14 +691,9 @@ mod tests {
                 panic!("expected StartSession");
             };
             peer.emit(Evt::SessionStart(Box::new(SessionInfo {
-                model: Default::default(),
-                provider: Default::default(),
                 session_id: Id::ses(),
                 cwd: PathBuf::from("/tmp"),
-                permission_mode: Default::default(),
-                skills: Vec::new(),
-                subagents: Vec::new(),
-                title: None,
+                ..Default::default()
             })))
             .await;
             (peer, request)

@@ -7,7 +7,7 @@ description: "Project and global instructions loaded into every Ante session"
 
 ## Locations
 
-Ante reads two instruction files when the first user message in a session is submitted:
+Ante reads global and project instructions when preparing a session:
 
 | Location | Scope |
 |---|---|
@@ -25,7 +25,7 @@ For zero-setup compatibility with Claude Code, each level falls back to a `CLAUD
 
 ## How Ante applies instructions
 
-If both files exist, Ante includes them in one reminder block, with the global file first and the project file second. Empty files are ignored. If the global and project paths resolve to the same file, Ante includes it once.
+If both files exist, Ante includes them in one reminder block, with the global file first and the project file second. The block is included in the session preamble ahead of the conversation. Empty files are ignored. If the global and project paths resolve to the same file, Ante includes it once.
 
 Project instructions are intended for repository-specific rules such as build commands, coding conventions, and architectural constraints. Global instructions are better for personal preferences that apply everywhere, such as response format or language style.
 

@@ -60,6 +60,8 @@ ante --offline-model ~/.ante/models/Qwen3.5-9B-Q4_K_M.gguf \
 
 We think about the engine layer in public too. [**nanochat-rs**](https://github.com/AntigmaLabs/nanochat-rs) is a small GPT inference core we wrote in pure Rust on [candle](https://github.com/huggingface/candle): readable, runnable, and living in the same process as the code that calls it. It is a study project rather than part of the binary, published because in-process inference is where local models get interesting for agents.
 
+Set a reusable default with `ante offline use Qwen3.5-9B`, then launch it with `ante --offline-model` (interactive) or `ante --offline-model -p "your task"` (headless). Run `ante offline list` to see available models and `ante offline status` to inspect the engine. Verified models download on first load; install the engine with `ante offline install` before using the launch flag.
+
 **[Offline mode →](https://docs.antigma.ai/local/offline)** · [nanochat-rs →](https://github.com/AntigmaLabs/nanochat-rs) · [Where this is going →](https://docs.antigma.ai/experimental/agent-native-inference)
 
 ---
@@ -90,9 +92,9 @@ Requires `tmux` and whichever agent CLIs you want to run. [**Terminal orchestrat
 <tr>
 <td width="50%">
 
-**[Models, Providers & Thinking](https://docs.antigma.ai/usage/models-and-thinking)**
+**[Providers, Credentials & Models](https://docs.antigma.ai/usage/providers)**
 
-![Switching provider, model, and effort with /providers](docs-site/static/assets/cookbook/providers.gif)
+![Choosing a provider and its credential in /providers, then signing in](docs-site/static/assets/cookbook/providers.gif)
 
 </td>
 <td width="50%">
@@ -113,9 +115,18 @@ Requires `tmux` and whichever agent CLIs you want to run. [**Terminal orchestrat
 </td>
 <td width="50%">
 
-**[Subscription Login](https://docs.antigma.ai/usage/login)**
+**[Sub-Agents](https://docs.antigma.ai/extend/subagents#watch-sub-agents-work)**
 
-![Connecting to a provider via /connect](docs-site/static/assets/cookbook/connect.gif)
+![Watching sub-agents run in parallel and opening one's transcript](docs-site/static/assets/cookbook/subagents.gif)
+
+</td>
+</tr>
+<tr>
+<td width="50%">
+
+**[Background Jobs](https://docs.antigma.ai/usage/tui#background-jobs)**
+
+![Checking a background build's output from the footer](docs-site/static/assets/cookbook/background-jobs.gif)
 
 </td>
 </tr>
@@ -158,7 +169,7 @@ ante -p "find and fix the failing test in src/auth"
 git diff | ante -p "review this for security issues"
 
 # Use a different provider
-ante --provider openai --model gpt-5.6 -p "refactor the database module"
+ante --provider openai --model gpt-6.1-sol -p "refactor the database module"
 
 # Resume a saved session
 ante --resume ses_01ARZ3NDEKTSV4RRFFQ69G5FAV -p "now add tests"
@@ -177,7 +188,7 @@ ante update
 ante update --channel nightly
 
 # Roll back or pin to an exact release
-ante update --version v0.2.2
+ante update --version v0.2.12
 ```
 
 ## One binary, many agents
@@ -187,11 +198,11 @@ Ante's behavior lives in a settings file, and `--profile <name>` swaps that file
 For project-specific workflows, Ante loads `.ante/settings.json` from the nearest ancestor of the session directory, layering tool and skill filters, reasoning effort, and other supported session settings over user preferences. Project settings cannot change the provider or model, add MCP servers, or widen permissions.
 
 Curated profiles demonstrate how flexible this is:
-- [`pi`](curated/pi.settings.json): Strips Ante down to four tools (Read, Write, Edit, Bash) and a [short replacement system prompt](curated/pi.system-prompt.md); file search runs through `rg`, subagents through `ante -p "<task>"`, web access through `curl`.
-- [`plan`](curated/plan.settings.json): A read-only research and planning agent with file mutations disabled, designed to produce an implementation plan before you execute.
+- [`pi`](curated/pi): Strips Ante down to four tools (Read, Write, Edit, Bash) and a [short replacement system prompt](curated/pi/pi.system-prompt.md); file search runs through `rg`, subagents through `ante -p "<task>"`, web access through `curl`.
+- [`plan`](curated/plan): A read-only research and planning agent with file mutations disabled, designed to produce an implementation plan before you execute.
 
 ```sh
-cp curated/pi.settings.json ~/.ante/
+cp curated/pi/pi.settings.json ~/.ante/
 ante --profile pi
 ```
 
@@ -207,16 +218,16 @@ Bring your own API key, subscription, or local model; no account required, not e
 
 | Provider | Example Models |
 |----------|---------------|
-| Anthropic | Claude Sonnet 5, Opus 5, Fable 5.1 (API key or subscription OAuth) |
-| OpenAI | GPT-6 Astra and the GPT-5.6 family (API key or ChatGPT/Codex OAuth) |
-| Google Gemini | Gemini 3.x family (Gemini API or Vertex AI) |
-| Grok (xAI) | Grok 4.6 |
+| Anthropic | Claude Sonnet 5.5, Opus 5.5, Fable 5.1 (API key or subscription OAuth) |
+| OpenAI | GPT-6 Astra, GPT-6.1 Sol, GPT-6 Luna; GPT-5.6 via subscription (API key or ChatGPT/Codex OAuth) |
+| Google Gemini | Gemini 4 Argon and 3.x models (Gemini API or Vertex AI) |
+| Grok (xAI) | Grok 4.7 |
 | DeepSeek | DeepSeek V4.1 Flash |
 | Open Router | Any Open Router model, over three wire styles |
 | Local (GGUF) | Any GGUF model via built-in llama.cpp |
 | ...and more | Zai, Antix, OpenAI-compatible |
 
-**A config layer for everything else.** Your own proxy, gateway, or inference engine is one entry in `~/.ante/catalog.json`: a `wire_style` (Ante speaks four API dialects), an auth style (bearer, header, or query, from an env var or OAuth), plus `http_headers` and `extra_body` for whatever else the endpoint expects. The combinations cover most setups without a plugin or a code change:
+**A config layer for everything else.** Your own proxy, gateway, or inference engine is one entry in `~/.ante/catalog.json`: a `wire_style` (Ante speaks four API dialects), a `credential` (an env var, a stored key, an OAuth sign-in, or a helper command), plus `headers` and `extra_body` for whatever else the endpoint expects. The combinations cover most setups without a plugin or a code change:
 
 ```json
 {
@@ -224,8 +235,8 @@ Bring your own API key, subscription, or local model; no account required, not e
     "my-gateway": {
       "base_url": "https://gateway.example.com/v1",
       "wire_style": "OpenAiCompatible",
-      "auth": { "bearer": { "env_key": "MY_GATEWAY_API_KEY" } },
-      "http_headers": { "X-Org": "my-team" },
+      "credential": "env:MY_GATEWAY_API_KEY",
+      "headers": { "X-Org": "my-team" },
       "extra_body": { "service_tier": "priority" }
     }
   }
@@ -248,7 +259,7 @@ Bring your own API key, subscription, or local model; no account required, not e
 - **Evaluation:**
   - [`ante-harbor/`](ante-harbor) — Harbor agent adapter behind our [Terminal-Bench results](https://antigma.ai/eval).
 - **Profiles & Docs:**
-  - [`curated/`](curated) — Reusable settings profiles (such as [`pi`](curated/pi.settings.json) and [`plan`](curated/plan.settings.json)) and skills.
+  - [`curated/`](curated) — Reusable settings profiles (such as [`pi`](curated/pi) and [`plan`](curated/plan)) and skills.
   - [`docs-site/`](docs-site) — Source for [docs.antigma.ai](https://docs.antigma.ai).
   - [`examples/`](examples) — Example integrations and custom harness implementations.
 

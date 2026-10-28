@@ -43,13 +43,25 @@ Ante 通过原生管理的 [llama.cpp](https://github.com/ggml-org/llama.cpp) �
    - **本地模型** — 自动发现系统磁盘中已有的 GGUF 文件
    - **运行中的服务** — [直接接入](/local/existing-servers)已在本地端口或可达端点上运行的 llama 服务
 
-4. **或直接传入模型路径** — 跳过 TUI 一步到位加载 GGUF 文件：
+4. **或从命令行加载模型** — 不经过模型选择器，直接打开使用本地模型的 TUI：
    ```bash
-   ante --offline-model /path/to/model.gguf "your prompt here"
+   ante --offline-model /path/to/model.gguf
    ```
-   Ante 会启动 llama.cpp 路由器、加载模型并等待就绪，随后运行会话。适用于脚本自动化或 CI 流程。
+   使用 `-p "your prompt here"` 执行一次性无头任务。`--offline-model [MODEL]` 也接受已发现的文件名或验证模型名称/URL；与 `--model`、`--provider` 互斥。
 
-模型加载成功后，会自动作为 `local` 提供商注册到目录中，您也可以通过 `/providers` 随时切换或使用 `--provider local` 调用。该条目仅在服务端注册期间存在：当服务停止时，`local` 自动离开目录。在保存了 `local` 选择且无服务端运行时启动，会弹出提示拦截会话（运行 `/offline-mode` 以启动或连接服务）；无头运行会直接报错退出。参见[混合本地与前沿模型](/local/overview#mixing-local-and-frontier)。
+### 无需 TUI 完成配置 {#configure-without-the-tui}
+
+```bash
+ante offline install
+ante offline status
+ante offline list
+ante offline use Qwen3.5-9B
+ante --offline-model
+```
+
+`status` 和 `list` 支持 `--json`。`use` 只保存默认模型，不会启动或下载；验证模型在首次加载时下载。若希望直接复用命令输出中的精确模型引用，可读取 `ante offline list --json` 中的 `reference`。裸 `--offline-model` 启动已保存的默认模型，尚未设置时会报错并提示如何设置。
+
+模型加载成功后，会自动作为 `local` 提供商注册到目录中，您也可以通过 `/providers` 随时切换或使用 `--provider local` 调用。该条目仅在服务端注册期间存在：模型卸载或服务停止时，`local` 自动离开目录。在保存了 `local` 选择且无服务端运行时启动，会弹出提示拦截会话（运行 `/offline-mode` 以启动或连接服务）；无头运行会直接报错退出。参见[混合本地与前沿模型](/local/overview#mixing-local-and-frontier)。
 
 ## 脚本自动化与服务端使用 {#scripted-and-server-usage}
 
@@ -58,7 +70,7 @@ Ante 通过原生管理的 [llama.cpp](https://github.com/ggml-org/llama.cpp) �
 传入 `--offline-model` 针对本地 GGUF 文件执行一次性任务 —— 无需启动 TUI：
 
 ```bash
-ante --offline-model ~/.ante/models/Qwen3.5-9B-Q4_K_M.gguf "Explain this code"
+ante --offline-model ~/.ante/models/Qwen3.5-9B-Q4_K_M.gguf -p "Explain this code"
 ```
 
 <img src="/assets/offline-headless.gif" alt="无头离线模式运行本地 GGUF 模型" style={{width: '100%', borderRadius: '8px', margin: '16px 0'}} />
@@ -72,8 +84,10 @@ Ante 会启动 `llama serve` 路由器、加载模型并等待就绪，执行会
 在运行 `ante serve` 时，可以加载一次模型并供所有接入客户端共享：
 
 ```bash
-ante serve --ws 127.0.0.1:9000 --offline-model ~/.ante/models/Qwen3.5-9B-Q4_K_M.gguf
+ANTE_SERVE_TOKEN="your-secret-token" ante serve --ws 127.0.0.1:9000 --offline-model
 ```
+
+此示例使用上面 `ante offline use` 保存的默认模型。WebSocket 客户端必须在连接握手中发送相同 Token：`Authorization: Bearer <token>`；参见[服务模式](/usage/serve)。
 
 <img src="/assets/offline-serve.gif" alt="服务模式下多个 WebSocket 客户端共享离线模型" style={{width: '100%', borderRadius: '8px', margin: '16px 0'}} />
 
@@ -88,7 +102,7 @@ ante serve --ws 127.0.0.1:9000 --offline-model ~/.ante/models/Qwen3.5-9B-Q4_K_M.
 - **张量加载** — 正在将权重加载至 RAM/VRAM
 - **GPU 卸载** — 正在将网络层传输至 GPU（若可用）
 
-无头模式下相同的进度会通过日志输出呈现。
+通过 `--offline-model` 启动时，下载与加载进度写入 stderr，使无头结果与服务协议的 stdout 保持独立。
 
 ## 模型自动扫描发现 {#model-discovery}
 
@@ -101,16 +115,32 @@ Ante 会自动扫描以下目录中的 GGUF 模型文件：
 | `~/.cache/huggingface/hub` | Hugging Face 缓存目录 |
 | `~/.llama/models` | 常见的 llama 模型目录 |
 
+分片 GGUF 请指定第一片（`*-00001-of-*.gguf`），并将全部分片保存在同一目录。发现、直接路径与默认模型加载都会检查完整分片集并汇总大小；缺失分片或指定非第一片时会拒绝加载。模型本身必须支持至少 32,768 Token 的上下文，但实际加载窗口可调得更小。
+
 ## 模型专属偏好设置 {#model-preferences}
 
 按模型配置的参数，会自动保存在离线配置文件中：
 
 | 设置项 | 说明 |
 |---|---|
-| `context_window` | 上下文窗口大小（最小 32K Token） |
-| `thinking` | 启用/禁用思维链推理 |
-| `temperature` | 采样温度（未设置时使用模型默认值） |
+| `context_window` | 加载上下文窗口：8,192 Token 至模型最大值；默认上限为 32,768 |
+| `thinking` | 开启/关闭思考；配置文件中的字段为 `thinking_enabled` |
+| `temperature` | 采样温度（0–2）；未设置时采用模型默认值 |
 | `extra_args` | 额外的 llama.cpp 模型选项，会转换为共享路由器的按模型预设 —— 参见[自定义引擎](/local/custom-engines#tune-the-launch-command) |
+
+也可通过 CLI 保存偏好，供下次 TUI、无头或 `serve` 加载时使用：
+
+```bash
+ante offline use Qwen3.5-9B --context 16384 --thinking off --temperature 0.7
+ante offline use Qwen3.5-9B --args "--threads 12"
+ante offline use Qwen3.5-9B --temperature default --args ""
+```
+
+每个选项只替换自己的值，其余保存值保留。`--temperature default` 清除温度覆盖，`--args ""` 清除额外参数。每次 `use` 都会输出 `Loads with:`，即使没有传入偏好选项。
+
+保存前会检查 `--context` 和 `--temperature` 的取值范围。`--args` 只进行基本语法检查，并拒绝保留或已移除的选项；其他无效选项或参数值可能到加载模型时才报错。
+
+配置中的偏好键为本地文件绝对路径或验证模型下载 URL，可从 `list --json` 的 `reference` 字段取得。
 
 ## 视觉多模态模型 {#vision-models}
 
@@ -121,7 +151,7 @@ Ante 会自动扫描以下目录中的 GGUF 模型文件：
 Ante 根据模型文件大小、KV 缓存（随上下文窗口伸缩）及分片数量综合估算内存占用。
 
 :::tip
-对于大模型，可调小上下文窗口以降低内存占用。最低为 32K Token。
+对于大模型，可通过 `ante offline use <MODEL> --context 8192` 降低加载窗口以节省内存。8,192 Token 是可设置的最小值，32,768 是默认上限。`list` 的内存适配估算按 32K 上下文计算，不反映逐模型保存的加载窗口。
 :::
 
 ## 本地服务管理 {#server-management}
@@ -137,6 +167,8 @@ Ante 根据模型文件大小、KV 缓存（随上下文窗口伸缩）及分片
 - **`k`** — 保持服务端在后台继续运行并退出（打印 PID）
 - **`Esc`** — 取消并留在 Ante 中
 
+保留的路由器会在下次离线启动时被复用。`ante offline status` 的 `Router:` 行显示其 PID、端点和当前模型。运行 `ante offline stop` 可停止当前 Ante 主目录的路由器，包括其他会话仍在使用的进程；该操作影响所有共享它的会话。
+
 ## 配置参考 {#configuration-reference}
 
 所有离线模式配置保存在 `~/.ante/offline-config.json` 中：
@@ -146,10 +178,10 @@ Ante 根据模型文件大小、KV 缓存（随上下文窗口伸缩）及分片
   "version": "1.0.0",
   "model_directory": "~/.ante/models",
   "port": 8080,
-  "last_model": "model-name",
+  "default_model": "/models/model.gguf",
   "model_preferences": {
-    "model-id": {
-      "model_id": "model-id",
+    "/models/model.gguf": {
+      "model_id": "/models/model.gguf",
       "context_window": 32768,
       "thinking_enabled": true,
       "temperature": 0.7,
@@ -163,12 +195,14 @@ Ante 根据模型文件大小、KV 缓存（随上下文窗口伸缩）及分片
 |---|---|---|
 | `model_directory` | 扫描本地 GGUF 模型的目录 | `~/.ante/models` |
 | `port` | 托管 llama.cpp 路由器或外部服务端的起始端口号 | `8080` |
-| `last_model` | 上次使用的模型（自动保存） | — |
+| `default_model` | 裸 `--offline-model` 启动的模型，由 `ante offline use` 设置 | — |
 | `model_preferences` | 各模型的专属偏好设置（见上文） | — |
 | `llama_cpp` | 引擎安装详情、二进制路径及服务端默认配置 —— 参见[自定义引擎](/local/custom-engines) | 由 Ante 管理 |
+
+模型偏好在发现阶段读取。修改 `offline-config.json` 后，关闭并重新打开 `/offline-mode` 即可加载新值。
 
 ### 环境变量 {#environment-variables}
 
 | 环境变量 | 说明 |
 |---|---|
-| `ANTE_OFFLINE_CONTEXT` | 覆盖默认上下文窗口上限（Token 数）。当需要大于 32K 默认值的上下文且硬件具备足够 RAM 时非常有用。示例：`ANTE_OFFLINE_CONTEXT=65536 ante --offline-model ...` |
+| `ANTE_OFFLINE_CONTEXT` | 在模型没有已保存偏好时覆盖初始上下文窗口（Token 数），默认上限为 32K。已有偏好请通过 `ante offline use <MODEL> --context <TOKENS>` 修改 |

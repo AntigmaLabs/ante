@@ -205,8 +205,8 @@ sequenceDiagram
 Ante automatically manages context windows:
 
 - **Token budget** — Each turn tracks token usage against the model's context limit
-- **Auto-compaction** — When the dialog approaches the context limit, Ante evicts aged tool results first, preserves the newest slice and user messages verbatim, and summarizes only the older prefix the model will no longer see. Manual `/compact` uses a tighter target and usually folds more history. If a provider rejects a request below the advertised limit, the session learns a smaller effective window, rescales the compaction budget, and retries once. On by default; disable with the `auto_compact` [setting](/configuration/preference#settings-file) (manual `/compact` and overflow recovery remain available)
-- **Tool result trimming** — Large outputs are bounded to fit within budget, and a parallel result batch shares one overall context cap. Older results decay before conversational messages are summarized; a cleared marker names the original `tool_use_id`, whose complete result remains in a saved session's event log
+- **Auto-compaction** — As the conversation approaches the context limit, Ante summarizes older context while retaining recent conversation and user messages. You can also request compaction with `/compact`. Automatic compaction is on by default; disable it with the `auto_compact` [setting](/configuration/preference#settings-file). Manual `/compact` and overflow recovery remain available when it is disabled
+- **Tool result trimming** — Large or older tool outputs may be shortened or omitted from the model's context. Complete results remain in a saved session's event log
 
 ## Permissions
 

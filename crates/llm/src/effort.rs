@@ -6,14 +6,20 @@ use ante_protocol_shape::Effort;
 /// rung, the lowest applies. `rungs` must be non-empty and sorted ascending by level.
 pub fn resolve<T: Copy>(rungs: &[(Effort, T)], requested: Effort) -> T {
     debug_assert!(rungs.windows(2).all(|w| w[0].0 < w[1].0), "ladder rungs must ascend");
-    let mut setting = rungs[0].1;
-    for &(level, rung_setting) in rungs {
-        if level > requested {
+    round_down(rungs.iter().copied(), requested).expect("ladder rungs must be non-empty")
+}
+
+/// The setting of the highest rung at or below `requested`, or the lowest
+/// rung's when every rung is above it. `None` only for an empty ladder.
+fn round_down<T>(rungs: impl IntoIterator<Item = (Effort, T)>, requested: Effort) -> Option<T> {
+    let mut selected = None;
+    for (level, setting) in rungs {
+        if selected.is_some() && level > requested {
             break;
         }
-        setting = rung_setting;
+        selected = Some(setting);
     }
-    setting
+    selected
 }
 
 /// The selectable levels of a ladder, ascending.
@@ -33,14 +39,7 @@ pub fn normalize_levels(mut levels: Vec<Effort>) -> Vec<Effort> {
 /// has no effective effort. `levels` must be sorted ascending and deduplicated.
 pub fn resolve_level(levels: &[Effort], requested: Effort) -> Option<Effort> {
     debug_assert!(levels.windows(2).all(|w| w[0] < w[1]), "effort levels must ascend");
-    let mut selected = *levels.first()?;
-    for &level in levels {
-        if level > requested {
-            break;
-        }
-        selected = level;
-    }
-    Some(selected)
+    round_down(levels.iter().map(|&level| (level, level)), requested)
 }
 
 #[cfg(test)]

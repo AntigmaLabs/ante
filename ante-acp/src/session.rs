@@ -87,9 +87,7 @@ pub fn parse_mode(id: &str) -> Option<PermissionMode> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use ante_sdk::protocol::{
-        EventMsg, Id, ModelSpec, OpMsg, ProviderSpec, SessionInfo, event_msg,
-    };
+    use ante_sdk::protocol::{EventMsg, Id, OpMsg, SessionInfo, event_msg};
     use tokio::sync::mpsc::{Receiver, UnboundedSender};
 
     /// A client whose host end the test holds.
@@ -101,18 +99,10 @@ mod tests {
 
     fn session_info(permission_mode: PermissionMode) -> SessionInfo {
         SessionInfo {
-            model: ModelSpec::default(),
-            provider: ProviderSpec {
-                id: "test".into(),
-                display_name: "Test".into(),
-                base_url: String::new(),
-            },
             session_id: Id::ses(),
             cwd: PathBuf::from("/work"),
             permission_mode,
-            skills: Vec::new(),
-            subagents: Vec::new(),
-            title: None,
+            ..Default::default()
         }
     }
 

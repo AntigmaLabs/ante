@@ -1,0 +1,10 @@
+{"timestamp":"2026-07-11T12:00:00Z","id":"evt-thinking","event":{"Thinking":"Inspect all three files in parallel."}}
+{"timestamp":"2026-07-11T12:00:01Z","id":"evt-message","event":{"AgentMessage":"I’ll inspect the related files."}}
+{"timestamp":"2026-07-11T12:00:02Z","id":"evt-usage","event":{"UsageUpdate":{"usage":{"input_tokens":120,"output_tokens":30,"cache_read_tokens":40}}}}
+{"timestamp":"2026-07-11T12:00:03Z","id":"evt-start-a","event":{"ToolStart":{"id":"tool-a","name":"Read","args":{"path":"a.txt"}}}}
+{"timestamp":"2026-07-11T12:00:04Z","id":"evt-start-b","event":{"ToolStart":{"id":"tool-b","name":"Read","args":{"path":"b.txt"}}}}
+{"timestamp":"2026-07-11T12:00:05Z","id":"evt-start-c","event":{"ToolStart":{"id":"tool-c","name":"Read","args":{"path":"c.txt"}}}}
+{"timestamp":"2026-07-11T12:00:06Z","id":"evt-update-b","event":{"ToolUpdate":{"tool_use_id":"tool-b","seq":0,"message":"reading"}}}
+{"timestamp":"2026-07-11T12:00:07Z","id":"evt-end-c","event":{"ToolEnd":{"tool_use_id":"tool-c","status":"Completed","result_json":{"content":"charlie"}}}}
+{"timestamp":"2026-07-11T12:00:08Z","id":"evt-end-a","event":{"ToolEnd":{"tool_use_id":"tool-a","status":"Completed","result_json":{"content":"alpha"}}}}
+{"timestamp":"2026-07-11T12:00:09Z","id":"evt-end-b","event":{"ToolEnd":{"tool_use_id":"tool-b","status":"Completed","result_json":{"content":"bravo"}}}}

@@ -58,6 +58,7 @@ const sidebars: SidebarsConfig = {
       collapsible: false,
       items: [
         'usage/providers',
+        'usage/custom-sign-ins',
         'usage/tui',
         'usage/slash-commands',
         {

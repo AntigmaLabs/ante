@@ -434,6 +434,74 @@ def accumulate_usage_from_events(events: Iterable[dict[str, Any]]) -> dict[str, 
     )
 
 
+def prompt_tiers(price: dict[str, Any]) -> list[dict[str, Any]]:
+    """A price row's prompt-length overrides, ascending by threshold.
+
+    Only overrides conditioned solely on ``min_prompt_tokens`` qualify; time-of-day
+    overrides stay informational because they depend on the provider's clock.
+    """
+    tiers = [
+        tier
+        for tier in price.get("pricing_overrides") or ()
+        if isinstance(tier, dict)
+        and is_number(tier.get("min_prompt_tokens"))
+        and not {"utc_days", "utc_start", "utc_end"} & tier.keys()
+    ]
+    return sorted(tiers, key=lambda tier: tier["min_prompt_tokens"])
+
+
+def rates_for_prompt(price: dict[str, Any], prompt_tokens: Any) -> dict[str, Any]:
+    """Rate row for one request: the highest prompt tier its prompt exceeds."""
+    rates = price
+    for tier in prompt_tiers(price):
+        if is_number(prompt_tokens) and prompt_tokens > tier["min_prompt_tokens"]:
+            rates = {**price, **tier}
+    return rates
+
+
+def token_cost_usd(
+    rates: dict[str, Any], inp: Any, out: Any, cache_read: Any, cache_creation: Any
+) -> float:
+    """USD for cache-inclusive token counts at per-1M-token ``rates``.
+
+    Cache reads and writes are peeled off the input count before the fresh-input
+    rate applies; absent cache rates fall back to the input rate.
+    """
+    inp = inp if is_number(inp) else 0
+    out = out if is_number(out) else 0
+    cache_read = cache_read if is_number(cache_read) else 0
+    cache_creation = cache_creation if is_number(cache_creation) else 0
+    fresh = max(inp - cache_read - cache_creation, 0)
+    p_in = rates.get("input", 0.0)
+    return (
+        fresh * p_in
+        + cache_read * rates.get("cache_read", p_in)
+        + cache_creation * rates.get("cache_write", p_in)
+        + out * rates.get("output", 0.0)
+    ) / 1_000_000
+
+
+def request_cost_usd(price: dict[str, Any], usage: dict[str, Any]) -> float:
+    """USD for one ``UsageUpdate`` payload, at the tier its prompt reaches."""
+    return token_cost_usd(
+        rates_for_prompt(price, usage.get("input_tokens")),
+        usage.get("input_tokens"),
+        usage.get("output_tokens"),
+        usage.get("cache_read_tokens"),
+        usage.get("cache_creation_tokens"),
+    )
+
+
+def cost_usd_from_events(
+    events: Iterable[dict[str, Any]], price: dict[str, Any]
+) -> float | None:
+    """Price every Ante request in an event stream; None without usage events."""
+    calls = [usage for event in events if (usage := usage_from_event(event))]
+    if not calls:
+        return None
+    return sum(request_cost_usd(price, usage) for usage in calls)
+
+
 def has_reported_usage(usage: dict[str, Any] | None) -> bool:
     if not isinstance(usage, dict):
         return False

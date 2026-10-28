@@ -18,7 +18,7 @@ Every operation is wrapped in an `OpMsg`:
 
 ```json
 {
-  "op": { "StartSession": { "model": "claude-sonnet-5", "provider": "anthropic" } },
+  "op": { "StartSession": { "model": "claude-sonnet-5-5", "provider": "anthropic" } },
   "id": "op_01ARZ3NDEKTSV4RRFFQ69G5FAV"
 }
 ```
@@ -61,7 +61,7 @@ Initialize a new session, replacing any session already running. A field supplie
 {
   "op": {
     "StartSession": {
-      "model": "claude-sonnet-5",
+      "model": "claude-sonnet-5-5",
       "provider": "anthropic",
       "permission_mode": null,
       "system_prompt": null,
@@ -89,7 +89,7 @@ Initialize a new session, replacing any session already running. A field supplie
 
 | Field | Type | Description |
 |---|---|---|
-| `model` | `string?` | Model name (e.g. `"claude-sonnet-5"`); `null` uses the host default |
+| `model` | `string?` | Model name (e.g. `"claude-sonnet-5-5"`); `null` uses the host default |
 | `provider` | `string?` | Provider name (e.g. `"anthropic"`, `"openai"`, `"gemini"`, `"xai"`, `"openrouter"`, `"local"`); `null` uses the host default |
 | `permission_mode` | `PermissionMode?` | Tool approval mode: `"strict"`, `"auto"`, or `"yolo"`; `null` uses the host default |
 | `system_prompt` | `string?` | Override the default system prompt entirely |
@@ -100,7 +100,7 @@ Initialize a new session, replacing any session already running. A field supplie
 | `cwd` | `string?` | Working directory. Defaults to daemon's process directory |
 | `effort` | `Effort?` | [Effort](/usage/models-and-thinking#effort) override: `"min"`, `"low"`, `"medium"`, `"high"`, `"xhigh"`, or `"max"`. `null` resolves from the catalog |
 | `enable_auto_memory` | `bool?` | Whether the agent records and recalls [auto-memory](/extend/memory). `null` leaves the daemon default (on for interactive sessions) |
-| `short_prompt` | `bool?` | Use compact tool descriptions and system prompt to shrink the context footprint. `null` leaves the settings default |
+| `short_prompt` | `bool?` | Use shorter built-in tool descriptions; the system instructions stay the same. `null` leaves the settings default |
 | `no_skills` | `bool?` | When `true`, skip all skill discovery so no skills are advertised or invocable. `null` leaves the session default |
 | `include_skills` | `string[]?` | Exact skill names added to the session's base set. A supplied list replaces the host's `include_skills` setting and does not enable discovery when `no_skills` is true |
 | `exclude_skills` | `string[]?` | Exact skill names removed from the session. A supplied list replaces the host's `exclude_skills` setting and wins over `include_skills` |
@@ -121,7 +121,7 @@ A `provider` change continues the conversation on the named catalog provider, ke
   "op": {
     "UpdateSession": {
       "provider": "openai",
-      "model": { "id": "gpt-5.4", "temperature": 0.2, "effort": "high" },
+      "model": { "id": "gpt-6.1-sol", "temperature": 0.2, "effort": "high" },
       "permission_mode": "auto",
       "title": "auth refactor"
     }
@@ -143,6 +143,8 @@ A `provider` change continues the conversation on the named catalog provider, ke
 
 Resume a previously persisted session by its ID. The daemon restores the saved dialog and pinned model, provider, and effort, resolves anything the snapshot did not pin from the host's current defaults, re-discovers extensions, and replays the complete persisted conversation so the client can rebuild its view.
 
+Saved system prompts and prompt mode are restored as sent, including replacements, appended instructions, and `short_prompt`. Current launch prompt flags apply only to fresh sessions. A change in local date, OS, or shell is reported to the model once on its next turn; an unchanged environment adds no notice.
+
 Permission mode always resolves from the host's current settings. Older snapshots still load, but their saved permission mode is ignored and omitted on the next save.
 
 ```json
@@ -155,6 +157,26 @@ Permission mode always resolves from the host's current settings. Older snapshot
 | `unattended` | `bool` | Whether no client can answer approval prompts for this resumed incarnation. Defaults to `false` when absent; when `true`, would-be prompts are denied at admission |
 
 On success the daemon emits `SessionEnd` for the current session (if any), then `SessionStart` and `ExtensionRefreshed` for the resumed session, followed by the complete persisted event log in order, excluding session lifecycle events and malformed lines. There is no 200-event cap. On failure it emits an `Error` event.
+
+### RewindSession
+
+Restore the active session's conversation and visible history to just before input `to`. The ID is the `TurnStart.turn_id` for that input (for user input, the submitting operation's ID). The chosen input and everything after it are removed; no new turn starts and no file edits or other external effects are undone.
+
+```json
+{ "op": { "RewindSession": { "to": "op_input_1" } }, "id": "op_rewind_1" }
+```
+
+The session must be saved, with no running or queued turn, active goal, or running background job. The input must still be reachable: saved input boundaries survive resume and are copied into forks, but a successful history-replacing compaction or provider switch invalidates earlier boundaries. Failed compaction leaves them intact. A refused request emits `Error` without changing the conversation. Success emits [`SessionRewound`](#sessionrewound).
+
+### ForkSession
+
+Save a new session from the active conversation. Set `at` to a reachable input ID to copy the conversation just before it, using the same cut as `RewindSession`; omit `at` (or pass `null`) to copy the whole conversation.
+
+```json
+{ "op": { "ForkSession": {} }, "id": "op_fork_1" }
+```
+
+The source must be saved with no running or queued turn and no active goal. It stays unchanged. The new session is saved but not started: [`SessionForked`](#sessionforked) returns its ID, and the client sends `ResumeSession` to switch to it. A refused request emits `Error` and creates no session. Forking copies conversation state, not files, a Git worktree, or running processes.
 
 ### Steer
 
@@ -359,7 +381,7 @@ Emitted when a session is initialized. It announces the session identity, mutabl
 {
   "event": {
     "SessionStart": {
-      "model": { "id": "claude-sonnet-5", "max_tokens": 8192 },
+      "model": { "id": "claude-sonnet-5-5", "max_tokens": 8192 },
       "provider": {
         "id": "anthropic",
         "display_name": "Anthropic",
@@ -387,6 +409,7 @@ Emitted when a session is initialized. It announces the session identity, mutabl
 | `skills` | `SkillMetadata[]` | Skills the user can invoke in this session. Defaults to an empty list when absent for backward compatibility |
 | `subagents` | `SubagentMetadata[]` | Subagents this session can delegate to. Defaults to an empty list when absent for backward compatibility |
 | `title` | `string?` | The session's [title](/usage/tui#session-title) when one is set — chosen by the user or the client, never derived from the conversation. Omitted from the payload entirely when unset |
+| `forked_from` | `Id?` | Source session ID for a fork. Omitted for sessions that were not forked; distinct from subagent parentage |
 
 The embedded `ModelSpec` uses the model fields documented in the [Catalog Reference](/reference/catalog-reference#model-fields). Since `v0.preview.92`, its optional `supported_efforts` field carries a custom model's accepted effort ladder; it replaces the old output-only `effort_options` field.
 
@@ -402,6 +425,22 @@ The payload type was named `SessionInitialized` before `v0.preview.94` and is no
 
 `ProviderSpec` deliberately carries only what a client cannot look up for itself. The provider's model list is not on the wire; it is identical for every session and is published by [`ante catalog`](/reference/cli-reference#ante-catalog). Unknown fields are ignored, so payloads from older daemons that still send `preferred_models` decode fine.
 
+#### SessionRewound
+
+Confirms that the active conversation and its persisted history now stand just before `to`. This acknowledgment is never included in resume replay. A client should remove the selected input and later entries from its displayed conversation after receiving it.
+
+```json
+{ "event": { "SessionRewound": { "to": "op_input_1" } }, "parent": "op_rewind_1" }
+```
+
+#### SessionForked
+
+Confirms that `session_id` was saved from `forked_from`, before input `at` when present or from the whole conversation when omitted. It does not announce a running session; resume the returned ID to start using it.
+
+```json
+{ "event": { "SessionForked": { "forked_from": "ses_parent", "session_id": "ses_child" } }, "parent": "op_fork_1" }
+```
+
 #### SessionUpdated
 
 Emitted when the active session is updated in place (e.g. model changed via `UpdateSession`). Carries the same fields as `SessionStart`.
@@ -410,7 +449,7 @@ Emitted when the active session is updated in place (e.g. model changed via `Upd
 {
   "event": {
     "SessionUpdated": {
-      "model": { "id": "gpt-5.4" },
+      "model": { "id": "gpt-6.1-sol" },
       "provider": {
         "id": "openai",
         "display_name": "OpenAI",
@@ -527,7 +566,7 @@ Emitted when a turn completes. `steps` is the number of turn-loop steps attempte
 
 #### AgentMessage
 
-Complete agent text response (non-streaming).
+Complete agent text response, assembled from the stream. Clients displaying deltas should avoid rendering this text a second time.
 
 ```json
 { "event": { "AgentMessage": "The project is a web server that..." } }
@@ -535,7 +574,7 @@ Complete agent text response (non-streaming).
 
 #### Thinking
 
-Complete chain-of-thought block (non-streaming).
+Complete reasoning block, assembled from the stream. Clients displaying reasoning deltas should avoid rendering this text a second time.
 
 ```json
 { "event": { "Thinking": "Let me analyze the codebase structure..." } }
@@ -625,6 +664,16 @@ Emitted when a tool execution completes.
 
 `tool_name` is populated even when execution never starts, so clients can render denied, cancelled, and malformed calls without reconstructing the name from a preceding event. Older events may deserialize it as an empty string. There is no separate `is_error` field: derive it from `status` (`Completed` is the only non-error status). Every accepted tool call gets a terminal `ToolEnd`, and concurrently running calls emit it independently as each one settles.
 
+#### TaskEnd
+
+Emitted when tracked work handed off by a tool call finishes, such as a Bash command that outlived its inline wait window. Available since v0.2.3. The earlier `ToolEnd` completes the tool call and returns the background handle; it does not mean the process has exited.
+
+```json
+{ "event": { "TaskEnd": { "tool_use_id": "tool_use_abc123", "exit_code": 0 } } }
+```
+
+`tool_use_id` identifies the original call. `exit_code` is the process exit code (`128 + signal` for signal termination), or `null` if the exit could not be observed. Clients can use it to settle the original running-job display. The event is persisted and replayed when the session resumes.
+
 ### Compaction events
 
 #### CompactStart
@@ -637,7 +686,7 @@ Emitted when dialog compaction begins.
 
 #### CompactEnd
 
-Emitted when dialog compaction completes. `summary` is the text that replaced the compacted history and carries forward as the session's context; it is `null` when compaction failed (history unchanged) or produced no displayable text.
+Emitted when dialog compaction completes. A non-null `summary` is the text committed as the replacement for compacted history and carried forward as context; clients should invalidate earlier rewind and fork targets. `null` means no history replacement was committed, so those targets remain valid. Do not invalidate targets on `CompactStart` alone.
 
 ```json
 { "event": { "CompactEnd": { "summary": "The user asked to..." } } }
@@ -682,7 +731,7 @@ Emitted when skills, subagents, or MCP servers are refreshed. It is sent once im
 }
 ```
 
-Each entry in `mcp_servers` reflects what was actually launched and discovered: the `tools` list is empty for servers that failed to connect, and `qualified_name` is the `mcp__<server>__<tool>` form the agent uses to call the tool.
+Each entry in `mcp_servers` describes a configured server and its discovered tools. Local servers have `command` and `args`; remote servers have `url`, an empty `command`, and empty `args`. The optional `url` field was added in v0.2.12 and is omitted for local servers. The `tools` list is empty for servers that failed to connect or exposed no tools, and `qualified_name` is the `mcp__<server>__<tool>` form the agent uses to call the tool.
 
 ### Informational events
 

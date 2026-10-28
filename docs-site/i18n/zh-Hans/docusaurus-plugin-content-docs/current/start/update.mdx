@@ -33,8 +33,8 @@ ante update
 使用 `--version` 安装指定版本：
 
 ```bash
-ante update --version v0.2.2
-ante update --version 0.2.2
+ante update --version v0.2.12
+ante update --version 0.2.12
 ```
 
 该方式会跳过通道的“版本更新校验”，因此可用于升级、重新安装当前版本，或回滚到已发布的历史版本。回滚时，Ante 会记录您回滚前的版本，避免后台更新提示立即建议重新安装。
@@ -95,3 +95,30 @@ curl -fsSL https://ante.run/install.sh | ANTE_INSTALL_DIR=/usr/local/bin bash
 ## 更新检查机制 {#how-update-checks-work}
 
 在启动以及长会话运行期间，Ante 会在后台异步检查更新缓存。针对通道清单的网络请求由所有运行中的 Ante 进程共享，最多每小时检查一次；检查结果和发布说明会缓存在 `~/.ante/versions.json` 中。当有新版本时，TUI 会显示上述轻量提示。`ante update` 命令行会忽略本地缓存，实时重新拉取清单。
+
+## 升级到 v0.3 {#upgrading-to-v03}
+
+v0.3.0 修改了 `~/.ante/catalog.json` 中的凭据配置方式，以及 `~/.ante/settings.json` 中 MCP 服务器的凭据配置方式。旧设置不会自动转换。按旧方式编写的目录条目会在启动时被跳过，并提示应替换为何种写法（`ante doctor` 会列出这些条目）；带有旧 `oauth` 配置块的 MCP 服务器会连接失败，并说明处理方法。
+
+**最简单的方式：** 运行 `ante`，让它帮你完成迁移，例如输入 *“把我的 catalog.json 和 settings.json 更新到 v0.3”*。Ante 内置的指南了解这些变更，会直接为你改写文件。
+
+已存储的 API 密钥和登录状态会自动保留。MCP 服务器的登录不会保留：请为每个服务器运行一次 `ante auth login <server>`。
+
+手动迁移对照表：
+
+| 旧写法 | v0.3 |
+|---|---|
+| `"auth": { "bearer": { "env_key": "MY_KEY" } }` | `"credential": "env:MY_KEY"` |
+| `"auth": { "header": { "name": "x-api-key", "env_key": "MY_KEY" } }` | `"credential": "env:MY_KEY", "credential_header": "x-api-key"` |
+| `"auth": { "bearer": { "oauth_preset": "anthropic" } }` | `"credential": "oauth:anthropic"` |
+| `"auth": { "query": { … } }` | 不再支持 |
+| `"auth": null`，或无需密钥的提供商未设置 `auth` | `"credential": null`（省略 `credential` 时，现在会读取通过 `ante auth add <provider>` 存储的密钥） |
+| `"http_headers": { … }` | `"headers": { … }` |
+| 请求头中的 `"{session_id}"` | `"${session_id}"` |
+| 顶层 `"models": { "<id>": { … } }` | `"providers": { "<provider>": { "preferred_models": [{ "id": "<id>", … }] } }` |
+| `--provider antix-api-key` | `--provider antix`（同样会读取 `ANTIX_API_KEY`） |
+| MCP 服务器上的 `"oauth": { … }` | 删除该配置，并运行 `ante auth login <server>` |
+| `ante mcp login <server>` / `ante mcp logout <server>` | `ante auth login <server>` / `ante auth logout <server>` |
+| `ante auth login`（默认 Antix）、`--force` | `ante auth login antix`；再次运行 `login` 总会重新登录 |
+
+新设置请参阅[凭据](/reference/catalog-reference#credentials)与 [MCP 认证](/extend/mcp#authentication)。

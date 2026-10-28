@@ -40,13 +40,25 @@ Prefer your own llama.cpp build, extra server flags, or a server you started you
    - **Local models** — GGUF files already on your system (auto-discovered)
    - **Running servers** — [attach](/local/existing-servers) to a llama server already running on a local port or reachable endpoint
 
-4. **Or pass a model path directly** — skip the TUI and load a GGUF file in one step:
+4. **Or load from the command line** — open the TUI on a local model without visiting the model picker:
    ```bash
-   ante --offline-model /path/to/model.gguf "your prompt here"
+   ante --offline-model /path/to/model.gguf
    ```
-   Ante starts the llama.cpp router, loads the model, waits for it to be ready, then runs the session. Useful in scripts or CI.
+   Add `-p "your prompt here"` for a one-shot headless task. `--offline-model [MODEL]` also accepts a discovered filename or verified model name/URL. It conflicts with `--model` and `--provider`.
 
-Once a model is loaded, it is registered as the `local` provider in the catalog, so you can also switch to it with `/providers` or target it with `--provider local`. The entry exists only while a server is registered: when the server stops, `local` leaves the catalog. Starting with a saved `local` selection and no server running gates the session with a notice (run `/offline-mode` to start or attach one); headless runs fail fast with the same message. See [mixing local and frontier](/local/overview#mixing-local-and-frontier).
+### Configure without the TUI
+
+```bash
+ante offline install
+ante offline status
+ante offline list
+ante offline use Qwen3.5-9B
+ante --offline-model
+```
+
+`status` and `list` support `--json`. `use` saves the default without starting or downloading anything; verified models download on first load. Use the `reference` field from `ante offline list --json` when you need an exact model reference for a script. Bare `--offline-model` starts the saved default and fails with setup guidance if none is set.
+
+Once a model is loaded, it is registered as the `local` provider in the catalog, so you can also switch to it with `/providers` or target it with `--provider local`. The entry exists only while the model is ready: unloading the model or stopping the server removes `local` from the catalog. Starting with a saved `local` selection and no server running gates the session with a notice (run `/offline-mode` to start or attach one); headless runs fail fast with the same message. See [mixing local and frontier](/local/overview#mixing-local-and-frontier).
 
 ## Scripted and server usage
 
@@ -55,7 +67,7 @@ Once a model is loaded, it is registered as the `local` provider in the catalog,
 Pass `--offline-model` to run a one-shot prompt against a local GGUF file — no TUI required:
 
 ```bash
-ante --offline-model ~/.ante/models/Qwen3.5-9B-Q4_K_M.gguf "Explain this code"
+ante --offline-model ~/.ante/models/Qwen3.5-9B-Q4_K_M.gguf -p "Explain this code"
 ```
 
 <img src="/assets/offline-headless.gif" alt="Headless offline mode running a one-shot prompt against a local GGUF model" style={{width: '100%', borderRadius: '8px', margin: '16px 0'}} />
@@ -69,8 +81,10 @@ Headless runs never prompt to install the engine. On a machine that doesn't have
 When running `ante serve`, you can load a model once and share it across all connecting clients:
 
 ```bash
-ante serve --ws 127.0.0.1:9000 --offline-model ~/.ante/models/Qwen3.5-9B-Q4_K_M.gguf
+ANTE_SERVE_TOKEN="your-secret-token" ante serve --ws 127.0.0.1:9000 --offline-model
 ```
+
+This example uses the default saved with `ante offline use` above. WebSocket clients must send the same token in the upgrade request as `Authorization: Bearer <token>`; see [Serve mode](/usage/serve).
 
 <img src="/assets/offline-serve.gif" alt="Serve mode with a shared offline model across WebSocket clients" style={{width: '100%', borderRadius: '8px', margin: '16px 0'}} />
 
@@ -85,7 +99,7 @@ When a model is downloading or being loaded into memory, Ante shows a real-time 
 - **Tensor loading** — weights are being loaded into RAM/VRAM
 - **GPU offload** — layers are being transferred to the GPU (if available)
 
-The same progress is reported in headless mode via log output.
+Launches using `--offline-model` report download and load progress on stderr, keeping headless results and served protocol streams on stdout separate.
 
 ## Model discovery
 
@@ -98,16 +112,32 @@ Ante automatically scans the following directories for GGUF model files:
 | `~/.cache/huggingface/hub` | Hugging Face cache |
 | `~/.llama/models` | Common llama model directory |
 
+For a sharded GGUF, select the first shard (`*-00001-of-*.gguf`) and keep every shard in the same directory. Discovery, direct paths, and saved defaults inspect the full set and total size; missing shards or a non-first-shard reference are rejected. The model must support at least 32,768 context tokens, even though the load window can be set lower.
+
 ## Model preferences
 
 Per-model settings, saved automatically in the offline config:
 
 | Setting | Description |
 |---|---|
-| `context_window` | Context window size (minimum 32K tokens) |
-| `thinking` | Enable/disable chain-of-thought |
-| `temperature` | Sampling temperature (unset means the model default) |
+| `context_window` | Load context window: 8,192 tokens up to the model maximum; default cap is 32,768 |
+| `thinking` | Enable/disable thinking; stored as `thinking_enabled` in the config |
+| `temperature` | Sampling temperature (0–2); unset uses the model default |
 | `extra_args` | Extra llama.cpp model options, translated into the shared router's per-model preset — see [Custom Engines](/local/custom-engines#tune-the-launch-command) |
+
+Save preferences from the CLI for the next TUI, headless, or `serve` load:
+
+```bash
+ante offline use Qwen3.5-9B --context 16384 --thinking off --temperature 0.7
+ante offline use Qwen3.5-9B --args "--threads 12"
+ante offline use Qwen3.5-9B --temperature default --args ""
+```
+
+Each option replaces only its own value and preserves the others. `--temperature default` clears the temperature override; `--args ""` clears extra options. Every `use` prints `Loads with:`, including when no preference flags are supplied.
+
+Before saving, `--context` and `--temperature` are range-checked. `--args` receives basic syntax checks and rejects reserved or removed options; other invalid options or values may only fail when loading a model.
+
+In the config, preferences are keyed by the local file's absolute path or the verified model's download URL, available as `reference` in `list --json`.
 
 ## Vision models
 
@@ -118,7 +148,7 @@ If a multimodal projector file (`mmproj-*.gguf`) sits next to the model file, An
 Ante estimates memory usage based on model file size, KV cache (scales with context window), and shard count.
 
 :::tip
-For large models, reduce the context window to lower memory usage. The minimum is 32K tokens.
+For large models, lower the load window with `ante offline use <MODEL> --context 8192` to reduce memory use. 8,192 tokens is the minimum setting; 32,768 is the default cap. The memory-fit estimate in `list` uses a 32K context, not the per-model saved load window.
 :::
 
 ## Server management
@@ -134,6 +164,8 @@ When exiting Ante with a server running, you'll be prompted:
 - **`k`** — Keep the server running and exit (prints PID)
 - **`Esc`** — Cancel and stay in Ante
 
+A kept router is reused by the next offline launch. `ante offline status` shows its PID, endpoint, and current model on the `Router:` line. Run `ante offline stop` to stop this Ante home's router, including one still used by another session; all sessions sharing it are affected.
+
 ## Configuration reference
 
 All offline mode configuration is stored in `~/.ante/offline-config.json`:
@@ -143,10 +175,10 @@ All offline mode configuration is stored in `~/.ante/offline-config.json`:
   "version": "1.0.0",
   "model_directory": "~/.ante/models",
   "port": 8080,
-  "last_model": "model-name",
+  "default_model": "/models/model.gguf",
   "model_preferences": {
-    "model-id": {
-      "model_id": "model-id",
+    "/models/model.gguf": {
+      "model_id": "/models/model.gguf",
       "context_window": 32768,
       "thinking_enabled": true,
       "temperature": 0.7,
@@ -160,12 +192,14 @@ All offline mode configuration is stored in `~/.ante/offline-config.json`:
 |---|---|---|
 | `model_directory` | Where to look for local GGUF models | `~/.ante/models` |
 | `port` | Starting port for the managed llama.cpp router or attached server | `8080` |
-| `last_model` | Last used model (auto-saved) | — |
+| `default_model` | Model started by bare `--offline-model`, set by `ante offline use` | — |
 | `model_preferences` | Per-model settings (see above) | — |
 | `llama_cpp` | Engine install details, binary paths, and server defaults — see [Custom Engines](/local/custom-engines) | managed by Ante |
+
+Per-model preferences are read during discovery. After editing `offline-config.json`, close and reopen `/offline-mode` to load the new values.
 
 ### Environment variables
 
 | Variable | Description |
 |---|---|
-| `ANTE_OFFLINE_CONTEXT` | Override the default context window cap (tokens). Useful when you need a larger context than the 32K default, and your hardware has enough RAM. Example: `ANTE_OFFLINE_CONTEXT=65536 ante --offline-model ...` |
+| `ANTE_OFFLINE_CONTEXT` | Override the initial context window in tokens when a model has no saved preferences (default cap: 32K). To change an existing preference, use `ante offline use <MODEL> --context <TOKENS>` |

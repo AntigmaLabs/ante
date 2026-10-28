@@ -1,0 +1,152 @@
+---
+title: "Custom Sign-ins & Token Commands"
+sidebar_label: "Custom Sign-ins"
+description: "Sign in to other services with your own OAuth profile, or get tokens from a command"
+---
+
+Ante has built-in sign-ins for Antix, Anthropic, and OpenAI. For other services, add an entry to `~/.ante/catalog.json`:
+
+- **An OAuth profile** when the service offers a browser sign-in for apps, the way `ante auth login anthropic` works.
+- **A helper** when a command hands out the token or key, such as `gcloud`, a password manager, or a company token tool.
+
+Both take effect the next time Ante starts. If an entry has a mistake, Ante skips it at startup with a message naming the field, and `ante doctor` lists it.
+
+## Add an OAuth sign-in {#oauth-profile}
+
+### What the service must support
+
+Ante signs in the way command-line tools do: it opens your browser, you approve, and the browser returns to a small server Ante runs on your machine. The flow is the OAuth authorization code flow with PKCE. To use it, you need from the service:
+
+- **A client ID** for a public app, one that doesn't need a client secret. Ante never sends a client secret.
+- **A redirect URI on your machine**, such as `http://localhost:1455/callback` or `http://127.0.0.1:1455/callback`, registered for that client ID.
+- **The authorize URL and the token URL.**
+- **Access tokens the model API accepts** in an `Authorization: Bearer` header, or in another header you name.
+
+These values come from the service's developer documentation, or from the app you register with it. Some services, such as Google, require a client secret for desktop sign-ins; for those, use the service's command-line tool and a [helper](#helpers) instead.
+
+### 1. Add the profile
+
+This example adds a sign-in for Grok. Replace the `<…>` values with the ones from xAI:
+
+```json title="~/.ante/catalog.json"
+{
+  "oauth_profiles": {
+    "grok": {
+      "client_id": "<client ID>",
+      "redirect_uri": "http://127.0.0.1:56121/callback",
+      "authorize_url": "<authorize URL>",
+      "token_url": "<token URL>",
+      "scopes": ["openid", "email", "offline_access"],
+      "account_claim": ["email"]
+    }
+  }
+}
+```
+
+The profile name, `grok` here, is what you sign in with and what `oauth:` refers to. `redirect_uri` must match the registered one exactly, including the port and path. Ask for `offline_access`, or whatever scope the service uses for refresh tokens, so Ante can renew the sign-in without opening the browser again.
+
+### 2. Point a provider at it
+
+Set a provider's `credential` to `oauth:<profile>`. Here the built-in `xai` provider uses the sign-in first and falls back to `XAI_API_KEY`:
+
+```json title="~/.ante/catalog.json"
+{
+  "oauth_profiles": { "grok": { … } },
+  "providers": {
+    "xai": { "credential": ["oauth:grok", "env:XAI_API_KEY"] }
+  }
+}
+```
+
+For a service Ante doesn't know, add a full provider entry with `base_url` and `wire_style`; see [Add a custom provider](/reference/catalog-reference#custom-catalog).
+
+### 3. Sign in
+
+```bash
+ante auth login grok
+```
+
+Ante opens the browser and waits for the redirect. On a machine without a browser, add `--no-browser` and open the printed link yourself. In the TUI, run `/providers`, select the provider, press `m`, and choose **Sign in to …**.
+
+To add a second account, give it a label: `ante auth login grok/work`. Use `oauth:grok/work` to send that account only.
+
+### 4. Check it
+
+```bash
+ante auth list
+```
+
+The sign-in shows with its state and, when the profile sets `account_claim`, the account it belongs to. Ante refreshes the token as it expires. Run `ante auth logout grok` to remove it.
+
+### Profile fields
+
+| Field | Required | Description |
+|---|---|---|
+| `client_id` | Yes | The app's client ID |
+| `redirect_uri` | Yes | Where the browser returns. Must start with `http://localhost` or `http://127.0.0.1`; Ante listens on its port |
+| `authorize_url` | Yes | The authorization endpoint, as an absolute URL |
+| `token_url` | Yes | The token endpoint, as an absolute URL |
+| `scopes` | No | Scopes to request |
+| `required_scopes` | No | A sign-in is used only if it was granted at least one of these |
+| `resource` | No | The resource indicator, for services that require one |
+| `authorize_params` | No | Extra query parameters on the authorize URL, as `{"name": "value"}` |
+| `token_request_encoding` | No | `json` (default) or `form`. Use `form` if the token endpoint rejects JSON |
+| `derived_headers` | No | Headers filled from the access token, as `[{"name": "x-account", "jwt_claim": ["account_id"]}]` |
+| `account_claim` | No | The token claim shown as the account, as a path such as `["email"]` |
+
+String values can use `${NAME}` and `${NAME:-default}` to read environment variables, for example to keep a client ID out of the file. A profile with the same name as a built-in (`anthropic`, `openai`, `antix`) replaces it.
+
+### If sign-in fails
+
+- **The browser shows a redirect error**: `redirect_uri` doesn't match the one registered for the client ID.
+- **The token step fails**: try `"token_request_encoding": "form"`, and check that the client doesn't require a secret.
+- **Requests fail after signing in**: the service may not accept its sign-in tokens on the model API, or may need a scope you didn't request. Check its documentation for the scope API access needs.
+
+## Use a command for tokens {#helpers}
+
+A helper is a command that prints a credential. Ante runs it when it needs a token and reuses the output for `ttl_secs` seconds.
+
+### Vertex AI with gcloud
+
+The built-in `vertex-gemini` provider accepts a Google Cloud access token. With the [gcloud CLI](https://cloud.google.com/sdk/docs/install) signed in (`gcloud auth login`), add:
+
+```json title="~/.ante/catalog.json"
+{
+  "helpers": {
+    "gcloud": { "command": ["gcloud", "auth", "print-access-token"], "ttl_secs": 3000 }
+  },
+  "providers": {
+    "vertex-gemini": {
+      "base_url": "https://aiplatform.googleapis.com/v1/projects/my-project/locations/global/publishers/google",
+      "credential": "helper:gcloud"
+    }
+  }
+}
+```
+
+Replace `my-project` with your Google Cloud project ID, then run `ante --provider vertex-gemini`. gcloud tokens last an hour, so a `ttl_secs` of 3000 gets a new one before the old one expires.
+
+### Keys from a password manager
+
+A helper also keeps a long-lived key out of `catalog.json` and Ante's store. With the 1Password CLI:
+
+```json title="~/.ante/catalog.json"
+{
+  "helpers": {
+    "openrouter-key": { "command": ["op", "read", "op://Private/OpenRouter/credential"], "ttl_secs": 86400 }
+  },
+  "providers": {
+    "openrouter": { "credential": "helper:openrouter-key" }
+  }
+}
+```
+
+### How helpers run
+
+- **No shell.** `command` is the program and its arguments, run as written. For pipes or `$VARS`, wrap it: `["sh", "-c", "my-tool token | head -1"]`.
+- **The first line of output is the credential.** Anything after it is ignored.
+- **15 seconds** at most, so a command that waits for a password prompt fails. Sign in to the tool first.
+- **`ttl_secs`** is how long Ante reuses the output, up to a year. Ante also runs the command again when the service rejects the credential.
+- **A failure stops the request.** The error names the helper, and Ante doesn't fall back to another credential. Run the command in a terminal to see what went wrong.
+
+Several providers can share one helper. See [Credentials](/reference/catalog-reference#credentials) for every credential type.

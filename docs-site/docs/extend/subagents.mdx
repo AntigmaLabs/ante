@@ -9,7 +9,7 @@ Sub-agents are specialized agents that the main agent can spawn to handle comple
 
 For an agent you want to watch, talk to directly, and revisit later, use [`/term`](/usage/tui#terminal-sessions). Ante can launch another Ante instance, Claude Code, or Codex in a named terminal, send it work, read its output, and follow up. You can join the same terminal at any time, detach while it keeps running, and reconnect after restarting the main Ante.
 
-Each terminal agent has its own conversation and process lifetime. Use its native fork command to branch a saved conversation, or ask Ante to hand the task and relevant context to a fresh session. The [TUI walkthrough](/usage/tui#fork-a-conversation) shows both approaches. The built-in `Agent` tool described below handles delegated tasks that return a result to the parent; `/term` sessions are managed through the terminal picker and the program running inside them.
+Each terminal agent has its own conversation and process lifetime. Use its native fork command to branch a saved conversation, or ask Ante to hand the task and relevant context to a fresh session. The [TUI walkthrough](/usage/tui#branch-in-another-terminal) shows both approaches. The built-in `Agent` tool described below handles delegated tasks that return a result to the parent; `/term` sessions are managed through the terminal picker and the program running inside them.
 
 ## Built-in sub-agents
 
@@ -68,9 +68,17 @@ When the main agent encounters a task that matches a sub-agent's description, it
 1. The main agent evaluates available sub-agents and their descriptions
 2. It delegates the task via the `Agent` tool with a detailed prompt, optionally specifying a per-call `model` override
 3. The sub-agent runs independently with its own context
-4. The result is returned to the main agent, which incorporates it into the conversation
+4. The sub-agent’s final answer and deliverables are returned directly to the main agent
+
+### Watch sub-agents work
+
+While sub-agents run, the footer lists each one with its task, runtime, and token count. With the composer empty, press `↓` to select one and `Enter` to open its live transcript. Inside, `↑`/`↓` and `Enter` switch to another agent, `PgUp`/`PgDn` scroll, and `Esc` returns to the chat.
+
+<img src="/assets/cookbook/subagents.gif" alt="Three sub-agents running in parallel, listed under the footer, with one opened to show its live transcript" className="cookbook-demo" />
 
 A sub-agent inherits the [skills](/extend/skills) equipped in the parent session, so skill-driven workflows keep working inside delegated tasks. Delegation is one level deep: a sub-agent never carries the `Agent` tool, so it cannot spawn further sub-agents, and does not receive the `AskUser` tool.
+
+A custom definition supplies task-specific instructions. Sub-agents complete a single unattended task and cannot ask you follow-up questions, so include the required inputs and expected output in the delegated task.
 
 Subtasks can specify an individual `model` parameter on the `Agent` tool call. If omitted, the subtask falls back to the agent definition's `model` if configured, and then to the current session model.
 
@@ -110,4 +118,4 @@ Sub-agents are discovered in precedence order (later overrides earlier by name):
 4. `.ante/agents/` (project-level)
 5. `.claude/agents/` (project-level, Claude Code compatibility)
 
-User and project agents are loaded alongside the built-in ones. All available agents are registered at session initialization time, advertised to the model in a reminder attached to the first user message, and refreshed via the `ExtensionRefreshed` protocol event.
+User and project agents are loaded alongside the built-in ones when a session starts. Ante tells the main agent which sub-agents are available for delegation.

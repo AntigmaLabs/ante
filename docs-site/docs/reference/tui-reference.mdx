@@ -46,6 +46,10 @@ Press `Tab` to preview the proposed diff or request details before deciding.
 
 When the agent needs clarification or your input on a design decision, it presents one to four structured multiple-choice questions in place of the composer. Each question displays option descriptions and optional visual previews. Enter selects the recommended option, arrow keys move between choices, Esc skips so the model proceeds on its own judgment, and "Chat about this" returns to conversation for free-form discussion.
 
+### Attention cues
+
+Opt in to a terminal bell and desktop notifications for completed or failed turns, approval prompts, and questions with `"attention": { "enabled": true }` in your user settings. The bell works regardless of focus; desktop notifications require the terminal to report that it is unfocused. See [Attention settings and terminal setup](/configuration/preference#attention-notifications).
+
 ### Diff view
 
 When the agent proposes file edits, Ante switches to a fullscreen diff view on an alternate screen. You can review the exact changes before approving. Diff views use numbered gutters, full-width added/removed bands, and `+N -M` change counts in their headers. Completed edit results in the conversation view use a 32-row inline budget that preserves complete diff hunks in file order, with remaining changes summarized and accessible in full via `Ctrl+O`. Runs of more than three unchanged context lines keep only their first and last lines, without an “unchanged lines” placeholder; line numbers still reflect their original positions.
@@ -56,11 +60,11 @@ Press `Ctrl+O` to open the transcript view on an alternate screen: the full conv
 
 In the main chat, contiguous quiet calls such as Bash, Read, Grep, Glob, WebFetch, WebSearch, and MCP tools are grouped into one compact activity cell by default. While calls are running, the cell shows their count, arguments, and elapsed time; long shell commands wrap over up to three rows with a `… (+N chars)` indicator rather than truncating at the margin. Once complete it collapses to a summary such as `Ran 2 shell commands, searched for 3 patterns`. Successful file reads and failed calls break out of that summary onto their own rows beneath it — a read as `Read (src/main.rs) ·110 lines`, a failure as a red `Failed` header with its error on a dim row under it. Individually displayed Bash calls use their `description` as a stable headline, with a `$ command` preview beneath it and elapsed time as the call runs and completes. Calls without a description still switch from `Run` to `Ran` when they settle. Tool paths inside the project render relative to the session directory, paths elsewhere under your home use `~`, and paths outside both remain absolute. Edit, Write, and Agent calls keep their richer standalone cells, and the transcript view always preserves every call and result. Disable grouping with **Group tool activity** in `/config` or set `"group_tool_activity": false` in `~/.ante/settings.json`; the change applies to new calls only.
 
-After compaction — manual `/compact` or [automatic](/configuration/preference#settings-file) — the conversation shows a collapsed `* Compacted` marker; the transcript view renders the full summary the model wrote. Compaction summaries stream through the standard provider transport, inheriting the same timeout and error handling as regular turns. Ante evicts aged tool results before summarizing, keeps the newest slice and your messages verbatim, and summarizes only the older context the model will no longer see. Manual compaction targets a tighter working set than the automatic trigger, so it normally folds more history; repeating it immediately is a no-op rather than re-folding the fresh summary. If a provider rejects a request below the model's advertised context limit, Ante learns a smaller effective window for that session, rescales the summary and preserved anchors, and retries once. Add instructions when the handoff should preserve a particular thread, for example `/compact focus on the API changes`. When no summary is needed, the instructions have nothing to steer; an info line reports trimmed tool results instead.
+After compaction — manual `/compact` or [automatic](/configuration/preference#settings-file) — the conversation shows a collapsed compaction marker. Earlier history remains visible for reference while the model uses a summary of older context alongside recent conversation and your messages. The transcript view shows the full summary. To focus the summary on a topic, add instructions such as `/compact focus on the API changes`. When no summary is needed, an info line reports any trimmed tool results instead.
 
 ### Selecting and copying text
 
-The fullscreen views — fullscreen chat, the transcript, the [diff view](#diff-view), and `/diff` output — capture the mouse for wheel scrolling, so they handle selection themselves instead of leaving it to the terminal. Drag across the text and it copies on release; the footer confirms with `copied N lines`. Double-click selects a word, counting `_-./~+@#$%&=:` as word characters so a path or URL comes out whole, and triple-click selects the logical line. Dragging on the top or bottom row scrolls and keeps extending the selection past the viewport. In fullscreen chat, `PgUp` / `PgDn` also scroll the conversation; reaching the bottom re-pins the view so new output follows again.
+The fullscreen views — fullscreen chat, the transcript, the [diff view](#diff-view), and `/diff` output — capture the mouse for wheel scrolling, so they handle selection themselves instead of leaving it to the terminal. Drag across the text and it copies on release; the footer confirms with `copied N lines`. Double-click selects a word, counting `_-./~+@#$%&=:` as word characters so a path or URL comes out whole, and triple-click selects the logical line. Dragging on the top or bottom row scrolls and keeps extending the selection past the viewport. In fullscreen chat, `PgUp` / `PgDn` also scroll the conversation. While you're scrolled up, a `Jump to bottom (ctrl+l) ↓` pill — or `N new messages (ctrl+l) ↓` once new entries arrive — sits under the conversation; press `Ctrl+L`, click the pill, or send a message to follow new output again. Scrolling back to the bottom also re-pins the view.
 
 Copies rejoin soft-wrapped rows, including notices and user-run shell output, into the lines they came from, so a wrapped command or URL pastes back intact. Tool output, code blocks, tables, and diffs copy as displayed. Copies go to the OS clipboard and also as an OSC 52 escape, so they work over SSH and inside tmux; selections above 100 KB skip the OSC 52 channel. Clicking outside the content clears the selection, and a whitespace-only grab never touches the clipboard.
 
@@ -93,7 +97,7 @@ Turns: 12 · Model calls: 2
 
 Each row splits into four buckets: `input` counts only the uncached part of the prompt, with the cached part reported separately as cache reads and cache writes. The hit rate is cache reads as a share of the gross input across every model.
 
-The TUI counts these itself from the usage events that reach the client. For Anthropic and ChatGPT subscriptions, `/usage` also displays subscription quota bars for the current session and weekly usage limits along with their reset times. Sub-agent token and cache usage is forwarded into the parent session totals, but the child's context snapshot stays private so the root context indicator does not jump. Failed calls and the goal judge can still be absent when they emit no usage. `/clear` starts the count over, and a resumed session counts only the part of its event log that replays. Treat it as a read on the session and your provider's dashboard as the billing record.
+The TUI counts these itself from the usage events that reach the client. For Anthropic and ChatGPT subscriptions, `/usage` also displays quota bars and reset times. OpenAI window labels follow the duration reported by the server (for example, a seven-day window is **Weekly limit**). Opening the dialog fetches fresh quotas and retries an expired access token after refreshing it; an unrefreshable credential is reported as expired. Anthropic displays the plan name without the rate tier. Sub-agent token and cache usage is forwarded into the parent session totals, but the child's context snapshot stays private so the root context indicator does not jump. Failed calls and the goal judge can still be absent when they emit no usage. `/clear` starts the count over, and a resumed session counts only the part of its event log that replays. Treat it as a read on the session and your provider's dashboard as the billing record.
 
 ## Goal-driven sessions
 
@@ -101,26 +105,27 @@ Use `/goal <condition>` to keep Ante working until a concrete success condition 
 
 ## Session resume
 
-Ante persists every session to disk. Use `/resume` to pick up a previous conversation where you left off.
+Ante persists sessions to disk when session saving is enabled (the default). Use `/resume` to pick up a previous conversation where you left off.
 
 ### How it works
 
 1. Type `/resume` to open the session picker
-2. Browse sessions scoped to the current working directory — each entry shows its [title](#session-title), or the first message when it has none, along with the model, message count, and relative time
+2. Browse sessions scoped to the current working directory, ordered by last use — each entry shows its [title](#session-title), or the first message when it has none, along with the model, message count, event-log size on disk, and relative time
 3. Press **Enter** to select, or **Esc** to cancel
 4. Press **d** (or **Delete**) to delete the selected session — press **d** again to confirm, any other key cancels. The currently active session can't be deleted
 
 On resume, Ante:
 - Restores the full conversation history
 - Re-discovers agents and skills in the project directory (unless the session was started with `--no-skills`)
-- Refreshes system prompts and tool definitions (so new features are available)
+- Preserves the saved system prompts and prompt mode (including `--system-prompt`, `--append-system-prompt`, and `--short-prompt`) while refreshing tool definitions
+- Adds one notice on the next turn if the local date, OS, or shell changed; an unchanged environment adds none
 - Adopts your current permission settings instead of stale saved modes (a session saved in Yolo no longer overrides your Strict or Auto rules on resume)
 - Replays the complete persisted event log to rebuild the conversation view, with no 200-event cap
 
 Sessions are stored in `~/.ante/sessions/{session_id}/` with atomic writes for crash safety.
 
 :::tip
-You can also resume from the CLI with `ante --resume <SESSION_ID>` (or `-r`) in either TUI or headless mode. The session ID is printed when a TUI session exits.
+Run `ante --resume` (or `ante -r`) to open the current directory’s session picker immediately. If no saved sessions exist there, Ante exits with a message. Supply an ID with `ante --resume <SESSION_ID>` to resume directly in either TUI or headless mode; headless runs require the ID. The session ID is printed when a TUI session exits.
 :::
 
 Opening a saved conversation from the terminal restores its history so you can continue where you left off:
@@ -163,10 +168,12 @@ When a Claude Code or Codex session in the current directory was active within t
 | `Tab` | Complete a command or file path; on empty input, accept the [next-prompt suggestion](#next-prompt-suggestion) |
 | `Shift+Tab` | Cycle permission mode: `strict` → `auto` → `yolo`. Takes effect immediately, including on a turn already running |
 | `Ctrl+R` | Start reverse-i-search through prompt history |
+| `Ctrl+L` | Fullscreen mode: jump to the latest output |
 | `Ctrl+C` | Interrupt the active turn; press twice in a row to exit (or use `/exit`) |
 | `Ctrl+S` | Steer queued messages into the running turn |
 | `Ctrl+V` / `Ctrl+Shift+V` | Paste text or an image from the clipboard |
 | `Escape` | Close a popup, or interrupt the active turn when none is open |
+| `Esc Esc` | On an empty composer with no popup, open the [rewind picker](/usage/tui#rewind-a-conversation) |
 
 Inside tmux the kitty keyboard protocol is not available, so Ante asks tmux for xterm's extended keys instead. That needs tmux 3.5 or newer with two server options in `~/.tmux.conf` (restart the tmux server afterwards):
 
@@ -175,7 +182,7 @@ set -s extended-keys on
 set -s extended-keys-format csi-u
 ```
 
-With those, `Ctrl+Enter` inserts a newline inside tmux. `Shift+Enter` still sends a plain Enter there, because terminals report Shift on Enter only through the kitty protocol; use `Ctrl+Enter` or `Alt+Enter`.
+With those options and a terminal that forwards modified keys, both `Ctrl+Enter` and `Shift+Enter` insert a newline inside tmux. Ante restores keyboard reporting after fullscreen overlays close, including in zellij. `Alt+Enter` remains a fallback.
 
 ### Line editing
 
@@ -297,14 +304,14 @@ While the agent works, Ante shows a short tip under the spinner pointing at a fe
   └─ Tip: Press ctrl+r to search your prompt history.
 ```
 
-Tips come from a small curated list (features, keyboard shortcuts, workflow habits) — no model call is involved. Selection is deterministic: the least recently shown eligible tip wins, each tip has a cooldown measured in app restarts so it doesn't repeat session after session, and a tip shown once stays quiet for the rest of that session. The spinner appears after about 300 ms without new activity; interrupt and token details appear after three seconds of turn execution, and elapsed time appears after ten seconds. Tips appear after five seconds without activity; new activity resets that wait, and tips never enter the transcript.
+Tips come from a small curated list (features, keyboard shortcuts, workflow habits) — no model call is involved. Selection is deterministic: the least recently shown eligible tip wins, each tip has a cooldown measured in app restarts so it doesn't repeat session after session, and a tip shown once stays quiet for the rest of that session. The spinner stays visible throughout an active turn, including streaming, thinking, and tool execution, and pauses while an approval or question needs your input. Interrupt and token details appear after three seconds of active execution, elapsed time after ten seconds, and tips after five seconds. Incoming output does not reset these delays; tips never enter the transcript.
 
 On by default; disable with `"tips": false` in `~/.ante/settings.json`. Show history lives in `~/.ante/tip_history.json` — delete it to reset the rotation.
 
 ## CLI flags for TUI mode
 
 ```bash
-ante --model claude-sonnet-5
+ante --model claude-sonnet-5-5
 ante --provider openai
 ante --profile work
 ante --no-skills

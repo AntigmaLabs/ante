@@ -8,26 +8,26 @@ description: "通过 TUI 或 CLI 登录，或使用提供商 API 密钥"
 ## 在 TUI 中登录 {#authentication}
 
 1. 在项目目录中运行 `ante`。
-2. 输入 `/connect`，选择 **Antix**、**Anthropic Subscription** 或 **OpenAI Subscription**。
-3. 按提示在浏览器中完成登录，然后返回 Ante。
-4. 打开 `/providers`，选择已连接的提供商并确认模型。
+2. 输入 `/providers`，选中 **Antix**、**Anthropic Subscription** 或 **OpenAI Subscription**，按 `m` 管理其访问方式（尚未设置的提供商也可直接按 `Enter`）。
+3. 选择 **Sign in to …**（例如 **Sign in to Antix**），按提示在浏览器中完成登录，然后返回 Ante。
+4. 回到 `/providers`，选择该提供商并确认模型。
 
-<img src="/assets/cookbook/connect.gif" alt="通过 /connect 接入提供商" className="cookbook-demo" />
+<img src="/assets/cookbook/providers.gif" alt="在 /providers 中选择提供商及其凭据" className="cookbook-demo" />
 
-Ante 会保存凭据供后续会话使用。需要重新登录时，再次运行 `/connect`。
+Ante 会保存凭据供后续会话使用。需要重新登录时，打开 `/providers` 并再次按 `m`。
 
 ## 在 CLI 中登录 {#sign-in-from-the-cli}
 
-使用 Antix 时，可以在启动 TUI 或执行无头任务之前完成 OAuth 登录：
+可以在启动 TUI 或执行无头任务之前完成登录：
 
 ```bash
-ante auth login antix
+ante auth login antix        # or anthropic, openai
 ante --provider antix
 ```
 
-第一条命令会打开浏览器。完成登录后，回到终端执行第二条命令。
+第一条命令会打开浏览器。完成登录后，回到终端执行第二条命令。在远程机器上，添加 `--no-browser` 可改为打印登录 URL。
 
-CLI 登录目前支持 Antix。Anthropic 和 OpenAI 订阅请通过 TUI 中的 `/connect` 登录。`--no-browser` 和 `--force` 选项请参阅 [`ante auth`](/reference/cli-reference#ante-auth)。
+如需添加第二个账户，请为其指定标签：`ante auth login anthropic/work`。`ante auth list` 会列出已保存的凭据。全部命令请参阅 [`ante auth`](/reference/cli-reference#ante-auth)。
 
 ## 使用 API 密钥 {#use-an-api-key}
 
@@ -38,22 +38,26 @@ export ANTHROPIC_API_KEY="your-api-key"
 ante --provider anthropic
 ```
 
-任何配置为从环境变量读取密钥的提供商都可以使用同样的流程。例如，`OPENAI_API_KEY` 对应 `--provider openai`，`ANTIX_API_KEY` 对应 `--provider antix-api-key`。完整名称和变量请查阅[目录参考手册](/reference/catalog-reference#built-in-providers)。
+任何配置为从环境变量读取密钥的提供商都可以使用同样的流程。例如，`OPENAI_API_KEY` 对应 `--provider openai`，`ANTIX_API_KEY` 对应 `--provider antix`。完整名称和变量请查阅[目录参考手册](/reference/catalog-reference#built-in-providers)。
+
+如果想保存密钥而不是每次导出，运行 `ante auth add <provider>` 并粘贴密钥：
+
+```bash
+ante auth add anthropic
+```
 
 ### 在 TUI 中粘贴密钥 {#paste-an-api-key}
 
-运行 `/welcome` 并选择 **Use API key**。Ante 根据密钥前缀识别提供商，隐藏输入并验证密钥，然后将其保存到 `~/.ante/auth/`，仅允许当前用户访问。环境变量中的密钥优先于已保存的密钥。
-
-在 API 密钥步骤中选择 Anthropic 后，可按 `Tab` 在浏览器中登录 Anthropic Console 并自动创建密钥。
+输入 `/providers`，选中提供商，按 `m`，然后选择 **Add or replace API key**（添加或替换 API 密钥）。Ante 会向提供商验证密钥，然后将其保存到 `~/.ante/auth/`，仅允许当前用户访问。对于内置提供商，环境变量中的密钥优先于已保存的密钥。在同一视图中也可以删除已保存的密钥。
 
 ## 选择模型并开始工作 {#selecting-a-provider}
 
-输入 `/providers` 选择已连接的提供商，然后确认模型和思考深度。Ante 会记住每个提供商上次使用的模型。在对话中使用 `/models` 可切换当前提供商的模型。
+输入 `/providers` 选择已连接的提供商，然后确认模型和思考深度。当某个提供商有多个凭据（两个账户，或一个登录加一个密钥）时，其所在行会显示 `‹ 1/2 ›`：按 `←`/`→` 选择本次会话使用的凭据。Ante 会记住每个提供商上次使用的模型。在对话中使用 `/models` 可切换当前提供商的模型。
 
 也可以在启动 Ante 时指定提供商和模型：
 
 ```bash
-ante --provider antix --model claude-sonnet-5
+ante --provider antix --model claude-sonnet-5-5
 ```
 
 接下来可以[在 TUI 中完成一个任务](/usage/tui)。模型选择与切换请参阅[模型与思考深度](/usage/models-and-thinking)。

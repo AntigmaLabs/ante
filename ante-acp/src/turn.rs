@@ -119,7 +119,7 @@ fn outcome(status: TurnEndStatus) -> Result<StopReason, Error> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use ante_sdk::protocol::{Id, ModelSpec, PermissionMode, ProviderSpec, SessionInfo};
+    use ante_sdk::protocol::{Id, PermissionMode, SessionInfo};
 
     /// The text of a message (`false`) or thought (`true`) chunk.
     fn chunk_text(out: Option<Out>) -> Option<(bool, String)> {
@@ -272,20 +272,7 @@ mod tests {
 
     #[test]
     fn a_mode_change_becomes_a_current_mode_update() {
-        let info = SessionInfo {
-            model: ModelSpec::default(),
-            provider: ProviderSpec {
-                id: "test".into(),
-                display_name: "Test".into(),
-                base_url: String::new(),
-            },
-            session_id: Id::ses(),
-            cwd: "/work".into(),
-            permission_mode: PermissionMode::Yolo,
-            skills: Vec::new(),
-            subagents: Vec::new(),
-            title: None,
-        };
+        let info = SessionInfo { permission_mode: PermissionMode::Yolo, ..Default::default() };
         let Some(Out::Update(update)) =
             Translator::new(PathBuf::from("/work")).handle(Evt::SessionUpdated(Box::new(info)))
         else {

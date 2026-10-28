@@ -32,3 +32,6 @@ Cargo.lock
 # Python bytecode (ante-harbor agent adapter)
 __pycache__/
 *.pyc
+
+# Claude Code local worktrees
+.claude/worktrees/

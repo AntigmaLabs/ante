@@ -238,6 +238,28 @@ class FailureAndStepTests(unittest.TestCase):
         self.assertEqual(failure.failure_class, "model_error")
         self.assertEqual(failure.exception_kind, "unknown_api")
 
+    def test_cost_from_events_prices_each_request_at_its_tier(self):
+        price = {
+            "input": 1.0,
+            "output": 2.0,
+            "pricing_overrides": [
+                {"utc_days": ["saturday"], "input": 0.0, "output": 0.0},
+                {"min_prompt_tokens": 1000, "input": 4.0, "output": 8.0},
+            ],
+        }
+        events = [
+            {"event": {"UsageUpdate": {"usage": {"input_tokens": 1000, "output_tokens": 10}}}},
+            {"event": {"UsageUpdate": {"usage": {"input_tokens": 1001, "output_tokens": 10}}}},
+            {"event": {"TurnEnd": {"steps": 2}}},
+        ]
+
+        # A prompt exactly at the threshold stays on base rates.
+        self.assertAlmostEqual(
+            ante_events.cost_usd_from_events(events, price),
+            (1000 * 1.0 + 10 * 2.0 + 1001 * 4.0 + 10 * 8.0) / 1_000_000,
+        )
+        self.assertIsNone(ante_events.cost_usd_from_events(events[2:], price))
+
     def test_incomplete_step_bound_skips_compaction_usage(self):
         events = [
             _event("TurnEnd", {"status": "Completed", "steps": 2}),

@@ -12,9 +12,17 @@ Antix 是 **Ante CLI** 的集中式控制平面，为本地编码代理带来企
 
 开发人员将他们的本地 Ante 实例验证连接到您的 Antix 服务器：
 
+```bash
+ante auth login antix
+```
+
+这会启动 Antix OAuth 流程，但不会启动代理会话。在远程机器上，使用 `ante auth login antix --no-browser`，Ante 会打印授权 URL 而不是打开浏览器。
+
+也可以在 TUI 中登录：
+
 1. 启动 `ante` CLI。
-2. 输入 `/connect`。
-3. 从菜单中选择 **Antix**。
+2. 输入 `/providers`。
+3. 选中 **Antix** 并按 `m`，然后选择 **Sign in to Antix**。
 
 这会将您的本地代理安全地验证到 Antix 控制平面，授予它一个在需要时自动刷新的临时访问令牌。
 
