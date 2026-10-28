@@ -70,6 +70,12 @@ When the main agent encounters a task that matches a sub-agent's description, it
 3. The sub-agent runs independently with its own context
 4. The sub-agent’s final answer and deliverables are returned directly to the main agent
 
+### Watch sub-agents work
+
+While sub-agents run, the footer lists each one with its task, runtime, and token count. With the composer empty, press `↓` to select one and `Enter` to open its live transcript. Inside, `↑`/`↓` and `Enter` switch to another agent, `PgUp`/`PgDn` scroll, and `Esc` returns to the chat.
+
+<img src="/assets/cookbook/subagents.gif" alt="Three sub-agents running in parallel, listed under the footer, with one opened to show its live transcript" className="cookbook-demo" />
+
 A sub-agent inherits the [skills](/extend/skills) equipped in the parent session, so skill-driven workflows keep working inside delegated tasks. Delegation is one level deep: a sub-agent never carries the `Agent` tool, so it cannot spawn further sub-agents, and does not receive the `AskUser` tool.
 
 A custom definition supplies task-specific instructions. Sub-agents complete a single unattended task and cannot ask you follow-up questions, so include the required inputs and expected output in the delegated task.

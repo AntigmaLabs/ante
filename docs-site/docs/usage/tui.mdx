@@ -104,6 +104,12 @@ The command's output becomes context for your next message. Follow up with `Expl
 
 These commands run immediately under your authorization. For interactive programs, use a terminal session instead.
 
+### Check on background jobs {#background-jobs}
+
+Ask Ante to run a long command in the background, such as a build or a test suite, and keep working while it runs. The footer shows `N bg jobs`. With the composer empty, press `↓` to select it (below the sub-agent list, if one is showing) and `Enter` to see each command's status, runtime, and latest output. `←` goes back to the list and `Esc` closes it. Ante is notified when each job finishes.
+
+<img src="/assets/cookbook/background-jobs.gif" alt="Two background jobs running, opened from the footer to show a build's live output" className="cookbook-demo" />
+
 ## Orchestrate agents with /term {#terminal-sessions}
 
 `/term` opens a terminal that both you and Ante can drive. Use it to work with another Ante instance, Claude Code, Codex, a development server, or a REPL. You can give instructions in your main conversation, watch the other program work, and step in to type directly whenever you need to.

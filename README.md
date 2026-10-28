@@ -121,6 +121,22 @@ Requires `tmux` and whichever agent CLIs you want to run. [**Terminal orchestrat
 
 </td>
 </tr>
+<tr>
+<td width="50%">
+
+**[Sub-Agents](https://docs.antigma.ai/extend/subagents#watch-sub-agents-work)**
+
+![Watching sub-agents run in parallel and opening one's transcript](docs-site/static/assets/cookbook/subagents.gif)
+
+</td>
+<td width="50%">
+
+**[Background Jobs](https://docs.antigma.ai/usage/tui#background-jobs)**
+
+![Checking a background build's output from the footer](docs-site/static/assets/cookbook/background-jobs.gif)
+
+</td>
+</tr>
 </table>
 
 [See all cookbook guides](https://docs.antigma.ai/usage/providers)
