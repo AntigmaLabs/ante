@@ -16,16 +16,15 @@ Type `/` in the [interactive TUI](/usage/tui) to run built-in commands for commo
 | `/config` | Open the settings dialog — search, toggle, and jump into the theme, model, provider, status line, MCP, and offline dialogs (see [Preferences](/configuration/preference#settings-file)) |
 | `/theme` | Open theme selection dialog |
 | `/diff` | Show git diff (including untracked files) |
-| `/connect` | Sign in with OAuth (API keys are detected automatically) |
 | `/models [model_id]` | With no argument, open the model and effort picker for the current provider; with a model id, switch to it directly — including ids the catalog does not list |
-| `/providers` | Select an available provider for the current session |
+| `/providers` | Choose a provider, or manage its accounts and API keys (`m`) |
 | `/add-provider` | Set up a custom provider in `catalog.json` — discovers the endpoint's models and can probe which effort levels each accepts (see [Custom catalog](/reference/catalog-reference#custom-catalog)) |
 | `/offline-mode` | Run a local model with the built-in inference engine |
 | `/term [name [args...]]` | With no name, open the terminal-session picker; with a name, attach or detach that tmux session, launching a same-named command plus arguments when the session is new — see [Terminal sessions](/usage/tui#terminal-sessions) |
 | `/update [skip \| cancel]` | Schedule the pending update for installation on exit; `skip` dismisses that version and `cancel` unschedules an accepted update |
 | `/context` | Visualize current context usage as a colored grid, broken down by category |
 | `/usage` | Show what the session has spent so far — token counts per model, cache hit rate, turn count, and subscription quotas (see [Session usage](/usage/tui#session-usage)) |
-| `/welcome` | Show the welcome/onboarding dialog |
+| `/welcome` | Reopen onboarding: the access view for the current provider |
 | `/rewind` | Pick an earlier input, restore the current conversation to just before it, and edit its prompt (`Esc Esc` also works on empty input); see [Rewind](/usage/tui#rewind-a-conversation) |
 | `/fork` | Save a new session from a selected input or the whole conversation; `Enter` switches to it, **s** opens it in a terminal split; see [Fork](/usage/tui#fork-a-conversation) |
 | `/resume` | Resume a previous session in this directory |

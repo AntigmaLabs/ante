@@ -21,8 +21,8 @@ This starts the Antix OAuth flow without launching an agent session. Use `ante a
 You can also sign in from the TUI:
 
 1. Start the `ante` CLI.
-2. Type `/connect`.
-3. Select **Antix** from the menu.
+2. Type `/providers`.
+3. Select **Antix** and press `m`, then choose **Sign in to Antix**.
 
 This securely authenticates your local agent with the Antix control plane, granting it a temporary access token that automatically refreshes as needed.
 

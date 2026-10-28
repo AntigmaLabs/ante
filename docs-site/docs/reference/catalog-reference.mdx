@@ -30,7 +30,7 @@ The presets below match **v0.3.0**: 15 hosted-provider presets, plus `local` whe
 | Antix | `antix` | `AnthropicMessage` | OAuth (`antix`), then `ANTIX_API_KEY` |
 | Local | `local` | `OpenAiCompatible` | none |
 
-The `key` column is what you pass to `--provider`. An API-key provider reads its environment variable first, then a key stored with `ante auth add <key>` or pasted in `/welcome`. An OAuth provider signs in with `/connect` in the TUI or `ante auth login <key>` from the CLI. `antix` takes either: an Antix sign-in first, then `ANTIX_API_KEY`, then a stored key. See [Credentials](#credentials) for how to change any of this.
+The `key` column is what you pass to `--provider`. An API-key provider reads its environment variable first, then a key stored with `ante auth add <key>` or pasted in `/welcome`. An OAuth provider signs in from `/providers` in the TUI or with `ante auth login <key>` from the CLI. `antix` takes either: an Antix sign-in first, then `ANTIX_API_KEY`, then a stored key. See [Credentials](#credentials) for how to change any of this.
 
 ## Models by provider
 
@@ -547,7 +547,7 @@ Skipped 1 entry in ~/.ante/catalog.json:
   - providers.my-gateway.extra_body: ignoring Ante-owned request field(s): model
 ```
 
-## Credentials
+### Credentials
 
 A provider's `credential` says which credential it sends. It is a reference, a list of references, or `null`:
 
@@ -567,19 +567,19 @@ A provider's `credential` says which credential it sends. It is a reference, a l
 | Reference | Reads |
 |---|---|
 | `env:NAME` | The environment variable `NAME`. |
-| `secret:NAME` | A key stored with `ante auth add NAME` (or pasted in `/welcome`). |
+| `secret:NAME` | A key stored with `ante auth add NAME` (or added in `/providers`). |
 | `oauth:PROFILE` | A sign-in made with `ante auth login PROFILE`. `PROFILE` is `anthropic`, `openai`, `antix`, or one of your [`oauth_profiles`](#oauth-profiles). |
 | `helper:NAME` | The output of a command in [`helpers`](#helpers). |
 
-- **A list** is tried in order, and the first reference that has a value is sent.
+- **A list** is tried in order, and the first reference that has a value is sent. In `/providers` you can pick another one for the session.
 - **Omitted** on a new provider, `credential` reads `secret:<provider key>`, so `ante auth add <provider key>` is all the setup it needs.
 - **`null`** sends no credential.
 - **A plain key is refused.** `"credential": "sk-..."` is an error, so a key never sits in `catalog.json`. Store it with `ante auth add` and refer to it as `secret:NAME`.
 - **Placement:** the credential goes out as `Authorization: Bearer <credential>`. Set `credential_header` to send it as is in another header, such as `x-api-key`.
 
-A provider is ready when one of its references has a value. Providers that aren't ready are skipped during auto-detection and shown last in the picker; using one fails with the fix, for example "Set environment variable CORP_API_KEY or run `ante auth add corp`".
+A provider is ready when one of its references has a value. Providers that aren't ready are skipped during auto-detection; using one fails with the fix, for example "Set environment variable CORP_API_KEY or run `ante auth add corp`".
 
-### Second accounts
+#### Second accounts
 
 Add `/label` to sign in to a second account on the same profile, or to store a second key:
 
@@ -590,7 +590,7 @@ ante auth add corp/staging
 
 A reference without a label, such as `oauth:anthropic`, can use any of them. A labeled one, such as `oauth:anthropic/work`, uses only that one.
 
-### Helpers
+#### Helpers
 
 A helper is a command that prints a credential: a token from a vault, a cloud CLI, or a rotating key. Define it under `helpers` and reference it as `helper:NAME`:
 
@@ -608,7 +608,7 @@ A helper is a command that prints a credential: a token from a vault, a cloud CL
 
 `command` runs as written, with no shell, and must finish within 15 seconds. The first line of its output is the credential. Ante reuses it for `ttl_secs` seconds (at most a year), and runs the command again when that time is up or when the server rejects the credential. If the command fails, the request fails with the helper's name; Ante never falls back to another credential.
 
-### OAuth profiles
+#### OAuth profiles
 
 An OAuth profile is the recipe for a sign-in. The built-in ones are `anthropic`, `openai`, and `antix`. Add your own under `oauth_profiles` to sign in to another service, with no code change:
 
@@ -633,7 +633,7 @@ An OAuth profile is the recipe for a sign-in. The built-in ones are `anthropic`,
 
 Then run `ante auth login corp`. `client_id`, `redirect_uri`, `authorize_url`, and `token_url` are required; `redirect_uri` must be on `http://localhost` or `http://127.0.0.1`. Optional fields include `scopes`, `resource`, `authorize_params`, `token_request_encoding` (`json` or `form`), and `account_claim` (the JWT claim shown as the account in `ante auth list`). An entry named like a built-in replaces it whole. An `oauth:` reference to a profile that doesn't exist is an error.
 
-### Templates
+#### Templates
 
 String values in a provider's `headers` and `extra_body`, and in an `oauth_profiles` entry, can use:
 
@@ -641,11 +641,11 @@ String values in a provider's `headers` and `extra_body`, and in an `oauth_profi
 |---|---|
 | `${NAME}` | The environment variable `NAME`. |
 | `${NAME:-default}` | `NAME`, or `default` when it is not set. |
-| `${session_id}` | The ID of the session making the request (see [Send a session header](#send-a-session-header)). |
+| `${session_id}` | The ID of the session making the request, in `headers` and `extra_body` only (see [Send a session header](#send-a-session-header)). |
 
 Environment variables are read when the catalog loads. A `${NAME}` with no value and no default refuses the whole entry, naming the variable. Templates never carry a credential; use `credential` for that.
 
-## Model fields
+### Model fields
 
 A model is described inside a provider's `preferred_models`. On a built-in provider, an entry whose `id` matches an existing model patches it, and a new `id` is added. Every field except `id` is optional:
 
@@ -685,9 +685,9 @@ When Ante resolves a model id it layers two sources, last wins:
 
 Providers are matched to models too. If you pass only `--model`, Ante picks an authenticated provider whose `preferred_models` list contains that id, falling back to an authenticated provider with no `preferred_models`, then to the default provider.
 
-If you pass both `--provider` and `--model`, the explicit provider choice wins as long as that provider is authenticated. Ante uses that provider's model spec before applying environment overrides, falling back to a global lookup only when the provider does not list the id. Unknown ids are passed through as bare model specs.
+A provider you name with `--provider` or saved in settings is kept even before it is set up: Ante starts on it and says it needs setup in `/providers`. If you pass both `--provider` and `--model`, Ante uses that provider's model spec before applying environment overrides, falling back to a global lookup only when the provider does not list the id. Unknown ids are passed through as bare model specs.
 
-When neither CLI flags nor settings name a model or provider, Ante auto-detects: it uses the first authenticated provider in catalog order and that provider's heaviest-weight model (see [Weight classes](#weight-classes)), falling back to `local` if nothing is authenticated.
+When neither CLI flags nor settings name a model or provider, Ante auto-detects: it uses the first authenticated provider in catalog order (Antix comes first) and that provider's heaviest-weight model (see [Weight classes](#weight-classes)). If nothing is authenticated, it starts on Antix, ready to set up.
 
 ## Environment overrides
 

@@ -20,7 +20,7 @@ While [Ante](/) delivers autonomous AI capabilities to your local terminal, Anti
     Issue scoped `sk-antix-…` keys with an atomic `max_budget` cap. Strict enforcement blocks overruns before upstream is called.
   </Card>
   <Card title="Ante control plane" icon="plug">
-    Governance for local coding agents. Start `ante`, type `/connect`, and select Antix to securely authenticate your local agent, attributing every prompt.
+    Governance for local coding agents. Start `ante`, type `/providers`, and sign in to Antix to securely authenticate your local agent, attributing every prompt.
   </Card>
   <Card title="Bring Your Own Key (BYOK)" icon="key">
     Send your own provider credentials in `Authorization` and declare the provider with `X-Antix-Provider`. Antix routes and meters without re-billing.
