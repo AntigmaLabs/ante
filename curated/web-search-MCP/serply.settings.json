@@ -1,0 +1,12 @@
+{
+  "mcp_servers": {
+    "serply": {
+      "command": "npx",
+      "args": ["-y", "mcp-remote", "https://api.serply.io/mcp", "--header", "X-Api-Key:${SERPLY_API_KEY}"],
+      "env": {
+        "SERPLY_API_KEY": "<your-api-key>"
+      },
+      "enabled_tools": ["google_search", "google_news_search", "google_scholar_search", "scrape_url"]
+    }
+  }
+}
