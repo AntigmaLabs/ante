@@ -138,6 +138,7 @@ A `provider` change continues the conversation on the named catalog provider, ke
 | `model` | `ModelSpec?` | New model specification to use. Carries the whole request, `effort` included: a set `effort` overrides the catalog default; unset fields resolve from the catalog. Resolved on the session's provider — the one `provider` names when both are set |
 | `permission_mode` | `PermissionMode?` | New permission mode (`"strict"`, `"auto"`, or `"yolo"`) |
 | `title` | `string?` | Rename the session. The text is trimmed; an empty or whitespace-only string clears the title |
+| `credential` | `string?` | Pin a [credential reference](/reference/catalog-reference#credentials) such as `"oauth:openai/work"` on the resulting provider for this session. Refused if the provider does not accept it, it has no value, or a turn is running. Absent keeps the current provider's choice; a switch to another provider starts from its configured order. Available since v0.3.0 |
 
 ### ResumeSession
 
@@ -420,6 +421,7 @@ The embedded `ModelSpec` uses the model fields documented in the [Catalog Refere
 | `id` | `string` | Provider key, e.g. `"anthropic"` (accepts `name` as a legacy alias) |
 | `display_name` | `string` | Friendly name for display |
 | `base_url` | `string` | Endpoint actually in use for this session — environment overrides can move it away from the catalog default |
+| `credential` | `string?` | The session's explicit credential choice, as a reference such as `"oauth:antix/work"`, never a token. Omitted when the provider uses its configured order. Available since v0.3.0 |
 
 The payload type was named `SessionInitialized` before `v0.preview.94` and is now `SessionInfo`. This is a Rust type name only — the event names (`SessionStart`, `SessionUpdated`) and the JSON are unchanged, so no client needs to adapt.
 
