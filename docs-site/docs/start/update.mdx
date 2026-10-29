@@ -33,8 +33,8 @@ The install choice is scoped to the running session. Ante applies an accepted up
 Install an exact release with `--version`:
 
 ```bash
-ante update --version v0.2.10
-ante update --version 0.2.10
+ante update --version v0.2.12
+ante update --version 0.2.12
 ```
 
 This bypasses the channel's "newer than current" check, so it can upgrade, reinstall the current version, or roll back to an older published release. When rolling back, Ante remembers the version you left so the next background update notice does not immediately offer to reinstall it.
@@ -98,3 +98,30 @@ curl -fsSL https://ante.run/install.sh | ANTE_INSTALL_DIR=/usr/local/bin bash
 ## How update checks work
 
 On launch and during long-running sessions, Ante consults the update cache in the background. Network checks against the channel manifest are shared across running Ante processes and happen at most once per hour; the result and release notes are cached in `~/.ante/versions.json`. When a newer version is available, the TUI adds the in-chat notice described above. `ante update` ignores the cache and always fetches the manifest fresh.
+
+## Upgrading to v0.3
+
+v0.3.0 changes how credentials are configured in `~/.ante/catalog.json` and for MCP servers in `~/.ante/settings.json`. Old settings aren't converted. A catalog entry written the old way is skipped at startup with a message naming its replacement (`ante doctor` lists them), and an MCP server with the old `oauth` block fails to connect, saying what to do.
+
+**Easiest path:** run `ante` and ask it to do the migration, for example *"update my catalog.json and settings.json for v0.3"*. Ante's built-in guide knows these changes and rewrites the files for you.
+
+Stored API keys and sign-ins carry over on their own. MCP server sign-ins don't: run `ante auth login <server>` once for each.
+
+To migrate by hand:
+
+| Before | v0.3 |
+|---|---|
+| `"auth": { "bearer": { "env_key": "MY_KEY" } }` | `"credential": "env:MY_KEY"` |
+| `"auth": { "header": { "name": "x-api-key", "env_key": "MY_KEY" } }` | `"credential": "env:MY_KEY", "credential_header": "x-api-key"` |
+| `"auth": { "bearer": { "oauth_preset": "anthropic" } }` | `"credential": "oauth:anthropic"` |
+| `"auth": { "query": { … } }` | No longer supported |
+| `"auth": null`, or no `auth` on a provider that needs no key | `"credential": null` (omitting `credential` now reads a key stored with `ante auth add <provider>`) |
+| `"http_headers": { … }` | `"headers": { … }` |
+| `"{session_id}"` in a header | `"${session_id}"` |
+| Top-level `"models": { "<id>": { … } }` | `"providers": { "<provider>": { "preferred_models": [{ "id": "<id>", … }] } }` |
+| `--provider antix-api-key` | `--provider antix` (it reads `ANTIX_API_KEY` too) |
+| `"oauth": { … }` on an MCP server | Remove it and run `ante auth login <server>` |
+| `ante mcp login <server>` / `ante mcp logout <server>` | `ante auth login <server>` / `ante auth logout <server>` |
+| `ante auth login` (Antix by default), `--force` | `ante auth login antix`; running `login` again always signs in again |
+
+See [Credentials](/reference/catalog-reference#credentials) and [MCP authentication](/extend/mcp#authentication) for the new settings.

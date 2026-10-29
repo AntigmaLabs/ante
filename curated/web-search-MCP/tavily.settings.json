@@ -1,7 +1,8 @@
 {
   "mcp_servers": {
     "tavily": {
-      "url": "https://mcp.tavily.com/mcp/?tavilyApiKey=<your-api-key>"
+      "url": "https://mcp.tavily.com/mcp",
+      "headers": { "Authorization": "Bearer <your-api-key>" }
     }
   }
 }

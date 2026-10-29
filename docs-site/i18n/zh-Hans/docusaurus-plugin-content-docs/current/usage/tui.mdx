@@ -102,6 +102,12 @@ Ante 会将当前对话恢复到所选输入之前，移除该输入及其后的
 
 这些命令会在你的授权下立即运行。交互式程序请使用终端会话。
 
+### 查看后台任务 {#background-jobs}
+
+可以让 Ante 在后台运行耗时较长的命令（例如构建或测试套件），同时继续工作。页脚会显示 `N bg jobs`。在输入框为空时，按 `↓` 选中它（如果显示了子智能体列表，则位于其下方），再按 `Enter` 查看每条命令的状态、运行时长和最新输出。`←` 返回列表，`Esc` 关闭。每个任务完成时 Ante 都会收到通知。
+
+<img src="/assets/cookbook/background-jobs.gif" alt="两个后台任务正在运行，从页脚打开后显示构建的实时输出" className="cookbook-demo" />
+
 ## 使用 /term 编排智能体 {#terminal-sessions}
 
 `/term` 打开一个你和 Ante 都能操作的终端。可以在其中运行另一个 Ante 实例、Claude Code、Codex、开发服务器或 REPL。你可以在主对话中下达指令，观看另一个程序工作，也可以随时直接输入并参与操作。

@@ -15,7 +15,7 @@ ante [OPTIONS] [COMMAND]
 | 命令 | 说明 |
 |---|---|
 | `ante` | 启动交互式 TUI 终端。若提供了 `-p` / `--prompt`，则以无头模式运行。 |
-| `ante auth` | 管理提供商的登录认证，无需拉起完整的智能体对话。 |
+| `ante auth` | 登录、存储 API 密钥并管理已存储的凭据，无需启动会话。 |
 | `ante serve` | 运行长寿命的协议服务端，支持 stdio、Unix 套接字或 WebSocket。 |
 | `ante gateway` | 运行接入 Slack / Discord 的消息网关。 |
 | `ante update` | 检查最新版本的 Ante 并自动安装。 |
@@ -47,7 +47,7 @@ TUI 要求 stdout 连接到系统终端。若重定向或通过管道输出（�
 | `--system-prompt <PROMPT>` | 完全替换默认的系统提示词。与 `--system-prompt-file` 互斥。持久化默认值请配置 `system_prompt` [设置](/configuration/preference)。 |
 | `--system-prompt-file <PATH>` | 从 UTF-8 文件中读取替换的系统提示词。与 `--system-prompt` 互斥。 |
 | `--append-system-prompt <TEXT>` | 向默认系统提示词末尾追加内容。持久化默认值请配置 `append_system_prompt` [设置](/configuration/preference)。 |
-| `--short-prompt` | 启用紧凑提示词集：采用精简系统提示词和更短的内置工具描述。持久化请配置 `short_prompt` [设置](/configuration/preference)。 |
+| `--short-prompt` | 本次运行使用更短的内置工具描述；系统指令已经精简，保持不变。持久化请配置 `short_prompt` [设置](/configuration/preference)。 |
 | `--skills` | 强制加载技能系统，覆盖配置项。与 `--no-skills` 互斥。 |
 | `--no-skills` | 跳过技能发现，覆盖配置项。不会向模型声明技能，也不提供斜杠命令。 |
 | `--include-skills <SKILLS>` | 为本次会话添加精确匹配的技能名称，并替换 `include_skills` 设置。可传入逗号分隔值或重复使用参数；`--no-skills` 或 `"skills": false` 生效时不会重新启用技能。 |
@@ -64,7 +64,7 @@ TUI 要求 stdout 连接到系统终端。若重定向或通过管道输出（�
 | `-r`, `--resume [SESSION_ID]` | 按 ID 恢复会话；省略 ID 时直接打开当前目录的交互式会话选择器。无头模式必须提供 ID。 |
 | `--session-save` | 保存会话记录与可恢复快照，覆盖配置项。与 `--no-session-save` 互斥。 |
 | `--no-session-save` | 不保存会话记录与快照，覆盖配置项。与 `--resume` 互斥。 |
-| `--offline-model <PATH>` | 指定用于离线推理的本地 GGUF 模型文件路径。 |
+| `--offline-model [MODEL]` | 为 TUI 或无头运行启动本地引擎。接受 GGUF 路径、已发现的文件名或验证模型名称/URL；省略值则启动 `ante offline use` 保存的默认模型。与 `--model`、`--provider` 互斥。 |
 | `-h`, `--help` | 打印帮助信息。 |
 | `-V`, `--version` | 打印 Ante 版本号。 |
 
@@ -88,24 +88,40 @@ ante -p "summarize this repo" --enable-auto-memory
 ## `ante auth` {#ante-auth}
 
 ```bash
-ante auth login [PROVIDER] [OPTIONS]
+ante auth list
+ante auth login <NAME> [--no-browser]
+ante auth logout <NAME>
+ante auth add <NAME>
+ante auth rm <REFERENCE>
 ```
 
-在不启动 TUI 会话的情况下登录 OAuth 提供商。目前支持的提供商为 `antix`（省略 `[PROVIDER]` 时的默认值）。
+在不启动会话的情况下管理 Ante 存储的凭据。`NAME` 为提供商、OAuth Profile 或 MCP 服务器名称，可附加 `/label` 以区分第二个账号（如 `anthropic/work`）。
+
+| 命令 | 说明 |
+|---|---|
+| `list` | 列出已存储的凭据：类型、签发方、账号、状态（`set`、`valid`、`expired`、`invalid`），以及使用该凭据的提供商。 |
+| `login <NAME>` | 通过浏览器登录。`NAME` 可以是 OAuth Profile（`anthropic`、`openai`、`antix` 或你在 [`oauth_profiles`](/reference/catalog-reference#oauth-profiles) 中定义的条目）、通过 OAuth 登录的提供商（`anthropic-subscription`），或远程 [MCP 服务器](/extend/mcp#authentication)。再次运行会重新登录。 |
+| `logout <NAME>` | 清除登录状态。 |
+| `add <NAME>` | 存储 API 密钥，从 stdin 读取（在终端中会提示输入）。若 `NAME` 为提供商，Ante 会先向该提供商校验密钥，被拒绝的密钥不会存储。 |
+| `rm <REFERENCE>` | 删除已存储的凭据：密钥（`NAME` 或 `secret:NAME`）、登录（`oauth:NAME`），或 helper 的缓存输出（`helper:NAME`，使该 [helper](/reference/catalog-reference#helpers) 立即重新运行）。 |
 
 | 参数标识 | 说明 |
 |---|---|
-| `--force` | 即使本地已存在凭证，仍强制重新打开浏览器登录。 |
-| `--no-browser` | 打印授权 URL 而非自动拉起浏览器。 |
+| `--no-browser` | 仅用于 `login`：打印授权 URL 而非自动拉起浏览器，适用于远程机器。 |
 | `-h`, `--help` | 打印帮助信息。 |
 
 ### 使用示例 {#ante-auth-examples}
 
 ```bash
-ante auth login
-ante auth login antix --force
-ante auth login --no-browser
+ante auth login antix
+ante auth login anthropic/work --no-browser
+ante auth login linear                       # an MCP server in mcp_servers
+echo "$TOGETHER_API_KEY" | ante auth add together
+ante auth rm oauth:anthropic/work
+ante auth list
 ```
+
+凭据以仅所有者可读的文件形式存储在 `~/.ante/auth/` 下。提供商如何引用这些凭据，请参阅[凭据](/reference/catalog-reference#credentials)。
 
 ## `ante serve` {#ante-serve}
 
@@ -120,7 +136,7 @@ ante serve [OPTIONS]
 | `--stdio` | 通过 stdin/stdout 提供 JSONL 协议服务（默认传输方式）。三个传输方式参数互斥。 |
 | `--sock [PATH]` | 通过 Unix 域套接字提供服务。未指定路径时默认为 Ante 主目录下的 `run/serve.sock`。 |
 | `--ws <ADDR>` | 在给定的本地回环地址上通过 WebSocket 提供服务。 |
-| `--offline-model <PATH>` | 启动时加载本地 GGUF 模型以供离线模式使用。 |
+| `--offline-model [MODEL]` | 启动时加载本地或验证模型；接受与普通运行相同的模型引用。省略值则加载已保存的默认模型。 |
 | `-h`, `--help` | 打印帮助信息。 |
 
 :::note
@@ -187,7 +203,7 @@ ante update [OPTIONS] [CHANNEL]
 | 参数标识 | 说明 |
 |---|---|
 | `--channel <CHANNEL>` | 更新追踪的发布通道。等同于位置参数形式。 |
-| `--version <VERSION>` | 安装指定的具体发布版本而非通道最新版。支持带或不带前缀 `v`（如 `v0.2.10` 或 `0.2.10`）。与通道参数互斥。 |
+| `--version <VERSION>` | 安装指定的具体发布版本而非通道最新版。支持带或不带前缀 `v`（如 `v0.2.12` 或 `0.2.12`）。与通道参数互斥。 |
 | `-h`, `--help` | 打印帮助信息。 |
 
 ### 使用示例 {#ante-update-examples}
@@ -196,7 +212,7 @@ ante update [OPTIONS] [CHANNEL]
 ante update
 ante update nightly
 ante update --channel stable
-ante update --version v0.2.10
+ante update --version v0.2.12
 ```
 
 ## `ante offline` {#ante-offline}
@@ -205,18 +221,39 @@ ante update --version v0.2.10
 ante offline <COMMAND>
 ```
 
-管理[离线模式](/local/offline)使用的本地推理引擎，无需拉起智能体对话。
+管理[离线模式](/local/offline)使用的引擎、模型及已保存的加载偏好，无需启动会话。
 
 | 子命令 | 说明 |
 |---|---|
-| `install` | 下载并安装 Ante 固定版本的 llama.cpp 运行时。 |
+| `install` | 下载并安装 Ante 固定版本的 llama.cpp 运行时。已是当前版本时不做修改，否则替换不匹配或未记录版本的安装。 |
+| `status [--json]` | 显示引擎版本与路径、模型目录、默认模型、托管路由器、其他本地服务及可用内存。 |
+| `list [--json]` | 列出本地 GGUF 与验证模型，包含大小、最大上下文、内存适配估算和默认标记。JSON 中的 `reference` 可直接传给 `use` 或 `--offline-model`。 |
+| `use <MODEL> [OPTIONS]` | 保存默认模型及指定的加载偏好，不启动引擎或下载模型。每次都会输出 `Loads with:` 配置摘要。 |
+| `stop` | 停止当前 Ante 主目录的托管路由器，包括之前选择保留的进程或其他会话正在使用的进程；所有共享该路由器的会话都会受影响。 |
 
-`install` 会将引擎收敛到固定版本：若已安装当前固定版本则为无操作（no-op），否则会替换为对应版本并打印进度。
+`MODEL` 接受 GGUF 路径、已发现的文件名或验证模型名称/URL（见 `ante offline list`）。裸 `--offline-model` 使用 `use` 保存的默认模型；尚未设置时会报错并提示先设置默认值。验证模型在首次加载时下载，`use` 本身不下载。
+
+`use` 的加载选项（v0.2.12）：
+
+| 选项 | 说明 |
+|---|---|
+| `--context <TOKENS>` | 上下文窗口，从 `8192` 到模型支持的最大值。 |
+| `--thinking on` / `--thinking off` | 开启或关闭思考。 |
+| `--temperature <T>` | 采样温度，范围 `0`–`2`；传入 `default` 清除已保存的覆盖值。 |
+| `--args "<OPTIONS>"` | 替换额外 llama.cpp 选项；支持 Shell 风格引号。传入 `--args ""` 清除。 |
+
+每个选项只替换自己的保存值，其余偏好保留。保存前会检查上下文与温度选项的取值范围。额外参数只进行基本语法检查，并拒绝保留或已移除的选项；其他错误可能到加载模型时才出现。偏好适用于后续 TUI、无头及 `serve` 加载；完整说明见[模型偏好](/local/offline#model-preferences)。
 
 ### 使用示例 {#ante-offline-examples}
 
 ```bash
 ante offline install
+ante offline status
+ante offline list --json
+ante offline use Qwen3.5-9B --context 32768 --thinking off --temperature 0.7
+ante --offline-model
+ante --offline-model -p "Explain this code"
+ante serve --sock --offline-model
 ```
 
 ## `ante rage` {#ante-rage}

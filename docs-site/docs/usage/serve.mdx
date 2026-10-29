@@ -193,7 +193,7 @@ In SDK 0.2.2, `ante_sdk::claude` and the legacy child-process stdio API were rem
 | `--stdio` | Use JSONL over stdin/stdout (default) |
 | `--sock [PATH]` | Serve the protocol over a Unix domain socket (default: `run/serve.sock` in the Ante home) |
 | `--ws <ADDR>` | Serve the protocol over WebSocket on a loopback address |
-| `--offline-model <PATH>` | Start the shared `llama serve` router with this GGUF model and register it as the `local` provider for every connecting client |
+| `--offline-model [MODEL]` | Load a local or verified model in the shared `llama serve` router and register `local`. Accepts a path, discovered filename, or verified model name/URL; omit the value for the default saved with `ante offline use` |
 
 :::note
 The `--prompt` flag cannot be used with `ante serve`. Use `UserInput` operations instead.

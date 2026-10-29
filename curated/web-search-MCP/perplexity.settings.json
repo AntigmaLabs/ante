@@ -1,11 +1,8 @@
 {
   "mcp_servers": {
     "perplexity": {
-      "command": "npx",
-      "args": ["-y", "@perplexity-ai/mcp-server"],
-      "env": {
-        "PERPLEXITY_API_KEY": "<your-api-key>"
-      }
+      "url": "https://api.perplexity.ai/mcp",
+      "headers": { "Authorization": "Bearer <your-api-key>" }
     }
   }
 }

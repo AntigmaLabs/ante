@@ -93,7 +93,8 @@ Providers are resolved from a catalog at session init time. The user can overrid
 ### Authentication
 
 - **API keys** — Set via environment variables (`ANTHROPIC_API_KEY`, `OPENAI_API_KEY`, `GEMINI_API_KEY`, `XAI_API_KEY`, `OPENROUTER_API_KEY`, `OPENAI_COMPATIBLE_API_KEY`, `ZAI_API_KEY`, `DEEPSEEK_API_KEY`, `VERTEX_GEMINI_API_KEY`, `ANTIX_API_KEY`)
-- **OAuth** — Interactive OAuth flow supported for Anthropic, OpenAI, and Antix, handled through the TUI
+- **OAuth** — Browser sign-in for Anthropic, OpenAI, Antix, and any `oauth_profiles` entry, through `/providers` in the TUI or `ante auth login`
+- **Stored keys and helpers** — `ante auth add` stores a key; a `helpers` command can supply one. See [Credentials](/reference/catalog-reference#credentials)
 
 ## Tool system
 
@@ -143,4 +144,4 @@ Tools can be filtered at session level:
 4. User sends `Op::UserInput` to start a task
 5. Session spawns a `Turn` which communicates with the LLM
 6. Turn executes tools, requests approvals, and eventually completes
-7. When the context budget nears the limit, auto-compaction evicts aged tool results and summarizes only the older prefix while preserving the recent working state; manual compaction uses a tighter target
+7. As the conversation approaches the context limit, Ante summarizes older context while retaining recent conversation and user messages

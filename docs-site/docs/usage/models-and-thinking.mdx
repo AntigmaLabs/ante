@@ -8,7 +8,7 @@ description: "Switch models, toggle providers, and adjust effort on the fly"
 
 Ante lets you switch between models, providers, and effort levels mid-session — no restart needed. Two dialogs split the job: `/models` refines the model and effort within your current provider, and `/providers` switches providers.
 
-<img src="/assets/cookbook/providers.gif" alt="Switching provider, model, and effort with /providers" className="cookbook-demo" />
+<img src="/assets/cookbook/providers.gif" alt="Choosing a provider and its credential in /providers, then opening its access view" className="cookbook-demo" />
 
 ## Selecting a model
 
@@ -20,7 +20,7 @@ Press `Tab` to hand off to the provider selector when you want to switch provide
 
 ## Switching providers
 
-Type `/providers` to list every provider with its connection state. Press Enter on a connected provider to drill into its model picker — the same model list and effort slider, preselecting the model you last used on that provider. The switch commits only when you confirm with Enter; `Esc` steps back to the provider list. Enter on an unconnected provider starts its sign-in flow instead (see [Connect a provider](/usage/providers#authentication)).
+Type `/providers` to list every provider with its connection state. Press Enter on a connected provider to drill into its model picker — the same model list and effort slider, preselecting the model you last used on that provider. The switch commits only when you confirm with Enter; `Esc` steps back to the provider list. Enter on a provider that isn't set up opens its access view instead, where you sign in or add an API key; press `m` to open it on any provider (see [Connect a provider](/usage/providers#authentication)). When a provider has several credentials, `←`/`→` picks the one the session uses.
 
 Switching providers keeps the current conversation — its messages, title, and permission mode carry over, and the new provider picks up on your next message.
 
@@ -40,10 +40,10 @@ In `/models`, effort is a slider under the model list with one tick per level th
 
 The ladder is built in per provider and model family. For custom providers you can declare it yourself with `supported_efforts` on the model's catalog entry (see the [Catalog Reference](/reference/catalog-reference#model-fields)) — or run `/add-provider`, which probes the endpoint and writes the declaration for you.
 
-Anthropic exposes `xhigh` on Claude Sonnet 5 and Opus 5, Opus 4.7/4.8, and the always-thinking Fable/Mythos 5 family. Opus and Sonnet 4.6 retain their four active adaptive levels (`low` through `high`, then `max`) plus the `min` off position. Gemini 3.7 and 3.8 expose exactly `low`, `medium`, and `high` — a requested `xhigh` or `max` rounds down to `high`.
+Anthropic exposes `xhigh` on Claude Sonnet 5 and Opus 5, Opus 4.7/4.8, and the always-thinking Fable/Mythos 5 family. Opus and Sonnet 4.6 retain their four active adaptive levels (`low` through `high`, then `max`) plus the `min` off position. Gemini 3.7, 3.8, and 4 Argon expose exactly `low`, `medium`, and `high` — a requested `xhigh` or `max` rounds down to `high`.
 
 :::note
-Anthropic's API requires `temperature: 1` whenever thinking is active. If you've set a different `temperature` for a Claude model in your [catalog](/reference/catalog-reference#model-fields) or via `MODEL_TEMPERATURE`, turns with thinking on fail with a message saying so — clear the override to fix it.
+Anthropic's API requires `temperature: 1` whenever thinking is active. If you've set a different `temperature` for a Claude model in your [catalog](/reference/catalog-reference#model-fields) or via `MODEL_TEMPERATURE`, turns with thinking on fail with a message saying so — clear the override to fix it. Claude Haiku 5.5 requires `temperature: 1` even when thinking is off. On Anthropic Messages, Claude Sonnet 5.5 also rejects forced tool choice (requiring any tool or a specific tool); Ante reports that error before sending the request.
 :::
 
 Your effort choice is remembered per model in `~/.ante/settings.json`, and you can pin it for a run from the CLI:

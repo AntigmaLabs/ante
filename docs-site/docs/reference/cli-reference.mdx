@@ -14,7 +14,7 @@ ante [OPTIONS] [COMMAND]
 | Command | Description |
 |---|---|
 | `ante` | Start the interactive TUI. If `-p` / `--prompt` is provided, run in headless mode instead. |
-| `ante auth` | Manage provider sign-in without starting an agent session. |
+| `ante auth` | Sign in, store API keys, and manage stored credentials without starting a session. |
 | `ante serve` | Run a long-lived protocol server over stdio, a Unix socket, or WebSocket. |
 | `ante gateway` | Run the Slack / Discord channel gateway. |
 | `ante update` | Check for the latest Ante release and install it if available. |
@@ -55,7 +55,7 @@ The TUI needs stdout attached to a terminal. Redirecting or piping it (`ante > l
 | `--system-prompt <PROMPT>` | Replace the default system prompt entirely. Conflicts with `--system-prompt-file`. Persist a default with the `system_prompt` [setting](/configuration/preference). |
 | `--system-prompt-file <PATH>` | Read the replacement system prompt from a UTF-8 file. Conflicts with `--system-prompt`. |
 | `--append-system-prompt <TEXT>` | Append content to the default system prompt. Persist a default with the `append_system_prompt` [setting](/configuration/preference). |
-| `--short-prompt` | Use the compact prompt set for this run: a condensed system prompt and shorter built-in tool descriptions. Persist the default with the `short_prompt` [setting](/configuration/preference). |
+| `--short-prompt` | Use shorter built-in tool descriptions for this run; the system instructions are already compact and stay the same. Persist the default with the `short_prompt` [setting](/configuration/preference). |
 | `--skills` | Load skills for this run, overriding the `skills` setting. Conflicts with `--no-skills`. |
 | `--no-skills` | Skip skill discovery for this run, overriding the `skills` setting. No skills are advertised to the model or available as slash commands. |
 | `--include-skills <SKILLS>` | Add exact skill names to this session, replacing the `include_skills` setting. Pass a comma-separated value or repeat the flag. Does not re-enable skills when `--no-skills` or `"skills": false` is active. |
@@ -72,7 +72,7 @@ The TUI needs stdout attached to a terminal. Redirecting or piping it (`ante > l
 | `-r`, `--resume [SESSION_ID]` | Resume by ID, or omit the ID to open the interactive session picker for the current directory. Headless runs require an ID. |
 | `--session-save` | Save the session transcript and resumable snapshot, overriding the `session_save` setting. Conflicts with `--no-session-save`. |
 | `--no-session-save` | Do not save the session transcript or resumable snapshot, overriding the `session_save` setting. Conflicts with `--resume`. |
-| `--offline-model <PATH>` | Path to a local GGUF model file for offline inference. |
+| `--offline-model [MODEL]` | Start local inference for a TUI or headless run. Accepts a GGUF path, discovered filename, or verified model name/URL; omit the value to start the default saved with `ante offline use`. Conflicts with `--model` and `--provider`. |
 | `-h`, `--help` | Print command help. |
 | `-V`, `--version` | Print the Ante version. |
 
@@ -98,24 +98,40 @@ When resuming, the saved system prompts and prompt mode take precedence over `--
 ## `ante auth`
 
 ```bash
-ante auth login [PROVIDER] [OPTIONS]
+ante auth list
+ante auth login <NAME> [--no-browser]
+ante auth logout <NAME>
+ante auth add <NAME>
+ante auth rm <REFERENCE>
 ```
 
-Sign in to an OAuth provider without starting a TUI session. Today the supported provider is `antix`, and it is the default when `[PROVIDER]` is omitted.
+Manage the credentials Ante stores, without starting a session. A `NAME` is a provider, OAuth profile, or MCP server name, optionally with a `/label` for a second account (`anthropic/work`).
+
+| Command | Description |
+|---|---|
+| `list` | Show stored credentials: kind, issuer, account, state (`set`, `valid`, `expired`, `invalid`), and the providers that use each one. |
+| `login <NAME>` | Sign in through the browser. `NAME` is an OAuth profile (`anthropic`, `openai`, `antix`, or one of your [`oauth_profiles`](/reference/catalog-reference#oauth-profiles)), a provider that signs in with one (`anthropic-subscription`), or a remote [MCP server](/extend/mcp#authentication). Running it again signs in again. |
+| `logout <NAME>` | Forget a sign-in. |
+| `add <NAME>` | Store an API key, read from stdin (prompted on a terminal). When `NAME` is a provider, Ante checks the key against it first and refuses one the provider rejects. |
+| `rm <REFERENCE>` | Forget a stored credential: a key (`NAME` or `secret:NAME`), a sign-in (`oauth:NAME`), or a helper's saved output (`helper:NAME`, so the [helper](/reference/catalog-reference#helpers) runs again now). |
 
 | Flag | Description |
 |---|---|
-| `--force` | Re-run browser sign-in even when stored credentials already exist. |
-| `--no-browser` | Print the authorization URL instead of opening a browser. |
+| `--no-browser` | `login` only: print the authorization URL instead of opening a browser, for remote machines. |
 | `-h`, `--help` | Print command help. |
 
 ### Examples
 
 ```bash
-ante auth login
-ante auth login antix --force
-ante auth login --no-browser
+ante auth login antix
+ante auth login anthropic/work --no-browser
+ante auth login linear                       # an MCP server in mcp_servers
+echo "$TOGETHER_API_KEY" | ante auth add together
+ante auth rm oauth:anthropic/work
+ante auth list
 ```
+
+Credentials are stored as owner-only files under `~/.ante/auth/`. See [Credentials](/reference/catalog-reference#credentials) for how providers refer to them.
 
 ## `ante serve`
 
@@ -130,7 +146,7 @@ Server mode exposes the Ante protocol over stdin/stdout by default, over a Unix 
 | `--stdio` | Serve the JSONL protocol over stdin/stdout. This is the default transport. The three transport flags are mutually exclusive. |
 | `--sock [PATH]` | Serve the protocol over a Unix domain socket. Defaults to `run/serve.sock` in the Ante home when no path is given. |
 | `--ws <ADDR>` | Serve the protocol over WebSocket on the given loopback socket address. |
-| `--offline-model <PATH>` | Load a local GGUF model at startup for offline mode. |
+| `--offline-model [MODEL]` | Load a local or verified model at startup; accepts the same model references as a normal run. Omit the value to load the saved default. |
 | `-h`, `--help` | Print command help. |
 
 :::note
@@ -199,7 +215,7 @@ The update command checks for a newer Ante release and installs it when one is a
 | Flag | Description |
 |---|---|
 | `--channel <CHANNEL>` | Release channel to update from. Equivalent to the positional form. |
-| `--version <VERSION>` | Install an exact release instead of the channel's newest release. Accepts values with or without a leading `v`, such as `v0.2.10` or `0.2.10`. Conflicts with channel arguments. |
+| `--version <VERSION>` | Install an exact release instead of the channel's newest release. Accepts values with or without a leading `v`, such as `v0.2.12` or `0.2.12`. Conflicts with channel arguments. |
 | `-h`, `--help` | Print command help. |
 
 ### Examples
@@ -208,7 +224,7 @@ The update command checks for a newer Ante release and installs it when one is a
 ante update
 ante update nightly
 ante update --channel stable
-ante update --version v0.2.10
+ante update --version v0.2.12
 ante --profile work update
 ```
 
@@ -218,18 +234,39 @@ ante --profile work update
 ante offline <COMMAND>
 ```
 
-Manage the local inference engine used by [offline mode](/local/offline), without starting a session.
+Manage the engine, models, and saved load preferences used by [offline mode](/local/offline), without starting a session.
 
 | Subcommand | Description |
 |---|---|
-| `install` | Download and install Ante's pinned llama.cpp build. |
+| `install` | Download and install Ante's pinned llama.cpp build. A no-op when already current; replaces a different or unrecorded build. |
+| `status [--json]` | Report the engine build and path, model directory, default model, managed router, other local servers, and available memory. |
+| `list [--json]` | List local GGUF and verified models with size, maximum context, estimated memory fit, and a default marker. JSON includes a `reference` accepted by `use` and `--offline-model`. |
+| `use <MODEL> [OPTIONS]` | Save the default model and any supplied load preferences, without starting the engine or downloading a model. Always prints a `Loads with:` summary. |
+| `stop` | Stop this Ante home's managed router, whether kept by an earlier launch or currently in use. This affects every session sharing that router. |
 
-`install` converges the engine on the pinned build: it is a no-op when the pin is already installed, and replaces a different (or unrecorded) build otherwise, printing progress as it goes. It installs the same pinned, checksum-verified build as the TUI's `/offline-mode` dialog; running an offline model on a machine without the engine fails fast and points here.
+`MODEL` accepts a GGUF path, discovered filename, or verified model name/URL from `ante offline list`. Bare `--offline-model` starts the default saved with `use`; if none is set, it fails with instructions to choose one. Verified models download on first load, not during `use`.
+
+Load options for `use` (v0.2.12):
+
+| Option | Description |
+|---|---|
+| `--context <TOKENS>` | Context window from `8192` up to the model's maximum. |
+| `--thinking on` / `--thinking off` | Enable or disable thinking. |
+| `--temperature <T>` | Sampling temperature from `0` to `2`; pass `default` to clear the saved override. |
+| `--args "<OPTIONS>"` | Replace extra llama.cpp options, with shell-style quoting. Pass `--args ""` to clear them. |
+
+Each supplied option replaces only its own saved value; other preferences stay as they are. Context and temperature flags are range-checked before saving. Ante checks extra-argument syntax and rejects reserved or removed options; other errors may only surface when loading a model. These preferences apply to subsequent TUI, headless, and `serve` loads; see [Model preferences](/local/offline#model-preferences).
 
 ### Examples
 
 ```bash
 ante offline install
+ante offline status
+ante offline list --json
+ante offline use Qwen3.5-9B --context 32768 --thinking off --temperature 0.7
+ante --offline-model
+ante --offline-model -p "Explain this code"
+ante serve --sock --offline-model
 ```
 
 ## `ante rage`

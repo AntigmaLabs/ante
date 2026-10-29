@@ -1,5 +1,81 @@
 # Changelog
 
+## v0.3.0 - 2026-10-28
+
+Opens the 0.3 series with one intentional break: credentials are configured with one reference language, shared by providers, MCP servers and `ante auth`. Old shapes are refused by name rather than half-read; see "Upgrading from 0.2" below.
+
+### Upgrading from 0.2
+- Provider `auth` is now `credential`, a `scheme:name` reference or a list of them: `{"bearer":{"env_key":"X"}}` becomes `"env:X"`; a key sent in a custom header adds `"credential_header": "H"`. `http_headers` is now `headers`, and `{session_id}` is now `${session_id}`. An entry still using the old keys is skipped with a warning naming the replacement (`ante catalog`, `ante doctor`)
+- A custom provider that had no `auth` (a local server) now fails with "No credential for <id>": add `"credential": null`
+- The `models` section of `catalog.json` is removed; patch a model under `providers.<id>.preferred_models` instead. A non-empty section is refused at load
+- MCP servers: the `oauth` block is retired; use `ante auth login <server>` or an `Authorization` entry in `headers`. `ante mcp login`/`logout` are replaced by `ante auth login`/`logout`
+- The `antix-api-key` provider is folded into `antix`, which takes a sign-in, `ANTIX_API_KEY`, or a stored key; a saved `antix-api-key` selection falls back to auto-detect
+- Stored sign-ins and `auth/api_keys.json` move to `auth/credentials/` automatically on first run
+
+### Added
+- `ante auth list|login|logout|add|rm` manages every stored credential: OAuth sign-ins, API keys, and helper output. `list` shows each credential's state and the connectors that use it
+- Credential references: `env:NAME`, `secret:NAME` (stored with `ante auth add`), `oauth:PROFILE[/label]` for one of several accounts, and `helper:NAME`, which runs a command from the new `helpers` section of `catalog.json` and caches its output for `ttl_secs`. A list is tried in order; `null` sends nothing
+- `oauth_profiles` in `catalog.json` defines additional OAuth sign-in profiles beside the built-in Anthropic, OpenAI and Antix ones
+- Provider `headers` values and `extra_body` strings take `${NAME}`, `${NAME:-default}` and `${session_id}`; a `null` header removes a built-in one
+- Agents panel: while a turn runs subagents, a panel under the footer lists each with its type, elapsed time and tokens; select a row and press Enter to follow its transcript live
+- `/usage` lists every saved Claude and Codex account, each with its own quota
+- GPT-6.1 Sol, GPT-6.1 Terra and GPT-6 Luna in the OpenAI subscription provider (Luna is the default for auxiliary calls); GPT-6.1 Terra and Terra Pro in the OpenAI and OpenRouter catalogs; Kimi K3.1 Pro on OpenRouter
+
+### Changed
+- `/providers` is one place for choosing a provider, model and credential, signing in, entering keys, and removing accounts; onboarding and sign-in recovery use the same view, and `/connect` remains as an alias. Each row shows where its credential comes from; ←/→ previews another credential of the same provider
+- Antix leads the provider list and is the default when nothing is configured; explicit and saved choices still win, and existing credentials for other providers are detected when Antix is unavailable. Default order: Antix, DeepSeek, OpenAI Subscription, Anthropic Subscription
+- OpenRouter: Kimi K3 and MiniMax M3 are pruned in favor of K3.1 Pro and M3.1 Flash, and the DeepSeek V4.1 Flash October 17 snapshot becomes the default
+- Commands such as `ante auth` and `ante update` exit promptly; telemetry gets at most 250 ms at shutdown
+
+### Fixed
+- Headless `ante --resume <id> --provider <p> --model <m>` uses the given provider and model instead of dropping them, so a session saved on a provider that is no longer connected can be resumed
+- An invalid environment value read by a built-in sign-in profile (e.g. `ANTIX_BASE_URL=not-a-url`) is a catalog warning instead of crashing every command
+- OAuth sign-ins send the redirect URI where the local callback server actually listens
+
+### Wire
+- `SessionInfo.provider.credential` and `SessionUpdate.credential`: an optional credential reference (e.g. `oauth:openai/work`), never a token. Omitted means the configured precedence
+
+### Crates
+- Public crates published as 0.3.0: ante-protocol-shape, ante-llm, ante-exec, ante-sdk
+
+## v0.2.15 - 2026-10-23
+
+### Added
+- Remote MCP servers can authenticate: `url` servers in `mcp_servers` accept `headers` sent on every request, whose values may reference `${NAME}` from the environment so secrets stay out of the settings file; a bearer token is a plain `Authorization` header
+- OAuth sign-in for remote MCP servers with `ante mcp login <name>` / `ante mcp logout <name>`. It uses dynamic client registration and the server's advertised scopes by default; an optional `oauth` block sets a pre-registered `client_id`/`client_secret` or explicit `scopes`. A server that answers 401 names the login command to run
+- Background jobs view: while jobs run and the composer is empty, ↓ selects the `N bg jobs` footer pill and Enter opens a list of running commands, with status, runtime, the last stdout lines and stderr for each
+
+### Changed
+- The update notice's "What's new" preview links to https://ante.run/changelog instead of pointing at `CHANGELOG.md`
+- OpenRouter's MiniMax M3.1 Flash preset uses the paid `minimax/minimax-m3.1-flash` route; the free route was retired upstream
+- `thinking_budget` set in an OpenAI-compatible provider's `extra_body` is now sent instead of being dropped as a reserved field
+- Dependency updates
+
+### Fixed
+- TLS verification rejects the compromised intermediate keys on rustls-webpki's deny list (0.103.16), including cross-signed certificates
+
+### Crates
+- Public crates published as 0.2.15: ante-protocol-shape, ante-llm, ante-exec, ante-sdk
+
+## v0.2.14 - 2026-10-21
+
+### Added
+- Native MiniMax provider: set `MINIMAX_API_KEY` to use MiniMax M3.1 Flash directly (1M context, vision, `low`–`max` reasoning, `max` by default); `MINIMAX_BASE_URL` overrides the endpoint
+- MiniMax M3.1 Flash in the OpenRouter catalog
+
+### Changed
+- Offline mode defaults to llama.cpp's port 9931 instead of 8080: managed launches try 9931–9940, and user-started servers are discovered on 9931 and 8080 only (previously 8080–8179). A router already running keeps its recorded port, and a server on any other port can still be attached by endpoint
+- A provider `Retry-After` longer than 60s ends the turn and shows the wait (`Provider asks to retry in 48m.`) instead of reconnecting every 60s for about four minutes
+
+### Fixed
+- Gemini accepts MCP tool schemas it used to reject: `enum`/`const` values that are not non-empty strings move into the parameter's description, and requests without a forced tool choice use `AUTO` instead of `VALIDATED`, so very large schemas are no longer refused
+- OpenAI-compatible streams that carry both `reasoning` and `reasoning_content` on one delta, as gateways such as Bifrost send, no longer fail to decode
+- `ante offline use --args` rejects malformed values such as `--ctx invalid` before saving, instead of failing at the next load
+- Bundled TLS trust roots refreshed to webpki 1.0.10, which drops the emSign ECC Root CA - G3; `ante-sdk` now requires `webpki-roots` 1.0.10 or later
+
+### Crates
+- Public crates published as 0.2.14: ante-protocol-shape, ante-llm, ante-exec, ante-sdk
+
 ## v0.2.13 - 2026-10-18
 
 ### Added

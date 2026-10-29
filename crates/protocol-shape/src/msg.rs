@@ -460,20 +460,19 @@ pub struct SubagentMetadata {
     pub scope: Scope,
 }
 
-/// The provider a session resolved to.
-///
-/// Carries only what a client cannot look up for itself: the id to key state
-/// on, a name to show a user, and the endpoint actually in use — which env
-/// overrides can move away from the published default, so it is a property of
-/// this session rather than of the provider. The provider's model list is not
-/// here; it is the same for every session and is published by `ante catalog`.
-/// Unknown fields are ignored, so payloads still carrying it decode fine.
+/// The resolved provider and its explicit credential choice.
+/// The endpoint includes environment overrides. Model lists are published by
+/// `ante catalog`; unknown fields are ignored.
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]
 pub struct ProviderSpec {
     #[serde(alias = "name")]
     pub id: String,
     pub display_name: String,
     pub base_url: String,
+    /// This provider's explicit credential choice, as a qualified reference
+    /// such as `oauth:antix/work`, never a token. Absent uses configured precedence.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub credential: Option<String>,
 }
 
 /// A session's announced state: its identity and mutable settings
@@ -516,6 +515,12 @@ pub struct SessionUpdate {
     /// while a turn is in flight; never re-routed.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub provider: Option<String>,
+    /// Pin a qualified credential reference on the resulting provider for this
+    /// session. Refused if it is outside that provider's pool, unavailable, or
+    /// a turn is running. Absent keeps the current provider's choice; another
+    /// provider starts from configured precedence.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub credential: Option<String>,
     /// Model change, taking effect on the next turn. The spec carries the
     /// whole request, `effort` included: a set `effort` overrides the
     /// catalog default; unset fields resolve from the catalog. Resolved on
@@ -1334,7 +1339,26 @@ mod tests {
             id: name.to_string(),
             display_name: name.to_string(),
             base_url: format!("https://api.{name}.test/v1"),
+            ..Default::default()
         }
+    }
+
+    #[test]
+    fn provider_credential_is_optional_on_the_wire() {
+        let mut info = SessionInfo { provider: provider_spec("antix"), ..Default::default() };
+        info.provider.credential = Some("oauth:antix/work".into());
+
+        let mut json = serde_json::to_value(&info).unwrap();
+        assert!(json.get("credentials").is_none());
+        assert!(json["provider"].get("credentials").is_none());
+        assert_eq!(json["provider"]["credential"], "oauth:antix/work");
+        let decoded: SessionInfo = serde_json::from_value(json.clone()).unwrap();
+        assert_eq!(decoded.provider.credential, info.provider.credential);
+
+        json["provider"].as_object_mut().unwrap().remove("credential");
+        let decoded: SessionInfo = serde_json::from_value(json).unwrap();
+        assert!(decoded.provider.credential.is_none());
+        assert!(serde_json::to_value(decoded).unwrap()["provider"].get("credential").is_none());
     }
 
     #[test]
@@ -1429,6 +1453,7 @@ mod tests {
     fn session_update_op_serde_roundtrip() {
         let op = Op::UpdateSession(SessionUpdate {
             provider: Some("openai".to_string()),
+            credential: Some("oauth:openai/work".to_string()),
             model: Some(ModelSpec {
                 temperature: Some(0.2),
                 effort: Some(super::Effort::High),
@@ -1445,11 +1470,13 @@ mod tests {
             decoded,
             Op::UpdateSession(SessionUpdate {
                 provider: Some(provider),
+                credential: Some(credential),
                 model: Some(model),
                 permission_mode: Some(PermissionMode::Yolo),
                 title: Some(title),
             })
                 if provider == "openai"
+                    && credential == "oauth:openai/work"
                     && model.id == "gpt-5.4"
                     && model.temperature == Some(0.2)
                     && model.effort == Some(super::Effort::High)

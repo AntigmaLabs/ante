@@ -11,8 +11,8 @@ Ante persists configuration and state on the local filesystem. This page is a re
 |---|---|
 | `~/.ante/settings.json` | User preferences (model, provider, theme, MCP servers) |
 | `~/.ante/<name>.settings.json` | Whole-file settings profile selected by `--profile <name>` or `ANTE_PROFILE` |
-| `~/.ante/catalog.json` | Custom provider/model catalog |
-| `~/.ante/auth/` | OAuth credentials and API keys pasted in-app (owner-only; env vars take precedence) |
+| `~/.ante/catalog.json` | Custom providers, OAuth profiles, and credential helpers |
+| `~/.ante/auth/credentials/` | Stored credentials, owner-only: `secret/` (API keys), `oauth/` (sign-ins), `helper/` (helper output). Manage with [`ante auth`](/reference/cli-reference#ante-auth) |
 | `~/.ante/AGENTS.md` | Global instructions injected into every project session |
 | `~/.ante/skills/` | User-level skills |
 | `~/.ante/agents/` | User-level sub-agents |
@@ -20,6 +20,7 @@ Ante persists configuration and state on the local filesystem. This page is a re
 | `~/.ante/sessions/<session-id>/` | Persisted sessions (for `/resume` and `--resume`) |
 | `~/.ante/projects/<project-id>/memory/` | Per-project auto-memory |
 | `~/.ante/run/jobs/<proc-id>/` | Background Bash job handles: `status.json`, `stdout.txt`, and `stderr.txt` |
+| `~/.ante/run/offline/` | Managed router process record (`router.json`) and model presets (`presets.ini`), retained so a kept router can be reused by a later launch |
 | `~/.ante/run/serve.sock` | Default Unix socket for [`ante serve --sock`](/reference/cli-reference#ante-serve); a `serve.sock.lock` sibling holds the host's exclusive lock |
 | OS cache dir (`~/Library/Caches/ante`, `$XDG_CACHE_HOME/ante`) | Oversized WebFetch response spill files |
 | OS temp dir | Disposable staging files and intermediate downloads |
@@ -90,7 +91,7 @@ Before a rewind replaces the current history, Ante keeps the abandoned dialog an
 
 ## `catalog.json`
 
-Adds or overrides providers and models on top of the built-in catalog. Both top-level keys are optional. The `my-provider` key is what you pass to `--provider`. An entry whose key matches a built-in (e.g. `openai`) patches that provider field by field, a new key adds a provider, and a `models` entry patches that model's fields wherever it is defined.
+Adds or patches providers on top of the built-in catalog, and defines OAuth profiles and credential helpers. All top-level keys are optional. The `my-provider` key is what you pass to `--provider`. An entry whose key matches a built-in (e.g. `openai`) patches that provider field by field, and a new key adds a provider.
 
 ```json
 {
@@ -99,22 +100,19 @@ Adds or overrides providers and models on top of the built-in catalog. Both top-
       "display_name": "My Provider",
       "base_url": "https://api.example.com/v1",
       "wire_style": "OpenAiCompatible",
-      "auth": { "bearer": { "env_key": "MY_PROVIDER_API_KEY" } }
+      "credential": "env:MY_PROVIDER_API_KEY"
     }
-  },
-  "models": {
-    "claude-sonnet-5-5": { "effort": "high", "max_tokens": 64000 }
   }
 }
 ```
 
-Malformed provider or model entries are skipped individually and reported at startup. Valid entries in the same file still load.
+Malformed entries are skipped individually and reported at startup. Valid entries in the same file still load.
 
-See the [Catalog Reference](/reference/catalog-reference#catalogjson-schema) for the full schema, authentication forms, and resolution rules, and [custom catalog recipes](/reference/catalog-reference#custom-catalog) for customization recipes.
+See the [Catalog Reference](/reference/catalog-reference#catalogjson-schema) for the full schema, [credentials](/reference/catalog-reference#credentials), and resolution rules, and [custom catalog recipes](/reference/catalog-reference#custom-catalog) for customization recipes.
 
 ## `AGENTS.md`
 
-Stores persistent instructions for the agent. `~/.ante/AGENTS.md` applies globally, and a project `AGENTS.md` applies to that repository. When both exist, Ante includes both in the first user message of a session.
+Stores persistent instructions for the agent. `~/.ante/AGENTS.md` applies globally, and a project `AGENTS.md` applies to that repository. When both exist, Ante includes both in the session preamble, ahead of the conversation.
 
 See [AGENTS.md](/extend/agents-md) for usage guidance and precedence details.
 
@@ -126,8 +124,8 @@ See [AGENTS.md](/extend/agents-md) for usage guidance and precedence details.
 ~/.ante/
 ├── settings.json       # User preferences
 ├── <name>.settings.json # Named settings profiles
-├── catalog.json        # Custom provider/model catalog
-├── auth/               # OAuth credentials and pasted API keys
+├── catalog.json        # Custom providers, OAuth profiles, helpers
+├── auth/credentials/   # Stored keys, sign-ins, helper output (owner-only)
 ├── AGENTS.md           # Global instructions
 ├── installation-id     # Random telemetry installation label
 ├── user_input_history.jsonl # TUI prompt history
@@ -147,6 +145,9 @@ See [AGENTS.md](/extend/agents-md) for usage guidance and precedence details.
 ├── run/
 │   ├── jobs/
 │   │   └── <proc-id>/  # Background Bash status and output
+│   ├── offline/
+│   │   ├── router.json # Router PID, port, and identity
+│   │   └── presets.ini # Model load presets
 │   ├── serve.sock      # `ante serve --sock` listener
 │   └── serve.sock.lock # Ownership lock for the socket above
 ├── logs/

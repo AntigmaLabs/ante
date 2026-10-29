@@ -771,6 +771,11 @@ class TaskExtensionTests(unittest.TestCase):
 
 class CatalogOverlayTests(unittest.TestCase):
     ROUTING = {"order": ["xiaomi"], "allow_fallbacks": False}
+    MODEL = {
+        "id": "minimax/minimax-m3.1-flash",
+        "effort": "max",
+        "supported_efforts": ["low", "medium", "high", "xhigh", "max"],
+    }
 
     def test_overlay_writes_only_the_requested_provider_fields(self):
         self.assertIsNone(ante_agent.catalog_overlay("openrouter", None, None))
@@ -789,13 +794,20 @@ class CatalogOverlayTests(unittest.TestCase):
             ante_agent.catalog_overlay("openrouter", None, 120),
             {"providers": {"openrouter": {"stream_idle_timeout_secs": 120}}},
         )
+        self.assertEqual(
+            ante_agent.catalog_overlay("openrouter", None, None, self.MODEL),
+            {"providers": {"openrouter": {"preferred_models": [self.MODEL]}}},
+        )
 
     def test_options_accept_json_text_or_object_and_reject_other_shapes(self):
         for value in ('{"order": ["xiaomi"], "allow_fallbacks": false}', self.ROUTING):
             ante_agent.AnteAgent.preflight({"openrouter_routing": value})
+        for value in (json.dumps(self.MODEL), self.MODEL):
+            ante_agent.AnteAgent.preflight({"catalog_model": value})
         for kwargs in (
             {"openrouter_routing": '["xiaomi"]'},
             {"openrouter_routing": "{not json"},
+            {"catalog_model": '["minimax/minimax-m3.1-flash"]'},
             {"stream_idle_timeout_secs": 0},
         ):
             with self.subTest(kwargs=kwargs), self.assertRaises(ValueError):
@@ -842,6 +854,21 @@ class CatalogOverlayTests(unittest.TestCase):
             ["<unreadable `ante catalog` output>"],
         )
 
+    def test_model_entry_is_found_among_built_in_models_with_added_defaults(self):
+        overlay = ante_agent.catalog_overlay("openrouter", None, None, self.MODEL)
+        built_in = {"id": "deepseek/deepseek-v4.1-flash", "effort": "max"}
+        loaded = self.catalog_output(
+            preferred_models=[built_in, {**self.MODEL, "support_vision": True}]
+        )
+
+        self.assertEqual(ante_agent.missing_catalog_overrides(loaded, overlay), [])
+        self.assertEqual(
+            ante_agent.missing_catalog_overrides(
+                self.catalog_output(preferred_models=[built_in]), overlay
+            ),
+            ["openrouter.preferred_models[minimax/minimax-m3.1-flash]"],
+        )
+
     def apply(self, return_code=0, loaded=None, **options):
         environment = RecordingEnvironment(
             return_code, {"ante catalog": FakeExecResult(stdout=loaded or "")}
@@ -870,6 +897,17 @@ class CatalogOverlayTests(unittest.TestCase):
         self.assertEqual(payload["providers"]["openrouter"]["extra_body"]["provider"], self.ROUTING)
         self.assertEqual(len(environment.commands), 2)
         self.assertIn('"$HOME/.ante/catalog.json"', environment.commands[0])
+        self.assertEqual(environment.commands[1], "ante catalog")
+
+    def test_catalog_model_alone_writes_the_overlay(self):
+        environment = self.apply(
+            provider="openrouter",
+            catalog_model=self.MODEL,
+            loaded=self.catalog_output(preferred_models=[self.MODEL]),
+        )
+
+        payload = json.loads(environment.uploads["/installed-agent/ante-catalog.json"])
+        self.assertEqual(payload["providers"]["openrouter"]["preferred_models"], [self.MODEL])
         self.assertEqual(environment.commands[1], "ante catalog")
 
     def test_overrides_an_older_ante_ignores_stop_the_trial(self):

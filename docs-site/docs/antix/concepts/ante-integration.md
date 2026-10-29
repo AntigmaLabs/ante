@@ -13,16 +13,16 @@ Antix is the centralized control plane for the **Ante CLI**, bringing enterprise
 Developers authenticate their local Ante instance against your Antix server:
 
 ```bash
-ante auth login
+ante auth login antix
 ```
 
-This starts the Antix OAuth flow without launching an agent session. Use `ante auth login --no-browser` on a remote machine where Ante should print the authorization URL instead of opening a browser.
+This starts the Antix OAuth flow without launching an agent session. Use `ante auth login antix --no-browser` on a remote machine where Ante should print the authorization URL instead of opening a browser.
 
 You can also sign in from the TUI:
 
 1. Start the `ante` CLI.
-2. Type `/connect`.
-3. Select **Antix** from the menu.
+2. Type `/providers`.
+3. Select **Antix** and press `m`, then choose **Sign in to Antix**.
 
 This securely authenticates your local agent with the Antix control plane, granting it a temporary access token that automatically refreshes as needed.
 

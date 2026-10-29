@@ -194,7 +194,7 @@ SDK 0.2.2 已移除 `ante_sdk::claude` 和旧版子进程 stdio API。Ante 宿�
 | `--stdio` | 通过 stdin/stdout 提供 JSONL 协议服务（默认） |
 | `--sock [PATH]` | 通过 Unix 域套接字提供协议服务（默认为 Ante 主目录下的 `run/serve.sock`） |
 | `--ws <ADDR>` | 在本地回环地址上通过 WebSocket 提供协议服务 |
-| `--offline-model <PATH>` | 使用指定 GGUF 模型启动共享的 `llama serve` 路由器，并将其作为 `local` 提供商注册给所有接入客户端 |
+| `--offline-model [MODEL]` | 加载本地或验证模型，启动共享的 `llama serve` 路由器并注册 `local` 提供商。接受路径、已发现的文件名或验证模型名称/URL；省略值则使用 `ante offline use` 保存的默认模型 |
 
 :::note
 `--prompt` 参数不能与 `ante serve` 同时使用。请通过 `UserInput` 操作指令传递提示词。

@@ -8,26 +8,28 @@ Connect Ante to a provider, choose a model, and start a conversation. Use browse
 ## Sign in from the TUI {#authentication}
 
 1. Run `ante` in your project directory.
-2. Type `/connect` and choose **Antix**, **Anthropic Subscription**, or **OpenAI Subscription**.
-3. Follow the browser sign-in flow, then return to Ante.
-4. Open `/providers`, choose the connected provider, and confirm a model.
+2. Type `/providers`, select **Antix**, **Anthropic Subscription**, or **OpenAI Subscription**, and press `m` to manage its access (or `Enter` on a provider that isn't set up yet).
+3. Choose **Sign in to …** (for example, **Sign in to Antix**), follow the browser flow, then return to Ante.
+4. Back in `/providers`, choose the provider and confirm a model.
 
-<img src="/assets/cookbook/connect.gif" alt="Connecting to a provider via /connect" className="cookbook-demo" />
+<img src="/assets/cookbook/providers.gif" alt="Choosing a provider and its credential in /providers" className="cookbook-demo" />
 
-Ante saves your credentials for future sessions. Use `/connect` again when you need to sign in.
+Ante saves your credentials for future sessions. Open `/providers` and press `m` again when you need to sign in again.
 
 ## Sign in from the CLI
 
-For Antix, you can complete OAuth sign-in before opening the TUI or running a headless task:
+Sign in before opening the TUI or running a headless task:
 
 ```bash
-ante auth login antix
+ante auth login antix        # or anthropic, openai
 ante --provider antix
 ```
 
-The first command opens your browser. Finish signing in, then return to the terminal to run the second command.
+The first command opens your browser. Finish signing in, then return to the terminal to run the second command. On a remote machine, add `--no-browser` to print the sign-in URL instead.
 
-CLI login currently supports Antix. For Anthropic and OpenAI subscriptions, use `/connect` in the TUI. See [`ante auth`](/reference/cli-reference#ante-auth) for `--no-browser` and `--force` options.
+To add a second account, give it a label: `ante auth login anthropic/work`. `ante auth list` shows what is stored. See [`ante auth`](/reference/cli-reference#ante-auth) for every command.
+
+To sign in to a service Ante doesn't have built in, or to get tokens from a command such as `gcloud`, see [Custom Sign-ins & Token Commands](/usage/custom-sign-ins).
 
 ## Use an API key
 
@@ -38,17 +40,21 @@ export ANTHROPIC_API_KEY="your-api-key"
 ante --provider anthropic
 ```
 
-The same flow works with any provider configured to read an environment variable. For example, use `OPENAI_API_KEY` with `--provider openai` or `ANTIX_API_KEY` with `--provider antix-api-key`. Find the exact provider names and variables in the [Catalog Reference](/reference/catalog-reference#built-in-providers).
+The same flow works with any provider configured to read an environment variable. For example, use `OPENAI_API_KEY` with `--provider openai` or `ANTIX_API_KEY` with `--provider antix`. Find the exact provider names and variables in the [Catalog Reference](/reference/catalog-reference#built-in-providers).
+
+To store a key instead of exporting it, run `ante auth add <provider>` and paste the key:
+
+```bash
+ante auth add anthropic
+```
 
 ### Paste a key in the TUI {#paste-an-api-key}
 
-Run `/welcome` and choose **Use API key**. Ante detects the provider from the key prefix, masks and validates the key, then stores it under `~/.ante/auth/` with access limited to your user. An environment key takes precedence over a saved key.
-
-With Anthropic selected on the API-key step, press `Tab` to sign in to the Anthropic Console in your browser and provision a key automatically.
+Type `/providers`, select the provider, press `m`, and choose **Add or replace API key**. Ante checks the key against the provider, then stores it under `~/.ante/auth/` with access limited to your user. On built-in providers, an environment key takes precedence over a stored one. The same view removes a saved key.
 
 ## Choose a model and start working {#selecting-a-provider}
 
-Type `/providers` to choose a connected provider, then confirm a model and effort level. Ante remembers the last model used on each provider. Use `/models` to change models on the current provider during a conversation.
+Type `/providers` to choose a connected provider, then confirm a model and effort level. When a provider has more than one credential (two accounts, or a sign-in and a key), its row shows `‹ 1/2 ›`: press `←`/`→` to pick the one this session uses. Ante remembers the last model used on each provider. Use `/models` to change models on the current provider during a conversation.
 
 To select a provider and model when launching Ante:
 

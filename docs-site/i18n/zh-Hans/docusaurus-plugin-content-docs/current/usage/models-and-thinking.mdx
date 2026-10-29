@@ -8,7 +8,7 @@ description: "在会话中随时切换模型、切换提供商并动态调节思
 
 Ante 允许在会话进行中随时无缝切换模型、提供商和思考深度（Effort）—— 完全无需重启会话。两个弹窗面板各司其职：`/models` 用于在当前提供商内细化选择模型和思考深度，而 `/providers` 用于在不同的提供商之间切换。
 
-<img src="/assets/cookbook/providers.gif" alt="使用 /providers 切换提供商、模型与思考深度" className="cookbook-demo" />
+<img src="/assets/cookbook/providers.gif" alt="在 /providers 中选择提供商及其凭据，并打开其访问视图" className="cookbook-demo" />
 
 ## 选择模型 {#selecting-a-model}
 
@@ -20,7 +20,7 @@ Ante 允许在会话进行中随时无缝切换模型、提供商和思考深度
 
 ## 切换提供商 {#switching-providers}
 
-输入 `/providers` 可列出所有提供商及其连接认证状态。在已连接的提供商上按 Enter 即可展开其专属的模型选择面板 —— 包含相同的模型列表与思考深度滑块，且自动默认高亮您上次在该提供商中使用的模型。仅在按 Enter 确认后才正式生效；按 `Esc` 可随时返回提供商列表。在未连接的提供商上按 Enter 将直接触发登录认证流程（参见[连接提供商](/usage/providers#authentication)）。
+输入 `/providers` 可列出所有提供商及其连接认证状态。在已连接的提供商上按 Enter 即可展开其专属的模型选择面板 —— 包含相同的模型列表与思考深度滑块，且自动默认高亮您上次在该提供商中使用的模型。仅在按 Enter 确认后才正式生效；按 `Esc` 可随时返回提供商列表。在尚未设置的提供商上按 Enter 会打开其访问视图，可在其中登录或添加 API 密钥；在任意提供商上按 `m` 都可打开该视图（参见[连接提供商](/usage/providers#authentication)）。当提供商有多个凭据时，按 `←`/`→` 选择本次会话使用的凭据。
 
 切换提供商会保留当前对话——消息、标题与权限模式都会延续，新提供商从您的下一条消息开始接管。
 
@@ -41,9 +41,11 @@ min · low · medium · high · xhigh · max
 
 每个提供商和模型家族的档位通常由 Ante 内置。对于自定义提供商，可以在模型目录条目中使用 `supported_efforts` 自行声明（参见[目录参考手册](/reference/catalog-reference#model-fields)），也可以运行 `/add-provider`，让它探测端点并写入声明。
 
-Anthropic 在 Claude Sonnet 5、Opus 5、Opus 4.7/4.8 以及始终开启思考的 Fable/Mythos 5 家族上提供 `xhigh`；Opus 与 Sonnet 4.6 保留其四个自适应档位（`low` 到 `high`，再到 `max`）以及关闭位 `min`。Gemini 3.7 与 3.8 仅提供 `low`、`medium`、`high` 三档 —— 请求 `xhigh` 或 `max` 会向下取整为 `high`。
+Anthropic 在 Claude Sonnet 5、Opus 5、Opus 4.7/4.8 以及始终开启思考的 Fable/Mythos 5 家族上提供 `xhigh`；Opus 与 Sonnet 4.6 保留其四个自适应档位（`low` 到 `high`，再到 `max`）以及关闭位 `min`。Gemini 3.7、3.8 与 4 Argon 仅提供 `low`、`medium`、`high` 三档 —— 请求 `xhigh` 或 `max` 会向下取整为 `high`。
 
 :::note
+Claude Haiku 5.5 即使关闭思考也要求 `temperature: 1`。在 Anthropic Messages 接口上，Claude Sonnet 5.5 不支持强制工具选择（要求调用任意工具或指定工具），Ante 会在发送请求前报错。
+
 Anthropic API 规定：开启 Extended Thinking 时 `temperature` 必须为 `1`。如果在[目录配置](/reference/catalog-reference#model-fields)或环境变量 `MODEL_TEMPERATURE` 中设置了其他温度，开启思考的轮次会报错提示 —— 清除温度覆盖即可恢复正常。
 :::
 

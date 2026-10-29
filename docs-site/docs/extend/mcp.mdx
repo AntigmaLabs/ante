@@ -37,6 +37,7 @@ MCP servers are declared in `~/.ante/settings.json` under the `mcp_servers` map.
 | `transport` | No | `stdio`, `streamable-http`, or `http` (an alias for `streamable-http`). Inferred from `command` or `url` when omitted |
 | `args` | No | Arguments passed to the command (stdio only) |
 | `env` | No | Environment variables set on the server process (stdio only) |
+| `headers` | No | HTTP headers sent with every request (Streamable HTTP only). Values take `${NAME}`, `${NAME:-default}`, and `${session_id}`. See [Authentication](#authentication) |
 | `enabled_tools` | No | Allowlist of raw tool names to expose. When empty or absent, all tools from the server are exposed |
 
 For **stdio**, Ante spawns the command, speaks MCP over its stdin/stdout, and forwards stderr to the log.
@@ -45,7 +46,35 @@ For **Streamable HTTP** (Ante v0.2.12 or newer), Ante connects directly to `url`
 
 Set exactly one of `command` or `url`. An explicit `transport` must match it. Legacy HTTP+SSE (`transport: "sse"`) is unsupported. Conflicting settings, unsupported transports, or nonempty `args` or `env` on a URL server fail that server during warm-up with an explanatory message.
 
-Native remote connections currently have no configuration for custom HTTP headers, bearer tokens, or OAuth sign-in. If your server requires these, use a compatible stdio bridge that handles authentication. Use the endpoint URL directly: HTTP redirects are not followed.
+Use the endpoint URL directly: HTTP redirects are not followed.
+
+## Authentication
+
+A remote server authenticates one of two ways.
+
+**OAuth sign-in.** Most hosted servers (Linear, Notion, and others) offer OAuth. Configure only the `url`, then sign in once:
+
+```bash
+ante auth login linear
+```
+
+Ante discovers the server's sign-in, opens your browser, and stores the result under the server's name. It refreshes the sign-in on its own. Run `ante auth logout linear` to forget it. When nothing is stored, Ante connects without credentials, and a server that needs a sign-in reports it.
+
+**A token in `headers`.** For a server that takes an API key or a personal access token, set an `Authorization` header. Ante sends it as written and skips the OAuth sign-in. Read the token from the environment so it stays out of the settings file:
+
+```json
+{
+  "mcp_servers": {
+    "linear": { "url": "https://mcp.linear.app/mcp" },
+    "github": {
+      "url": "https://api.githubcopilot.com/mcp/",
+      "headers": { "Authorization": "Bearer ${GITHUB_TOKEN}" }
+    }
+  }
+}
+```
+
+Other headers are sent as well, and `${session_id}` fills in the current session's ID. A `${NAME}` with no value and no default fails that server at connect, naming the variable.
 
 ## Tool naming
 
