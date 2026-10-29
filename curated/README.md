@@ -52,7 +52,7 @@ A collection of third-party web search providers, each with its MCP configuratio
 
 Based on their authentication requirements, the providers fall into the two groups listed below. Most of the listed providers offer a generous free-tier quota when you are logged in with an account. See the documentation for the default configuration used for each, the available knobs to tune for your use case, and CLI + agent skill alternatives.
 
-All examples except `duckduckgo` and `brave` connect over Streamable HTTP, which requires Ante v0.2.12; Ante v0.2.15 is recommended for authentication on remote MCP servers.
+Examples here assume Ante v0.3.0+.
 
 See the [Ante MCP documentation](https://docs.antigma.ai/extend/mcp) for more info.
 
@@ -67,7 +67,7 @@ See the [Ante MCP documentation](https://docs.antigma.ai/extend/mcp) for more in
 
 - Authentication required
 
-The examples show configurations with API key authentication. Substitute `<your-api-key>` with your actual key. For a remote server, you may use `${KEY_NAME}` as a header value to read the key from the environment, so secrets stay out of the settings file. If you want to use OAuth authentication instead, omit the header entry and run `ante mcp login <provider>` after adding the server to your `settings.json`.
+The examples show configurations with API key authentication. Substitute `<your-api-key>` with your actual key. For a remote server, you may use `${KEY_NAME}` as a header value to read the key from the environment, so secrets stay out of the settings file. If you want to use OAuth authentication instead, omit the headers entry and run `ante auth login <provider>` (with `--profile <provider>` if you kept it as a separate profile) after adding the server to your `settings.json`.
 
 | Provider | Link to documentation |
 | --- | --- |
