@@ -1,5 +1,32 @@
 # Changelog
 
+## v0.3.1 - 2026-10-30
+
+### Added
+- `ante auth list --json` prints the stored credentials as one JSON object. Each entry has `reference`, `kind`, `name`, `issuer`, `account`, `state` and `used_by`, and no secret values. `reference` is the exact string a session can pin
+- A session can pin a credential when it starts or resumes, so its first request already uses the chosen account instead of the default
+- The TUI reports turn status (running, waiting, done, failed) to the terminal via OSC 7501, including from tmux
+- Antix serves Claude Opus 5.5, GPT-6.1 Sol and Kimi K3.1 Pro, replacing Opus 5, GPT-5.6 Sol and Kimi K3
+
+### Changed
+- The installer adds `ante` to your shell's PATH and keeps the existing binary if an update fails
+- Error messages show home paths as `~`
+
+### Fixed
+- `--resume` honors `--tools`, `--include-tools` and `--exclude-tools` instead of exposing the full default tool set
+- GPT-6.1 Sol on Antix keeps all five effort levels instead of falling back to token-budget thinking
+- After a partial write (e.g. a full disk), later session events are no longer swallowed on replay, and persistence failures are reported
+- Copying a reply that is still streaming no longer keeps the screen's line breaks
+- A tool row left running at the end of a turn is now cancelled
+- Dependency updates
+
+### Wire
+- `SessionRequest.credential` and `ResumeSession.credential`: an optional credential reference to pin from the first request. The start is refused if it is unavailable
+- `ResumeSession.tools`, `include_tools` and `exclude_tools`: optional tool filters for the resumed session. Omitted uses current settings
+
+### Crates
+- Public crates published as 0.3.1: ante-protocol-shape, ante-llm, ante-exec, ante-sdk
+
 ## v0.3.0 - 2026-10-28
 
 Opens the 0.3 series with one intentional break: credentials are configured with one reference language, shared by providers, MCP servers and `ante auth`. Old shapes are refused by name rather than half-read; see "Upgrading from 0.2" below.

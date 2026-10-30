@@ -65,13 +65,27 @@ pub enum Op {
     /// Continue a saved conversation from its persisted snapshot: what the
     /// host persisted is restored — the system instructions included — and
     /// everything the snapshot does not pin resolves like a fresh session
-    /// from the host's current defaults.
+    /// from the host's current defaults, with the requested tool filters.
     /// `unattended` is the resuming client's declaration, with the meaning
     /// of `SessionRequest::unattended`; absent means false.
     ResumeSession {
         session_id: Id,
         #[serde(default)]
         unattended: bool,
+        /// Tool selection for this resume, with the same precedence as
+        /// `SessionRequest::tools`; absent uses current settings.
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        tools: Option<Vec<String>>,
+        /// Tools added to the base set for this resume.
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        include_tools: Option<Vec<String>>,
+        /// Tools removed for this resume; wins over base and included tools.
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        exclude_tools: Option<Vec<String>>,
+        /// A credential to pin for this resume, with the meaning of
+        /// `SessionRequest::credential`; absent uses configured precedence.
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        credential: Option<String>,
     },
     RegisterLocalProvider {
         port: u16,
@@ -590,6 +604,12 @@ pub struct SessionRequest {
     pub model: Option<String>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub provider: Option<String>,
+    /// Pin a qualified credential reference on the session's provider from
+    /// its first request, under the rules of `SessionUpdate::credential`: the
+    /// start is refused if it is outside that provider's pool or unavailable.
+    /// Absent uses configured precedence.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub credential: Option<String>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub permission_mode: Option<PermissionMode>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
@@ -649,6 +669,7 @@ impl SessionRequest {
         let SessionRequest {
             model,
             provider,
+            credential,
             permission_mode,
             system_prompt,
             append_system_prompt,
@@ -669,6 +690,7 @@ impl SessionRequest {
         SessionRequest {
             model: model.or(self.model),
             provider: provider.or(self.provider),
+            credential: credential.or(self.credential),
             permission_mode: permission_mode.or(self.permission_mode),
             system_prompt: system_prompt.or(self.system_prompt),
             append_system_prompt: append_system_prompt.or(self.append_system_prompt),
@@ -1168,6 +1190,7 @@ mod tests {
         SessionRequest {
             model: Some("base-model".to_string()),
             provider: Some("anthropic".to_string()),
+            credential: Some("oauth:anthropic/work".to_string()),
             permission_mode: Some(PermissionMode::Strict),
             system_prompt: Some("base prompt".to_string()),
             cwd: Some(std::path::PathBuf::from("/base")),
@@ -1207,6 +1230,7 @@ mod tests {
         assert_eq!(patched.include_skills, Some(Vec::new()));
         // Untouched (patch unset == keep):
         assert_eq!(patched.provider.as_deref(), Some("anthropic"));
+        assert_eq!(patched.credential.as_deref(), Some("oauth:anthropic/work"));
         assert_eq!(patched.system_prompt.as_deref(), Some("base prompt"));
         assert_eq!(patched.effort, Some(Effort::Medium));
         assert_eq!(patched.save_session, Some(true));
@@ -1271,11 +1295,54 @@ mod tests {
         let request: SessionRequest = serde_json::from_value(serde_json::json!({})).unwrap();
         assert_eq!(request.unattended, None);
 
-        let op = Op::ResumeSession { session_id: Id::new("ses"), unattended: true };
+        let op = Op::ResumeSession {
+            session_id: Id::new("ses"),
+            unattended: true,
+            tools: None,
+            include_tools: None,
+            exclude_tools: None,
+            credential: None,
+        };
         let mut json = serde_json::to_value(&op).unwrap();
         json["ResumeSession"].as_object_mut().unwrap().remove("unattended");
         let decoded: Op = serde_json::from_value(json).unwrap();
-        assert!(matches!(decoded, Op::ResumeSession { unattended: false, .. }));
+        assert!(matches!(
+            decoded,
+            Op::ResumeSession {
+                unattended: false,
+                tools: None,
+                include_tools: None,
+                exclude_tools: None,
+                credential: None,
+                ..
+            }
+        ));
+    }
+
+    #[test]
+    fn resume_tool_filters_roundtrip_including_an_empty_base() {
+        for tools in [None, Some(vec![]), Some(vec!["Read".to_string()])] {
+            let op = Op::ResumeSession {
+                session_id: Id::ses(),
+                unattended: true,
+                tools: tools.clone(),
+                include_tools: Some(vec!["Bash".to_string()]),
+                exclude_tools: Some(vec!["Agent".to_string()]),
+                credential: Some("oauth:anthropic/work".to_string()),
+            };
+            let json = serde_json::to_value(&op).unwrap();
+            assert_eq!(json["ResumeSession"].get("tools").is_none(), tools.is_none());
+            assert_eq!(json["ResumeSession"]["credential"], "oauth:anthropic/work");
+            let decoded: Op = serde_json::from_value(json).unwrap();
+            let Op::ResumeSession { tools: decoded_tools, include_tools, exclude_tools, .. } =
+                decoded
+            else {
+                panic!("expected ResumeSession");
+            };
+            assert_eq!(decoded_tools, tools);
+            assert_eq!(include_tools, Some(vec!["Bash".to_string()]));
+            assert_eq!(exclude_tools, Some(vec!["Agent".to_string()]));
+        }
     }
 
     #[test]
