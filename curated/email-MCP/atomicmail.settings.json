@@ -1,0 +1,7 @@
+{
+  "mcp_servers": {
+    "atomicmail": {
+      "url": "https://mcp.atomicmail.ai/mcp"
+    }
+  }
+}
