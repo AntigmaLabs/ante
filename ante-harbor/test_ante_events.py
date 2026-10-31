@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 import importlib
+import base64
+import hashlib
 import json
 import sys
 import types
@@ -56,6 +58,108 @@ def _usage(**values: Any) -> dict[str, Any]:
 
 
 class EventStreamTests(unittest.TestCase):
+    def test_physical_framing_preserves_unicode_crlf_and_final_record(self):
+        for separator in ("\u0085", "\u2028", "\u2029"):
+            for ending in ("\n", "\r\n", ""):
+                with self.subTest(separator=repr(separator), ending=repr(ending)):
+                    events = [
+                        _event("ToolStart", {"id": "call", "name": "Read", "args": {}}),
+                        _event(
+                            "ToolEnd",
+                            {
+                                "tool_use_id": "call",
+                                "status": "Completed",
+                                "result_json": {"text": f"before{separator}after"},
+                            },
+                        ),
+                    ]
+                    text = (
+                        "diagnostic\r\n{malformed\n[1,2]\n"
+                        + "\r\n".join(
+                            json.dumps(event, ensure_ascii=False) for event in events
+                        )
+                        + ending
+                    )
+                    parsed = ante_events.events_from_text(text)
+                    self.assertEqual(parsed, events)
+                    trajectory = ante_events.trajectory_from_events(
+                        parsed,
+                        agent_name="ante",
+                        agent_version="test",
+                        model_name="test",
+                    )
+                    result = trajectory.steps[0].observation.results[0]
+                    self.assertEqual(result.source_call_id, "call")
+                    self.assertEqual(
+                        json.loads(result.content),
+                        events[1]["event"]["ToolEnd"]["result_json"],
+                    )
+
+    def test_typed_redaction_uses_physical_records_in_either_field_order(self):
+        payload = base64.b64encode(b"image data").decode()
+        for separator in ("\u0085", "\u2028", "\u2029"):
+            for binary_first in (True, False):
+                for ending in ("\n", "\r\n", ""):
+                    with self.subTest(
+                        separator=repr(separator),
+                        binary_first=binary_first,
+                        ending=repr(ending),
+                    ):
+                        fields = [
+                            ("text", f"before{separator}after"),
+                            (
+                                "image",
+                                {"mime_type": "image/png", "base64_data": payload},
+                            ),
+                        ]
+                        if binary_first:
+                            fields.reverse()
+                        event = _event(
+                            "ToolEnd",
+                            {
+                                "result_json": dict(fields),
+                                "untyped": {"data": payload},
+                                "malformed": {
+                                    "mime_type": "image/png",
+                                    "data": "!bad!",
+                                },
+                            },
+                        )
+                        prefix = "diagnostic\r\n{malformed\n"
+                        text = prefix + json.dumps(event, ensure_ascii=False) + ending
+                        scrubbed, count = ante_events.redact_event_log_text(text)
+                        self.assertEqual(count, 1)
+                        self.assertTrue(scrubbed.startswith(prefix))
+                        if ending:
+                            self.assertTrue(scrubbed.endswith(ending))
+                        else:
+                            self.assertFalse(scrubbed.endswith("\n"))
+                        value = ante_events.events_from_text(scrubbed)[0]["event"][
+                            "ToolEnd"
+                        ]
+                        self.assertEqual(
+                            value["result_json"]["text"], f"before{separator}after"
+                        )
+                        self.assertEqual(
+                            value["result_json"]["image"]["base64_data"],
+                            {
+                                "redacted": True,
+                                "mime_type": "image/png",
+                                "decoded_bytes": 10,
+                                "sha256": hashlib.sha256(b"image data").hexdigest(),
+                            },
+                        )
+                        self.assertEqual(
+                            value["untyped"], event["event"]["ToolEnd"]["untyped"]
+                        )
+                        self.assertEqual(
+                            value["malformed"], event["event"]["ToolEnd"]["malformed"]
+                        )
+
+    def test_redaction_without_binary_preserves_original_text_exactly(self):
+        text = 'diagnostic\r\n{"event":{"Info":"a\u0085b\u2028c\u2029d"}}\r\n{malformed\nlast'
+        self.assertEqual(ante_events.redact_event_log_text(text), (text, 0))
+
     def test_mixed_output_keeps_only_json_objects(self):
         first = _event("UserInput", "inspect the repository")
         second = _event("Info", "ready")

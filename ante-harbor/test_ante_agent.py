@@ -65,7 +65,7 @@ ERROR_KIND_CASES = {
 
 def fixture_events(name: str) -> list[dict]:
     text = (FIXTURES_DIR / name).read_text(encoding="utf-8")
-    return [json.loads(line) for line in text.splitlines() if line.strip()]
+    return [json.loads(line) for line in text.split("\n") if line.strip()]
 
 
 class FakeEnvironment:
@@ -307,7 +307,11 @@ class AnteInstallTests(unittest.TestCase):
             agent = ante_agent.AnteAgent(logs_dir=Path(d), version="1.2.3")
             environment = FakeInstallEnvironment(FakeExecResult(stdout="ante 1.2.3\n"))
 
-            asyncio.run(agent.install(environment))
+            with mock.patch.object(
+                agent, "ensure_system_dependencies", new=mock.AsyncMock()
+            ) as ensure:
+                asyncio.run(agent.install(environment))
+            ensure.assert_awaited_once_with(environment, ("python3",))
 
             self.assertEqual(environment.commands, [("ante --version", {})])
             self.assertEqual(environment.uploads, [])
@@ -324,8 +328,12 @@ class AnteInstallTests(unittest.TestCase):
             ) as ensure_system_dependencies:
                 asyncio.run(agent.install(environment))
 
-            ensure_system_dependencies.assert_awaited_once_with(
-                environment, ("curl", "bash")
+            self.assertEqual(
+                ensure_system_dependencies.await_args_list,
+                [
+                    mock.call(environment, ("python3",)),
+                    mock.call(environment, ("curl", "bash")),
+                ],
             )
             self.assertEqual(len(environment.commands), 2)
             self.assertIn("download.ante.run/install.sh", environment.commands[0][0])
@@ -347,8 +355,12 @@ class AnteInstallTests(unittest.TestCase):
             ) as ensure_system_dependencies:
                 asyncio.run(agent.install(environment))
 
-            ensure_system_dependencies.assert_awaited_once_with(
-                environment, ("curl", "bash")
+            self.assertEqual(
+                ensure_system_dependencies.await_args_list,
+                [
+                    mock.call(environment, ("python3",)),
+                    mock.call(environment, ("curl", "bash")),
+                ],
             )
             self.assertIn("custom installer", environment.commands[0][0])
 
@@ -982,11 +994,11 @@ class AnteOptionsTests(unittest.TestCase):
                 agent = ante_agent.AnteAgent(
                     logs_dir=Path(d), model_name="test/model", **options
                 )
-                environment = FakeInstallEnvironment(FakeExecResult())
+                environment = FakeInstallEnvironment(FakeExecResult(), FakeExecResult())
 
                 asyncio.run(agent.run("test instruction", environment, AgentContext()))
 
-                self.assertEqual(len(environment.commands), 1)
+                self.assertEqual(len(environment.commands), 2)
                 self.assertIn(
                     f"ante --model test/model{flags} < /tmp/instruction.md",
                     environment.commands[0][0],
@@ -1116,13 +1128,12 @@ class AnteCommandTests(unittest.TestCase):
         self.assertEqual(command.count("--model"), 1)
         self.assertEqual(command.count("--provider"), 1)
         self.assertNotIn("set -o pipefail", command)
-        self.assertIn('exit "${PIPESTATUS[0]}"', command)
-        self.assertIn("tee /logs/agent/ante.txt", command)
+        self.assertNotIn("tee", command)
 
-    def test_generated_command_returns_ante_status_not_tee_status(self):
-        for ante_exit, tee_exit in ((1, 0), (0, 1)):
+    def test_generated_command_returns_ante_status_and_removes_instruction(self):
+        for ante_exit in (0, 1):
             with (
-                self.subTest(ante_exit=ante_exit, tee_exit=tee_exit),
+                self.subTest(ante_exit=ante_exit),
                 tempfile.TemporaryDirectory() as d,
             ):
                 root = Path(d)
@@ -1130,7 +1141,6 @@ class AnteCommandTests(unittest.TestCase):
                 bin_dir.mkdir()
                 instruction_path = root / "instruction.md"
                 instruction_path.write_text("run this task\n", encoding="utf-8")
-                log_path = root / "logs" / "agent" / "ante.txt"
                 event_text = json.dumps({
                     "event": {
                         "TurnEnd": {
@@ -1148,22 +1158,10 @@ class AnteCommandTests(unittest.TestCase):
                     encoding="utf-8",
                 )
                 stub_ante.chmod(0o755)
-                stub_tee = bin_dir / "tee"
-                stub_tee.write_text(
-                    "#!/usr/bin/env bash\n"
-                    "payload=$(/bin/cat)\n"
-                    "printf '%s\\n' \"$payload\" > \"${@: -1}\"\n"
-                    "printf '%s\\n' \"$payload\"\n"
-                    f"exit {tee_exit}\n",
-                    encoding="utf-8",
-                )
-                stub_tee.chmod(0o755)
-
                 with (
                     mock.patch.object(
                         ante_agent, "_INSTRUCTION_PATH", instruction_path
                     ),
-                    mock.patch.object(ante_agent, "_AGENT_LOG", log_path),
                 ):
                     command = ante_agent.ante_command(
                         "test/model",
@@ -1185,9 +1183,6 @@ class AnteCommandTests(unittest.TestCase):
 
                 self.assertEqual(result.returncode, ante_exit)
                 self.assertEqual(result.stdout.strip(), event_text)
-                self.assertEqual(
-                    log_path.read_text(encoding="utf-8").strip(), event_text
-                )
                 self.assertFalse(instruction_path.exists())
 
     def test_command_omits_provider_and_effort_when_unset(self):
@@ -1206,7 +1201,7 @@ class AnteCommandTests(unittest.TestCase):
             hidden_skills=ante_agent.BUNDLED_ANTE_SKILLS,
         )
 
-        tokens = shlex.split(command.split(" < ")[0].split("{ ", 1)[1])
+        tokens = shlex.split(command.partition(" && ")[2].partition(" < ")[0])
         self.assertNotIn("--no-skills", tokens)
         self.assertEqual(tokens.count("--skills"), 1)
         excluded = tokens[tokens.index("--exclude-skills") + 1].split(",")

@@ -197,7 +197,9 @@ def event_from_line(line: str) -> dict[str, Any] | None:
 
 def events_from_text(output: str) -> list[dict[str, Any]]:
     """Parse Ante's mixed stdout/log stream into EventMsg objects once."""
-    return [event for line in output.splitlines() if (event := event_from_line(line))]
+    # JSONL records end at physical LF bytes. Unicode line separators are valid
+    # inside JSON strings and must not split an event (as str.splitlines does).
+    return [event for line in output.split("\n") if (event := event_from_line(line))]
 
 
 def tool_call_stats_from_events(events: Iterable[dict[str, Any]]) -> dict[str, Any]:
@@ -612,8 +614,8 @@ def redact_event_log_text(output: str) -> tuple[str, int]:
     """Redact typed binary payloads from copied Ante JSONL event logs."""
     lines = []
     redacted = 0
-    for line in output.splitlines(keepends=True):
-        body = line.rstrip("\r\n")
+    for line in output.split("\n"):
+        body = line.removesuffix("\r")
         ending = line[len(body) :]
         event_msg = event_from_line(body)
         if (
@@ -628,7 +630,7 @@ def redact_event_log_text(output: str) -> tuple[str, int]:
             line = json.dumps(event_msg, ensure_ascii=False, separators=(",", ":")) + ending
             redacted += count
         lines.append(line)
-    return "".join(lines), redacted
+    return "\n".join(lines), redacted
 
 
 def redact_trajectory_payloads(trajectory: Any) -> int:

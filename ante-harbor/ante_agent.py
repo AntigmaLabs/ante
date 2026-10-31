@@ -1,10 +1,12 @@
 from __future__ import annotations
 
+import asyncio
 import json
 import os
 import re
 import shlex
 import tempfile
+import uuid
 from collections.abc import Sequence
 from pathlib import Path
 from typing import Annotated, Any
@@ -58,6 +60,8 @@ _SETUP_LOG = _AGENT_LOG.parent / "setup" / "stdout.txt"
 _INSTRUCTION_PATH = Path("/tmp/instruction.md")
 _INSTALLER_URL = "https://download.ante.run/install.sh"
 _INSTALLER_MAX_BYTES = 1024 * 1024
+_PROCESS_SUPERVISOR = Path(__file__).with_name("ante_process.py")
+_CLEANUP_TIMEOUT_SEC = 15
 
 ENABLE_ATIF_ENV = "ANTE_ENABLE_ATIF"
 
@@ -118,6 +122,10 @@ _HARBOR_ERROR_BY_EXCEPTION_KIND = {
     "safety_refusal": AgentSafetyRefusalError,
     "unknown_api": UnknownApiError,
 }
+
+
+class AgentCleanupError(RuntimeError):
+    """Quiescence could not be confirmed; this trial must not be verified."""
 
 
 def _metadata_dict(context: AgentContext) -> dict[str, Any] | None:
@@ -256,16 +264,10 @@ def ante_command(
     extra = split_extra_ante_args(ante_args)
     args += extra if hidden_skills is None else with_task_skills(extra, hidden_skills)
     command = " ".join(shlex.quote(arg) for arg in args)
-    escaped_log_dir = shlex.quote(str(_AGENT_LOG.parent))
-    escaped_log_path = shlex.quote(str(_AGENT_LOG))
     escaped_instruction_path = shlex.quote(str(_INSTRUCTION_PATH))
     return (
         f"trap 'rm -f {escaped_instruction_path}' EXIT && "
-        f"mkdir -p {escaped_log_dir} && "
-        "{ "
-        f"{command} < {escaped_instruction_path} 2>&1 | tee {escaped_log_path}; "
-        'exit "${PIPESTATUS[0]}"; '
-        "}"
+        f"{command} < {escaped_instruction_path}"
     )
 
 
@@ -519,6 +521,7 @@ class AnteAgent(BaseInstalledAgent):
         # Successful exec output is authoritative over a possibly partial
         # downloaded ante.txt. Timeouts leave this unset and use the file.
         self._event_output: str | None = None
+        self._cleanup_error: Exception | None = None
 
     @staticmethod
     def name() -> str:
@@ -554,6 +557,7 @@ class AnteAgent(BaseInstalledAgent):
         return installed_version == self._version
 
     async def install(self, environment: BaseEnvironment) -> None:
+        await self.ensure_system_dependencies(environment, ("python3",))
         if await self._installed_ante_matches_requested_version(environment):
             self.logger.debug("Ante is already available at the requested version")
             return
@@ -782,8 +786,15 @@ class AnteAgent(BaseInstalledAgent):
         return hidden
 
     def populate_context_post_run(self, context: AgentContext) -> None:
+        if self._cleanup_error is not None:
+            # Harbor catches AgentTimeoutError then synchronizes output before
+            # verification. Fail at that boundary if cleanup was unsuccessful,
+            # retaining the already-recorded timeout as the trial's cause.
+            raise AgentCleanupError(
+                "Cannot capture final Ante usage or verify an active agent"
+            ) from self._cleanup_error
         log_text = read_event_log_text(Path(self.logs_dir))
-        # A successful exec captured the complete stream even when tee could
+        # A successful exec captured the complete stream even when the log could
         # only write a prefix. Timeouts never set _event_output, so their
         # downloaded on-disk prefix remains the fallback for partial metrics.
         event_text = self._event_output or log_text or ""
@@ -823,11 +834,59 @@ class AnteAgent(BaseInstalledAgent):
                                 f"Failed to write trajectory file {trajectory_path}: {exc}"
                             )
 
+    async def _stop_process_scope(
+        self, environment: BaseEnvironment, supervisor: str, scope: str
+    ) -> None:
+        result = await asyncio.wait_for(
+            environment.exec(
+                command=shlex.join(["python3", supervisor, "stop", scope]),
+                timeout_sec=_CLEANUP_TIMEOUT_SEC,
+            ),
+            timeout=_CLEANUP_TIMEOUT_SEC,
+        )
+        if result.return_code != 0:
+            raise AgentCleanupError(
+                "Ante process cleanup failed: "
+                f"{self._truncate_output(result.stderr or result.stdout)}"
+            )
+
+    async def _await_process_cleanup(
+        self, environment: BaseEnvironment, supervisor: str, scope: str
+    ) -> None:
+        # A shield alone leaves cleanup running in the background when a second
+        # cancellation arrives. Keep awaiting the same bounded task, then replay
+        # cancellation only after the sandbox acknowledges that writers stopped.
+        cleanup = asyncio.create_task(
+            self._stop_process_scope(environment, supervisor, scope)
+        )
+        cancellation = None
+        while not cleanup.done():
+            try:
+                await asyncio.shield(cleanup)
+            except asyncio.CancelledError as exc:
+                cancellation = cancellation or exc
+            except Exception:
+                break
+        try:
+            cleanup.result()
+        except asyncio.CancelledError as exc:
+            self._cleanup_error = AgentCleanupError(
+                "Ante process cleanup was cancelled before acknowledgement"
+            )
+            cancellation = cancellation or exc
+        except Exception as exc:
+            self._cleanup_error = exc
+            if cancellation is None:
+                raise AgentCleanupError("Could not confirm Ante process cleanup") from exc
+        if cancellation is not None:
+            raise cancellation
+
     @with_prompt_template
     async def run(
         self, instruction: str, environment: BaseEnvironment, context: AgentContext
     ) -> None:
         self._event_output = None
+        self._cleanup_error = None
 
         model_name = self.model_name or os.environ.get("MODEL_NAME")
         if not model_name:
@@ -838,6 +897,9 @@ class AnteAgent(BaseInstalledAgent):
         await upload_instruction(environment, instruction)
         await self._apply_catalog_overlay(environment)
         hidden_skills = await self._register_task_extensions(environment)
+        scope = f"/tmp/ante-run-{uuid.uuid4().hex}"
+        supervisor = f"{scope}.py"
+        await environment.upload_file(_PROCESS_SUPERVISOR, supervisor)
         command = ante_command(
             model_name,
             self.options.provider,
@@ -846,8 +908,33 @@ class AnteAgent(BaseInstalledAgent):
             hidden_skills=hidden_skills,
         )
 
-        result = await self.exec_as_agent(environment, command=command)
-        # tee mirrors the event stream to stdout. A successful exec's captured
-        # stream is authoritative because the downloaded log may be truncated
-        # by a tee write failure.
+        invocation = shlex.join(
+            [
+                "python3",
+                supervisor,
+                "run",
+                scope,
+                command,
+                str(_AGENT_LOG),
+            ]
+        )
+        execution_error = None
+        try:
+            result = await self.exec_as_agent(environment, command=invocation)
+        except BaseException as exc:
+            execution_error = exc
+            raise
+        finally:
+            try:
+                await self._await_process_cleanup(environment, supervisor, scope)
+            except BaseException:
+                if execution_error is None:
+                    raise
+                # Never replace the controller's timeout/cancellation with a
+                # cleanup exception. The post-run guard prevents verification
+                # if quiescence failed while Harbor keeps the original cause.
+                if self._cleanup_error is not None:
+                    self.logger.exception("Failed to stop Ante processes")
+        # The supervisor mirrors events to stdout. A successful exec's captured
+        # stream is authoritative when a log write failure left a partial file.
         self._event_output = getattr(result, "stdout", "") or ""
