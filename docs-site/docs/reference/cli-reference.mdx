@@ -15,6 +15,7 @@ ante [OPTIONS] [COMMAND]
 |---|---|
 | `ante` | Start the interactive TUI. If `-p` / `--prompt` is provided, run in headless mode instead. |
 | `ante auth` | Sign in, store API keys, and manage stored credentials without starting a session. |
+| `ante usage` | Report Claude Code and Codex subscription quotas without starting a session. |
 | `ante serve` | Run a long-lived protocol server over stdio, a Unix socket, or WebSocket. |
 | `ante gateway` | Run the Slack / Discord channel gateway. |
 | `ante update` | Check for the latest Ante release and install it if available. |
@@ -95,10 +96,12 @@ ante -p "summarize this repo" --enable-auto-memory
 
 When resuming, the saved system prompts and prompt mode take precedence over `--system-prompt`, `--system-prompt-file`, `--append-system-prompt`, and `--short-prompt`. These flags apply to fresh sessions from this launch, including a later `/clear`.
 
+Since v0.3.1, `--resume` also honors `--tools`, `--include-tools`, and `--exclude-tools`. Without `--tools`, the base set comes from the current `tools` setting or the default tool set; it is not restored from the saved conversation. See [resuming a headless session](/usage/headless#resuming-a-session) for examples.
+
 ## `ante auth`
 
 ```bash
-ante auth list
+ante auth list [--json]
 ante auth login <NAME> [--no-browser]
 ante auth logout <NAME>
 ante auth add <NAME>
@@ -109,7 +112,7 @@ Manage the credentials Ante stores, without starting a session. A `NAME` is a pr
 
 | Command | Description |
 |---|---|
-| `list` | Show stored credentials: kind, issuer, account, state (`set`, `valid`, `expired`, `invalid`), and the providers that use each one. |
+| `list` | Show stored credentials: kind, issuer, account, state (`set`, `valid`, `expired`, `invalid`, `unreadable`), and the providers that use each one. |
 | `login <NAME>` | Sign in through the browser. `NAME` is an OAuth profile (`anthropic`, `openai`, `antix`, or one of your [`oauth_profiles`](/reference/catalog-reference#oauth-profiles)), a provider that signs in with one (`anthropic-subscription`), or a remote [MCP server](/extend/mcp#authentication). Running it again signs in again. |
 | `logout <NAME>` | Forget a sign-in. |
 | `add <NAME>` | Store an API key, read from stdin (prompted on a terminal). When `NAME` is a provider, Ante checks the key against it first and refuses one the provider rejects. |
@@ -117,6 +120,7 @@ Manage the credentials Ante stores, without starting a session. A `NAME` is a pr
 
 | Flag | Description |
 |---|---|
+| `--json` | `list` only: print one JSON object containing a `credentials` array, with no secret values. Available since v0.3.1. |
 | `--no-browser` | `login` only: print the authorization URL instead of opening a browser, for remote machines. |
 | `-h`, `--help` | Print command help. |
 
@@ -132,6 +136,40 @@ ante auth list
 ```
 
 Credentials are stored as owner-only files under `~/.ante/auth/`. See [Credentials](/reference/catalog-reference#credentials) for how providers refer to them.
+
+### JSON credential inventory
+
+`ante auth list --json` returns `{"credentials": [...]}`. Each entry contains `reference`, `kind` (`secret`, `oauth`, or `helper`), `name`, `issuer`, `account`, `state`, and `used_by` (provider IDs). `issuer` and `account` can be `null`; an empty store returns `{"credentials": []}`. Environment variables are not stored credentials and are not listed.
+
+```bash
+ante auth list --json | jq '.credentials[] | {reference, state, used_by}'
+```
+
+The `reference` is the exact string a protocol client can send as `credential` in [`StartSession`](/reference/protocol-reference#startsession) or [`ResumeSession`](/reference/protocol-reference#resumesession) to choose an account before its first request. Send the reference, never the key or token itself.
+
+## `ante usage`
+
+```bash
+ante usage [NAME] [--json]
+```
+
+Available since v0.3.2. Reports subscription quota percentages and reset times for stored Claude Code (`anthropic`) and Codex (`openai`) OAuth accounts. Without `NAME`, it checks every supported stored sign-in, including labeled accounts. It reports provider subscription limits; session token totals remain in the TUI's [`/usage`](/reference/tui-reference#session-usage) dialog, and API-key billing is not included.
+
+`NAME` is an exact stored sign-in name such as `openai/work`, without the `oauth:` prefix. An unknown or unsupported name fails instead of selecting another account. Use `ante auth list` to find stored names.
+
+```bash
+ante usage
+ante usage anthropic
+ante usage openai/work --json
+```
+
+`--json` prints one object with a `subscriptions` array. Each account has `credential` (the stored name), `provider` (the stable OAuth profile ID, `anthropic` or `openai`), `email`, `plan`, and `status`. `email` and `plan` may be `null`.
+
+- `ready` includes `windows`, each with `label`, `used_percent`, and `resets_at` (a UTC timestamp or `null`). An empty window list means the provider reported no limits.
+- `expired` indicates that the sign-in must be renewed with `ante auth login <NAME>`.
+- `unavailable` includes a `reason` describing why the quota could not be read.
+
+The command prints the full report before exiting with status `1` if any selected account is expired or unavailable. With no supported stored sign-ins, it succeeds with `{"subscriptions": []}` in JSON mode or a sign-in hint in text mode; scripts that require an account should also check for an empty list.
 
 ## `ante serve`
 
@@ -215,7 +253,7 @@ The update command checks for a newer Ante release and installs it when one is a
 | Flag | Description |
 |---|---|
 | `--channel <CHANNEL>` | Release channel to update from. Equivalent to the positional form. |
-| `--version <VERSION>` | Install an exact release instead of the channel's newest release. Accepts values with or without a leading `v`, such as `v0.2.12` or `0.2.12`. Conflicts with channel arguments. |
+| `--version <VERSION>` | Install an exact release instead of the channel's newest release. Accepts values with or without a leading `v`, such as `v0.3.2` or `0.3.2`. Conflicts with channel arguments. |
 | `-h`, `--help` | Print command help. |
 
 ### Examples
@@ -224,7 +262,7 @@ The update command checks for a newer Ante release and installs it when one is a
 ante update
 ante update nightly
 ante update --channel stable
-ante update --version v0.2.12
+ante update --version v0.3.2
 ante --profile work update
 ```
 

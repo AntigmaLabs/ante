@@ -130,7 +130,15 @@ Pass `--resume <SESSION_ID>` to continue a previously saved session. Ante replay
 ante --resume ses_01ARZ3NDEKTSV4RRFFQ69G5FAV -p "now add tests"
 ```
 
-The saved model, provider, effort, and dialog are restored directly; settings the snapshot did not pin resolve from the host's current defaults. Headless resume therefore does not need the current default provider to match the session's provider.
+The saved model, provider, effort, and dialog are restored; settings the snapshot did not pin resolve from the host's current defaults. Headless resume does not need the current default provider to match the session's provider. Explicit `--provider` and `--model` flags override the saved selection before the new prompt runs, so you can continue on another connected provider.
+
+Since v0.3.1, tool filters also apply on resume. `--tools` replaces the base set, `--include-tools` adds to it, and `--exclude-tools` wins over both. Without `--tools`, the base set comes from the current `tools` setting or the default tool set:
+
+```bash
+ante --resume ses_01ARZ3NDEKTSV4RRFFQ69G5FAV \
+  --tools Read,Glob,Grep \
+  -p "review the previous changes without editing files"
+```
 
 The session ID is printed when a TUI session exits (`Resume this session with: ante --resume ses_...`).
 

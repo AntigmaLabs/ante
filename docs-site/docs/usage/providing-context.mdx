@@ -29,6 +29,10 @@ If you paste multiple file paths, Ante auto-prefixes them with `@` for convenien
 
 Press `Ctrl+V` or `Ctrl+Shift+V` in the composer to paste a clipboard image; the terminal must pass the shortcut through to Ante. Providers using the OpenAI Responses format preserve user image and PDF attachments in the outgoing request. Image input still depends on the model’s [`support_vision`](/reference/catalog-reference#model-fields) capability: requests to text-only models filter images without changing the saved dialog.
 
+On OpenAI Responses and OpenAI-compatible Chat Completions, images and supported files returned by tools remain associated with the tool call that produced them, including when several tools run together.
+
+If your endpoint limits images per request, set the provider's [`max_request_images`](/reference/catalog-reference#request-image-limits). Ante keeps the newest images and replaces older ones with text markers in the outgoing request; saved history is unchanged. PDFs do not count toward this cap.
+
 ## Pulling in web content
 
 Ante can search the web and fetch content from URLs, letting you pull in documentation, look up APIs, or research topics without leaving the terminal. Just ask naturally and Ante will use its web browsing tools to find what you need:

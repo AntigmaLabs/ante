@@ -10,7 +10,7 @@ Ante 根据**目录（Catalog）**解析每个提供商与模型：包括本文�
 
 ## 内置提供商列表 {#built-in-providers}
 
-以下预设对应 **v0.3.0**：15 个托管提供商预设，以及离线服务运行时注册的 `local`。
+以下预设对应 **v0.3.2**：15 个托管提供商预设，以及离线服务运行时注册的 `local`。
 
 | 提供商 | key | 通信协议格式 (Wire style) | 凭据 |
 |---|---|---|---|
@@ -31,7 +31,7 @@ Ante 根据**目录（Catalog）**解析每个提供商与模型：包括本文�
 | Antix | `antix` | `AnthropicMessage` | OAuth（`antix`），其次 `ANTIX_API_KEY` |
 | Local | `local` | `OpenAiCompatible` | 无 |
 
-`key` 列即为传递给 `--provider` 的参数值。API 密钥类提供商先读取对应环境变量，其次读取通过 `ante auth add <key>` 存储或在 `/welcome` 中粘贴的密钥。OAuth 类提供商在 TUI 的 `/providers` 中登录，或在 CLI 中运行 `ante auth login <key>`。`antix` 两种方式均支持：优先使用 Antix 登录，其次 `ANTIX_API_KEY`，最后是已存储的密钥。如需调整，请参阅[凭据](#credentials)。
+`key` 列即为传递给 `--provider` 的参数值。API 密钥类提供商先读取对应环境变量，其次读取通过 `ante auth add <key>` 存储或在 `/providers` 中粘贴的密钥。OAuth 类提供商在 TUI 的 `/providers` 中登录，或在 CLI 中运行 `ante auth login <key>`。`antix` 两种方式均支持：优先使用 Antix 登录，其次 `ANTIX_API_KEY`，最后是已存储的密钥。如需调整，请参阅[凭据](#credentials)。
 
 ## 各提供商的模型清单 {#models-by-provider}
 
@@ -60,14 +60,12 @@ ante --provider anthropic --model claude-sonnet-5-5
 | `gpt-6.1-sol` | GPT-6.1 Sol，适用于复杂编码与智能体工作流 | 1.05M |
 | `gpt-6.1-terra` | GPT-6.1 Terra，适用于视觉推理、计算机操作与写作 | 1.05M |
 | `gpt-6-luna` | GPT-6 模型，适用于明确、大规模的任务 | 1.05M |
-| `gpt-5.5-pro` | 复杂问题上的最高稳定性 | 400K |
-| `gpt-5.4-mini` | 更快、更经济的 GPT-5.4 模型 | 400K |
 
 ```bash
 ante --provider openai --model gpt-6.1-sol
 ```
 
-`openai-subscription` 提供商（ChatGPT/Codex OAuth）提供 `gpt-6-astra`（默认，272K 上下文）、`gpt-6.1-sol` 和 `gpt-6.1-terra`（500K）、`gpt-6-luna`（272K），以及 `gpt-5.6-sol`、`gpt-5.6-terra` 和 `gpt-5.6-luna`（272K），均支持图片输入。`gpt-6-luna` 是其中最轻量的模型，因此负责[辅助调用](#weight-classes)。
+`openai-subscription` 提供商（ChatGPT/Codex OAuth）提供 `gpt-6-astra`（默认，272K 上下文）、`gpt-6.1-sol` 和 `gpt-6.1-terra`（500K），以及 `gpt-6-luna`（272K），均支持图片输入。`gpt-6-luna` 是其中最轻量的模型，因此负责[辅助调用](#weight-classes)。
 
 #### OpenAI 传输协议 {#openai-transports}
 
@@ -83,7 +81,7 @@ WebSocket 模式在每个会话中保持单条长连接，并通过 `previous_re
 通过进程级环境变量启用（默认为 `http_sse`）：
 
 ```bash
-ANTE_OPENAI_TRANSPORT=websocket_auto ante --provider openai --model gpt-5.4-mini
+ANTE_OPENAI_TRANSPORT=websocket_auto ante --provider openai --model gpt-6-luna
 ```
 
 支持的值：`http_sse`、`websocket_auto`。未识别的值会打印警告并回退至 `http_sse`。
@@ -213,22 +211,19 @@ ante --provider minimax --model MiniMax-M3.1-Flash
 | 模型 ID | 说明 | 上下文大小 |
 |---|---|---|
 | `gemini-3.8-flash` | Gemini 3.8 Flash，适用于长程编码与自主智能体 | 1.05M |
-| `gemini-3.7-flash` | Gemini 3.7 Flash，适用于快速智能体与多模态工作流 | 1.05M |
-| `grok-4.5` | Grok 4.5，xAI 专为代码与智能体打造的旗舰 | 500K |
+| `gemini-4-argon` | Gemini 4 Argon，适用于复杂推理与自主智能体 | 1.05M |
 | `grok-4.6` | Grok 4.6 旗舰推理模型 | 500K |
-| `kimi-k3` | Kimi K3 旗舰多模态推理模型 | 1M |
+| `kimi-k3.1-pro` | Kimi K3.1 Pro 多模态推理模型，适用于长程智能体任务 | 1M |
 | `qwen3.8-max` | 最新 Qwen 3.8 Max | 1M |
 | `qwen3.7-plus` | 最新 Qwen 3.7 Plus | 1M |
-| `gemini-3.1-pro-preview` | 具备深度思考的 Gemini 3.1 Pro | 1M |
 | `claude-haiku-5-5` | 适合高并发、低延迟任务的最快 Claude 模型 | 1M |
 | `claude-sonnet-5-5` | 速度与智能的最佳平衡 | 1M |
-| `claude-opus-5` | 复杂智能体编码与企业级任务 | 1M |
+| `claude-opus-5-5` | 长时间运行的智能体编码与知识工作 | 1M |
 | `claude-fable-5-1` | 最强大的 Claude 模型 | 1M |
 | `gpt-6-astra` | OpenAI 面向复杂智能体任务的最强模型 | 1.05M |
-| `gpt-5.6-sol` | GPT-5.6 旗舰模型，擅长复杂推理与编码 | 1.05M |
+| `gpt-6.1-sol` | GPT-6.1 Sol，适用于复杂编码与智能体工作流 | 1.05M |
 | `gpt-5.6-terra` | GPT-5.6 智能水平与成本的平衡模型 | 1.05M |
 | `gpt-5.6-luna` | 面向高效、高吞吐任务的 GPT-5.6 模型 | 1.05M |
-| `gpt-5.3-codex` | 针对代码深度优化的 Codex 模型 | — |
 | `gpt-5.4-mini` | 更快、更经济的 GPT-5.4 模型 | 400K |
 | `gpt-5.4-nano` | GPT-5.4 家族最小轻量模型 | 400K |
 | `deepseek-flash` | DeepSeek V4.1 Flash 原生多模态视觉模型 | 1M |
@@ -461,6 +456,7 @@ Ante 为各会话填入对话 ID。恢复会话时保留 ID，分叉则使用新
 | `headers` | — | 随每次请求发送的额外 HTTP Header 映射表（string→string）。值支持[模板](#templates)。将某个 key 设为 `null` 可移除内置预设的该请求头。凭据不应放在这里 |
 | `extra_body` | — | 合并到每个 Chat 和 Streaming 请求体顶层的专属 JSON 字段（参见[额外请求字段](#extra-request-fields)）。字符串值支持[模板](#templates) |
 | `thinking_display` | — | 可读推理输出：`off`、`concise` 或 `detailed`，与思考深度独立（参见[推理显示](#thinking-display)） |
+| `max_request_images` | — | 非负整数，限制该提供商所有模型的每次请求图片数。保留最新图片，将较早图片替换为文本标记；`0` 表示不发送图片，`null` 清除上限。参见[请求图片上限](#request-image-limits)。自 v0.3.2 起可用 |
 | `supports_web_search` | — | 该提供商是否提供原生网络搜索功能。为 `true` 时自动向该提供商的会话添加 `WebSearch` 工具；为 `false`（默认）时不提供 |
 | `preferred_models` | — | 在选择器中展示并作为默认模型的推荐列表（参见[模型字段](#model-fields)）。对于内置提供商，匹配的模型 ID 会被合并修改，新 ID 会被追加；省略时保持内置列表不变 |
 | `stream_idle_timeout_secs` | — | 超时秒数，默认 `300`。打开流时，响应头、错误响应体、OAuth 刷新、传输重试与退避，以及 WebSocket 到 HTTP 的回退共用一次预算；非流式 HTTP 调用还需在此预算内读完响应体。流建立后，同一时长限制连续静默，每次底层读取均重置计时，包括 keepalive、生命周期事件和工具参数片段。所有模型生成调用（包括压缩、目标判定和环境提示）都使用流式传输。慢速本地或代理端点可调高该值，需更快发现停滞时可调低。 |
@@ -517,6 +513,22 @@ Ante 为各会话填入对话 ID。恢复会话时保留 ID，分叉则使用新
 ```
 
 该设置不会改变思考深度或延续状态。OpenAI Responses 会分别映射为不返回摘要、简洁摘要和详细摘要；Anthropic 将 `off` 映射为省略可读推理，并将两个可读档位映射为摘要；Gemini 在 `concise` 与 `detailed` 时启用思考摘要。通用 OpenAI-compatible Chat Completions 没有标准显示参数，因此会忽略该字段；端点专属控制仍可放入 `extra_body`。
+
+### 请求图片上限 {#request-image-limits}
+
+当端点限制单次请求可接受的图片数量时，可设置 `max_request_images`。该上限作用于此提供商的所有模型，统计整个请求中的图片，包括用户消息和工具结果。PDF 等文档附件不计入图片数量。
+
+```json
+{
+  "providers": {
+    "openrouter": { "max_request_images": 8 }
+  }
+}
+```
+
+Ante 按请求顺序保留最新图片，并将较早的图片替换为文本，说明其因提供商图片上限而被省略。四种通信协议格式均在发送请求前应用这一限制，已保存的对话仍保留图片。设置为 `0` 可停止发送所有图片。内置预设没有上限；省略字段保留提供商已有设置，`null` 清除上限。修改目录后需重启 Ante。
+
+达到上限后，每张新图片都可能使发送请求中的较早消息有一张图片被替换。这会改变提示词前缀，可能降低从该位置开始的缓存复用率。
 
 ### 额外请求字段 {#extra-request-fields}
 

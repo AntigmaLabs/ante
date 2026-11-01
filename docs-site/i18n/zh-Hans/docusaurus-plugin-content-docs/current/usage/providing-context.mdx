@@ -29,6 +29,10 @@ description: "通过 @ 语法引用本地文件，并利用网络工具为智能
 
 在输入框中按 `Ctrl+V` 或 `Ctrl+Shift+V` 可粘贴剪贴板图片；终端需要将该快捷键传给 Ante。使用 OpenAI Responses 格式的提供商时，用户图片与 PDF 附件会保留在发送的请求中。图片输入仍取决于模型的 [`support_vision`](/reference/catalog-reference#model-fields) 能力；纯文本模型的请求会过滤图片，但不改变保存的对话。
 
+在 OpenAI Responses 和兼容 OpenAI 的 Chat Completions 接口上，工具返回的图片及受支持文件会保留与原始工具调用的关联，即使多个工具同时运行也能区分来源。
+
+若端点限制每次请求的图片数量，可为提供商设置 [`max_request_images`](/reference/catalog-reference#request-image-limits)。Ante 在发送的请求中保留最新图片，并将较早图片替换为文本标记，已保存的历史不变。PDF 不计入此上限。
+
 ## 检索并获取网络内容 {#pulling-in-web-content}
 
 Ante 可以搜索网络并抓取指定 URL 的内容，让您无需离开终端即可查阅文档、查询 API 或调研技术主题。只需自然提问，Ante 将自动调用网络浏览工具获取信息：

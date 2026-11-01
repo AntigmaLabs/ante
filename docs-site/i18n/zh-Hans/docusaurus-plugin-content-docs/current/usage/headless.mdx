@@ -131,7 +131,15 @@ ante --check -p "refactor the auth module to use async/await"
 ante --resume ses_01ARZ3NDEKTSV4RRFFQ69G5FAV -p "now add tests"
 ```
 
-已保存的模型、提供商、思考深度和对话会被直接恢复；快照未固定的配置则从主机当前默认值解析。因此，无头恢复不要求当前默认提供商与已保存会话的提供商一致。
+已保存的模型、提供商、思考深度和对话会被恢复；快照未固定的配置则从主机当前默认值解析。无头恢复不要求当前默认提供商与已保存会话的提供商一致。显式传入的 `--provider` 和 `--model` 会在执行新提示词前覆盖已保存的选择，因此可以换用另一个已连接的提供商继续工作。
+
+自 v0.3.1 起，工具筛选也会在恢复时生效。`--tools` 替换基础集合，`--include-tools` 向其添加工具，`--exclude-tools` 优先于前两者。省略 `--tools` 时，基础集合来自当前 `tools` 设置或默认工具集：
+
+```bash
+ante --resume ses_01ARZ3NDEKTSV4RRFFQ69G5FAV \
+  --tools Read,Glob,Grep \
+  -p "review the previous changes without editing files"
+```
 
 会话 ID 会在 TUI 会话退出时打印提示（`Resume this session with: ante --resume ses_...`）。
 

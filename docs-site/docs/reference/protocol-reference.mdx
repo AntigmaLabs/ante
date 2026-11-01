@@ -63,6 +63,7 @@ Initialize a new session, replacing any session already running. A field supplie
     "StartSession": {
       "model": "claude-sonnet-5-5",
       "provider": "anthropic",
+      "credential": null,
       "permission_mode": null,
       "system_prompt": null,
       "append_system_prompt": null,
@@ -91,6 +92,7 @@ Initialize a new session, replacing any session already running. A field supplie
 |---|---|---|
 | `model` | `string?` | Model name (e.g. `"claude-sonnet-5-5"`); `null` uses the host default |
 | `provider` | `string?` | Provider name (e.g. `"anthropic"`, `"openai"`, `"gemini"`, `"xai"`, `"openrouter"`, `"local"`); `null` uses the host default |
+| `credential` | `string?` | Pin a [credential reference](/reference/catalog-reference#credentials), such as `"oauth:anthropic/work"` on `anthropic-subscription`, from the first request. The start is refused if the reference is invalid, unavailable, or not accepted by the provider. Omitted or `null` uses configured credential precedence. Available since v0.3.1 |
 | `permission_mode` | `PermissionMode?` | Tool approval mode: `"strict"`, `"auto"`, or `"yolo"`; `null` uses the host default |
 | `system_prompt` | `string?` | Override the default system prompt entirely |
 | `append_system_prompt` | `string?` | Append content to the default system prompt |
@@ -109,6 +111,8 @@ Initialize a new session, replacing any session already running. A field supplie
 | `title` | `string?` | A display name for the session, shown in place of the first message in resume pickers. Trimmed; empty after trimming means no title. `null` starts the session untitled |
 
 `SessionRequest` replaced the former `SessionOverrides` name in `v0.preview.92`. The JSON field names stayed the same, but absence now has one explicit meaning for `StartSession`: resolve the host's default now, never “leave the previous session unchanged.” A client implementing `/clear` should retain and resend its own request, applying any model or permission-mode changes it made; there is no separate restart operation.
+
+Use [`ante auth list --json`](/reference/cli-reference#json-credential-inventory) to discover stored credential references and the providers that accept them. Credential pins apply to the current session only and are not saved with the conversation; send the reference again when resuming. A rejected pin does not fall back to another credential.
 
 ### UpdateSession
 
@@ -156,6 +160,27 @@ Permission mode always resolves from the host's current settings. Older snapshot
 |---|---|---|
 | `session_id` | `Id` | The session identifier to resume |
 | `unattended` | `bool` | Whether no client can answer approval prompts for this resumed incarnation. Defaults to `false` when absent; when `true`, would-be prompts are denied at admission |
+| `tools` | `string[]?` | Base tool set for this resume, replacing the default set and also gating MCP tools. Omitted or `null` uses current settings. Available since v0.3.1 |
+| `include_tools` | `string[]?` | Tools added to the base set for this resume. Omitted or `null` adds none. Available since v0.3.1 |
+| `exclude_tools` | `string[]?` | Tools removed for this resume; wins over `tools` and `include_tools`. Omitted or `null` excludes none. Available since v0.3.1 |
+| `credential` | `string?` | Credential reference to pin before the first resumed request, under the same validation rules as `StartSession.credential`. Omitted or `null` uses configured precedence. Available since v0.3.1 |
+
+For example, resume a conversation saved on `anthropic-subscription` with the `work` account and a restricted tool set:
+
+```json
+{
+  "op": {
+    "ResumeSession": {
+      "session_id": "ses_01ARZ3NDEKTSV4RRFFQ69G5FAV",
+      "credential": "oauth:anthropic/work",
+      "tools": ["Read", "Glob", "Grep"]
+    }
+  },
+  "id": "op_01ARZ3NDEKTSV4RRFFQ69G5FAV"
+}
+```
+
+The base tool set resolves from the current `tools` setting unless this request supplies `tools`; the saved conversation does not restore an old tool set. Additions and exclusions apply to this resume only.
 
 On success the daemon emits `SessionEnd` for the current session (if any), then `SessionStart` and `ExtensionRefreshed` for the resumed session, followed by the complete persisted event log in order, excluding session lifecycle events and malformed lines. There is no 200-event cap. On failure it emits an `Error` event.
 

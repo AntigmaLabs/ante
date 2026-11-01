@@ -16,6 +16,7 @@ ante [OPTIONS] [COMMAND]
 |---|---|
 | `ante` | 启动交互式 TUI 终端。若提供了 `-p` / `--prompt`，则以无头模式运行。 |
 | `ante auth` | 登录、存储 API 密钥并管理已存储的凭据，无需启动会话。 |
+| `ante usage` | 查询 Claude Code 与 Codex 订阅配额，无需启动会话。 |
 | `ante serve` | 运行长寿命的协议服务端，支持 stdio、Unix 套接字或 WebSocket。 |
 | `ante gateway` | 运行接入 Slack / Discord 的消息网关。 |
 | `ante update` | 检查最新版本的 Ante 并自动安装。 |
@@ -85,10 +86,12 @@ ante -p "summarize this repo" --enable-auto-memory
 
 恢复会话时，已保存的系统提示词和提示词模式优先于 `--system-prompt`、`--system-prompt-file`、`--append-system-prompt` 与 `--short-prompt`。这些参数只作用于本次启动中的全新会话，包括稍后通过 `/clear` 创建的会话。
 
+自 v0.3.1 起，`--resume` 也会应用 `--tools`、`--include-tools` 和 `--exclude-tools`。省略 `--tools` 时，基础集合来自当前 `tools` 设置或默认工具集，不会从已保存的对话中恢复。示例请参阅[恢复无头会话](/usage/headless#resuming-a-session)。
+
 ## `ante auth` {#ante-auth}
 
 ```bash
-ante auth list
+ante auth list [--json]
 ante auth login <NAME> [--no-browser]
 ante auth logout <NAME>
 ante auth add <NAME>
@@ -99,7 +102,7 @@ ante auth rm <REFERENCE>
 
 | 命令 | 说明 |
 |---|---|
-| `list` | 列出已存储的凭据：类型、签发方、账号、状态（`set`、`valid`、`expired`、`invalid`），以及使用该凭据的提供商。 |
+| `list` | 列出已存储的凭据：类型、签发方、账号、状态（`set`、`valid`、`expired`、`invalid`、`unreadable`），以及使用该凭据的提供商。 |
 | `login <NAME>` | 通过浏览器登录。`NAME` 可以是 OAuth Profile（`anthropic`、`openai`、`antix` 或你在 [`oauth_profiles`](/reference/catalog-reference#oauth-profiles) 中定义的条目）、通过 OAuth 登录的提供商（`anthropic-subscription`），或远程 [MCP 服务器](/extend/mcp#authentication)。再次运行会重新登录。 |
 | `logout <NAME>` | 清除登录状态。 |
 | `add <NAME>` | 存储 API 密钥，从 stdin 读取（在终端中会提示输入）。若 `NAME` 为提供商，Ante 会先向该提供商校验密钥，被拒绝的密钥不会存储。 |
@@ -107,6 +110,7 @@ ante auth rm <REFERENCE>
 
 | 参数标识 | 说明 |
 |---|---|
+| `--json` | 仅用于 `list`：输出一个包含 `credentials` 数组的 JSON 对象，不含密钥或令牌值。自 v0.3.1 起可用。 |
 | `--no-browser` | 仅用于 `login`：打印授权 URL 而非自动拉起浏览器，适用于远程机器。 |
 | `-h`, `--help` | 打印帮助信息。 |
 
@@ -122,6 +126,40 @@ ante auth list
 ```
 
 凭据以仅所有者可读的文件形式存储在 `~/.ante/auth/` 下。提供商如何引用这些凭据，请参阅[凭据](/reference/catalog-reference#credentials)。
+
+### JSON 凭据清单 {#json-credential-inventory}
+
+`ante auth list --json` 返回 `{"credentials": [...]}`。每个条目包含 `reference`、`kind`（`secret`、`oauth` 或 `helper`）、`name`、`issuer`、`account`、`state` 和 `used_by`（提供商 ID 列表）。`issuer` 与 `account` 可以为 `null`；没有已存储凭据时返回 `{"credentials": []}`。环境变量不是已存储凭据，因此不会列出。
+
+```bash
+ante auth list --json | jq '.credentials[] | {reference, state, used_by}'
+```
+
+协议客户端可将 `reference` 原样作为 [`StartSession`](/reference/protocol-reference#startsession) 或 [`ResumeSession`](/reference/protocol-reference#resumesession) 的 `credential`，在首次请求之前选定账户。请传递引用，不要传递密钥或令牌本身。
+
+## `ante usage` {#ante-usage}
+
+```bash
+ante usage [NAME] [--json]
+```
+
+自 v0.3.2 起可用。查询已存储的 Claude Code（`anthropic`）与 Codex（`openai`）OAuth 账户的订阅配额使用百分比和重置时间。不传 `NAME` 时检查所有受支持的已存储登录，包括带标签的账户。这里报告的是提供商订阅额度；会话 Token 总量仍在 TUI 的 [`/usage`](/reference/tui-reference#session-usage) 对话框中查看，不包含 API 密钥账单。
+
+`NAME` 必须是完整匹配的已存储登录名称，例如 `openai/work`，不带 `oauth:` 前缀。未知或不受支持的名称会报错，不会改选其他账户。使用 `ante auth list` 可查看已存储名称。
+
+```bash
+ante usage
+ante usage anthropic
+ante usage openai/work --json
+```
+
+`--json` 输出一个包含 `subscriptions` 数组的对象。每个账户都有 `credential`（已存储名称）、`provider`（稳定的 OAuth Profile ID：`anthropic` 或 `openai`）、`email`、`plan` 和 `status`。`email` 与 `plan` 可以为 `null`。
+
+- `ready` 包含 `windows`，每个窗口有 `label`、`used_percent` 和 `resets_at`（UTC 时间戳或 `null`）。空窗口列表表示提供商未报告额度限制。
+- `expired` 表示需要运行 `ante auth login <NAME>` 重新登录。
+- `unavailable` 包含 `reason`，说明无法读取配额的原因。
+
+若任一选定账户已过期或不可用，命令会先打印完整报告，再以状态码 `1` 退出。没有受支持的已存储登录时，命令会成功退出：JSON 模式返回 `{"subscriptions": []}`，文本模式显示登录提示。必须有账户的脚本还应检查列表是否为空。
 
 ## `ante serve` {#ante-serve}
 
@@ -203,7 +241,7 @@ ante update [OPTIONS] [CHANNEL]
 | 参数标识 | 说明 |
 |---|---|
 | `--channel <CHANNEL>` | 更新追踪的发布通道。等同于位置参数形式。 |
-| `--version <VERSION>` | 安装指定的具体发布版本而非通道最新版。支持带或不带前缀 `v`（如 `v0.2.12` 或 `0.2.12`）。与通道参数互斥。 |
+| `--version <VERSION>` | 安装指定的具体发布版本而非通道最新版。支持带或不带前缀 `v`（如 `v0.3.2` 或 `0.3.2`）。与通道参数互斥。 |
 | `-h`, `--help` | 打印帮助信息。 |
 
 ### 使用示例 {#ante-update-examples}
@@ -212,7 +250,7 @@ ante update [OPTIONS] [CHANNEL]
 ante update
 ante update nightly
 ante update --channel stable
-ante update --version v0.2.12
+ante update --version v0.3.2
 ```
 
 ## `ante offline` {#ante-offline}

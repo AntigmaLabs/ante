@@ -9,7 +9,7 @@ This page is the exhaustive reference. For sign-in and API-key setup, see [Conne
 
 ## Built-in providers
 
-The presets below match **v0.3.0**: 15 hosted-provider presets, plus `local` when an offline server is running.
+The presets below match **v0.3.2**: 15 hosted-provider presets, plus `local` when an offline server is running.
 
 | Provider | key | Wire style | Credential |
 |---|---|---|---|
@@ -30,7 +30,7 @@ The presets below match **v0.3.0**: 15 hosted-provider presets, plus `local` whe
 | Antix | `antix` | `AnthropicMessage` | OAuth (`antix`), then `ANTIX_API_KEY` |
 | Local | `local` | `OpenAiCompatible` | none |
 
-The `key` column is what you pass to `--provider`. An API-key provider reads its environment variable first, then a key stored with `ante auth add <key>` or pasted in `/welcome`. An OAuth provider signs in from `/providers` in the TUI or with `ante auth login <key>` from the CLI. `antix` takes either: an Antix sign-in first, then `ANTIX_API_KEY`, then a stored key. See [Credentials](#credentials) for how to change any of this.
+The `key` column is what you pass to `--provider`. An API-key provider reads its environment variable first, then a key stored with `ante auth add <key>` or pasted in `/providers`. An OAuth provider signs in from `/providers` in the TUI or with `ante auth login <key>` from the CLI. `antix` takes either: an Antix sign-in first, then `ANTIX_API_KEY`, then a stored key. See [Credentials](#credentials) for how to change any of this.
 
 ## Models by provider
 
@@ -59,14 +59,12 @@ ante --provider anthropic --model claude-sonnet-5-5
 | `gpt-6.1-sol` | GPT-6.1 Sol for complex coding and agentic workflows | 1.05M |
 | `gpt-6.1-terra` | GPT-6.1 Terra for visual reasoning, computer use, and writing | 1.05M |
 | `gpt-6-luna` | GPT-6 model for focused, high-volume tasks | 1.05M |
-| `gpt-5.5-pro` | Highest reliability on complex problems | 400K |
-| `gpt-5.4-mini` | Faster, cheaper GPT-5.4 model | 400K |
 
 ```bash
 ante --provider openai --model gpt-6.1-sol
 ```
 
-The `openai-subscription` provider (ChatGPT/Codex OAuth) offers `gpt-6-astra` (the default, 272K context), `gpt-6.1-sol` and `gpt-6.1-terra` (500K), `gpt-6-luna` (272K), and `gpt-5.6-sol`, `gpt-5.6-terra`, and `gpt-5.6-luna` (272K), all with image input. `gpt-6-luna` is its lightest model, so it handles [auxiliary calls](#weight-classes).
+The `openai-subscription` provider (ChatGPT/Codex OAuth) offers `gpt-6-astra` (the default, 272K context), `gpt-6.1-sol` and `gpt-6.1-terra` (500K), and `gpt-6-luna` (272K), all with image input. `gpt-6-luna` is its lightest model, so it handles [auxiliary calls](#weight-classes).
 
 #### OpenAI transports
 
@@ -82,7 +80,7 @@ WebSocket mode keeps one connection open per session and continues each turn wit
 Opt in via the process-scoped env var (default is `http_sse`):
 
 ```bash
-ANTE_OPENAI_TRANSPORT=websocket_auto ante --provider openai --model gpt-5.4-mini
+ANTE_OPENAI_TRANSPORT=websocket_auto ante --provider openai --model gpt-6-luna
 ```
 
 Accepted values: `http_sse`, `websocket_auto`. Unknown values warn and fall back to `http_sse`.
@@ -213,22 +211,19 @@ Set `MINIMAX_API_KEY`, and optionally `MINIMAX_BASE_URL`.
 | Model | Description | Context |
 |---|---|---|
 | `gemini-3.8-flash` | Gemini 3.8 Flash for long-horizon coding and autonomous agents | 1.05M |
-| `gemini-3.7-flash` | Gemini 3.7 Flash for fast agentic and multimodal workflows | 1.05M |
-| `grok-4.5` | Grok 4.5, xAI flagship for code and agentic work | 500K |
+| `gemini-4-argon` | Gemini 4 Argon for complex reasoning and autonomous agents | 1.05M |
 | `grok-4.6` | Grok 4.6 flagship reasoning model | 500K |
-| `kimi-k3` | Kimi K3 flagship reasoning model with vision | 1M |
+| `kimi-k3.1-pro` | Kimi K3.1 Pro multimodal reasoning for long-horizon agentic work | 1M |
 | `qwen3.8-max` | Latest Qwen 3.8 Max | 1M |
 | `qwen3.7-plus` | Latest Qwen 3.7 Plus | 1M |
-| `gemini-3.1-pro-preview` | Gemini 3.1 Pro with deep thinking | 1M |
 | `claude-haiku-5-5` | Fastest Claude model for high-volume, latency-sensitive work | 1M |
 | `claude-sonnet-5-5` | Best combination of speed and intelligence | 1M |
-| `claude-opus-5` | Complex agentic coding and enterprise work | 1M |
+| `claude-opus-5-5` | Long-running agentic coding and knowledge work | 1M |
 | `claude-fable-5-1` | Most capable Claude model | 1M |
 | `gpt-6-astra` | OpenAI's most capable model for complex agentic work | 1.05M |
-| `gpt-5.6-sol` | GPT-5.6 flagship for complex reasoning and coding | 1.05M |
+| `gpt-6.1-sol` | GPT-6.1 Sol for complex coding and agentic workflows | 1.05M |
 | `gpt-5.6-terra` | GPT-5.6 balance of intelligence and cost | 1.05M |
 | `gpt-5.6-luna` | GPT-5.6 model for efficient, high-volume workloads | 1.05M |
-| `gpt-5.3-codex` | Coding-optimized Codex model | — |
 | `gpt-5.4-mini` | Faster, cheaper GPT-5.4 model | 400K |
 | `gpt-5.4-nano` | Smallest GPT-5.4 model | 400K |
 | `deepseek-flash` | DeepSeek V4.1 Flash with native vision | 1M |
@@ -465,6 +460,7 @@ A `providers` entry whose key matches a built-in (e.g. `openai`) patches that pr
 | `headers` | — | Extra headers sent with every request, as a string→string map. Values take [templates](#templates). `null` on a key removes a built-in's header. The credential never goes here. |
 | `extra_body` | — | Provider-specific JSON fields merged into every chat and streaming request body (see [Extra request fields](#extra-request-fields)). String values take [templates](#templates). |
 | `thinking_display` | — | Readable reasoning output: `off`, `concise`, or `detailed`, independent of reasoning effort (see [Thinking display](#thinking-display)). |
+| `max_request_images` | — | Non-negative integer limiting images per request across all models on this provider. Keeps the newest images and replaces older ones with text markers; `0` omits all images, `null` clears the cap. See [Request image limits](#request-image-limits). Available since v0.3.2. |
 | `supports_web_search` | — | Whether the provider exposes a native web-search affordance. When `true`, the `WebSearch` tool is added to sessions on this provider automatically; when `false` (the default), `WebSearch` is not offered. |
 | `preferred_models` | — | Models shown for this provider in the picker and used as provider defaults (see [Model fields](#model-fields)). For built-in provider overlays, matching model ids are patched and new ids are appended; omitted leaves the preset list unchanged. |
 | `stream_idle_timeout_secs` | — | Timeout in seconds; defaults to `300`. Opening a stream uses one shared budget for response headers, error bodies, OAuth refresh, transport retries and backoff, and WebSocket-to-HTTP fallback. Buffered HTTP calls also read their body within that budget. Once streaming, the same duration limits consecutive transport silence; every read resets it, including keepalives, lifecycle events, and partial tool arguments. All model-generation calls stream, including compaction, goal judging, and ambient hints. Raise it for slow local or proxied endpoints; lower it to detect stalls sooner. |
@@ -523,6 +519,22 @@ at a local proxy that takes no key and drop its built-in beta header:
 ```
 
 The setting never changes reasoning effort or continuation state. OpenAI Responses maps the three modes to no summary, concise summary, or detailed summary. Anthropic maps `off` to omitted reasoning and both readable modes to its summarized form; Gemini enables thought summaries for `concise` and `detailed`. Generic OpenAI-compatible Chat Completions has no standard display control and ignores the field; provider-specific controls can still go in `extra_body`.
+
+### Request image limits
+
+Use `max_request_images` when an endpoint limits how many images it accepts in one request. The cap applies to all models on that provider and counts images across the entire request, including user messages and tool results. Document attachments, such as PDFs, do not count.
+
+```json
+{
+  "providers": {
+    "openrouter": { "max_request_images": 8 }
+  }
+}
+```
+
+Ante retains the newest images in request order and replaces older ones with text explaining that they were omitted to fit the provider's image limit. It applies this just before sending the request on all four wire styles; the saved conversation keeps its images. Set `0` to send no images. Built-in presets are uncapped; omitting the field preserves the provider's existing setting, and `null` clears it. Restart Ante after editing the catalog.
+
+Once the cap is reached, each new image can replace an image in an earlier message in the outgoing request. That changes the prompt prefix and can reduce cache reuse from that point onward.
 
 ### Extra request fields
 

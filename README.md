@@ -150,6 +150,8 @@ curl -fsSL https://ante.run/install.sh | bash -s -- nightly
 curl -fsSL https://ante.run/install.sh | ANTE_INSTALL_DIR=/usr/local/bin bash
 ```
 
+The installer configures your shell's `PATH`. Open a new terminal to run `ante`, or start immediately with `~/.ante/bin/ante`.
+
 ### Modes
 
 | Mode | Command | Use it for |
@@ -188,7 +190,7 @@ ante update
 ante update --channel nightly
 
 # Roll back or pin to an exact release
-ante update --version v0.2.12
+ante update --version v0.3.2
 ```
 
 ## One binary, many agents

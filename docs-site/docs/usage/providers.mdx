@@ -29,6 +29,8 @@ The first command opens your browser. Finish signing in, then return to the term
 
 To add a second account, give it a label: `ante auth login anthropic/work`. `ante auth list` shows what is stored. See [`ante auth`](/reference/cli-reference#ante-auth) for every command.
 
+For scripts and protocol clients, `ante auth list --json` lists credential references without exposing secret values. In v0.3.1, clients can pass a reference as `credential` when [starting](/reference/protocol-reference#startsession) or [resuming](/reference/protocol-reference#resumesession) a session to select the account before its first request.
+
 To sign in to a service Ante doesn't have built in, or to get tokens from a command such as `gcloud`, see [Custom Sign-ins & Token Commands](/usage/custom-sign-ins).
 
 ## Use an API key

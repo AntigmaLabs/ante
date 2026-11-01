@@ -6,6 +6,8 @@ description: "保持 Ante 为最新版本，并选择符合需求的发布通道
 
 Ante 以单一二进制文件分发并支持原地自我更新 —— 首次安装使用的 `install.sh` 脚本会被 `ante update` 针对当前二进制追踪的通道重新运行。
 
+本指南对应 **v0.3.2**（2026 年 11 月 1 日）。运行 `ante --version` 可查看已安装版本。
+
 ## 检查与更新 {#update}
 
 检查当前通道是否有更新的 Ante 发行版并在可用时安装：
@@ -15,6 +17,8 @@ ante update
 ```
 
 若存在新版本，Ante 会运行对应通道的安装程序，并在安装就绪后打印新版本号。重启 Ante 即可使用新版本。
+
+发布清单提供下载大小时，安装程序会在下载行显示该大小，并在验证新二进制文件后替换现有文件。下载或验证失败时，现有二进制文件会保留。
 
 如果当前已是最新版本，Ante 会打印确认信息并退出，不会修改二进制文件。
 
@@ -33,8 +37,8 @@ ante update
 使用 `--version` 安装指定版本：
 
 ```bash
-ante update --version v0.2.12
-ante update --version 0.2.12
+ante update --version v0.3.2
+ante update --version 0.3.2
 ```
 
 该方式会跳过通道的“版本更新校验”，因此可用于升级、重新安装当前版本，或回滚到已发布的历史版本。回滚时，Ante 会记录您回滚前的版本，避免后台更新提示立即建议重新安装。
@@ -48,7 +52,7 @@ ante update --version 0.2.12
 | `stable` | 推荐日常使用。经过发布流程验证的稳定标签版本。 |
 | `nightly` | 基于开发主分支构建。新功能与 Bug 修复首先在这里发布。 |
 
-默认通道为 `stable`。二进制追踪的通道保存在 `~/.ante/settings.json` 的 `channel` 字段中。`ante update` 每次运行时都会读取默认配置文件；使用[指定配置 Profile](/configuration/preference#named-profiles) 启动的 TUI 会采用该 Profile 中指定的通道。
+默认通道为 `stable`。二进制追踪的通道保存在所选设置文件的 `channel` 字段中。`ante update` 默认读取 `~/.ante/settings.json`；传入进程级 `--profile` 参数可选择已有的[命名 Profile](/configuration/preference#named-profiles)。TUI 的更新提示也会使用同一 Profile。
 
 ```json
 {
@@ -70,9 +74,12 @@ ante update nightly
 
 # 参数标识形式
 ante update --channel nightly
+
+# 使用 ~/.ante/work.settings.json 中的通道
+ante --profile work update
 ```
 
-上述两种形式均会获取指定通道的发布清单并执行更新。此覆盖仅对单次更新生效 —— 若希望永久切换通道以便后续 `ante update` 自动跟踪新通道，请在 `~/.ante/settings.json` 中配置 `"channel": "nightly"`。
+前两种形式均会获取指定通道的发布清单并执行更新。此覆盖仅对单次更新生效；若希望永久切换，请在后续运行使用的设置文件中配置 `"channel": "nightly"`（默认为 `~/.ante/settings.json`，或所选 Profile 文件）。
 
 通道名称仅可包含 ASCII 字母、数字、`.`、`_` 或 `-`。
 
@@ -90,6 +97,14 @@ curl -fsSL https://ante.run/install.sh | bash -s -- nightly
 
 ```bash
 curl -fsSL https://ante.run/install.sh | ANTE_INSTALL_DIR=/usr/local/bin bash
+```
+
+安装程序会为支持的 Shell（Bash、Zsh、Fish、sh 和 ash）配置 `PATH`。打开新终端后可直接运行 `ante`；如需在当前终端立即启动，请使用安装程序打印的完整路径。在 GitHub Actions 中，安装目录也会写入 `GITHUB_PATH`，供后续步骤使用。
+
+若希望自行管理 `PATH`，并保持 Shell 启动文件及 `GITHUB_PATH` 不变：
+
+```bash
+curl -fsSL https://ante.run/install.sh | NO_MODIFY_PATH=true bash
 ```
 
 ## 更新检查机制 {#how-update-checks-work}

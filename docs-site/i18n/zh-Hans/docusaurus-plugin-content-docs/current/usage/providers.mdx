@@ -29,6 +29,8 @@ ante --provider antix
 
 如需添加第二个账户，请为其指定标签：`ante auth login anthropic/work`。`ante auth list` 会列出已保存的凭据。全部命令请参阅 [`ante auth`](/reference/cli-reference#ante-auth)。
 
+脚本和协议客户端可使用 `ante auth list --json` 列出凭据引用，不会暴露密钥或令牌值。在 v0.3.1 中，客户端可在[启动](/reference/protocol-reference#startsession)或[恢复](/reference/protocol-reference#resumesession)会话时，将引用作为 `credential` 传入，在首次请求前选定账户。
+
 ## 使用 API 密钥 {#use-an-api-key}
 
 在运行 Ante 的 Shell 中导出提供商的 API 密钥，然后选择对应提供商：

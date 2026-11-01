@@ -64,6 +64,7 @@ Ante 在客户端（Client）与守护进程（Daemon）之间采用强类型的
     "StartSession": {
       "model": "claude-sonnet-5-5",
       "provider": "anthropic",
+      "credential": null,
       "permission_mode": null,
       "system_prompt": null,
       "append_system_prompt": null,
@@ -92,6 +93,7 @@ Ante 在客户端（Client）与守护进程（Daemon）之间采用强类型的
 |---|---|---|
 | `model` | `string?` | 模型名称（如 `"claude-sonnet-5-5"`）；`null` 使用主机默认值 |
 | `provider` | `string?` | 提供商名称（如 `"anthropic"`、`"openai"`、`"gemini"`、`"xai"`、`"openrouter"`、`"local"`）；`null` 使用主机默认值 |
+| `credential` | `string?` | 从首次请求起固定一个[凭据引用](/reference/catalog-reference#credentials)，例如在 `anthropic-subscription` 上使用 `"oauth:anthropic/work"`。引用格式无效、不可用或不被提供商接受时，启动会被拒绝。省略或为 `null` 时按已配置的凭据优先级选择。自 v0.3.1 起可用 |
 | `permission_mode` | `PermissionMode?` | 工具审批模式：`"strict"`、`"auto"` 或 `"yolo"`；`null` 使用主机默认值 |
 | `system_prompt` | `string?` | 完全覆盖默认系统提示词 |
 | `append_system_prompt` | `string?` | 向默认系统提示词末尾追加内容 |
@@ -110,6 +112,8 @@ Ante 在客户端（Client）与守护进程（Daemon）之间采用强类型的
 | `title` | `string?` | 会话的展示名称，在恢复选择器中替代首条消息显示。文本两端会被裁剪，裁剪后为空即视为无标题。`null` 表示会话以无标题启动 |
 
 `SessionRequest` 在 `v0.preview.92` 中取代旧名称 `SessionOverrides`。JSON 字段名保持不变，但对 `StartSession` 而言，缺省值现在只有一个明确含义：立即解析主机默认值，而不是“保留上一会话不变”。实现 `/clear` 的客户端应自行保留并重新发送其请求，同时合并用户做过的模型或权限模式变更；协议中没有独立的重启操作。
+
+使用 [`ante auth list --json`](/reference/cli-reference#json-credential-inventory) 可查看已存储的凭据引用及接受它们的提供商。固定凭据仅作用于当前会话，不随对话保存；恢复时需再次传入引用。引用被拒绝时不会回退到其他凭据。
 
 ### UpdateSession {#updatesession}
 
@@ -157,6 +161,27 @@ Ante 在客户端（Client）与守护进程（Daemon）之间采用强类型的
 |---|---|---|
 | `session_id` | `Id` | 要恢复的会话标识符 |
 | `unattended` | `bool` | 恢复后的当前会话是否无人可回答审批提示。省略时默认为 `false`；为 `true` 时，原本需要提示的调用会在准入阶段被拒绝 |
+| `tools` | `string[]?` | 本次恢复的基础工具集，替换默认集合，同时限制 MCP 工具。省略或为 `null` 时使用当前设置。自 v0.3.1 起可用 |
+| `include_tools` | `string[]?` | 本次恢复时添加到基础集合的工具。省略或为 `null` 时不添加。自 v0.3.1 起可用 |
+| `exclude_tools` | `string[]?` | 本次恢复时移除的工具，优先于 `tools` 和 `include_tools`。省略或为 `null` 时不移除。自 v0.3.1 起可用 |
+| `credential` | `string?` | 首次恢复请求前固定的凭据引用，校验规则与 `StartSession.credential` 相同。省略或为 `null` 时按已配置的优先级选择。自 v0.3.1 起可用 |
+
+例如，使用 `work` 账户和受限工具集恢复一个保存在 `anthropic-subscription` 提供商上的对话：
+
+```json
+{
+  "op": {
+    "ResumeSession": {
+      "session_id": "ses_01ARZ3NDEKTSV4RRFFQ69G5FAV",
+      "credential": "oauth:anthropic/work",
+      "tools": ["Read", "Glob", "Grep"]
+    }
+  },
+  "id": "op_01ARZ3NDEKTSV4RRFFQ69G5FAV"
+}
+```
+
+除非本次请求提供了 `tools`，否则基础工具集由当前 `tools` 设置决定；已保存的对话不会还原旧工具集。添加和排除项仅作用于本次恢复。
 
 成功时守护进程会针对当前会话（若有）触发 `SessionEnd`，随后为恢复的会话触发 `SessionStart` 和 `ExtensionRefreshed`，随后按顺序回放完整持久化事件日志，跳过会话生命周期事件和格式错误的行，不再限制为 200 条。失败时触发 `Error` 事件。
 

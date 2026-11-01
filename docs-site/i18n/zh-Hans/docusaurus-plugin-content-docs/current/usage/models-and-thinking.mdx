@@ -55,6 +55,8 @@ Anthropic API 规定：开启 Extended Thinking 时 `temperature` 必须为 `1`�
 ante --effort high
 ```
 
+在 v0.3.2 中，`anthropic`、`anthropic-subscription` 和 `antix` 上的 Claude Sonnet 5.5 与 Fable 5.1 默认使用 `high`。已保存的选择或显式覆盖仍优先于默认值。
+
 ## 可读推理输出 {#readable-reasoning}
 
 思考深度决定模型执行多少推理；提供商的 `thinking_display` 则决定返回多少可读推理内容。可在 `~/.ante/catalog.json` 中设为 `off`、`concise` 或 `detailed`。关闭显示不会关闭模型推理，请求详细显示也不会提高思考深度。各提供商映射与覆盖规则参见[推理显示](/reference/catalog-reference#thinking-display)。

@@ -16,7 +16,9 @@ Ante 作为单一独立的二进制文件分发，没有任何外部运行时依
 curl -fsSL https://ante.run/install.sh | bash
 ```
 
-默认情况下会安装至 `~/.ante/bin`。若想安装到其他目录，可设置 `ANTE_INSTALL_DIR` 环境变量：
+默认情况下会安装至 `~/.ante/bin`，并配置 Shell 的 `PATH`。打开新终端后可运行 `ante`，或在当前终端中立即使用 `~/.ante/bin/ante`。运行 `ante --version` 可检查安装；本指南对应 **v0.3.2**。
+
+若想安装到其他目录，可设置 `ANTE_INSTALL_DIR` 环境变量：
 
 ```sh
 curl -fsSL https://ante.run/install.sh | ANTE_INSTALL_DIR=/usr/local/bin bash
@@ -116,7 +118,7 @@ ante update
 ante update nightly
 
 # 回滚或锁定到指定发布版本
-ante update --version v0.2.12
+ante update --version v0.3.2
 ```
 
 ## 下一步 {#whats-next}
