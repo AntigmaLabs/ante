@@ -1,5 +1,19 @@
 # Changelog
 
+## v0.3.2 - 2026-11-01
+
+### Added
+- `ante usage` reports Claude Code and Codex subscription quotas without opening a session: percentage used, reset times, and per-account expired/unavailable states. Select one stored account with `ante usage openai/work`, or get structured output with `--json` (`provider` is the stable profile id, `anthropic` / `openai`). Exits 1 when any selected sign-in is expired or unavailable, after printing the full report
+- Providers accept an optional `max_request_images` cap in `catalog.json`. Over the cap, the oldest images in a request are replaced with a text marker; the saved conversation is unchanged. Unset means uncapped, and `0` sends no images
+
+### Changed
+- Built-in model lists are trimmed. OpenAI API offers GPT-6 Astra, GPT-6.1 Sol and Terra, and GPT-6 Luna. OpenAI subscription drops GPT-5.6 Sol, Terra and Luna. Antix drops GPT-5.3-Codex, Gemini 3.1 Pro preview, Gemini 3.7 Flash and Grok 4.5. Explicitly configured models still work
+- Sonnet 5.5 and Fable 5.1 default to high effort
+- The installer shows the download size on its download line
+
+### Fixed
+- Images and files returned by a tool stay attached to the call that produced them on the OpenAI Responses and Chat Completions APIs
+
 ## v0.3.1 - 2026-10-30
 
 ### Added
