@@ -97,6 +97,12 @@ export ANTHROPIC_BASE_URL="https://antix.antigma.ai"
 | `/v1beta/models/{action}` | POST | Gemini v1beta 路径 |
 | `/v1/models`, `/models` | GET | 公开模型目录 |
 | `/v2/model/info` | GET | 带定价的目录 |
+| `/v1/videos` | POST | 使用 Antix 密钥创建 Seedance 视频任务 |
+| `/v1/videos/models` | GET | 发现可用 Seedance 模型及视频定价 |
+| `/v1/videos/{id}` | GET | 轮询 Seedance 任务 |
+| `/v1/videos/{id}/content` | GET / HEAD | 下载或检查已完成的 Seedance 输出 |
+| `/v1/minimax/video_generation` | POST | 使用 BYOK 创建原生 MiniMax H3 任务 |
+| `/v1/minimax/query/video_generation/{task_id}` | GET | 轮询原生 MiniMax H3 任务 |
 
 不支持：`/v1/embeddings`，`/v1/audio/*`，`/v1/images/*`，`/v1/files`，微调，批处理 API。
 
@@ -119,6 +125,9 @@ https://antix.antigma.ai/v1/<endpoint_uuid>/<provider>
 
 ## 后续步骤 {#next-steps}
 
+- [视频模型与 API](/antix/concepts/videos) — Seedance 和 MiniMax H3 的凭据、示例、轮询与下载。
+- [追踪导出与分析](/antix/concepts/analytics) — 查看用量并导出端点追踪。
+- [故障排查与支持](/antix/concepts/troubleshooting) — 诊断故障并收集支持信息。
 - [端点](/antix/concepts/endpoints) — 按应用程序分类的 URL，用于追踪、支出和代理会话分析。
 - [路由与 BYOK](/antix/concepts/routing) — 提供商选择以及兼容 OpenAI 的语义。
 - [虚拟密钥](/antix/concepts/virtual-keys) — 配置带有硬性支出预算的密钥。

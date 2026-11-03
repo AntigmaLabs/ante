@@ -119,3 +119,8 @@ https://antix.antigma.ai/v1/<endpoint_uuid>/<provider>/<native_path>
 - **Bring Your Own Key (BYOK)（自带密钥）** — 发送您原始的提供商密钥（例如 `sk-ant-…`）。Antix 会将请求原封不动地传递给提供商，并且不会为此向您计费；门户网站上会给此类成本打上 *(est.)（估算）* 的徽章。
 
 端点能够处理这两种身份验证模式 — 这是基于每个请求的选择，而不是端点的设置。
+
+## 延伸阅读 {#further-reading}
+
+- [追踪导出与分析](/antix/concepts/analytics) — 账户与端点报告、成本来源、JSON/NDJSON 下载与完整性检查。
+- [故障排查与支持](/antix/concepts/troubleshooting) — 用量缺失、导出故障、请求标识符和支持工单。
