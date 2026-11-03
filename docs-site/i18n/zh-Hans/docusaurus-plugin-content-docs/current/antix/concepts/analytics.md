@@ -114,7 +114,7 @@ setTimeout(() => URL.revokeObjectURL(url), 1000);
 - 追踪记录的实际条数与 `row_count` 一致。
 - 在将结果视为完整导出之前，确认 `error_code` 为 `null`。
 
-一旦流式响应已发出 HTTP 200 状态码，便无法再将其替换为错误状态码。如果 `manifest` 中的 `error_code` 为 `ch_timeout` 或 `ch_error`，说明导出仅包含部分数据，请稍后重试或缩小时间窗口；若为 `cap_truncated`，同样需要缩小查询范围。中途断开或被截断的下载文件可能完全缺失末尾的 `manifest`。
+一旦流式响应已发出 HTTP `200` 状态码，便无法再将其替换为错误状态码。如果 `manifest` 中的 `error_code` 为 `ch_timeout` 或 `ch_error`，说明导出仅包含部分数据，请稍后重试或缩小时间窗口；若为 `cap_truncated`，同样需要缩小查询范围。中途断开或被截断的下载文件可能完全缺失末尾的 `manifest`。
 
 ### 正文与可见性 {#bodies-and-visibility}
 

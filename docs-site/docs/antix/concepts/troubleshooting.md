@@ -20,7 +20,7 @@ curl --silent --show-error --fail-with-body \
   -H "Authorization: Bearer $ANTIX_KEY"
 ```
 
-Keep the returned **`X-Antix-Request-Id`**, timestamp with timezone, route, model ID, status, and error body. Antix generates this response identifier; sending your own header with that name does not set it. If available, also record the history or trace identifier or video task ID, labelled separately.
+Keep the returned **`X-Antix-Request-Id`**, timestamp with timezone, route, model ID, status, and error body. Antix generates this response identifier; sending your own header with that name does not set it. If available, also record the history ID, trace ID, or video task ID, labeled separately.
 
 ## Authentication and model access
 
@@ -71,7 +71,7 @@ See [Trace Export & Analytics](/antix/concepts/analytics) for formats, limits, a
 
 Use **Usage & billing** to review the existing top-up and its status. Returning from checkout, or closing its browser tab, does not establish payment or cancellation. Do not open repeated checkouts to resolve a payment that may already have succeeded.
 
-If a payment stays pending or under review, or the expected credit is missing, use its billing-support action when available. Include the top-up intent or reference, approximate time and amount, plus the displayed status. Never include card details. A billing case records a request for help — it does not approve a refund or instantly change the balance.
+If a payment stays pending or under review, or the expected credit is missing, use its billing-support action when available. Include the top-up intent ID or reference, approximate time and amount, plus the displayed status. Never include card details. A billing case records a request for help — it does not approve a refund or instantly change the balance.
 
 ## Contact support
 

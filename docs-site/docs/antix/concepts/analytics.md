@@ -106,15 +106,15 @@ This uses your existing portal session; do not paste an API key or session cooki
 
 **JSON** returns an object with a `traces` array and a `manifest` object. **NDJSON** returns one trace per line followed by a final line with `_manifest: true`; that last line is metadata, not another trace.
 
-Trace rows contain `trace_id`, timestamp, endpoint/model, auth mode, `is_byok`, token counts, `cost_usd`, and `cost_source`. Latency fields can be null; session/agent signatures are present only when available. The exported `status` is currently `ok` for these inference rows: this is not a comprehensive log of rejected or failed HTTP requests.
+Trace rows contain `trace_id`, timestamp, endpoint and model, auth mode, `is_byok`, token counts, `cost_usd`, and `cost_source`. Latency fields can be `null`; session and agent signatures are present only when available. The exported `status` is currently `ok` for these inference rows — this is not a comprehensive log of rejected or failed HTTP requests.
 
 The manifest includes `schema_version`, filters, `row_count`, `include_bodies`, `format`, `generated_at`, redaction metadata, and `error_code`. Check that:
 
 - The file parses and has a final manifest.
 - The number of trace records matches `row_count`.
-- `error_code` is null before treating the result as complete.
+- `error_code` is `null` before treating the result as complete.
 
-A stream that already sent HTTP 200 cannot replace it with an error status. `ch_timeout` or `ch_error` in the manifest means the export is partial; retry later or with a smaller window. `cap_truncated` also requires a narrower query. A disconnected or truncated download may have no final manifest at all.
+A stream that already sent HTTP `200` cannot replace it with an error status. `ch_timeout` or `ch_error` in the manifest means the export is partial; retry later or with a smaller window. `cap_truncated` also requires a narrower query. A disconnected or truncated download may have no final manifest at all.
 
 ### Bodies and visibility
 

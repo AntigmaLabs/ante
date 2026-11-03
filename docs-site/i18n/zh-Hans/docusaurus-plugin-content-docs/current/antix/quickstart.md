@@ -98,11 +98,11 @@ export ANTHROPIC_BASE_URL="https://antix.antigma.ai"
 | `/v1/models`, `/models` | GET | 公开模型目录 |
 | `/v2/model/info` | GET | 带定价的目录 |
 | `/v1/videos` | POST | 使用 Antix 密钥创建 Seedance 视频任务 |
-| `/v1/videos/models` | GET | 发现可用 Seedance 模型及视频定价 |
-| `/v1/videos/{id}` | GET | 轮询 Seedance 任务 |
-| `/v1/videos/{id}/content` | GET / HEAD | 下载或检查已完成的 Seedance 输出 |
+| `/v1/videos/models` | GET | 查询可用的 Seedance 模型及视频定价 |
+| `/v1/videos/{id}` | GET | 轮询 Seedance 任务状态 |
+| `/v1/videos/{id}/content` | GET / HEAD | 下载或检查已完成的 Seedance 视频输出 |
 | `/v1/minimax/video_generation` | POST | 使用 BYOK 创建原生 MiniMax H3 任务 |
-| `/v1/minimax/query/video_generation/{task_id}` | GET | 轮询原生 MiniMax H3 任务 |
+| `/v1/minimax/query/video_generation/{task_id}` | GET | 轮询原生 MiniMax H3 任务状态 |
 
 不支持：`/v1/embeddings`，`/v1/audio/*`，`/v1/images/*`，`/v1/files`，微调，批处理 API。
 

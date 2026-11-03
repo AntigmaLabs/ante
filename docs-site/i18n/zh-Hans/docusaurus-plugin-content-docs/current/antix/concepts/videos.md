@@ -79,7 +79,7 @@ curl --fail-with-body https://antix.antigma.ai/v1/videos/models \
 
 如需约束尾帧，请添加第二个条目并设置 `frame_type: "last_frame"`。尾帧必须与首帧同时提供，不能单独传入。参考图像则放入 `input_references` 中，每个条目包含 `type: "image_url"` 和 `image_url.url`，且不带 `frame_type`。图像 URL 支持 HTTPS 链接或内联 `data:image/{png,jpeg,webp};base64,` 内容。整个创建请求的正文大小上限为 **16 MiB**。
 
-不支持回调（`callback_url`）、续接（`previous_job_id`）以及参考音频/视频。未知字段可能会被账户的请求准入检查或视频验证器拒绝，因此请仅使用文档中列出的字段。目前不提供公开的任务列表、取消、删除或 remix 端点。
+不支持回调（`callback_url`）、续接（`previous_job_id`）以及参考音频/视频。未知字段可能会被账户策略或视频验证器拒绝，因此请仅使用文档中列出的字段。目前不提供公开的任务列表、取消、删除或 remix 端点。
 
 ## 创建、轮询并保存 Seedance 视频 {#create-poll-and-save-a-seedance-video}
 

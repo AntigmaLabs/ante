@@ -79,7 +79,7 @@ For first-frame input, use this complete request. Omit `aspect_ratio` and `size`
 
 To constrain the final frame, add a second entry with `frame_type: "last_frame"`. A last frame requires a first frame; it cannot be supplied alone. Reference images use `input_references` entries with `type: "image_url"` and `image_url.url`, without `frame_type`. Image URLs may use HTTPS or inline `data:image/{png,jpeg,webp};base64,` content. The whole create request is limited to **16 MiB**.
 
-Callbacks (`callback_url`), continuation (`previous_job_id`), and reference audio/video are unsupported. Unknown fields can be rejected by the account's request gate or the video validator; use only the documented fields. There are no public task-list, cancel, delete, or remix endpoints.
+Callbacks (`callback_url`), continuation (`previous_job_id`), and reference audio/video are unsupported. Unknown fields can be rejected by the account policy or the video validator; use only the documented fields. There are no public task-list, cancel, delete, or remix endpoints.
 
 ## Create, poll, and save a Seedance video
 
@@ -146,9 +146,9 @@ Completed results contain relative **`unsigned_urls`** and `expires_at` (Unix se
 
 - Download with `GET /v1/videos/{id}/content?index=0`; omitting `index` selects `0`. Other indexes are not available.
 - Save the output before `expires_at`, normally 24 hours after provider completion. Antix streams from the provider and does not store the video file.
-- Every GET fetches the whole file. Range requests are ignored, `Accept-Ranges` is `none`, and `Content-Length` is omitted. Save a local copy for playback and seeking.
+- Every `GET` fetches the whole file. `Range` requests are ignored, `Accept-Ranges` is `none`, and `Content-Length` is omitted. Save a local copy for playback and seeking.
 - Each video has a 100-download budget. An attempt that the provider never served does not consume it.
-- HEAD checks the Antix task, expiry and remaining download budget without fetching or consuming a download. A successful HEAD does not guarantee the provider can still serve a later GET.
+- `HEAD` checks the Antix task, expiry, and remaining download budget without fetching or consuming a download. A successful `HEAD` does not guarantee the provider can still serve a later `GET`.
 - Downloads have a ten-minute deadline. Concurrent downloads are limited to two per account and 32 total **per gateway instance**; excess requests receive `429 video_download_busy` with `Retry-After`.
 
 ### Billing and task limits
@@ -157,9 +157,9 @@ At creation, Antix holds funds for the requested output plus one second. For an 
 
 Final charging normally uses provider-reported **video tokens**, with the unused hold released. If a successful result omits usage, Antix charges the full reserved amount instead. The reservation is not a charge ceiling: reported usage above the hold is charged in full at the request's frozen rate. The output estimate is `width × height × 24 fps × seconds / 1024`, rounded up. A 720p 16:9 five-second output estimates 108,000 tokens. Discovery's `pricing_skus` values are decimal strings in **USD per video token**, with a separate `video_tokens_1080p` rate. Read current prices rather than hardcoding them.
 
-`usage` appears once billed. Failed, cancelled and expired tasks are not charged. Successful billed tasks enter account request history and key usage asynchronously; video tokens are separate from text prompt/completion tokens. Video tokens count toward a key's token quota. See [Trace Export & Analytics](/antix/concepts/analytics) for reporting limits.
+`usage` appears once billed. Failed, cancelled, and expired tasks are not charged. Successful billed tasks enter account request history and key usage asynchronously; video tokens are separate from text prompt and completion tokens. Video tokens count toward a key's token quota. See [Trace Export & Analytics](/antix/concepts/analytics) for reporting limits.
 
-By default, an account can have three unfinished tasks. Further creates return `429 video_task_limit` with `Retry-After`. Provider execution is configured to expire after an hour; an unfinished task stops consuming an admission slot no later than 75 minutes after creation. An unresolved outcome can remain `in_progress` with funds held beyond that window until operator review. Releasing the task slot does not release the balance hold. See [Video problems](/antix/concepts/troubleshooting#video-problems) for escalation.
+By default, an account can have three unfinished tasks. Further creates return `429 video_task_limit` with `Retry-After`. Provider execution is configured to expire after an hour; an unfinished task stops consuming a concurrency slot no later than 75 minutes after creation. An unresolved outcome can remain `in_progress` with funds held beyond that window until operator review. Releasing the task slot does not release the balance hold. See [Video problems](/antix/concepts/troubleshooting#video-problems) for escalation.
 
 | Status / code | Action |
 | --- | --- |
@@ -201,7 +201,7 @@ curl --fail-with-body https://antix.antigma.ai/v1/minimax/query/video_generation
 
 `content` must contain a non-empty text prompt. Text-only requests require a concrete `ratio`: `21:9`, `16:9`, `4:3`, `1:1`, `3:4`, or `9:16`. H3 accepts native image/video/audio content; H3 Max does not support reference images, reference video, or reference audio. The create body limit is 64 MiB.
 
-Poll the numeric task ID until MiniMax reports success or failure; a successful result contains `task.content.url`. Provider response fields and statuses remain native. The Antix `/content` route, Seedance holds, expiry and download-budget rules do not apply to this URL.
+Poll the numeric task ID until MiniMax reports success or failure; a successful result contains `task.content.url`. Provider response fields and statuses remain native. The Antix `/content` route, Seedance holds, expiry, and download-budget rules do not apply to this URL.
 
 Antix platform keys are unsupported on these routes and return `501` (`platform_key_not_supported`); sending the wrong BYOK provider returns `403` (`provider_mismatch`). A model appearing here does not imply that it is listed in `/v1/videos/models` or usable through Chat Completions.
 
