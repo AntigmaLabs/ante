@@ -12,16 +12,16 @@ Use the [Antix Portal](https://portal.antigma.ai) to inspect account usage and d
 
 | View | Use it for |
 | --- | --- |
-| Overview / Usage & billing | Account totals and model usage. |
-| Request history | Individual account requests, token counts and cost. |
-| API keys | Usage attributed to a particular key. |
-| Endpoints → select endpoint → Overview | The endpoint's request, text-token and cost summary. |
-| Endpoints → select endpoint → Traces | Filtered endpoint requests and the observation drawer. |
-| Endpoint Activity | Session-oriented exploration where supported; experimental. |
+| **Overview / Usage & billing** | Account totals and model usage. |
+| **Request history** | Individual account requests, token counts, and cost. |
+| **API keys** | Usage attributed to a particular key. |
+| **Endpoints → select endpoint → Overview** | The endpoint's request, text-token, and cost summary. |
+| **Endpoints → select endpoint → Traces** | Filtered endpoint requests and the observation drawer. |
+| **Endpoint Activity** | Session-oriented exploration where supported (experimental). |
 
-For account history, filter by time, model, key and authentication mode as available. Endpoint traces support time, model, key, authentication mode, and case-insensitive substring search across stored input/output. Open a trace to inspect the permitted request/response fields, tools, token counts, latency, and time to first token (TTFT), where recorded. Missing latency or TTFT is not a measured zero.
+For account history, filter by time, model, key, and authentication mode as available. Endpoint traces support time, model, key, authentication mode, and case-insensitive substring search across stored input and output bodies. Open a trace to inspect the permitted request and response fields, tools, token counts, latency, and time to first token (TTFT), where recorded. Missing latency or TTFT is not a measured zero.
 
-Analytics can lag a completed request. A loading, warming, stale or unavailable result is not proof of zero usage. Wait for the view to refresh, verify the time window and filters, and avoid repeatedly refreshing an unavailable view. For persistent gaps, use [Troubleshooting & Support](/antix/concepts/troubleshooting).
+Analytics can lag behind a completed request. A loading, warming, stale, or unavailable result is not proof of zero usage. Wait for the view to refresh, verify the time window and filters, and avoid repeatedly refreshing an unavailable view. For persistent gaps, see [Troubleshooting & Support](/antix/concepts/troubleshooting).
 
 ### Costs and units
 
@@ -36,14 +36,14 @@ Where the API exposes `cost_source`, interpret it alongside `cost_usd`:
 
 BYOK estimates are not an Antix charge or your provider's invoice. Current-price estimates may change when prices change; missing pricing can also make estimates incomplete. Do not use an analytics estimate as proof that your balance was debited.
 
-**Video tokens are a separate unit.** Account stats expose `total_video_tokens`; history rows expose `video_tokens`. They are not added to text prompt/completion totals. Successful billed Seedance tasks appear as one request after asynchronous usage recording. Failed, cancelled and expired tasks do not produce billed video usage rows.
+**Video tokens are a separate unit.** Account stats expose `total_video_tokens`; history rows expose `video_tokens`. They are not added to text prompt or completion totals. Successful billed Seedance tasks appear as one request after asynchronous usage recording. Failed, cancelled, and expired tasks do not produce billed video usage rows.
 
-Seedance usage currently has **no endpoint attribution**. Look for it in account history and key usage, not endpoint traces or their exports. Endpoint export token fields are text/cache counts, not video-token totals. See [Video Models & API](/antix/concepts/videos).
+Seedance usage currently has **no endpoint attribution**. Look for it in account history and key usage, not endpoint traces or their exports. Endpoint export token fields are text and cache counts, not video-token totals. See [Video Models & API](/antix/concepts/videos).
 
 ## Export from the portal
 
 1. Open **Endpoints**, select an endpoint you can view, then open **Traces**.
-2. Expand the filter controls and choose a bounded time range. Add model, key, auth-mode or content filters as needed.
+2. Expand the filter controls and choose a bounded time range. Add model, key, auth-mode, or content filters as needed.
 3. Use the download control to choose **JSON** or **NDJSON** and whether to include bodies.
 4. Inspect the downloaded file's final manifest before treating it as complete.
 
@@ -120,6 +120,8 @@ A stream that already sent HTTP 200 cannot replace it with an error status. `ch_
 
 Bodies are omitted by default. With `include_bodies=true`, permitted `input` and `output` fields go through the portal's shared body projection/redaction rules. Raw provider request/response fields and authentication material remain excluded by policy; an export is not a byte-for-byte replay of the upstream exchange.
 
-Redaction does not promise removal of every secret or personal detail in a user's prompt or a model's answer. Treat body-bearing files as sensitive. Export access and the bodies option are recorded in read-audit metadata. A 90-day query window is an export limit, not a data-retention guarantee; see [Privacy, Security & Data Retention](/antix/concepts/security).
+:::warning Sensitive data in trace bodies
+Redaction does not promise removal of every secret or personal detail in a user's prompt or a model's answer. Treat body-bearing files as sensitive. Export access and the bodies option are recorded in read-audit metadata. A 90-day query window is an export limit, not a data-retention guarantee — see [Privacy, Security & Data Retention](/antix/concepts/security).
+:::
 
-The export's `trace_id`, history's request identifier and the response's `X-Antix-Request-Id` are different diagnostic fields; do not assume they are interchangeable. Include whichever you have when [contacting support](/antix/concepts/troubleshooting#contact-support).
+The export's `trace_id`, history's request identifier, and the response's `X-Antix-Request-Id` header are different diagnostic fields — do not assume they are interchangeable. Include whichever you have when [contacting support](/antix/concepts/troubleshooting#contact-support).

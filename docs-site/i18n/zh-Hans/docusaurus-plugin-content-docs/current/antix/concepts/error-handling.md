@@ -23,4 +23,4 @@ Antix 拦截并标准化了跨多个提供商的错误：
 - **`502 Bad Gateway`（错误的网关）** — 针对该请求的所有上游提供商尝试均失败。
 - **`503 Service Unavailable`（服务不可用）** — Antix 的故障关闭路径。当无法访问计费后端或所请求的模型没有定价行（`model_not_priced`）时触发。
 
-实际恢复步骤、视频错误、导出不完整及联系支持的方法，请参阅[故障排查与支持](/antix/concepts/troubleshooting)。
+有关具体的恢复步骤、视频接口错误、导出不完整处理以及联系支持团队的方式，请参阅[故障排查与支持](/antix/concepts/troubleshooting)。

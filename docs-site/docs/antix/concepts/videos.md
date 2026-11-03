@@ -10,13 +10,13 @@ Video generation is asynchronous: submit a task, poll for its result, then save 
 
 | | Seedance on BytePlus ModelArk | MiniMax H3 / H3 Max |
 | --- | --- | --- |
-| Create | `POST /v1/videos` | `POST /v1/minimax/video_generation` |
-| Poll | `GET /v1/videos/{id}` | `GET /v1/minimax/query/video_generation/{task_id}` |
-| Credential | Antix virtual key or Ante CLI OAuth access token | MiniMax provider key and `X-Antix-Provider: minimax` |
-| Billing | Antix account balance | MiniMax bills your provider account; Antix does not re-bill |
-| Download | Authenticated Antix `/content` URL | Native MiniMax response at `task.content.url` |
+| **Create** | `POST /v1/videos` | `POST /v1/minimax/video_generation` |
+| **Poll** | `GET /v1/videos/{id}` | `GET /v1/minimax/query/video_generation/{task_id}` |
+| **Credential** | Antix Virtual Key or Ante CLI OAuth access token | MiniMax provider key and `X-Antix-Provider: minimax` |
+| **Billing** | Antix account balance | MiniMax bills your provider account; Antix does not re-bill |
+| **Download** | Authenticated Antix `/content` URL | Native MiniMax response at `task.content.url` |
 
-These are not Chat Completions endpoints. The Seedance route accepts JSON in an OpenRouter-shaped subset; do not assume OpenAI's video SDK or multipart request format works unchanged.
+These are not Chat Completions endpoints. The Seedance route accepts JSON in an OpenRouter-shaped subset — do not assume OpenAI's video SDK or multipart request format works unchanged.
 
 ## Seedance availability and discovery
 
@@ -134,11 +134,13 @@ partial.replace("kite.mp4")
 print("Saved kite.mp4")
 ```
 
-Create returns **202** with `id`, a relative `polling_url`, and `status: "pending"`. Polling returns `pending`, `in_progress`, `completed`, `failed`, `cancelled`, or `expired`. `in_progress` includes provider queuing, execution, and unresolved tasks awaiting operator review. The provider is checked on a schedule, initially every 15 seconds and backing off to two minutes; faster polling may return the same state.
+Create returns `202 Accepted` with `id`, a relative `polling_url`, and `status: "pending"`. Polling returns `pending`, `in_progress`, `completed`, `failed`, `cancelled`, or `expired`. `in_progress` includes provider queuing, execution, and unresolved tasks awaiting operator review. The provider is checked on a schedule — initially every 15 seconds and backing off to two minutes — so faster polling may return the same state.
 
-Save the task ID when create succeeds. If a later poll or download fails transiently, retry that operation for the same task. A create request can continue after a client disconnect, and there is no client idempotency contract: blindly retrying create may generate and charge for another video.
+:::warning Save the task ID before polling
+Save the task ID as soon as create succeeds. If a later poll or download fails transiently, retry that operation for the same task. A create request can continue after a client disconnect, and there is no client idempotency guarantee — blindly retrying create may generate and charge for another video.
+:::
 
-Completed results contain relative **`unsigned_urls`** and `expires_at` (Unix seconds). Despite the field name, these URLs require an Antix credential. The provider's signed `urls` and `last_frame_url` are not exposed. Any valid Antix key belonging to the account that created the task can read/download it; a different account receives 404.
+Completed results contain relative **`unsigned_urls`** and `expires_at` (Unix seconds). Despite the field name, these URLs still require an Antix credential in `Authorization`. The provider's signed `urls` and `last_frame_url` are not exposed. Any valid Antix key belonging to the account that created the task can read or download it; a different account receives `404 Not Found`.
 
 ### Download limits
 
@@ -161,13 +163,13 @@ By default, an account can have three unfinished tasks. Further creates return `
 
 | Status / code | Action |
 | --- | --- |
-| 400 `invalid_request`, `unsupported_parameter`, `upstream_rejected` | Correct the request; a provider refusal is not charged. |
-| 403 `model_not_allowed`, `provider_not_allowed`, `quota_exceeded` | Check the key's access policy or token quota. |
-| 404 `model_not_found`, `not_found` | Check discovery, the task ID and owning account. |
-| 409 `video_not_ready` | Continue polling before downloading. |
-| 410 `video_expired`, `video_download_limit`, `video_unavailable` | This output is no longer downloadable. |
-| 429 `video_task_limit`, `video_download_busy`, `upstream_rate_limited` | Back off; respect `Retry-After` when present. |
-| 502/503 `upstream_unavailable`, `video_generation_unavailable` | Retry reads/downloads later; do not automatically repeat create. |
+| `400` `invalid_request`, `unsupported_parameter`, `upstream_rejected` | Correct the request; a provider refusal is not charged. |
+| `403` `model_not_allowed`, `provider_not_allowed`, `quota_exceeded` | Check the key's access policy or token quota. |
+| `404` `model_not_found`, `not_found` | Check discovery, the task ID, and the owning account. |
+| `409` `video_not_ready` | Continue polling before downloading. |
+| `410` `video_expired`, `video_download_limit`, `video_unavailable` | This output is no longer downloadable. |
+| `429` `video_task_limit`, `video_download_busy`, `upstream_rate_limited` | Back off; respect `Retry-After` when present. |
+| `502` / `503` `upstream_unavailable`, `video_generation_unavailable` | Retry reads or downloads later; do not automatically repeat create. |
 
 ## MiniMax H3: native BYOK API
 
@@ -201,6 +203,6 @@ curl --fail-with-body https://antix.antigma.ai/v1/minimax/query/video_generation
 
 Poll the numeric task ID until MiniMax reports success or failure; a successful result contains `task.content.url`. Provider response fields and statuses remain native. The Antix `/content` route, Seedance holds, expiry and download-budget rules do not apply to this URL.
 
-Antix platform keys are unsupported on these routes and return **501 `platform_key_not_supported`**; the wrong BYOK provider returns **403 `provider_mismatch`**. A model appearing here does not imply it is listed in `/v1/videos/models` or usable through Chat Completions.
+Antix platform keys are unsupported on these routes and return `501` (`platform_key_not_supported`); sending the wrong BYOK provider returns `403` (`provider_mismatch`). A model appearing here does not imply that it is listed in `/v1/videos/models` or usable through Chat Completions.
 
-For failed tasks, missing usage or download problems, see [Troubleshooting & Support](/antix/concepts/troubleshooting).
+For failed tasks, missing usage, or download problems, see [Troubleshooting & Support](/antix/concepts/troubleshooting).
