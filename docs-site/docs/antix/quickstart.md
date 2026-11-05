@@ -97,6 +97,12 @@ That's it — Claude Code's SDK reads both and routes all `/v1/messages` traffic
 | `/v1beta/models/{action}` | POST | Gemini v1beta path |
 | `/v1/models`, `/models` | GET | Public model catalog |
 | `/v2/model/info` | GET | Catalog with pricing |
+| `/v1/videos` | POST | Create a Seedance video task with an Antix key |
+| `/v1/videos/models` | GET | Discover available Seedance models and video pricing |
+| `/v1/videos/{id}` | GET | Poll a Seedance task |
+| `/v1/videos/{id}/content` | GET / HEAD | Download or check a completed Seedance output |
+| `/v1/minimax/video_generation` | POST | Create a native MiniMax H3 task with BYOK |
+| `/v1/minimax/query/video_generation/{task_id}` | GET | Poll a native MiniMax H3 task |
 
 Not supported: `/v1/embeddings`, `/v1/audio/*`, `/v1/images/*`, `/v1/files`, fine-tuning, batch API.
 
@@ -119,6 +125,9 @@ See [Endpoints](/antix/concepts/endpoints) for creation, scopes, and the analyti
 
 ## Next steps
 
+- [Video Models & API](/antix/concepts/videos) — Seedance and MiniMax H3 credentials, examples, polling, and downloads.
+- [Trace Export & Analytics](/antix/concepts/analytics) — inspect usage and export endpoint traces.
+- [Troubleshooting & Support](/antix/concepts/troubleshooting) — diagnose failures and collect support details.
 - [Endpoints](/antix/concepts/endpoints) — per-application URLs with traces, spend, and agent sessions.
 - [Routing & BYOK](/antix/concepts/routing) — provider selection and OpenAI-compatible semantics.
 - [Virtual keys](/antix/concepts/virtual-keys) — provision keys with hard spend budgets.

@@ -20,6 +20,14 @@ Antix 是一个多协议网关。它接受 OpenAI、Anthropic 和 Gemini 数据�
 | `/v1beta/models/{action}` | POST | Gemini v1beta 原生路径 |
 | `/v1/models`, `/models` | GET | 公开模型目录（无身份验证） |
 | `/v2/model/info` | GET | 包含定价的目录 |
+| `/v1/videos` | POST | Seedance 异步视频生成（仅限 Antix 密钥） |
+| `/v1/videos/models` | GET | 按凭据限定范围的 Seedance 视频模型目录 |
+| `/v1/videos/{id}` | GET | Seedance 任务状态查询 |
+| `/v1/videos/{id}/content` | GET / HEAD | 需身份验证的 Seedance 视频下载 / 就绪检查 |
+| `/v1/minimax/video_generation` | POST | MiniMax H3 原生任务创建（仅限 MiniMax BYOK） |
+| `/v1/minimax/query/video_generation/{task_id}` | GET | MiniMax H3 原生任务状态查询 |
+
+有关 Seedance 和 MiniMax 各自独立的请求格式、凭据、计费与下载方式，请参阅[视频模型与 API](/antix/concepts/videos)。
 
 **不**支持 `/v1/embeddings`、音频、图像、文件、微调（fine-tuning）和批处理（batch）API。
 

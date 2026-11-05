@@ -20,6 +20,14 @@ Antix is a multi-protocol gateway. It accepts requests in OpenAI, Anthropic, and
 | `/v1beta/models/{action}` | POST | Gemini v1beta native path |
 | `/v1/models`, `/models` | GET | Public model catalog (no auth) |
 | `/v2/model/info` | GET | Catalog with pricing |
+| `/v1/videos` | POST | Seedance asynchronous video generation (Antix key only) |
+| `/v1/videos/models` | GET | Credential-scoped Seedance video catalog |
+| `/v1/videos/{id}` | GET | Seedance task status |
+| `/v1/videos/{id}/content` | GET / HEAD | Authenticated Seedance download / readiness check |
+| `/v1/minimax/video_generation` | POST | MiniMax H3 native create (MiniMax BYOK only) |
+| `/v1/minimax/query/video_generation/{task_id}` | GET | MiniMax H3 native task query |
+
+See [Video Models & API](/antix/concepts/videos) for the separate Seedance and MiniMax request formats, credentials, billing, and downloads.
 
 `/v1/embeddings`, audio, images, files, fine-tuning, and the batch API are **not** supported.
 

@@ -119,3 +119,8 @@ The endpoint URL routes traffic; you still authenticate the request via the `Aut
 - **Bring Your Own Key (BYOK)** — send your raw provider key (e.g., `sk-ant-…`). Antix passes the request to the provider unchanged and does not bill you for it; the portal labels the cost with an *(est.)* badge.
 
 Endpoints work with either auth mode — the choice is per-request, not per-endpoint.
+
+## Further reading
+
+- [Trace Export & Analytics](/antix/concepts/analytics) — account versus endpoint reporting, cost sources, JSON/NDJSON downloads, and completeness checks.
+- [Troubleshooting & Support](/antix/concepts/troubleshooting) — missing usage, export failures, request identifiers, and support cases.

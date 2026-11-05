@@ -22,3 +22,5 @@ Antix intercepts and standardizes errors across providers:
 - **`429 Too Many Requests`** — the gateway's request-rate limit was exceeded. This is currently a global per-IP limit, not a per-Virtual-Key quota.
 - **`502 Bad Gateway`** — every upstream provider attempt for the request failed.
 - **`503 Service Unavailable`** — Antix's fail-closed path. Triggered when the billing backend is unreachable, or when a requested model has no pricing row (`model_not_priced`).
+
+For practical recovery steps, video errors, incomplete exports, and how to contact support, see [Troubleshooting & Support](/antix/concepts/troubleshooting).
