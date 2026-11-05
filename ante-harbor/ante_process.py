@@ -1,8 +1,9 @@
 """Linux sandbox supervisor; stdlib only, uploaded alongside each Ante run.
 
 The supervisor is a child subreaper: detached tool jobs are adopted here, not
-by container init. Only descendants of this process are stopped. The container,
-services, and subsequent verifier execs remain outside this ownership boundary.
+by container init. Failed or cancelled runs stop their descendants; successful
+runs leave task services alive for verification. Unrelated container services
+and subsequent verifier execs remain outside this ownership boundary.
 """
 
 from __future__ import annotations
@@ -14,6 +15,7 @@ import os
 import signal
 import subprocess
 import sys
+import tempfile
 import time
 from contextlib import contextmanager
 from pathlib import Path
@@ -33,9 +35,11 @@ class OutputCapture:
     write leaves stdout available, preserving the adapter's normal fallback.
     """
 
-    def __init__(self, child: subprocess.Popen, log_path: Path):
-        self.pipe = child.stdout
-        os.set_blocking(self.pipe.fileno(), False)
+    def __init__(self, capture, log_path: Path):
+        # A temporary file keeps inherited stdout writable after a successful
+        # agent exits. pread leaves the writers' shared file offset untouched.
+        self.capture = capture
+        self.offset = 0
         os.set_blocking(sys.stdout.fileno(), False)
         self.forward = True
         self.pending = bytearray()
@@ -57,7 +61,7 @@ class OutputCapture:
                 self.pending.clear()
                 self.forward = False
 
-    def drain(self, *, stopping=False):
+    def drain(self, *, stopping=False, limit=None):
         self.flush_stdout()
         if self.pending:
             if not stopping:
@@ -67,13 +71,15 @@ class OutputCapture:
             self.pending.clear()
             self.forward = False
         # Bound each drain so a busy writer cannot starve the stop/deadline check.
+        if limit is None:
+            limit = os.fstat(self.capture.fileno()).st_size
         for _ in range(64):
-            try:
-                chunk = os.read(self.pipe.fileno(), 65536)
-            except BlockingIOError:
-                return
+            chunk = os.pread(
+                self.capture.fileno(), min(65536, limit - self.offset), self.offset
+            )
             if not chunk:
                 return
+            self.offset += len(chunk)
             if self.log is not None:
                 try:
                     self.log.write(chunk)
@@ -87,15 +93,19 @@ class OutputCapture:
                     return
 
     def close(self, *, stopping):
+        # Surviving task services may keep writing. Capture through completion,
+        # without waiting for their descriptors to close or their output to stop.
+        limit = os.fstat(self.capture.fileno()).st_size
         deadline = time.monotonic() + KILL_SECONDS
-        while True:
-            self.drain(stopping=stopping)
-            if not self.pending:
+        while self.offset < limit or self.pending:
+            self.drain(stopping=stopping, limit=limit)
+            if self.offset >= limit and not self.pending:
                 break
             if time.monotonic() >= deadline:
                 raise RuntimeError("Ante stdout did not drain after completion")
-            time.sleep(POLL_SECONDS)
-        self.pipe.close()
+            if self.pending:
+                time.sleep(POLL_SECONDS)
+        self.capture.close()
         if self.log is not None:
             self.log.close()
 
@@ -226,6 +236,7 @@ def run(scope: Path, command: str, log_path: Path) -> int:
     signal.signal(signal.SIGTERM, request_stop)
     signal.signal(signal.SIGINT, request_stop)
     child = None
+    capture = None
     output = None
     error = None
     code = 124
@@ -237,14 +248,18 @@ def run(scope: Path, command: str, log_path: Path) -> int:
             return code
         (scope / "started").write_text(str(os.getpid()))
     try:
+        # The unlinked spool is private to this invocation. After success,
+        # inherited writers can use it until sandbox teardown without changing
+        # the settled event log or retaining the supervisor's stdout stream.
+        capture = tempfile.TemporaryFile(mode="a+b", dir=scope)
         child = subprocess.Popen(
             ["bash", "-c", command],
             stdin=subprocess.DEVNULL,
-            stdout=subprocess.PIPE,
+            stdout=capture,
             stderr=subprocess.STDOUT,
             start_new_session=True,
         )
-        output = OutputCapture(child, log_path)
+        output = OutputCapture(capture, log_path)
         while not stopping and not (scope / "stop").exists():
             output.drain()
             status = child.poll()
@@ -254,26 +269,45 @@ def run(scope: Path, command: str, log_path: Path) -> int:
                 break
             time.sleep(POLL_SECONDS)
     finally:
-        try:
-            if child is not None:
-                quiesce(child, output, stopping=not completed)
-            if output is not None:
-                output.close(stopping=not completed)
-        except Exception as exc:
-            error = str(exc)
-            raise
-        finally:
-            # Atomic acknowledgement is published only after quiescence, or
-            # with an explicit failure which the controller must reject.
-            pending = scope / "done.tmp"
-            pending.write_text(json.dumps({"error": error}))
-            pending.replace(scope / "done")
+        # Completion and a controller stop are ordered by this lock. Once a
+        # successful run publishes done, later stop calls only acknowledge it.
+        with scope_lock(scope):
+            stopped = stopping or (scope / "stop").exists()
+            successful = completed and code == 0 and not stopped
+            if stopped and code == 0:
+                code = 124
+            try:
+                if successful:
+                    try:
+                        if output is not None:
+                            output.close(stopping=False)
+                    except Exception:
+                        # Capture failure must not leave an unacknowledged tree.
+                        quiesce(child, output, stopping=True)
+                        raise
+                else:
+                    if child is not None:
+                        quiesce(child, output, stopping=not completed or stopped)
+                    if output is not None:
+                        output.close(stopping=not completed or stopped)
+            except Exception as exc:
+                error = str(exc)
+                raise
+            finally:
+                if capture is not None:
+                    capture.close()
+                # Success preserves task services; every other completion must
+                # acknowledge quiescence, or report a cleanup/capture failure.
+                pending = scope / "done.tmp"
+                pending.write_text(json.dumps({"error": error}))
+                pending.replace(scope / "done")
     return code
 
 
 def stop(scope: Path) -> None:
     with scope_lock(scope):
-        (scope / "stop").touch()
+        if not (scope / "done").exists():
+            (scope / "stop").touch()
         if not (scope / "started").exists():
             return
     deadline = time.monotonic() + STOP_SECONDS

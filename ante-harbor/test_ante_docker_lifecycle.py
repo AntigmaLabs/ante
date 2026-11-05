@@ -58,7 +58,9 @@ class DockerLifecycleTests(unittest.IsolatedAsyncioTestCase):
                 agent={
                     "import_path": "ante_agent:AnteAgent",
                     "model_name": "test/heartbeat",
-                    "override_timeout_sec": 15 if mode == "normal" else 2,
+                    "override_timeout_sec": (
+                        15 if mode in {"normal", "nonzero"} else 2
+                    ),
                     "kwargs": {
                         "install_command": "mkdir -p /logs/agent; nohup ante service >/dev/null 2>&1 &"
                     },
@@ -89,6 +91,12 @@ class DockerLifecycleTests(unittest.IsolatedAsyncioTestCase):
             self.assertEqual(result.verifier_result.rewards, {"reward": 1.0}, detail)
             if mode == "normal":
                 self.assertIsNone(result.exception_info, detail)
+            elif mode == "nonzero":
+                self.assertEqual(
+                    result.exception_info.exception_type,
+                    "NonZeroAgentExitCodeError",
+                    detail,
+                )
             else:
                 self.assertEqual(
                     result.exception_info.exception_type, "AgentTimeoutError", detail
@@ -106,12 +114,13 @@ class DockerLifecycleTests(unittest.IsolatedAsyncioTestCase):
             usage = ante_events.accumulate_usage_from_events(
                 ante_events.events_from_text(log.decode())
             )
-            if mode != "normal":
-                updates = [
-                    ante_events.usage_from_event(event)
-                    for event in ante_events.events_from_text(log.decode())
-                ]
-                self.assertIn({"input_tokens": 13, "output_tokens": 1}, updates)
+            self.assertEqual(sentinel["task_service_reachable"], mode == "normal")
+            updates = [
+                ante_events.usage_from_event(event)
+                for event in ante_events.events_from_text(log.decode())
+            ]
+            final_tokens = 17 if mode in {"normal", "nonzero"} else 13
+            self.assertIn({"input_tokens": final_tokens, "output_tokens": 1}, updates)
             self.assertGreater(usage["n_input_tokens"], 0)
             self.assertEqual(
                 result.agent_result.n_input_tokens, usage["n_input_tokens"]
@@ -120,8 +129,11 @@ class DockerLifecycleTests(unittest.IsolatedAsyncioTestCase):
                 result.agent_result.n_output_tokens, usage["n_output_tokens"]
             )
 
-    async def test_normal_completion_reaps_detached_children(self):
+    async def test_normal_completion_preserves_task_service_for_verifier(self):
         await self.run_trial("normal")
+
+    async def test_nonzero_completion_stops_detached_children(self):
+        await self.run_trial("nonzero")
 
     async def test_timeout_graceful_termination(self):
         await self.run_trial("graceful")

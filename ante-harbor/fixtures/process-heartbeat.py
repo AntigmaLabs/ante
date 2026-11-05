@@ -7,6 +7,7 @@ import signal
 import subprocess
 import sys
 import time
+from http.server import BaseHTTPRequestHandler, HTTPServer
 from pathlib import Path
 
 if "--version" in sys.argv:
@@ -21,6 +22,8 @@ role = (
 mode = os.environ.get("ANTE_HEARTBEAT_MODE", "normal")
 logs = Path("/logs/agent")
 logs.mkdir(parents=True, exist_ok=True)
+if role == "parent":
+    (logs / "mode").write_text(mode)
 if role == "service":
     (logs / "service.pid").write_text(str(os.getpid()))
 else:
@@ -62,16 +65,43 @@ if role in {"parent", "child"}:
         stderr=subprocess.DEVNULL,
     )
 
+
+class TaskService(BaseHTTPRequestHandler):
+    def do_GET(self):
+        self.send_response(200)
+        self.end_headers()
+        self.wfile.write(b"task-service")
+
+    def log_message(self, *_args):
+        pass
+
+
+server = None
+if role == "child":
+    server = HTTPServer(("127.0.0.1", 0), TaskService)
+    server.timeout = 0.02
+    (logs / "task-service.port").write_text(str(server.server_port))
+
 started = time.monotonic()
 while True:
     with (logs / f"{role}.heartbeat").open("a") as stream:
         stream.write(f"{time.monotonic()}\n")
     if role == "parent":
         usage(2)
-        if mode == "normal" and time.monotonic() - started >= 0.4:
+        if (
+            mode in {"normal", "nonzero"}
+            and time.monotonic() - started >= 0.4
+            and (logs / "task-service.port").exists()
+            and (logs / "grandchild.heartbeat").exists()
+        ):
+            usage(17)
+            if mode == "nonzero":
+                sys.exit(7)
             print(
                 json.dumps({"event": {"TurnEnd": {"status": "Completed", "steps": 1}}}),
                 flush=True,
             )
             break
+    if server is not None:
+        server.handle_request()
     time.sleep(0.05)
