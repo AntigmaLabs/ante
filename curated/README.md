@@ -75,6 +75,16 @@ The examples show configurations with API key authentication. Substitute `<your-
 | [perplexity](./web-search-MCP/perplexity.settings.json) | [doc](https://docs.perplexity.ai/docs/getting-started/integrations/mcp-server) |
 | [brave](./web-search-MCP/brave.settings.json) | [github](https://github.com/brave/brave-search-mcp-server) |
 
+### [email-MCP](./email-MCP/)
+
+A mailbox for the agent. The MCP server gives Ante its own `@atomicmail.ai` inbox, so it can read, search, send and reply to email: receive a verification code, wait for a build or CI notification, or run an email-driven workflow without touching your personal Gmail or Outlook account. Copy the file to `~/.ante/` and run `ante --profile atomicmail`, or merge its `mcp_servers` entry into your own settings.
+
+It connects over Streamable HTTP and authenticates with OAuth, so there is no key to paste: after adding the server to your `settings.json`, run `ante mcp login atomicmail` and approve the `mail.read` and `mail.send` scopes in the browser.
+
+| Provider | Link to documentation | Note |
+| --- | --- | --- |
+| [atomicmail](./email-MCP/atomicmail.settings.json) | [doc](https://atomicmail.io/agents) | OAuth. Free in open alpha. Mailbox API is JMAP. |
+
 ## Skills
 
 [Agent Skills](https://agentskills.io) folders, each with a `SKILL.md`. Copy a folder into `~/.ante/skills/` for all projects, or `.ante/skills/` for one project. See the [skills docs](https://docs.antigma.ai/extend/skills).
