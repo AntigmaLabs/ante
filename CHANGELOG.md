@@ -1,5 +1,24 @@
 # Changelog
 
+## v0.3.3 - 2026-11-05
+
+### Added
+- `ante usage` text output aligns the quota bars
+- After you sign in to a provider in the browser, the TUI shows an inline signed-in notice
+
+### Changed
+- Antix serves Grok 4.7, GPT-6.1 Terra and GPT-6 Luna in place of Grok 4.6, GPT-5.6 Terra and GPT-5.6 Luna, and adds Gemini 3.5 Flash Lite, GLM-5.3 FlashX Legal and Qwen 3.8 Flash. Explicitly configured models still work
+- The session header gets more compact in narrow terminals
+- Ante no longer changes the tmux pane's `allow-passthrough` setting
+- Published builds send telemetry through the Ante telemetry gateway and no longer embed credentials. Utility commands send no telemetry
+
+### Fixed
+- Interrupting a turn before any output puts your prompt back in the composer
+- A prompt you withdraw no longer stays in the transcript
+- A table that is still streaming waits until it is complete before it goes into inline scrollback
+- Resuming a long session is fast again: the event-log replay fast path is restored
+- Dependency updates
+
 ## v0.3.2 - 2026-11-01
 
 ### Added
