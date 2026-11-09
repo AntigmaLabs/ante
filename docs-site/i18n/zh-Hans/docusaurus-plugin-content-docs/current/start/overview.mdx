@@ -5,11 +5,21 @@ description: "Ante — 驻留在终端中的自包含、自组织编码智能体
 slug: /
 ---
 
-# Ante
+# <img src="/assets/ante.png" alt="" className="title-mascot" /> Ante
 
 **驻留在终端中的智能体（A ghost in your shell）。** Ante 是一个独立的终端编码智能体（Coding Agent），具备自组织能力。由 [Antigma Labs](https://antigma.ai) 打造，单个压缩包仅 ~15MB，解压后即为单 Rust 可执行文件，零外部运行时依赖，旨在充分发挥各类模型的最大潜力。
 
 它的工作方式类似于 Claude Code 或 Codex，但没有任何繁重的依赖或模型约束。它还可以作为构建[自定义 Harness 底座](https://github.com/AntigmaLabs/ante/tree/main/examples/mini-tui)和高性能助手的核心引擎。
+
+<div className="install-command">
+
+```bash
+curl -fsSL https://ante.run/install.sh | bash
+```
+
+</div>
+
+支持 macOS 和 Linux。无需账号、无需配置文件、无需 Node。安装选项和第一个提示词请参见[快速开始](/start/quickstart)。
 
 <CardGroup cols={3}>
   <Card title="持续公开评测" icon="chart-line" href="https://antigma.ai/eval">

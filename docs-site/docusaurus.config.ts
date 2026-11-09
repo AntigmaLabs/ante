@@ -1,10 +1,19 @@
 import type { Config } from '@docusaurus/types'
 import type * as Preset from '@docusaurus/preset-classic'
+import { themes as prismThemes } from 'prism-react-renderer'
 
-import { websiteIcon, discordIcon, githubIcon } from './src/components/icons'
+import { githubIcon } from './src/components/icons'
 
-const socialLinkHtml = (label: string, icon: string) =>
-  `<span class="navbar-social-link"><span class="navbar-social-link__icon">${icon}</span><span>${label}</span></span>`
+// Prism themes write their background as an inline style, so the site's warm
+// code surface is set on the theme itself rather than overridden in CSS.
+const prismLight = {
+  ...prismThemes.github,
+  plain: { color: '#252525', backgroundColor: '#f1ede8' },
+}
+const prismDark = {
+  ...prismThemes.dracula,
+  plain: { color: '#ece7e1', backgroundColor: '#26231f' },
+}
 
 const isZhHansBuild = process.env.DOCUSAURUS_CURRENT_LOCALE === 'zh-Hans'
 
@@ -61,8 +70,8 @@ const changelogRedirect = {
 }
 
 const config: Config = {
-  title: 'Ante',
-  tagline: 'a ghost in your shell: self-contained, self-organizing, benchmarked in public',
+  title: 'Antigma Docs',
+  tagline: 'Ante, the self-contained coding agent, and Antix, the platform behind it',
   favicon: 'assets/ante2.png',
   url: 'https://docs.antigma.ai',
   baseUrl: '/',
@@ -162,49 +171,51 @@ const config: Config = {
     ],
   ],
 
+  stylesheets: [
+    { href: 'https://fonts.googleapis.com', rel: 'preconnect' },
+    { href: 'https://fonts.gstatic.com', rel: 'preconnect', crossorigin: 'anonymous' },
+    {
+      href: 'https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap',
+      rel: 'stylesheet',
+    },
+  ],
+
   themeConfig: {
     navbar: {
-      title: 'Ante',
+      title: 'Antigma Docs',
       logo: {
-        alt: 'Ante',
-        src: 'assets/ante.png',
+        alt: 'Antigma',
+        src: 'assets/antigma-logo.svg',
         href: '/',
       },
       items: [
         {
-          type: 'docSidebar',
-          sidebarId: 'antix',
+          type: 'custom-conditionalLocaleDropdown',
           position: 'left',
-          label: 'Antix',
+          className: 'navbar-locale-switcher',
         },
         {
-          href: 'https://antigma.ai/eval',
+          type: 'search',
           position: 'left',
-          label: isZhHansBuild ? '实时评测' : 'Live Eval',
+          className: 'navbar-search',
         },
         {
-          href: 'https://antigma.ai',
-          html: socialLinkHtml(isZhHansBuild ? '官网' : 'Home', websiteIcon),
+          href: 'https://portal.antigma.ai',
+          label: isZhHansBuild ? '打开 Antix Console' : 'Open Antix Console',
           position: 'right',
-        },
-        {
-          href: 'https://discord.gg/pqhj3DNGz2',
-          html: socialLinkHtml('Discord', discordIcon),
-          position: 'right',
+          className: 'navbar-cta',
         },
         {
           href: 'https://github.com/AntigmaLabs/ante',
-          html: socialLinkHtml('GitHub', githubIcon),
+          html: `<span class="navbar-icon-link" aria-label="GitHub" title="GitHub">${githubIcon}</span>`,
           position: 'right',
-        },
-        {
-          type: 'custom-conditionalLocaleDropdown',
-          position: 'right',
-          className: 'navbar-locale-switcher',
+          className: 'navbar-github',
         },
       ],
     },
     prism: {
+      theme: prismLight,
+      darkTheme: prismDark,
       additionalLanguages: ['bash', 'json', 'rust', 'toml'],
     },
     colorMode: {
@@ -212,7 +223,7 @@ const config: Config = {
       respectPrefersColorScheme: true,
     },
     footer: {
-      style: 'dark',
+      style: 'light',
       links: [
         {
           title: isZhHansBuild ? '文档' : 'Docs',

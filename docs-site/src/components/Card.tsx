@@ -59,7 +59,7 @@ export function Card({ title, icon, href, children }: CardProps) {
     <div style={{
       border: '1px solid var(--ifm-color-emphasis-300)',
       borderRadius: '10px',
-      padding: '16px 20px',
+      padding: '20px 24px',
       display: 'flex',
       flexDirection: 'column',
       gap: '8px',
@@ -81,9 +81,9 @@ export function Card({ title, icon, href, children }: CardProps) {
           <Icon size={16} color="var(--ifm-color-primary)" />
         </div>
       )}
-      <div style={{ fontWeight: 600, fontSize: '0.9rem' }}>{title}</div>
+      <div style={{ fontFamily: 'var(--ifm-heading-font-family)', fontWeight: 600, fontSize: '18px', lineHeight: 1.4 }}>{title}</div>
       {children && (
-        <div style={{ fontSize: '0.85rem', color: 'var(--ifm-color-emphasis-700)', lineHeight: 1.55 }}>
+        <div style={{ fontSize: '16px', color: 'var(--ifm-color-emphasis-700)', lineHeight: 1.5 }}>
           {children}
         </div>
       )}
