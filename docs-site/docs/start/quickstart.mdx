@@ -5,8 +5,7 @@ description: "Install Ante and start using it in under a minute"
 
 ## Prerequisites
 
-- An **Antix** account, an **Anthropic (Claude)** subscription, an **OpenAI (ChatGPT/Codex)** subscription, or a provider API key.
-- You can also use [offline mode](/local/offline) with no account or API key.
+Have a provider account or API key handy. To run a model on your own machine, follow the [offline setup](/local/offline).
 
 ## Installation
 
@@ -16,7 +15,7 @@ Ante is distributed as a single, self-contained binary with no external dependen
 curl -fsSL https://ante.run/install.sh | bash
 ```
 
-By default this installs to `~/.ante/bin` and configures your shell's `PATH`. Open a new terminal to run `ante`, or use `~/.ante/bin/ante` immediately in the current terminal. Run `ante --version` to check the installation; this guide targets **v0.3.2**.
+By default this installs to `~/.ante/bin` and configures your shell's `PATH`. Open a new terminal to run `ante`, or use `~/.ante/bin/ante` immediately in the current terminal. Run `ante --version` to check the installation; this guide targets **v0.3.4**.
 
 To install somewhere else, set `ANTE_INSTALL_DIR`:
 
@@ -28,50 +27,32 @@ Run the default installer as your normal user, not with `sudo`. A sudoed home-di
 
 macOS release binaries are Developer ID-signed and notarized, so Gatekeeper accepts them without a manual security bypass.
 
-## Start with your existing account or key
+## Run your first task {#start-with-your-existing-account-or-key}
 
-Already have one of the accounts above or a provider API key? Open your project and start Ante:
+<span id="interactive-session" />
+
+Open a terminal in your project and start Ante:
 
 ```bash
 cd your-project
 ante
 ```
 
-If your API key is already exported in your shell, or you've previously signed in through Ante, you're ready to send a prompt. Ante detects available credentials automatically; no Antix login is required to use another provider.
+<span id="use-a-different-provider" />
 
-Ante detects keys such as `ANTHROPIC_API_KEY`, `OPENAI_API_KEY`, and `GEMINI_API_KEY`. See the [provider catalog](/reference/catalog-reference#built-in-providers) for all supported providers and environment variables.
+If you’ve already signed in or exported your API key in this shell, send a prompt. For a first connection, open `/providers`, select your provider, and press `m` to sign in or paste a key. See [Connect a provider](/usage/providers).
 
-Using an account for the first time in Ante? Type `/providers`, select **Antix**, **Anthropic Subscription**, or **OpenAI Subscription**, press `m`, and sign in through your browser. The same view takes an API key.
+Try asking Ante to trace a path through the code:
 
-## Log in with Antix
+> Where does this project start? Show me the entry point and a test that exercises it.
 
-To connect an Antix account from the command line, sign in before starting a session:
+Press `Enter` and watch which files Ante reads. Then ask “How do I run just that test?” in the same session. To point Ante at a particular file, type `@` and choose it from the list.
 
-```bash
-ante auth login antix
-```
+### Sign in to Antix from the CLI {#log-in-with-antix}
 
-Complete sign-in in the browser, then return to your terminal. Ante saves your credentials for future sessions.
-
-Open your project and start chatting:
-
-```bash
-cd your-project
-ante --provider antix
-```
-
-Try a first prompt such as `Explain how this project is organized and where its main entry point is.`
-
-You can also sign in inside the TUI: run `ante`, type `/providers`, select **Antix**, and press `m`. To use another provider's OAuth login or an API key, see [Connect a provider](/usage/providers).
+From your project directory, run `ante auth login antix`, finish signing in through the browser, then run `ante --provider antix` to start the same task.
 
 ## Quick examples
-
-### Interactive session
-
-```bash
-# Launch the TUI — chat with the agent, approve tool calls, view diffs
-ante
-```
 
 ### Headless one-shot
 
@@ -85,13 +66,6 @@ ante -p "add error handling to src/main.rs"
 ```bash
 # Pipe file contents for analysis
 cat src/lib.rs | ante -p "review this code for bugs"
-```
-
-### Use a different provider
-
-```bash
-# Override model and provider
-ante --provider openai --model gpt-6.1-sol -p "refactor this function"
 ```
 
 ### Skip tool approvals
@@ -118,7 +92,7 @@ ante update
 ante update nightly
 
 # Roll back or pin to an exact release
-ante update --version v0.3.2
+ante update --version v0.3.4
 ```
 
 ## What's next?

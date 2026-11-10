@@ -35,7 +35,7 @@ Ante 将配置与状态持久化保存在本地文件系统中。本页面为 An
 | `~/.ante/versions.json` | 缓存的版本更新检查与发布说明状态 |
 | `~/.ante/user_input_history.jsonl` | TUI 历史输入提示词记录 |
 | `~/.ante/tip_history.json` | [加载状态技巧提示](/reference/tui-reference#spinner-tips)的展示历史（删除可重置轮播） |
-| `~/.ante/installation-id` | 用于[遥测](/configuration/preference#identity)的安装标识（配置遥测时写入；可编辑为 `anon` 等通用名称，或删除重置） |
+| `~/.ante/installation-id` | 安装标识，首次初始化遥测导出时写入。重置或自定义标签的方法见[身份标识](/configuration/preference#identity)。 |
 | `AGENTS.md` | 与全局指引一同注入的项目级行为规范 |
 | `.ante/settings.json` | 叠加在用户设置之上的[项目设置](/configuration/preference#project-settings)，从会话目录最近的上级目录解析得到 |
 | `.ante/` | 项目本地配置（技能、子智能体） |
@@ -87,6 +87,8 @@ WebFetch 溢出文件使用系统缓存目录：macOS 为 `~/Library/Caches/ante
 ## 已保存的对话 {#saved-conversations}
 
 每个 `~/.ante/sessions/<session-id>/` 目录保存可恢复的对话、事件日志与元数据。元数据包含创建时间和最近活动时间；恢复选择器按最近活动时间排序，旧快照缺少该字段时回退到创建时间。分叉会话还记录来源会话 ID `forked_from`。`/resume` 显示的大小是 `events.jsonl` 的文件大小（缺失时为零），并非整个会话目录大小或上下文 Token 数。
+
+恢复会话时，Ante 从单独保存的快照加载会话状态，并重放 `events.jsonl` 来显示对话历史。如果日志中有损坏的记录，Ante 会跳过这些记录、重放其余有效内容，并显示跳过的记录数。
 
 回退替换当前历史前，Ante 会在该会话目录的 `abandoned/<rwd-id>/dialog.json` 与 `events.jsonl` 中保留放弃的对话和事件日志。这些是保留副本，不会作为独立会话出现在恢复选择器中。仅恢复对话的边界请参阅[回退与分叉](/usage/tui#rewind-a-conversation)。
 

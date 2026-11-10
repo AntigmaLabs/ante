@@ -5,8 +5,7 @@ description: "在一分钟内安装 Ante 并开始使用"
 
 ## 前置准备 {#prerequisites}
 
-- 一个 **Antix** 账户、**Anthropic (Claude)** 订阅、**OpenAI (ChatGPT/Codex)** 订阅，或提供商 API 密钥。
-- 也可以使用[离线模式](/local/offline)，无需账户或 API 密钥。
+准备一个已有的模型服务账户或 API 密钥。如需在自己的机器上运行模型，请参阅[离线模式](/local/offline)。
 
 ## 安装 {#installation}
 
@@ -16,7 +15,7 @@ Ante 作为单一独立的二进制文件分发，没有任何外部运行时依
 curl -fsSL https://ante.run/install.sh | bash
 ```
 
-默认情况下会安装至 `~/.ante/bin`，并配置 Shell 的 `PATH`。打开新终端后可运行 `ante`，或在当前终端中立即使用 `~/.ante/bin/ante`。运行 `ante --version` 可检查安装；本指南对应 **v0.3.2**。
+默认情况下会安装至 `~/.ante/bin`，并配置 Shell 的 `PATH`。打开新终端后可运行 `ante`，或在当前终端中立即使用 `~/.ante/bin/ante`。运行 `ante --version` 可检查安装；本指南对应 **v0.3.4**。
 
 若想安装到其他目录，可设置 `ANTE_INSTALL_DIR` 环境变量：
 
@@ -28,50 +27,32 @@ curl -fsSL https://ante.run/install.sh | ANTE_INSTALL_DIR=/usr/local/bin bash
 
 macOS 平台的发布二进制文件已经过 Apple 开发者证书签名与公证（Notarized），Gatekeeper 安全检查会自动放行。
 
-## 使用已有账户或密钥开始 {#start-with-your-existing-account-or-key}
+## 在项目中完成第一个任务 {#start-with-your-existing-account-or-key}
 
-已经有上述账户或提供商 API 密钥？进入项目目录，直接启动 Ante：
+<span id="interactive-session" />
+
+在项目根目录中启动 Ante：
 
 ```bash
 cd your-project
 ante
 ```
 
-如果已在当前 Shell 中导出 API 密钥，或之前已通过 Ante 登录，就可以直接发送提示词。Ante 会自动检测可用凭据；使用其他提供商无需登录 Antix。
+<span id="use-a-different-provider" />
 
-Ante 会检测 `ANTHROPIC_API_KEY`、`OPENAI_API_KEY` 和 `GEMINI_API_KEY` 等密钥。所有受支持的提供商与环境变量请参阅[提供商目录](/reference/catalog-reference#built-in-providers)。
+如果已在 Ante 中登录或已在当前终端导出 API 密钥，可以直接提问。首次连接时，输入 `/providers`，选择提供商，按 `m` 登录或粘贴密钥。详见[连接提供商](/usage/providers)。
 
-首次在 Ante 中使用账户？输入 `/providers`，选中 **Antix**、**Anthropic Subscription** 或 **OpenAI Subscription**，按 `m`，然后在浏览器中完成登录。在同一视图中也可以填入 API 密钥。
+先让 Ante 帮您找到运行代码的入口：
 
-## 使用 Antix 登录 {#log-in-with-antix}
+> 这个项目从哪里开始执行？请指出入口文件，以及覆盖这条执行路径的测试。
 
-若要通过命令行连接 Antix 账户，可以在启动会话前登录：
+按 `Enter` 后，您可以看到 Ante 读取了哪些文件。然后在同一会话中追问：“怎样只运行这个测试？” 要指定文件，可输入 `@` 并从列表中选择。
 
-```bash
-ante auth login antix
-```
+### 从命令行登录 Antix {#log-in-with-antix}
 
-在浏览器中完成登录，然后回到终端。Ante 会保存凭据供后续会话使用。
-
-进入项目目录并开始对话：
-
-```bash
-cd your-project
-ante --provider antix
-```
-
-可以先问：`解释这个项目的目录结构，并指出主要入口。`
-
-也可以在 TUI 中登录：运行 `ante`，输入 `/providers`，选中 **Antix** 并按 `m`。其他提供商的 OAuth 登录及 API 密钥配置请参阅[连接提供商](/usage/providers)。
+在项目目录运行 `ante auth login antix`，在浏览器中完成登录，然后运行 `ante --provider antix` 即可开始上述任务。
 
 ## 快速示例 {#quick-examples}
-
-### 交互式会话 {#interactive-session}
-
-```bash
-# 启动 TUI — 与智能体对话、批准工具调用、查看 diff
-ante
-```
 
 ### 单次执行（无头模式） {#headless-one-shot}
 
@@ -85,13 +66,6 @@ ante -p "add error handling to src/main.rs"
 ```bash
 # 传递文件内容进行分析
 cat src/lib.rs | ante -p "review this code for bugs"
-```
-
-### 切换模型提供商 {#use-a-different-provider}
-
-```bash
-# 覆盖模型和提供商
-ante --provider openai --model gpt-6.1-sol -p "refactor this function"
 ```
 
 ### 跳过工具审批 {#skip-tool-approvals}
@@ -118,7 +92,7 @@ ante update
 ante update nightly
 
 # 回滚或锁定到指定发布版本
-ante update --version v0.3.2
+ante update --version v0.3.4
 ```
 
 ## 下一步 {#whats-next}

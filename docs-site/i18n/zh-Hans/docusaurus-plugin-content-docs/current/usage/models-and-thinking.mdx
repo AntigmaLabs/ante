@@ -14,55 +14,30 @@ Ante 允许在会话进行中随时无缝切换模型、提供商和思考深度
 
 在 TUI 终端中输入 `/models` 即可打开模型选择器面板。面板会列出当前提供商支持的模型（标题展示作用域，如 *Switch Model — Anthropic*）。使用方向键浏览模型，调节下方思考深度滑块，按 Enter 回车确认。
 
-输入 `/models <model_id>` 可跳过弹窗直接切换至当前提供商下的指定模型。该 ID 不必局限于弹窗预设列表 —— 只要提供商端点支持即可（例如在 [Open Router](/reference/catalog-reference#open-router) 上调用目录未收录的模型）。模型启动时采用其目录默认的思考深度；后续可随时输入不带参数的 `/models` 调整滑块。若当前尚未选择提供商，传入模型 ID 会自动推导并选择提供商（与 CLI 中的 `--model` 行为一致）。
+输入 `/models <model_id>` 可直接切换到当前提供商的指定模型。例如，在 Antix 上使用 Fable 5.2 时，先在 `/providers` 中选择 Antix。若您的端点已支持该模型，但本机选择器尚未列出，可将 Antix 提供的模型 ID 传给 `/models`。
+
+在同一提供商内切换模型时（例如在 Antix 上从 Gemini 切换到 Claude），您可以继续当前对话。Ante 会在新模型的请求中清除旧模型专用的推理数据与工具调用签名。
 
 在选择器中按 `Tab` 键可直接跳转至提供商选择面板。
 
 ## 切换提供商 {#switching-providers}
 
-输入 `/providers` 可列出所有提供商及其连接认证状态。在已连接的提供商上按 Enter 即可展开其专属的模型选择面板 —— 包含相同的模型列表与思考深度滑块，且自动默认高亮您上次在该提供商中使用的模型。仅在按 Enter 确认后才正式生效；按 `Esc` 可随时返回提供商列表。在尚未设置的提供商上按 Enter 会打开其访问视图，可在其中登录或添加 API 密钥；在任意提供商上按 `m` 都可打开该视图（参见[连接提供商](/usage/providers#authentication)）。当提供商有多个凭据时，按 `←`/`→` 选择本次会话使用的凭据。
+打开 `/providers`，选中已连接的提供商，然后按 `Enter` 选择模型。再按一次 `Enter` 确认，或按 `Esc` 返回。如果您有多个账户，可先用 `←` 和 `→` 选择本次会话使用的账户。
 
-切换提供商会保留当前对话——消息、标题与权限模式都会延续，新提供商从您的下一条消息开始接管。
+切换后可以继续当前对话。您发送的下一条消息会交给新提供商处理。首次使用某个提供商时，请先[登录或添加密钥](/usage/providers#authentication)。
 
-Ante 会自动记忆每个提供商最后使用的模型，在不同提供商之间切换时能自动还原工作状态。
+## 思考深度 {#effort}
 
-## 思考深度（Effort） {#effort}
+如果要梳理一个棘手问题，例如找出偶发测试失败的原因，可以在 `/models` 中提高思考深度。选中模型，调节模型列表下方的滑块，然后按 `Enter`。滑块只显示该模型支持的档位。如果模型不支持调节，界面会隐藏滑块。
 
-思考深度（Effort）是 Ante 控制模型在生成回答前进行深度推理（Reasoning / Thinking）的统一调节旋钮，分为六个级别：
-
-```
-min · low · medium · high · xhigh · max
-```
-
-- `min` 为模型支持的最低档位 —— 支持关闭思考的模型会彻底禁用思考；始终开启思考的模型则限制为其最低推理深度。
-- 每个提供商会自动将该等级映射到其原生的 thinking/reasoning 参数；若提供商原生支持的档位较少，Ante 会自动向下取整映射到最接近的支持档位。
-
-在 `/models` 弹窗中，思考深度表现为模型列表下方的滑块，刻度数量根据当前模型实际支持的原生档位动态展示（例如支持 4 档的模型显示 4 个刻度，支持全部 6 档的显示 6 个刻度）。不支持调节推理深度的模型则不会显示滑块。
-
-每个提供商和模型家族的档位通常由 Ante 内置。对于自定义提供商，可以在模型目录条目中使用 `supported_efforts` 自行声明（参见[目录参考手册](/reference/catalog-reference#model-fields)），也可以运行 `/add-provider`，让它探测端点并写入声明。
-
-Anthropic 在 Claude Sonnet 5、Opus 5、Opus 4.7/4.8 以及始终开启思考的 Fable/Mythos 5 家族上提供 `xhigh`；Opus 与 Sonnet 4.6 保留其四个自适应档位（`low` 到 `high`，再到 `max`）以及关闭位 `min`。Gemini 3.7、3.8 与 4 Argon 仅提供 `low`、`medium`、`high` 三档 —— 请求 `xhigh` 或 `max` 会向下取整为 `high`。
-
-:::note
-Claude Haiku 5.5 即使关闭思考也要求 `temperature: 1`。在 Anthropic Messages 接口上，Claude Sonnet 5.5 不支持强制工具选择（要求调用任意工具或指定工具），Ante 会在发送请求前报错。
-
-Anthropic API 规定：开启 Extended Thinking 时 `temperature` 必须为 `1`。如果在[目录配置](/reference/catalog-reference#model-fields)或环境变量 `MODEL_TEMPERATURE` 中设置了其他温度，开启思考的轮次会报错提示 —— 清除温度覆盖即可恢复正常。
-:::
-
-每个模型的思考深度设置会自动保存在 `~/.ante/settings.json` 中，也可以在启动 CLI 时通过参数显式指定：
+Ante 会记住每个模型的选择。也可以仅为一次运行指定档位：
 
 ```bash
-ante --effort high
+ante --effort high -p "分析这个间歇性失败的测试，找出可能的原因。"
 ```
 
-在 v0.3.2 中，`anthropic`、`anthropic-subscription` 和 `antix` 上的 Claude Sonnet 5.5 与 Fable 5.1 默认使用 `high`。已保存的选择或显式覆盖仍优先于默认值。
+`min` 选择该模型支持的最低档位。有些模型在这一档仍会推理。
 
-## 可读推理输出 {#readable-reasoning}
+## 查看推理摘要 {#readable-reasoning}
 
-思考深度决定模型执行多少推理；提供商的 `thinking_display` 则决定返回多少可读推理内容。可在 `~/.ante/catalog.json` 中设为 `off`、`concise` 或 `detailed`。关闭显示不会关闭模型推理，请求详细显示也不会提高思考深度。各提供商映射与覆盖规则参见[推理显示](/reference/catalog-reference#thinking-display)。
-
-:::tip
-也可以通过命令行参数指定默认模型与提供商：`ante --provider openai --model gpt-6.1-sol`，或在[偏好设置](/configuration/preference)中配置全局默认值。
-:::
-
-如果选择提供商时未指定具体模型，Ante 会自动默认启用该提供商最强大的主力模型，并可能为加载状态语、下一提示词建议等环境感知 UI 提示调用更轻量廉价的辅助模型 —— 参见[权重等级](/reference/catalog-reference#weight-classes)。WebFetch 会把网页内容直接交给当前会话模型，不调用辅助模型。多模态视觉（Vision）模型会自动识别，您可以直接将图片拖拽粘贴到终端中进行分析。
+在聊天中按 `Ctrl+O` 打开会话记录，查看模型返回的推理内容。可见内容的多少取决于提供商。若要更改请求的摘要详细程度，请参阅[推理显示设置](/reference/catalog-reference#thinking-display)。

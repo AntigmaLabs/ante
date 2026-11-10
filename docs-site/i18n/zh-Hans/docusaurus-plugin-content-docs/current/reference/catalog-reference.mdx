@@ -1,249 +1,30 @@
 ---
 title: "模型与提供商目录参考手册"
 sidebar_label: "模型与提供商目录"
-description: "内置提供商列表、预设模型清单以及 catalog.json Schema 规范"
+description: "查看本机提供商目录，配置提供商、凭据和模型默认值"
 ---
 
-Ante 根据**目录（Catalog）**解析每个提供商与模型：包括本文档中记录的内置预设，以及在启动时合并覆盖的 [`~/.ante/catalog.json`](#catalogjson-schema)。目录在每个进程启动时读取一次 —— 修改后请重启 Ante 以生效。
+Ante 会在启动时加载内置预设，并合并 [`~/.ante/catalog.json`](#catalogjson-schema) 中的配置。编辑文件后，请重启 Ante。
 
-本页面为详尽的参考手册。登录与 API 密钥配置请参阅[连接提供商](/usage/providers)，配置范例请参阅[自定义模型目录](#custom-catalog)。
+## 查找提供商 {#built-in-providers}
 
-## 内置提供商列表 {#built-in-providers}
-
-以下预设对应 **v0.3.2**：15 个托管提供商预设，以及离线服务运行时注册的 `local`。
-
-| 提供商 | key | 通信协议格式 (Wire style) | 凭据 |
-|---|---|---|---|
-| Anthropic | `anthropic` | `AnthropicMessage` | `ANTHROPIC_API_KEY` |
-| Anthropic Subscription | `anthropic-subscription` | `AnthropicMessage` | OAuth（`anthropic`） |
-| OpenAI | `openai` | `OpenAiResponse` | `OPENAI_API_KEY` |
-| OpenAI Compatible | `openai-compatible` | `OpenAiCompatible` | `OPENAI_COMPATIBLE_API_KEY` |
-| OpenAI Subscription | `openai-subscription` | `OpenAiResponse` | OAuth（`openai`） |
-| Gemini | `gemini` | `Gemini` | `GEMINI_API_KEY` |
-| Vertex AI Gemini | `vertex-gemini` | `Gemini` | `VERTEX_GEMINI_API_KEY` |
-| Open Router | `openrouter` | `OpenAiCompatible` | `OPENROUTER_API_KEY` |
-| Open Router Responses | `openrouter-responses` | `OpenAiResponse` | `OPENROUTER_API_KEY` |
-| Open Router Anthropic | `openrouter-anthropic` | `AnthropicMessage` | `OPENROUTER_API_KEY` |
-| Grok (xAI) | `xai` | `OpenAiResponse` | `XAI_API_KEY` |
-| Zai | `zai` | `OpenAiCompatible` | `ZAI_API_KEY` |
-| DeepSeek | `deepseek` | `OpenAiCompatible` | `DEEPSEEK_API_KEY` |
-| MiniMax | `minimax` | `OpenAiCompatible` | `MINIMAX_API_KEY` |
-| Antix | `antix` | `AnthropicMessage` | OAuth（`antix`），其次 `ANTIX_API_KEY` |
-| Local | `local` | `OpenAiCompatible` | 无 |
-
-`key` 列即为传递给 `--provider` 的参数值。API 密钥类提供商先读取对应环境变量，其次读取通过 `ante auth add <key>` 存储或在 `/providers` 中粘贴的密钥。OAuth 类提供商在 TUI 的 `/providers` 中登录，或在 CLI 中运行 `ante auth login <key>`。`antix` 两种方式均支持：优先使用 Antix 登录，其次 `ANTIX_API_KEY`，最后是已存储的密钥。如需调整，请参阅[凭据](#credentials)。
-
-## 各提供商的模型清单 {#models-by-provider}
-
-每个提供商均预设了一组 `preferred_models` —— 即在模型选择器中展示的模型 ID。当您选择提供商而未显式指定模型时，Ante 默认选用其**权重等级最高（heaviest-weight）**的模型（参见[权重等级](#weight-classes)），而非简单地选择列表第一项。显式指定的提供商具有最高权威性：若传入了 `--provider`，即使该模型 ID 未列在 `preferred_models` 中，Ante 也会将该模型 ID 发送给该提供商（参见[解析规则](#how-a-model-and-provider-are-chosen)）。
-
-### Anthropic {#anthropic}
-
-`anthropic` 与 `anthropic-subscription` 提供相同的模型：
-
-| 模型 ID | 说明 | 上下文大小 |
-|---|---|---|
-| `claude-haiku-5-5` | 适合高并发智能体任务的快速高效模型 | 1M |
-| `claude-sonnet-5-5` | 速度与智能的最佳平衡 | 1M |
-| `claude-opus-5-5` | 长时间运行的智能体编码与知识工作 | 1M |
-| `claude-fable-5-1` | 针对高要求推理的最强能力 | 1M |
+在 TUI 中打开 `/providers` 可查看已连接的提供商。在终端中运行 `ante catalog` 可查看合并后的 JSON 目录。以下命令列出提供商 ID 和配置的凭据引用：
 
 ```bash
-ante --provider anthropic --model claude-sonnet-5-5
+ante catalog | jq '.providers[] | {id, credential}'
 ```
 
-### OpenAI {#openai}
+以 `env:` 开头的引用给出了环境变量名。登录和 API 密钥的配置方法见[连接提供商](/usage/providers)。
 
-| 模型 ID | 说明 | 上下文大小 |
-|---|---|---|
-| `gpt-6-astra` | OpenAI 面向复杂智能体任务的最强模型 | 1.05M |
-| `gpt-6.1-sol` | GPT-6.1 Sol，适用于复杂编码与智能体工作流 | 1.05M |
-| `gpt-6.1-terra` | GPT-6.1 Terra，适用于视觉推理、计算机操作与写作 | 1.05M |
-| `gpt-6-luna` | GPT-6 模型，适用于明确、大规模的任务 | 1.05M |
+## 查找模型 {#models-by-provider}
+
+打开 `/models` 可查看当前提供商的预设。要列出本机 Ante 中的 Antix 预设，可运行：
 
 ```bash
-ante --provider openai --model gpt-6.1-sol
+ante catalog | jq -r '.providers[] | select(.id == "antix") | .preferred_models[]?.id'
 ```
 
-`openai-subscription` 提供商（ChatGPT/Codex OAuth）提供 `gpt-6-astra`（默认，272K 上下文）、`gpt-6.1-sol` 和 `gpt-6.1-terra`（500K），以及 `gpt-6-luna`（272K），均支持图片输入。`gpt-6-luna` 是其中最轻量的模型，因此负责[辅助调用](#weight-classes)。
-
-#### OpenAI 传输协议 {#openai-transports}
-
-`openai` 与 `openai-subscription` 提供商支持两种流式响应传输方式：
-
-| 传输协议 | 端点地址 | 默认状态 |
-|---|---|---|
-| `http_sse` (HTTP + SSE) | `https://api.openai.com/v1/responses`（或订阅对应端点） | ✅ |
-| `websocket_auto` (持久化 WebSocket) | `wss://.../v1/responses` | 可选启用 |
-
-WebSocket 模式在每个会话中保持单条长连接，并通过 `previous_response_id` 仅传递新增输入项以继续下一轮 Turn。在长链路的智能体工具调用循环中，这能显著消除每轮往返的网络建立延迟。协议细节可参考 OpenAI 的 [WebSocket 模式指南](https://developers.openai.com/api/docs/guides/websocket-mode)。
-
-通过进程级环境变量启用（默认为 `http_sse`）：
-
-```bash
-ANTE_OPENAI_TRANSPORT=websocket_auto ante --provider openai --model gpt-6-luna
-```
-
-支持的值：`http_sse`、`websocket_auto`。未识别的值会打印警告并回退至 `http_sse`。
-
-注意事项：
-- 所有模型生成调用都使用流式传输，包括 TUI、无头任务、压缩、目标判定和环境提示。需要完整回复的调用会收集同一条流，因此启用 WebSocket 时这些调用也可使用它。取消 WebSocket 调用后，Ante 会丢弃连接，避免下一次请求读到已放弃的回复。
-- 符合回退条件的 WebSocket 故障会在剩余调用预算内回退到 HTTP/SSE；回退不会重置截止时间。预算耗尽时，调用报告超时。认证失败（`401`/`403`）会在本会话剩余生命周期内禁用 WebSocket。
-- 同时适用于 `api.openai.com`（API Key）与 ChatGPT 订阅后端 `chatgpt.com/backend-api/codex`。
-- 验证当前激活的传输方式：在调试构建中按 `Ctrl+L` 打开调试面板查看 **Info** 选项卡中的 `OpenAI Transport:` 行；或在日志中检索 `transport selected`：
-
-  ```bash
-  grep "transport selected" ~/.ante/logs/*/ante.*.log
-  ```
-
-### Gemini {#gemini}
-
-`gemini` 与 `vertex-gemini` 提供相同的模型：
-
-| 模型 ID | 说明 | 上下文大小 |
-|---|---|---|
-| `gemini-3.8-flash` | Gemini 3.8 Flash，适用于长程编码与自主智能体 | 1.05M |
-| `gemini-4-argon` | Gemini 4 Argon，适用于复杂推理与自主智能体 | 1.05M |
-| `gemini-3.5-flash-lite` | 最快、成本最低的 Gemini 3.5 模型，适用于高吞吐量任务 | 1M |
-
-```bash
-ante --provider gemini --model gemini-3.8-flash
-```
-
-仅指定 `--provider gemini` 或 `--provider vertex-gemini` 且命令行和设置均未指定模型时，会选择最高权重的 Gemini 4 Argon。其原生预设最大输出为 32,768 Token；OpenRouter 的 `google/gemini-4-argon` 预设为 65,536 Token。两者均支持图像输入及 `low`、`medium`、`high` 三档思考深度。
-
-### Grok (xAI) {#grok-xai}
-
-| 模型 ID | 说明 | 上下文大小 |
-|---|---|---|
-| `grok-4.7` | Grok 4.7 旗舰推理模型 | 500K |
-
-```bash
-ante --provider xai --model grok-4.7
-```
-
-### Zai（智谱） {#zai}
-
-| 模型 ID | 说明 | 上下文大小 |
-|---|---|---|
-| `glm-5.3` | 最新 GLM-5.3 模型，适用于编程与智能体任务 | 1M |
-| `glm-5.3-flash` | 快速、低成本的 GLM-5.3 多模态模型 | 1M |
-| `glm-5.3-flashx` | 支持原生视觉的高速 GLM 5.3 FlashX | 1M |
-
-```bash
-ante --provider zai --model glm-5.3
-```
-
-### Open Router {#open-router}
-
-Open Router 拆分为共享同一 API 密钥的三个提供商（按协议方言划分）：`openrouter`（兼容 OpenAI Chat Completions）、`openrouter-responses`（OpenAI Responses）与 `openrouter-anthropic`（Anthropic Messages）。
-
-`openrouter` 预设模型：
-
-| 模型 ID | 说明 | 上下文大小 |
-|---|---|---|
-| `deepseek/deepseek-v4.1-flash-1017` | DeepSeek V4.1 Flash 10 月 17 日编码升级版，支持视觉 | 1.05M |
-| `reflection/beam-1.0-501b-a23b` | Reflection Beam 1.0，适用于编码与长程智能体任务 | 1.05M |
-| `google/gemini-4-argon` | 通过 OpenRouter 提供的 Gemini 4 Argon 复杂推理模型 | 1.05M |
-| `google/gemini-3.8-flash` | Gemini 3.8 Flash，适用于长程编码与自主智能体 | 1.05M |
-| `x-ai/grok-4.7` | 通过 OpenRouter 调用的 Grok 4.7 旗舰推理模型 | 500K |
-| `qwen/qwen3.8-max-0902` | 通义千问 3.8 旗舰多模态推理模型 | 1M |
-| `qwen/qwen3.7-plus` | 高性价比且支持视觉的通义千问 3.7 模型 | 1M |
-| `qwen/qwen3.8-flash` | 通义千问 3.8 Flash 多模态推理模型 | 1M |
-| `meta/muse-wonder` | 面向复杂智能体推理与编码的 Muse Wonder | 1.05M |
-| `meta/muse-spark-open` | Muse Spark Open，适用于智能体编码工作流 | 1.05M |
-| `meta/muse-spark-1.3` | Muse Spark 1.3 多模态智能体推理模型 | 1.05M |
-| `tencent/hy3` | 腾讯混元 Hy3 智能体推理模型 | 262K |
-| `xiaomi/mimo-v2.6-pro` | 小米 MiMo-V2.6-Pro 多模态智能体模型 | 1.05M |
-| `xiaomi/mimo-v2.6-flash` | 小米 MiMo-V2.6-Flash 多模态智能体模型 | 1.05M |
-| `z-ai/glm-5.3` | 通过 OpenRouter 调用的 GLM 5.3 编程与智能体推理模型 | 1.05M |
-| `z-ai/glm-5.3-flash` | 通过 OpenRouter 调用的快速 GLM 5.3 多模态模型 | 1.05M |
-| `moonshotai/kimi-k3.1-pro` | 月之暗面 Kimi K3.1 Pro 多模态推理模型，适用于长程智能体任务 | 1.05M |
-| `moonshotai/kimi-k2.7-code` | 支持视觉的 Kimi K2.7 Code 代码推理模型 | 262K |
-| `minimax/minimax-m3.1-flash` | MiniMax M3.1 Flash 多模态推理模型 | 1M |
-| `qwen/qwen3.8-max-prime` | 支持视觉的高吞吐 Qwen 3.8 Max | 1M |
-| `qwen/qwen3.8-omni-flash` | Qwen 3.8 Omni Flash 多模态推理 | 1M |
-| `z-ai/glm-5.3-prime` | 高吞吐 GLM 5.3，纯文本 | 1M |
-| `z-ai/glm-5.3-flashx` | 支持原生视觉的高速 GLM 5.3 FlashX | 1.05M |
-| `meta/muse-spark-1.3-contributor` | 高性价比 Muse Spark 1.3 contributor 模型 | 1.05M |
-| `nvidia/nemotron-3-ultra-550b-a55b` | 复杂智能体推理，纯文本；支持 medium/high 思考深度 | 202.8K |
-
-`openrouter-responses` 提供 `openai/gpt-6-astra`、`openai/gpt-6-astra-pro`、`openai/gpt-6.1-sol`、`openai/gpt-6.1-sol-pro`、`openai/gpt-6.1-terra`、`openai/gpt-6.1-terra-pro`、`openai/gpt-6-luna`、`openai/gpt-6-luna-pro`，均支持 1.05M 上下文。带有 `-pro` 后缀的 ID 会走 OpenRouter 的专业推理路由。
-
-`openrouter-anthropic` 通过 Anthropic Messages 协议提供 Claude 家族：`anthropic/claude-haiku-5.5`（1M 上下文），以及 `anthropic/claude-sonnet-5.5`、`anthropic/claude-opus-5.5`、`anthropic/claude-fable-5.1`（1M 上下文）。
-
-每个提供商还可以通过完整 ID 调用 [Open Router 模型列表](https://openrouter.ai/models) 中的任意模型，只要其符合该提供商的协议格式即可。
-
-```bash
-ante --provider openrouter --model deepseek/deepseek-v4.1-flash-1017
-ante --provider openrouter-responses --model openai/gpt-6.1-sol
-ante --provider openrouter-anthropic --model anthropic/claude-fable-5.1
-```
-
-### DeepSeek {#deepseek}
-
-| 模型 ID | 说明 | 上下文大小 |
-|---|---|---|
-| `deepseek-flash` | 支持视觉的 DeepSeek V4.1 Flash | 1M |
-
-```bash
-ante --provider deepseek --model deepseek-flash
-```
-
-需配置环境变量 `DEEPSEEK_API_KEY`，可选配置 `DEEPSEEK_BASE_URL`。
-
-### MiniMax {#minimax}
-
-| 模型 ID | 说明 | 上下文大小 |
-|---|---|---|
-| `MiniMax-M3.1-Flash` | MiniMax M3.1 Flash 多模态编码与推理模型 | 1M |
-
-```bash
-ante --provider minimax --model MiniMax-M3.1-Flash
-```
-
-需配置环境变量 `MINIMAX_API_KEY`，可选配置 `MINIMAX_BASE_URL`。
-
-### Antix {#antix}
-
-`antix` 通过 Antigma 平台提供以下模型，可使用 Antix 登录或 Antix API 密钥：
-
-| 模型 ID | 说明 | 上下文大小 |
-|---|---|---|
-| `gemini-3.8-flash` | Gemini 3.8 Flash，适用于长程编码与自主智能体 | 1.05M |
-| `gemini-4-argon` | Gemini 4 Argon，适用于复杂推理与自主智能体 | 1.05M |
-| `grok-4.6` | Grok 4.6 旗舰推理模型 | 500K |
-| `kimi-k3.1-pro` | Kimi K3.1 Pro 多模态推理模型，适用于长程智能体任务 | 1M |
-| `qwen3.8-max` | 最新 Qwen 3.8 Max | 1M |
-| `qwen3.7-plus` | 最新 Qwen 3.7 Plus | 1M |
-| `claude-haiku-5-5` | 适合高并发、低延迟任务的最快 Claude 模型 | 1M |
-| `claude-sonnet-5-5` | 速度与智能的最佳平衡 | 1M |
-| `claude-opus-5-5` | 长时间运行的智能体编码与知识工作 | 1M |
-| `claude-fable-5-1` | 最强大的 Claude 模型 | 1M |
-| `gpt-6-astra` | OpenAI 面向复杂智能体任务的最强模型 | 1.05M |
-| `gpt-6.1-sol` | GPT-6.1 Sol，适用于复杂编码与智能体工作流 | 1.05M |
-| `gpt-5.6-terra` | GPT-5.6 智能水平与成本的平衡模型 | 1.05M |
-| `gpt-5.6-luna` | 面向高效、高吞吐任务的 GPT-5.6 模型 | 1.05M |
-| `gpt-5.4-mini` | 更快、更经济的 GPT-5.4 模型 | 400K |
-| `gpt-5.4-nano` | GPT-5.4 家族最小轻量模型 | 400K |
-| `deepseek-flash` | DeepSeek V4.1 Flash 原生多模态视觉模型 | 1M |
-| `deepseek-v4-pro` | 复杂智能体任务，纯文本；支持 low/high/max 思考深度 | 1M |
-| `glm-5.3` | 最新 GLM-5.3 模型，适用于编程与智能体任务 | 1M |
-| `glm-5.3-flash` | 快速 GLM-5.3 Flash，适用于编程与智能体任务 | 1M |
-| `glm-5.3-flashx` | 支持原生视觉的高速 GLM 5.3 FlashX | 1M |
-
-```bash
-ante auth login antix          # or: export ANTIX_API_KEY=...
-ante --provider antix --model claude-sonnet-5-5
-```
-
-### Local（本地模型） {#local}
-
-通过内置 llama.cpp 引擎运行本地 GGUF 模型，无需 API 密钥。离线模型就绪时，`local` 提供商可用；对于托管模型，其设置反映当前生效的上下文窗口、思考、温度与视觉能力。卸载模型或停止服务后，`local` 不再可用。使用 `--provider local` 前请先启动或连接模型；该参数本身不会启动引擎。配置方法参见[离线模式](/local/offline)。
-
-```bash
-ante --provider local
-```
+提供商可能已经上线了本机预设中尚未收录的模型。可使用 `ante --provider <provider> --model <model_id>` 直接指定其模型 ID。详见[选择模型](/usage/models-and-thinking#selecting-a-model)。
 
 ## 自定义模型目录 {#custom-catalog}
 
@@ -284,7 +65,7 @@ ante --provider together --model moonshotai/Kimi-K2-Instruct
 
 ### 声明模型支持的思考深度 {#declare-supported-efforts}
 
-[思考深度滑块](/usage/models-and-thinking#effort)的档位通常由提供商和模型家族内置推导，因此自定义端点上的模型可能得到不符合实际接口的档位。可使用 `supported_efforts` 声明真实集合；滑块将只显示这些级别，OpenAI 兼容提供商会把选择值作为同名的 `reasoning_effort` 发送：
+如果自定义端点接受的思考档位与内置默认值不同，请在模型条目中设置 `supported_efforts`。Ante 从中选择当前 API 可以表达的档位，用于[滑块](/usage/models-and-thinking#effort)和实际请求。下面的模型支持三档，默认使用 `high`。
 
 ```json
 "preferred_models": [
@@ -295,6 +76,8 @@ ante --provider together --model moonshotai/Kimi-K2-Instruct
   }
 ]
 ```
+
+若请求的档位低于所有可用档位，则取最低档；介于两档之间时取较低档。支持 `min` 的模型在 Responses API 中发送 `none`，在 Gemini API 中发送 `MINIMAL`。
 
 空列表（`"supported_efforts": []`）表示该模型完全不接受思考深度设置。端点没有报告支持档位的标准 API；不确定时可让 `/add-provider` 自动探测。
 
@@ -330,6 +113,18 @@ ante --provider ollama --model qwen2.5-coder:7b
       "base_url": "http://localhost:8080/v1",
       "credential": null
     }
+  }
+}
+```
+
+### 关闭 DeepSeek 网关的搜索功能 {#deepseek}
+
+内置 `deepseek` 提供商使用当前会话的凭据，向同一基础 URL 下的 `/v1/tools/search` 发送 POST 请求。如果您的网关只转发聊天请求，请将以下配置合并到 `~/.ante/catalog.json`，然后重启 Ante。
+
+```json
+{
+  "providers": {
+    "deepseek": { "supports_web_search": false }
   }
 }
 ```
@@ -387,7 +182,7 @@ Ante 为各会话填入对话 ID。恢复会话时保留 ID，分叉则使用新
       ]
     },
     "openai": {
-      "preferred_models": [{ "id": "gpt-6.1-sol", "temperature": 0.2 }]
+      "preferred_models": [{ "id": "gpt-6-luna", "effort": "min", "temperature": 0.2 }]
     }
   }
 }
@@ -408,6 +203,35 @@ Ante 为各会话填入对话 ID。恢复会话时保留 ID，分叉则使用新
    ```bash
    ante --provider openrouter --model deepseek/deepseek-v4.1-flash-1017
    ```
+
+### OpenAI 传输协议 {#openai-transports}
+
+`openai` 与 `openai-subscription` 提供商支持两种流式响应传输方式：
+
+| 传输协议 | 端点地址 | 默认状态 |
+|---|---|---|
+| `http_sse` (HTTP + SSE) | `https://api.openai.com/v1/responses`（或订阅对应端点） | ✅ |
+| `websocket_auto` (持久化 WebSocket) | `wss://.../v1/responses` | 可选启用 |
+
+WebSocket 模式在每个会话中保持单条长连接，并通过 `previous_response_id` 仅传递新增输入项以继续下一轮 Turn。在长链路的智能体工具调用循环中，这能显著消除每轮往返的网络建立延迟。协议细节可参考 OpenAI 的 [WebSocket 模式指南](https://developers.openai.com/api/docs/guides/websocket-mode)。
+
+通过进程级环境变量启用（默认为 `http_sse`）：
+
+```bash
+ANTE_OPENAI_TRANSPORT=websocket_auto ante --provider openai --model gpt-6-luna
+```
+
+支持的值：`http_sse`、`websocket_auto`。未识别的值会打印警告并回退至 `http_sse`。
+
+注意事项：
+- 所有模型生成调用都使用流式传输，包括 TUI、无头任务、压缩、目标判定和环境提示。需要完整回复的调用会收集同一条流，因此启用 WebSocket 时这些调用也可使用它。取消 WebSocket 调用后，Ante 会丢弃连接，避免下一次请求读到已放弃的回复。
+- 符合回退条件的 WebSocket 故障会在剩余调用预算内回退到 HTTP/SSE；回退不会重置截止时间。预算耗尽时，调用报告超时。认证失败（`401`/`403`）会在本会话剩余生命周期内禁用 WebSocket。
+- 同时适用于 `api.openai.com`（API Key）与 ChatGPT 订阅后端 `chatgpt.com/backend-api/codex`。
+- 验证当前激活的传输方式：在调试构建中按 `Ctrl+L` 打开调试面板查看 **Info** 选项卡中的 `OpenAI Transport:` 行；或在日志中检索 `transport selected`：
+
+  ```bash
+  grep "transport selected" ~/.ante/logs/*/ante.*.log
+  ```
 
 ### 兼容 OpenAI 格式的提供商 {#openai-compatible-providers}
 
@@ -457,7 +281,7 @@ Ante 为各会话填入对话 ID。恢复会话时保留 ID，分叉则使用新
 | `extra_body` | — | 合并到每个 Chat 和 Streaming 请求体顶层的专属 JSON 字段（参见[额外请求字段](#extra-request-fields)）。字符串值支持[模板](#templates) |
 | `thinking_display` | — | 可读推理输出：`off`、`concise` 或 `detailed`，与思考深度独立（参见[推理显示](#thinking-display)） |
 | `max_request_images` | — | 非负整数，限制该提供商所有模型的每次请求图片数。保留最新图片，将较早图片替换为文本标记；`0` 表示不发送图片，`null` 清除上限。参见[请求图片上限](#request-image-limits)。自 v0.3.2 起可用 |
-| `supports_web_search` | — | 该提供商是否提供原生网络搜索功能。为 `true` 时自动向该提供商的会话添加 `WebSearch` 工具；为 `false`（默认）时不提供 |
+| `supports_web_search` | 设为 `true` 时，会话默认提供 `WebSearch`。提供商端点需支持相应搜索请求。新提供商默认关闭。网关仅支持聊天时的配置示例见 [DeepSeek](#deepseek)。 |
 | `preferred_models` | — | 在选择器中展示并作为默认模型的推荐列表（参见[模型字段](#model-fields)）。对于内置提供商，匹配的模型 ID 会被合并修改，新 ID 会被追加；省略时保持内置列表不变 |
 | `stream_idle_timeout_secs` | — | 超时秒数，默认 `300`。打开流时，响应头、错误响应体、OAuth 刷新、传输重试与退避，以及 WebSocket 到 HTTP 的回退共用一次预算；非流式 HTTP 调用还需在此预算内读完响应体。流建立后，同一时长限制连续静默，每次底层读取均重置计时，包括 keepalive、生命周期事件和工具参数片段。所有模型生成调用（包括压缩、目标判定和环境提示）都使用流式传输。慢速本地或代理端点可调高该值，需更快发现停滞时可调低。 |
 
@@ -560,6 +384,8 @@ Ante 按请求顺序保留最新图片，并将较早的图片替换为文本，
 | `OpenAiCompatible` | `model`, `messages`, `reasoning_effort`, `max_tokens`, `stream`, `stream_options`, `temperature`, `top_p`, `top_k`, `stop`, `tools`, `tool_choice`, `thinking`, `enable_thinking`, `thinking_budget`, `enable_search`, `search_options` |
 | `OpenAiResponse` | `model`, `instructions`, `input`, `tools`, `tool_choice`, `parallel_tool_calls`, `max_output_tokens`, `temperature`, `reasoning`, `stream`, `include`, `store` |
 | `Gemini` | `contents`, `systemInstruction`, `generationConfig`, `tools`, `toolConfig` |
+
+通过 Anthropic Messages 调用 Claude Sonnet 5.5 时，`tool_choice` 不能强制调用工具或指定某个工具。Ante 会在发送请求前报告此错误。
 
 保留关键字在加载目录时会被自动丢弃并在启动提示中命名；提供商的其余配置仍正常加载。若想修改这些参数，请使用[模型字段](#model-fields)或[环境变量覆盖](#environment-overrides)：
 
@@ -675,14 +501,14 @@ OAuth Profile 是一次登录的配置方案。内置的有 `anthropic`、`opena
 | `id` | 模型 ID（兼容历史别名 `name`） |
 | `display_name` | 友好展示名称 |
 | `description` | 在模型选择器中展示的简短说明 |
-| `temperature` | 采样温度。在 `AnthropicMessage` 提供商上，开启思考推理时必须为 `1`；Claude Haiku 5.5 无论思考设置如何都要求为 `1`。其他值会在发送请求前报错 |
+| `temperature` | 采样温度。Anthropic Messages 在思考开启时要求为 `1`，Claude Haiku 5.5 始终要求为 `1`。Responses API 在推理关闭（`none`）或未设置推理时发送配置的温度，启用推理时省略该参数。 |
 | `top_p` | Nucleus 采样截断阈值 |
 | `top_k` | Top-k 采样截断阈值 |
 | `max_tokens` | 单轮最大输出 Token 数。在需要显式思考预算的 `AnthropicMessage` 提供商上，设置思考等级时必须大于 1024 —— API 的最低预算要求 |
 | `stop_sequences` | 停止生成的标记字符串列表 |
 | `context_limit` | 上下文窗口上限（Token 数） |
 | `effort` | 默认[思考深度等级](/usage/models-and-thinking#effort) —— `min`、`low`、`medium`、`high`、`xhigh` 或 `max`。不支持推理调节的模型请省略（Ante 不会发送 effort 参数并隐藏滑块） |
-| `supported_efforts` | 该模型在当前提供商上接受的思考深度级别，按升序排列（取值同 `effort`）。它会替换内置档位：滑块只显示这些级别，OpenAI 兼容提供商会发送同名 `reasoning_effort`（`min` 在线上拼写为 `minimal`）。空列表表示模型不接受思考深度设置；省略则保留内置档位 |
+| `supported_efforts` | 模型接受的思考档位（取值同 `effort`）。所有协议都按声明且可表达的档位取值。空列表关闭思考档位参数，省略字段则使用内置档位。 |
 | `weight_class` | 规模/成本等级 —— `Feather`（轻量/快速/低成本）、`Middle`（中等）或 `Heavy`（最大/能力最强）。驱动默认模型与辅助模型选取（参见[权重等级](#weight-classes)） |
 | `support_vision` | 是否支持图片输入。内置模型显式声明此能力；自定义模型未指定时默认为 `true`，覆盖已有预设时省略该字段则保留预设值。纯文本端点应设置为 `false`。发送给无视觉能力的模型之前会过滤图片，不影响保存的历史记录；读取图片时返回元数据而非像素。 |
 

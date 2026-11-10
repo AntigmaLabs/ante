@@ -75,7 +75,7 @@ Prefer URLs supplied by the user or discovered in files, tool output, or search 
 
 ### WebSearch
 
-Search the web and return results with citations. Requires approval. Uses the provider's native web search, so it is available only on a provider that advertises `supports_web_search` (Anthropic, OpenAI, Gemini, Grok, OpenRouter, and Antix). On those providers it is added to the tool set automatically; on others it is not offered. A search is capped at 90 seconds — past that it fails with an error suggesting a narrower query instead of hanging the tool batch.
+Search the web and return results with source links. The tool requires approval. Sessions offer it by default when the provider enables `supports_web_search`. The built-in `deepseek` provider calls the DeepSeek Search API with the session credential. For a chat-only gateway, disable search in the [DeepSeek catalog settings](/reference/catalog-reference#deepseek). A search times out after 90 seconds. Retry with a narrower query if it times out.
 
 Transient search failures are retried up to three times beyond the provider client’s own retries, honoring `Retry-After` when the wait fits within the same 90-second budget. If throttling cannot recover in time, the error advises continuing with known information or fetching a known URL instead of immediately searching again.
 

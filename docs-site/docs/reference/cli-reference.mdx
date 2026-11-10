@@ -157,6 +157,8 @@ Available since v0.3.2. Reports subscription quota percentages and reset times f
 
 `NAME` is an exact stored sign-in name such as `openai/work`, without the `oauth:` prefix. An unknown or unsupported name fails instead of selecting another account. Use `ante auth list` to find stored names.
 
+The default text report aligns quota windows across accounts. Each bar shows the percentage used, with the reset time alongside it when available.
+
 ```bash
 ante usage
 ante usage anthropic
@@ -253,7 +255,7 @@ The update command checks for a newer Ante release and installs it when one is a
 | Flag | Description |
 |---|---|
 | `--channel <CHANNEL>` | Release channel to update from. Equivalent to the positional form. |
-| `--version <VERSION>` | Install an exact release instead of the channel's newest release. Accepts values with or without a leading `v`, such as `v0.3.2` or `0.3.2`. Conflicts with channel arguments. |
+| `--version <VERSION>` | Install an exact release instead of the channel's newest release. Accepts values with or without a leading `v`, such as `v0.3.4` or `0.3.4`. Conflicts with channel arguments. |
 | `-h`, `--help` | Print command help. |
 
 ### Examples
@@ -262,7 +264,7 @@ The update command checks for a newer Ante release and installs it when one is a
 ante update
 ante update nightly
 ante update --channel stable
-ante update --version v0.3.2
+ante update --version v0.3.4
 ante --profile work update
 ```
 
@@ -323,7 +325,7 @@ The archive contains:
 
 | File | Contents |
 |---|---|
-| `report.md` | Ante version, OS/architecture, shell, git branch, the resolved model/provider, a provider authentication table (present/absent), the [telemetry installation id](/configuration/preference#identity) if one exists, and a redaction notice. |
+| `report.md` | Ante version, OS/architecture, shell, git branch, the resolved model/provider, a provider authentication table (present/absent), the telemetry destination (hosted, configured, or off), the [installation id](/configuration/preference#identity) if one exists, and a redaction notice. |
 | `env.txt` | Ante-relevant environment variables. Safe values are shown verbatim; known secrets appear as `<SET>` / `<UNSET>` only. |
 | `settings.redacted.json` | `~/.ante/settings.json` with secrets removed (MCP server credentials and custom `system_prompt` / `append_system_prompt` text are stripped). |
 | `catalog.redacted.json` | `~/.ante/catalog.json` with secrets removed, included only when a custom catalog exists. |

@@ -69,32 +69,11 @@ flowchart LR
 
 Ante 具备跨提供商无关性。每个提供商均实现了发送提示词与接收响应的通用接口。流式传输过程中的偶发网络闪断会在轮次内自动重连；流式调用在传输层连续 5 分钟没有收到任何数据时超时；任何读取（包括保活事件和部分工具参数）都会重置计时。缓冲调用则必须在超时窗口内完成。该超时窗口支持按提供商配置 —— 可通过 [`stream_idle_timeout_secs`](/reference/catalog-reference#provider-fields) 覆盖。
 
-| 提供商 | 通信协议格式 (Wire Format) | 支持模型 |
-|---|---|---|
-| Anthropic | Messages API | Claude 4.5 与 5 家族 |
-| Anthropic Subscription | Messages API | Claude 家族（OAuth） |
-| OpenAI | Responses API | GPT-6 Astra 与 GPT-5 模型 |
-| OpenAI Compatible | Chat Completions | 自定义模型 |
-| OpenAI Subscription | Responses API | GPT-6 Astra 与 GPT-5.6（通过 Codex OAuth） |
-| Gemini | Gemini API | Gemini 3.x 家族 |
-| Vertex AI Gemini | Gemini API | Gemini 3.x 家族 |
-| Grok (xAI) | Responses API | Grok 4.6 |
-| Zai | OpenAI 兼容格式 | GLM-5.3 |
-| Open Router | OpenAI 兼容格式 | 多厂商聊天模型 |
-| Open Router Responses | Responses API | 通过 OpenRouter 调用的 GPT 模型 |
-| Open Router Anthropic | Messages API | 通过 OpenRouter 调用的 Claude 模型 |
-| DeepSeek | OpenAI 兼容格式 | DeepSeek V4 家族 |
-| Antix | Anthropic Messages | 通过 Antigma 调用的 Claude、GPT、Gemini、Qwen、DeepSeek |
-| Antix (API key) | Anthropic Messages | 相同 Antix 目录，通过 API Key 认证 |
-| Local | OpenAI 兼容格式 | 通过 llama.cpp 运行的 GGUF 模型 |
+启动会话时，Ante 根据 `--provider`、`--model` 或已保存的偏好选择提供商和模型。提供商适配器把对话与工具调用转换为相应的 API 格式，再把回复转换为会话事件。
 
-提供商在会话初始化时从目录中解析。用户可以通过 CLI 参数（`--provider`、`--model`）或配置文件进行覆盖。
+### 身份验证 {#authentication}
 
-### 身份认证 {#authentication}
-
-- **API 密钥** — 通过环境变量配置（`ANTHROPIC_API_KEY`、`OPENAI_API_KEY`、`GEMINI_API_KEY`、`XAI_API_KEY`、`OPENROUTER_API_KEY`、`OPENAI_COMPATIBLE_API_KEY`、`ZAI_API_KEY`、`DEEPSEEK_API_KEY`、`VERTEX_GEMINI_API_KEY`、`ANTIX_API_KEY`）
-- **OAuth** — 支持 Anthropic、OpenAI、Antix 以及任意 `oauth_profiles` 条目的浏览器登录，可在 TUI 的 `/providers` 中或通过 `ante auth login` 完成
-- **已存储的密钥与 helper** — `ante auth add` 存储密钥；也可由 `helpers` 命令提供密钥。参见[凭据](/reference/catalog-reference#credentials)
+适配器使用为本次会话选定的凭据。您可以在 `/providers` 中登录、添加密钥或选择账户。自定义服务也可以通过命令提供凭据。参见[连接提供商](/usage/providers)与[凭据配置](/reference/catalog-reference#credentials)。
 
 ## 工具系统 {#tool-system}
 

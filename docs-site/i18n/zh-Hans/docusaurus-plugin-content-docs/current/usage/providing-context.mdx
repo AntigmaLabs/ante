@@ -48,7 +48,7 @@ Ante 可以搜索网络并抓取指定 URL 的内容，让您无需离开终端�
 当您使用不熟悉的第三方库或需要查阅工具/API 的最新文档时，这尤其有效。
 
 :::note
-抓取指定 URL（`WebFetch`）默认开启。全局**网络搜索**（`WebSearch`）通过模型提供商的原生 Search 能力实现，因此仅在支持搜索的提供商（Anthropic、OpenAI、Gemini、Grok、OpenRouter 或 Antix）下可用，并在这些提供商上自动启用 —— 无需额外参数；在其他提供商下不提供该工具。参见[工具参考手册](/reference/tools-reference#websearch)。
+使用 `WebFetch` 可读取已知 URL。要查找来源，可让 Ante 使用 `WebSearch`。支持搜索的 Anthropic、OpenAI、Gemini、Grok、OpenRouter、Antix 和 DeepSeek 配置会自动启用搜索。DeepSeek 直接使用当前会话的凭据。详见[工具参考](/reference/tools-reference#websearch)。
 :::
 
 :::tip

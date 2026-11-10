@@ -10,7 +10,7 @@ Connect Ante to a provider, choose a model, and start a conversation. Use browse
 1. Run `ante` in your project directory.
 2. Type `/providers`, select **Antix**, **Anthropic Subscription**, or **OpenAI Subscription**, and press `m` to manage its access (or `Enter` on a provider that isn't set up yet).
 3. Choose **Sign in to …** (for example, **Sign in to Antix**), follow the browser flow, then return to Ante.
-4. Back in `/providers`, choose the provider and confirm a model.
+4. Ante confirms the sign-in inline and shows the account if the provider supplied one. Press `Enter` to continue. If your session was already using another provider, open `/providers` to switch.
 
 <img src="/assets/cookbook/providers.gif" alt="Choosing a provider and its credential in /providers" className="cookbook-demo" />
 
@@ -29,8 +29,6 @@ The first command opens your browser. Finish signing in, then return to the term
 
 To add a second account, give it a label: `ante auth login anthropic/work`. `ante auth list` shows what is stored. See [`ante auth`](/reference/cli-reference#ante-auth) for every command.
 
-For scripts and protocol clients, `ante auth list --json` lists credential references without exposing secret values. In v0.3.1, clients can pass a reference as `credential` when [starting](/reference/protocol-reference#startsession) or [resuming](/reference/protocol-reference#resumesession) a session to select the account before its first request.
-
 To sign in to a service Ante doesn't have built in, or to get tokens from a command such as `gcloud`, see [Custom Sign-ins & Token Commands](/usage/custom-sign-ins).
 
 ## Use an API key
@@ -41,8 +39,6 @@ Export your provider's API key in the shell where you run Ante, then select that
 export ANTHROPIC_API_KEY="your-api-key"
 ante --provider anthropic
 ```
-
-The same flow works with any provider configured to read an environment variable. For example, use `OPENAI_API_KEY` with `--provider openai` or `ANTIX_API_KEY` with `--provider antix`. Find the exact provider names and variables in the [Catalog Reference](/reference/catalog-reference#built-in-providers).
 
 To store a key instead of exporting it, run `ante auth add <provider>` and paste the key:
 
@@ -56,18 +52,12 @@ Type `/providers`, select the provider, press `m`, and choose **Add or replace A
 
 ## Choose a model and start working {#selecting-a-provider}
 
-Type `/providers` to choose a connected provider, then confirm a model and effort level. When a provider has more than one credential (two accounts, or a sign-in and a key), its row shows `‹ 1/2 ›`: press `←`/`→` to pick the one this session uses. Ante remembers the last model used on each provider. Use `/models` to change models on the current provider during a conversation.
+In `/providers`, choose the connected provider and confirm a model. If you saved several accounts, use `←` or `→` on its row to pick the one for this session.
 
-To select a provider and model when launching Ante:
-
-```bash
-ante --provider antix --model claude-sonnet-5-5
-```
-
-You're ready to [work through a task in the TUI](/usage/tui). See [Models & Effort](/usage/models-and-thinking) for more on choosing and switching models.
+At the prompt, ask “Where does this project handle a missing config file?” and press `Enter`. You can [inspect the code and review a change](/usage/tui) in the same conversation. Use `/models` whenever you want to switch models.
 
 ## Custom endpoints and local models
 
-For a hosted endpoint or local server that isn't built in, run `/add-provider` in the TUI or follow the [custom catalog recipes](/reference/catalog-reference#custom-catalog). The [Catalog Reference](/reference/catalog-reference) holds provider lists, model metadata, and configuration examples.
+To connect your own endpoint, run `/add-provider`, follow the setup prompts, then choose it in `/providers` after restarting Ante. For manual configuration, see [Custom providers](/reference/catalog-reference#custom-catalog).
 
 To run a model on your own hardware without credentials, follow [Offline Mode](/local/offline).

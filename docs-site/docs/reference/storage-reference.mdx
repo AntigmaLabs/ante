@@ -34,7 +34,7 @@ Ante persists configuration and state on the local filesystem. This page is a re
 | `~/.ante/versions.json` | Cached update check and release-note state |
 | `~/.ante/user_input_history.jsonl` | TUI prompt history |
 | `~/.ante/tip_history.json` | Show history for [spinner tips](/reference/tui-reference#spinner-tips) (delete to reset the rotation) |
-| `~/.ante/installation-id` | Installation label for [telemetry](/configuration/preference#identity), written when telemetry is configured (edit to set a common name like `anon`, or delete to reset) |
+| `~/.ante/installation-id` | Installation label written when Ante first initializes telemetry export. To reset or customize it, see [Identity](/configuration/preference#identity). |
 | `AGENTS.md` | Project instructions injected alongside global instructions |
 | `.ante/settings.json` | [Project settings](/configuration/preference#project-settings) layered over the user's, resolved from the nearest ancestor of the session directory |
 | `.ante/` | Project-local configuration (skills, sub-agents) |
@@ -86,6 +86,8 @@ A project's `.ante/settings.json` uses the same schema but *layers* over the use
 ## Saved conversations
 
 Each `~/.ante/sessions/<session-id>/` directory holds the resumable dialog, event log, and metadata. Metadata includes the session's creation time and last activity; the resume picker orders by last activity, falling back to creation time for older snapshots. Forks also record `forked_from`, the source session ID. The size shown in `/resume` is the size of `events.jsonl` (zero if missing), not the entire session directory or its context-token count.
+
+On resume, Ante restores the session from its saved snapshot and replays `events.jsonl` to display the history. If the log contains damaged records, it replays the valid entries and reports how many records it skipped.
 
 Before a rewind replaces the current history, Ante keeps the abandoned dialog and event log under `abandoned/<rwd-id>/dialog.json` and `events.jsonl` inside that session directory. These are retained copies, not separate sessions in the resume picker. See [rewind and fork](/usage/tui#rewind-a-conversation) for the conversation-only restore boundaries.
 

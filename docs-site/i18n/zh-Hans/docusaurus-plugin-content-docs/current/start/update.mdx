@@ -6,7 +6,7 @@ description: "保持 Ante 为最新版本，并选择符合需求的发布通道
 
 Ante 以单一二进制文件分发并支持原地自我更新 —— 首次安装使用的 `install.sh` 脚本会被 `ante update` 针对当前二进制追踪的通道重新运行。
 
-本指南对应 **v0.3.2**（2026 年 11 月 1 日）。运行 `ante --version` 可查看已安装版本。
+本指南对应 **v0.3.4**（2026 年 11 月 9 日）。运行 `ante --version` 可查看已安装版本。
 
 ## 检查与更新 {#update}
 
@@ -24,7 +24,7 @@ ante update
 
 ### 在 TUI 终端界面中更新 {#update-from-the-tui}
 
-当有新版本可用时，正在运行的 TUI 会在聊天界面中显示包含 Release Notes 摘要的轻量提示。绝不会使用弹窗打断启动。
+有新版本时，TUI 会在会话标题下方的对话中显示更新提示和发布说明摘要。
 
 - `/update`：安排在退出 Ante 时自动安装该版本
 - `/update cancel`：保留更新提示，但取消退出时自动安装的计划
@@ -37,8 +37,8 @@ ante update
 使用 `--version` 安装指定版本：
 
 ```bash
-ante update --version v0.3.2
-ante update --version 0.3.2
+ante update --version v0.3.4
+ante update --version 0.3.4
 ```
 
 该方式会跳过通道的“版本更新校验”，因此可用于升级、重新安装当前版本，或回滚到已发布的历史版本。回滚时，Ante 会记录您回滚前的版本，避免后台更新提示立即建议重新安装。

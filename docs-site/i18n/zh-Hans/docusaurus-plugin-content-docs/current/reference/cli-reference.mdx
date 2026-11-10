@@ -147,6 +147,8 @@ ante usage [NAME] [--json]
 
 `NAME` 必须是完整匹配的已存储登录名称，例如 `openai/work`，不带 `oauth:` 前缀。未知或不受支持的名称会报错，不会改选其他账户。使用 `ante auth list` 可查看已存储名称。
 
+默认的文本报告将各账户的配额窗口逐行对齐，横条表示已用比例，旁边列出百分比和可用的重置时间。
+
 ```bash
 ante usage
 ante usage anthropic
@@ -241,7 +243,7 @@ ante update [OPTIONS] [CHANNEL]
 | 参数标识 | 说明 |
 |---|---|
 | `--channel <CHANNEL>` | 更新追踪的发布通道。等同于位置参数形式。 |
-| `--version <VERSION>` | 安装指定的具体发布版本而非通道最新版。支持带或不带前缀 `v`（如 `v0.3.2` 或 `0.3.2`）。与通道参数互斥。 |
+| `--version <VERSION>` | 安装指定的具体发布版本而非通道最新版。支持带或不带前缀 `v`（如 `v0.3.4` 或 `0.3.4`）。与通道参数互斥。 |
 | `-h`, `--help` | 打印帮助信息。 |
 
 ### 使用示例 {#ante-update-examples}
@@ -250,7 +252,7 @@ ante update [OPTIONS] [CHANNEL]
 ante update
 ante update nightly
 ante update --channel stable
-ante update --version v0.3.2
+ante update --version v0.3.4
 ```
 
 ## `ante offline` {#ante-offline}
@@ -310,7 +312,7 @@ ante rage [OPTIONS]
 
 | 文件 | 内容说明 |
 |---|---|
-| `report.md` | Ante 版本、操作系统架构、Shell、Git 分支、解析的模型/提供商、认证状态表、[遥测安装 ID](/configuration/preference#identity) 及脱敏说明。 |
+| `report.md` | Ante 版本、操作系统架构、Shell、Git 分支、解析的模型/提供商、认证状态表、遥测目标（托管网关、自定义端点或已关闭）、已有的[安装 ID](/configuration/preference#identity) 及脱敏说明。 |
 | `env.txt` | 相关的环境变量。安全值原样显示；敏感密钥显示为 `<SET>` / `<UNSET>`。 |
 | `settings.redacted.json` | 移除敏感信息后的 `~/.ante/settings.json`（剥离 MCP 凭证和自定义提示词）。 |
 | `catalog.redacted.json` | 移除敏感信息后的 `~/.ante/catalog.json`（存在自定义目录时包含）。 |

@@ -10,7 +10,7 @@ description: "通过 TUI 或 CLI 登录，或使用提供商 API 密钥"
 1. 在项目目录中运行 `ante`。
 2. 输入 `/providers`，选中 **Antix**、**Anthropic Subscription** 或 **OpenAI Subscription**，按 `m` 管理其访问方式（尚未设置的提供商也可直接按 `Enter`）。
 3. 选择 **Sign in to …**（例如 **Sign in to Antix**），按提示在浏览器中完成登录，然后返回 Ante。
-4. 回到 `/providers`，选择该提供商并确认模型。
+4. 登录成功后，Ante 会在对话中显示提供商名称，以及提供商返回的账户信息。按 `Enter` 继续。如果会话已在使用其他提供商，打开 `/providers` 即可切换。
 
 <img src="/assets/cookbook/providers.gif" alt="在 /providers 中选择提供商及其凭据" className="cookbook-demo" />
 
@@ -29,8 +29,6 @@ ante --provider antix
 
 如需添加第二个账户，请为其指定标签：`ante auth login anthropic/work`。`ante auth list` 会列出已保存的凭据。全部命令请参阅 [`ante auth`](/reference/cli-reference#ante-auth)。
 
-脚本和协议客户端可使用 `ante auth list --json` 列出凭据引用，不会暴露密钥或令牌值。在 v0.3.1 中，客户端可在[启动](/reference/protocol-reference#startsession)或[恢复](/reference/protocol-reference#resumesession)会话时，将引用作为 `credential` 传入，在首次请求前选定账户。
-
 ## 使用 API 密钥 {#use-an-api-key}
 
 在运行 Ante 的 Shell 中导出提供商的 API 密钥，然后选择对应提供商：
@@ -39,8 +37,6 @@ ante --provider antix
 export ANTHROPIC_API_KEY="your-api-key"
 ante --provider anthropic
 ```
-
-任何配置为从环境变量读取密钥的提供商都可以使用同样的流程。例如，`OPENAI_API_KEY` 对应 `--provider openai`，`ANTIX_API_KEY` 对应 `--provider antix`。完整名称和变量请查阅[目录参考手册](/reference/catalog-reference#built-in-providers)。
 
 如果想保存密钥而不是每次导出，运行 `ante auth add <provider>` 并粘贴密钥：
 
@@ -54,18 +50,12 @@ ante auth add anthropic
 
 ## 选择模型并开始工作 {#selecting-a-provider}
 
-输入 `/providers` 选择已连接的提供商，然后确认模型和思考深度。当某个提供商有多个凭据（两个账户，或一个登录加一个密钥）时，其所在行会显示 `‹ 1/2 ›`：按 `←`/`→` 选择本次会话使用的凭据。Ante 会记住每个提供商上次使用的模型。在对话中使用 `/models` 可切换当前提供商的模型。
+在 `/providers` 中选择已连接的提供商并确认模型。如果保存了多个账户，可先用 `←` 或 `→` 选择本次会话要使用的账户。
 
-也可以在启动 Ante 时指定提供商和模型：
-
-```bash
-ante --provider antix --model claude-sonnet-5-5
-```
-
-接下来可以[在 TUI 中完成一个任务](/usage/tui)。模型选择与切换请参阅[模型与思考深度](/usage/models-and-thinking)。
+在输入框中提问，例如“项目在哪里处理配置文件缺失的情况？” 然后按 `Enter`。您可以继续[检查代码并审阅修改](/usage/tui)，也可以在会话中用 `/models` 切换模型。
 
 ## 自定义端点与本地模型 {#custom-endpoints-and-local-models}
 
-对于非内置的托管端点或本地服务，可以在 TUI 中运行 `/add-provider`，或按[自定义模型目录范例](/reference/catalog-reference#custom-catalog)配置。[目录参考手册](/reference/catalog-reference)包含提供商列表、模型参数与配置示例。
+如需连接自己的模型端点，运行 `/add-provider` 并按提示输入端点信息，重启 Ante 后，在 `/providers` 中选择它。手动配置方法见[自定义提供商](/reference/catalog-reference#custom-catalog)。
 
 若要在自己的硬件上运行模型且无需凭据，请参阅[离线模式](/local/offline)。

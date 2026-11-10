@@ -132,7 +132,7 @@ Requires `tmux` and whichever agent CLIs you want to run. [**Terminal orchestrat
 </tr>
 </table>
 
-[See all cookbook guides](https://docs.antigma.ai/usage/providers)
+[Walk through a task in the terminal](https://docs.antigma.ai/usage/tui)
 
 ## Quick Start
 
@@ -152,6 +152,10 @@ curl -fsSL https://ante.run/install.sh | ANTE_INSTALL_DIR=/usr/local/bin bash
 
 The installer configures your shell's `PATH`. Open a new terminal to run `ante`, or start immediately with `~/.ante/bin/ante`.
 
+### Start a session
+
+Run `ante` from your project directory. If prompted, open `/providers` to sign in or paste an API key. Try asking, “Where does this project start, and which test covers that path?” Follow up in the same session to investigate a file or make a change. [Interactive guide](https://docs.antigma.ai/usage/tui)
+
 ### Modes
 
 | Mode | Command | Use it for |
@@ -170,9 +174,6 @@ ante -p "find and fix the failing test in src/auth"
 # Review a diff
 git diff | ante -p "review this for security issues"
 
-# Use a different provider
-ante --provider openai --model gpt-6.1-sol -p "refactor the database module"
-
 # Resume a saved session
 ante --resume ses_01ARZ3NDEKTSV4RRFFQ69G5FAV -p "now add tests"
 
@@ -190,7 +191,7 @@ ante update
 ante update --channel nightly
 
 # Roll back or pin to an exact release
-ante update --version v0.3.2
+ante update --version v0.3.4
 ```
 
 ## One binary, many agents
@@ -211,41 +212,6 @@ ante --profile pi
 A profile replaces the whole settings file, so anything it omits falls back to Ante defaults, and explicit CLI flags still win. Ante also ships a built-in `bare` profile for stripped-down runs: no skills, MCP servers, session saving, or auto-memory. Share what you build in [`curated/`](curated).
 
 **[Named profiles →](https://docs.antigma.ai/configuration/preference#named-profiles)** · [Project settings →](https://docs.antigma.ai/configuration/preference#project-settings) · [Curated profiles →](curated)
-
-## Supported Providers
-
-Bring your own API key, subscription, or local model; no account required, not even with us. Provider support comes in two layers.
-
-**Built-in presets we maintain.** 15 hosted-provider presets plus the local provider, with per-provider quirks handled: wire dialect, API key and OAuth flows, thinking and streaming behavior.
-
-| Provider | Example Models |
-|----------|---------------|
-| Anthropic | Claude Sonnet 5.5, Opus 5.5, Fable 5.1 (API key or subscription OAuth) |
-| OpenAI | GPT-6 Astra, GPT-6.1 Sol, GPT-6 Luna; GPT-5.6 via subscription (API key or ChatGPT/Codex OAuth) |
-| Google Gemini | Gemini 4 Argon and 3.x models (Gemini API or Vertex AI) |
-| Grok (xAI) | Grok 4.7 |
-| DeepSeek | DeepSeek V4.1 Flash |
-| Open Router | Any Open Router model, over three wire styles |
-| Local (GGUF) | Any GGUF model via built-in llama.cpp |
-| ...and more | Zai, Antix, OpenAI-compatible |
-
-**A config layer for everything else.** Your own proxy, gateway, or inference engine is one entry in `~/.ante/catalog.json`: a `wire_style` (Ante speaks four API dialects), a `credential` (an env var, a stored key, an OAuth sign-in, or a helper command), plus `headers` and `extra_body` for whatever else the endpoint expects. The combinations cover most setups without a plugin or a code change:
-
-```json
-{
-  "providers": {
-    "my-gateway": {
-      "base_url": "https://gateway.example.com/v1",
-      "wire_style": "OpenAiCompatible",
-      "credential": "env:MY_GATEWAY_API_KEY",
-      "headers": { "X-Org": "my-team" },
-      "extra_body": { "service_tier": "priority" }
-    }
-  }
-}
-```
-
-[Providers guide →](https://docs.antigma.ai/usage/providers) · [Catalog Reference →](https://docs.antigma.ai/reference/catalog-reference)
 
 ## What's in this repo
 
@@ -350,10 +316,12 @@ But our vision is much bigger: millions of agents self-organizing and communicat
 Yes. Ante has a built-in llama.cpp engine that runs GGUF models locally. It handles engine installation, model discovery, and memory management automatically. No API keys or internet connection required.
 </details>
 
+<a id="supported-providers"></a>
+
 <details>
 <summary><b>Can I use my own custom models or providers?</b></summary>
 
-Yes. Create a `~/.ante/catalog.json` file to add or override providers and models with custom endpoints, API keys, and configurations. Any OpenAI-compatible API works.
+Run `/add-provider` in the TUI to connect your endpoint, then choose it in `/providers`. For settings such as custom headers, see the [configuration examples](https://docs.antigma.ai/reference/catalog-reference#custom-catalog).
 </details>
 
 <details>

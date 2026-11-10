@@ -6,7 +6,7 @@ description: "Keep Ante up to date and pick the release channel that fits your a
 
 Ante ships as a single binary and updates itself in place — the same `install.sh` script that performs the first install is re-run by `ante update` against the channel this binary tracks.
 
-This guide targets **v0.3.2** (November 1, 2026). Check your installed version with `ante --version`.
+This guide targets **v0.3.4** (November 9, 2026). Check your installed version with `ante --version`.
 
 ## Update
 
@@ -24,7 +24,7 @@ If you are already on the latest version, Ante prints a confirmation and exits w
 
 ### Update from the TUI
 
-When a newer release is available, the running TUI adds an in-chat notice with a preview of its release notes. It never blocks startup with a modal.
+When a newer release is available, the TUI shows an update offer and a preview of its release notes in the chat below the session header.
 
 - `/update` schedules that release to install when you exit Ante
 - `/update cancel` keeps the offer but cancels a scheduled exit install
@@ -37,8 +37,8 @@ The install choice is scoped to the running session. Ante applies an accepted up
 Install an exact release with `--version`:
 
 ```bash
-ante update --version v0.3.2
-ante update --version 0.3.2
+ante update --version v0.3.4
+ante update --version 0.3.4
 ```
 
 This bypasses the channel's "newer than current" check, so it can upgrade, reinstall the current version, or roll back to an older published release. When rolling back, Ante remembers the version you left so the next background update notice does not immediately offer to reinstall it.

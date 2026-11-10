@@ -48,7 +48,7 @@ The agent can:
 This is particularly useful when you're working with an unfamiliar library or need to check the latest documentation for a tool or API.
 
 :::note
-Fetching a URL (`WebFetch`) is on by default. Full web **search** (`WebSearch`) runs through the provider's native search, so it is available only on a provider that supports it (Anthropic, OpenAI, Gemini, Grok, OpenRouter, or Antix). On those providers it is enabled automatically — no flag needed; on others it is not offered. See the [Tool Reference](/reference/tools-reference#websearch).
+Use `WebFetch` to read a known URL. To find sources, ask Ante to use `WebSearch`. Search is enabled automatically on supported Anthropic, OpenAI, Gemini, Grok, OpenRouter, Antix, and DeepSeek configurations. DeepSeek uses your existing session credential. See the [Tool Reference](/reference/tools-reference#websearch).
 :::
 
 :::tip

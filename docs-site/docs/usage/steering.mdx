@@ -10,18 +10,22 @@ Don't wait for the agent to finish a wrong turn. Ante lets you interrupt and red
 
 ## Interrupting
 
-Press `Ctrl+C` while the agent is generating to stop the turn immediately. `Escape` also interrupts when no popup is open. The agent keeps whatever context it had up to that point, so you can course-correct with a follow-up message — no need to start over.
+Press `Ctrl+C` to interrupt the turn, or `Escape` when no popup is open.
+
+If you interrupt before the model produces text, reasoning, or a tool call, Ante puts your prompt back in the input box. Any steering you already sent in that turn follows it, then any messages still queued. Edit the draft and press `Enter` when you are ready to send it. Reattach any pasted images you want to send again.
+
+Ante removes the withdrawn prompt from the end of the chat. If its lines have already reached terminal scrollback or another command follows them, Ante keeps the lines and marks the interruption `Returned to input`. With session saving enabled and no background jobs running, Ante also rewinds that input out of the model’s context. Otherwise the model can still see the original prompt.
 
 <img src="/assets/cookbook/interrupt.gif" alt="Interrupting the agent" className="cookbook-demo" />
 
-This saves both time and tokens, especially when you see the agent heading in the wrong direction early on.
+If the model has already produced output, the prompt and partial response stay in the conversation. Send a follow-up to change direction.
 
 ## Steering without interrupting
 
 You don't have to stop the turn to redirect it. Type a message while the agent is working and press `Enter` — instead of starting a new turn, it's **queued**. Then:
 
 - Press `Ctrl+S` to **steer**: flush the queued messages into the running turn as live guidance, without interrupting it.
-- Or do nothing — queued messages are submitted automatically once the current turn ends.
+- Let the turn finish normally to send the queued messages automatically as the next turn.
 
 <img src="/assets/cookbook/steering.gif" alt="Steering a running Ante turn with queued guidance" className="cookbook-demo" />
 

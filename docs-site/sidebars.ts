@@ -60,8 +60,6 @@ const sidebars: SidebarsConfig = {
       className: 'sidebar-section sidebar-section--use',
       collapsed: false,
       items: [
-        'usage/providers',
-        'usage/custom-sign-ins',
         'usage/tui',
         'usage/slash-commands',
         {
@@ -70,7 +68,9 @@ const sidebars: SidebarsConfig = {
           collapsible: false,
           items: ['usage/providing-context', 'usage/steering'],
         },
+        'usage/providers',
         'usage/models-and-thinking',
+        'usage/custom-sign-ins',
         'usage/goal-sessions',
         'usage/approvals',
         { type: 'doc', id: 'extend/memory', label: 'Auto Memory' },

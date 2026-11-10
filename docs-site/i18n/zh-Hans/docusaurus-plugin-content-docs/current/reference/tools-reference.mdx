@@ -78,7 +78,7 @@ Grep 会在页脚报告无法读取、解码、打开或过大的文件。与 Gl
 
 ### WebSearch {#websearch}
 
-检索互联网并返回带引用的搜索结果。需要审批。使用模型提供商的原生网络搜索能力，因此仅在声明了 `supports_web_search` 的提供商（Anthropic、OpenAI、Gemini、Grok、OpenRouter 和 Antix）下可用，并在这些提供商上自动加入工具集；其他提供商不提供该工具。单次搜索设有 90 秒上限 —— 超时报错并建议使用更窄的查询词，避免挂起整个工具调用批次。
+搜索网页并返回附有来源链接的结果。此工具需要审批。提供商启用 `supports_web_search` 时，会话默认提供搜索工具。内置 `deepseek` 提供商复用会话凭据，直接调用 DeepSeek Search API。若网关只支持聊天请求，可在 [DeepSeek 目录配置](/reference/catalog-reference#deepseek)中关闭搜索。单次搜索限时 90 秒，超时后可缩小查询范围并重试。
 
 临时搜索失败会在提供商客户端自身重试之外最多再重试三次；仅当等待时间能纳入同一个 90 秒预算时才按 `Retry-After` 等待。若限流无法及时恢复，错误信息会建议利用已知信息继续或抓取已知 URL，避免立即再次搜索。
 

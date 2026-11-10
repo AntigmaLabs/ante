@@ -15,6 +15,8 @@ ante
 
 The TUI is built with [ratatui](https://ratatui.rs/) and provides a rich chat interface directly in your terminal. It renders inline (up to 24 lines) by default and uses debounced rendering at approximately 100fps for smooth output. If your terminal drops inline scrollback, run `ante --fullscreen` or switch **Render mode** in `/config`; fullscreen mode uses the alternate screen with Ante-managed scrolling and can be toggled live.
 
+The session header shows the version, model and provider (or connection status), and working directory. In a narrow terminal Ante uses a smaller logo, then wraps the details across the full width if the logo no longer fits. Startup notices and any update offer appear below the session header.
+
 ## Key features
 
 ### Chat interface
@@ -50,7 +52,9 @@ When the agent needs clarification or your input on a design decision, it presen
 
 Opt in to a terminal bell and desktop notifications for completed or failed turns, approval prompts, and questions with `"attention": { "enabled": true }` in your user settings. The bell works regardless of focus; desktop notifications require the terminal to report that it is unfocused. See [Attention settings and terminal setup](/configuration/preference#attention-notifications).
 
-Since v0.3.1, Ante also reports turn activity through OSC 7501: idle, working, waiting for permission or an answer, done, and error. Supporting terminals can display this status, including through tmux; terminals without support ignore it. These reports are automatic and do not require enabling attention notifications.
+Ante automatically reports turn activity through OSC 7501 to supporting terminals. States include idle, working, waiting for permission or an answer, done, and error. This works independently of attention notifications.
+
+Inside tmux, `allow-passthrough` controls which reports reach the outer terminal. Use `on` for visible panes or `all` to include hidden panes. With `off`, tmux blocks the reports. Ante respects the pane’s existing setting.
 
 ### Diff view
 
@@ -70,7 +74,7 @@ The fullscreen views — fullscreen chat, the transcript, the [diff view](#diff-
 
 Copies rejoin soft-wrapped rows, including notices and user-run shell output, into the lines they came from, so a wrapped command or URL pastes back intact. Tool output, code blocks, tables, and diffs copy as displayed. Copies go to the OS clipboard and also as an OSC 52 escape, so they work over SSH and inside tmux; selections above 100 KB skip the OSC 52 channel. Clicking outside the content clears the selection, and a whitespace-only grab never touches the clipboard.
 
-Inline mode does not capture the mouse, so your terminal's own selection and scrollback still apply there.
+In inline mode you can select and scroll with the terminal’s own controls. A streaming Markdown table updates in the chat and enters terminal scrollback once its layout settles.
 
 ### Model and provider selection
 

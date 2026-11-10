@@ -170,10 +170,10 @@ ANTE_PROFILE=review ante -p "审查本次改动"
 | `context-tokens` | 上下文窗口使用情况，以 token 数显示为 `76k/200k ctx`（已用/窗口上限，与 `/context` 显示的数字一致；未知时省略；默认关闭） |
 | `terminals` | 活跃的 `ante-*` tmux 会话名称（无运行中会话或 tmux 不可用时省略） |
 
-当两对条目同时启用时，它们会自动折叠为复合项：思考深度折叠进模型名（如 `gpt-5.6(high)`，包含 `min` 在内的所有级别），Git 分支折叠进目录名（如 `project(⑂ main)`）。因此默认底部状态栏显示为：
+当两对条目同时启用时，它们会自动折叠为复合项：思考深度折叠进模型名（如 `gpt-6.1-sol(high)`，包含 `min` 在内的所有级别），Git 分支折叠进目录名（如 `project(⑂ main)`）。因此默认底部状态栏显示为：
 
 ```
-gpt-5.6(high) · openai · project(⑂ main) · 42% ctx
+gpt-6.1-sol(high) · openai · project(⑂ main) · 42% ctx
 ```
 
 每部分仍保持独立开关 —— 关闭 `model-name` 后，`effort` 会恢复为独立的 `effort: high` 项。
@@ -210,7 +210,7 @@ JSON 输入是 [Claude Code statusline 输入](https://code.claude.com/docs/en/s
 {
   "cwd": "/work/repo",
   "session_id": "ses_...",
-  "version": "0.3.2",
+  "version": "0.3.4",
   "model": { "id": "claude-sonnet-5-5", "display_name": "claude-sonnet-5-5" },
   "workspace": { "current_dir": "/work/repo", "project_dir": "/work/repo" },
   "thinking": { "enabled": true },
@@ -346,33 +346,37 @@ set -g allow-passthrough on
 | `ANTE_MCP_TOOL_TIMEOUT` | MCP `tools/call` 超时截止时间（秒，默认 600；参见[MCP 工具调用超时](/extend/mcp#tool-call-timeout)） |
 | `ANTE_OPENAI_TRANSPORT` | OpenAI Responses 传输协议：`http_sse`（默认）或 `websocket_auto`（参见 [OpenAI 传输协议](/reference/catalog-reference#openai-transports)） |
 | `ANTE_TELEMETRY` | 禁用 OpenTelemetry 导出（可设为 `off`、`false`、`0`、`disable` 或 `disabled`，不区分大小写） |
-| `OTEL_EXPORTER_OTLP_ENDPOINT` | 将应用程序指标与日志发送至该 OTLP/HTTP 基础 URL；覆盖二进制中内嵌的任何端点 |
-| `OTEL_EXPORTER_OTLP_AUTH` | 可选的 base64 编码 `user:token` 凭据，作为 HTTP Basic 认证发送至 OTLP 端点 |
-| `ANTE_USER` | 可选的操作者名称，作为 `user.name` 附加到遥测中；默认未设置（参见[身份标识](#identity)） |
+| `OTEL_EXPORTER_OTLP_ENDPOINT` | 自定义收集端的 OTLP/HTTP 基础 URL，优先于 Ante 托管的遥测网关 |
+| `OTEL_EXPORTER_OTLP_HEADERS` | 发往自定义收集端的请求头。多个 `name=value` 用逗号分隔，空格编码为 `%20` |
+| `ANTE_USER` | 自定义遥测中的 `user.name`。发布版默认省略此字段，详见[身份标识](#identity) |
 | `ANTE_USER_ID` | 可选的操作者自定义标识符，作为 `user.id` 附加到遥测中；默认未设置 |
 | `ANTE_ENV` | 按部署环境对遥测数据进行分组（默认：`local`） |
 | `RUST_LOG` | 覆盖应用程序日志过滤级别（发布版默认：`ante=info`）；同时作用于本地和导出的日志 |
 
 ### 遥测机制 {#telemetry}
 
-当设置了 `OTEL_EXPORTER_OTLP_ENDPOINT` 或二进制构建时内嵌了端点时，Ante 会初始化 OpenTelemetry 导出器。导出器通过 OTLP/HTTP 发送指标和应用程序 `tracing` 日志。无论端点如何配置，设置 `ANTE_TELEMETRY=off` 均会完全禁用导出器；`~/.ante/logs/` 下的本地日志文件不受影响，继续正常记录。
+发布版和夜间版默认通过 `https://telemetry.ante.run` 导出交互式会话、无头会话和 `ante serve` 的指标与应用日志。运行 `ante auth`、`usage`、`update`、`offline`、`rage`、`catalog` 或 `doctor` 等子命令时不导出遥测。设置 `ANTE_TELEMETRY=off` 可关闭导出，本地日志仍写入 `~/.ante/logs/`。
+
+如需使用自己的收集端，请设置 `OTEL_EXPORTER_OTLP_ENDPOINT`，并按需通过 `OTEL_EXPORTER_OTLP_HEADERS` 提供认证信息。普通源码构建仅在指定收集端时导出。如果只设置了 `OTEL_EXPORTER_OTLP_HEADERS`、`OTEL_EXPORTER_OTLP_LOGS_HEADERS` 或 `OTEL_EXPORTER_OTLP_METRICS_HEADERS`，Ante 会关闭托管导出，以免将自定义请求头发送到网关。
+
+如需确认配置，请运行 `ante rage`，查看报告中 `report.md` 的 `telemetry` 行。其中会说明使用托管网关、自定义端点还是已关闭导出。
 
 指标涵盖工具与模型调用的耗时与错误统计，以及提供商上报用量时的 Token 计数。标签均来自严格受限的有界集合 —— 工具名、模型、提供商、Ante 版本、操作系统/硬件架构 —— 绝不包含任何个人或机器名称。
 
 #### 身份标识 {#identity}
 
-数据导出默认完全匿名。没有用户名回退，没有主机名，没有 MAC 地址，也没有机器 ID。仅自动携带两个内部标识；另外两个仅在您显式配置时才会出现：
+发布版与夜间版默认使用随机标识。设置 `ANTE_USER` 或 `ANTE_USER_ID` 可为导出数据添加操作者标识。
 
 | 标识符 | 来源 | 用途说明 |
 |---|---|---|
 | Run id（运行 ID） | 每个进程随机生成，绝不持久化 | 为每个并发运行的 Ante 赋予独立的指标序列（累加计数器所需）。仅在指标中作为 `service.instance.id` 导出。 |
-| Installation id（安装 ID） | 随机生成的助记短语（如 `clever-otter-x7f2`），保存在 `~/.ante/installation-id` | 用于区分“单台机器上报了 500 次错误”与“500 台机器各上报了 1 次错误”。在首次配置了遥测的启动时生成，采用单词短语格式以便在 Issue 中引用 —— `ante rage` 会包含它。该短语不编码任何关于您、主机或账号的信息。您可以编辑该文件将其内容更改为像 `anon` 这样的通用名称或任何您喜欢的标识。 |
-| `user.name` | `ANTE_USER`，仅显式配置 | 标识部署的运维方。CI 和评测集群可配置；个人电脑建议留空。 |
+| Installation id（安装 ID） | 随机生成的标签，如 `clever-otter-x7f2`，保存在 `~/.ante/installation-id` | 用于关联同一安装的报告。Ante 首次初始化遥测导出时写入标签。`ante rage` 会在报告中列出已有的标签。 |
+| `user.name` | `ANTE_USER` | 标识部署的操作者。调试构建在未设置时依次读取 `USER`、`LOGNAME` 和 `USERNAME`。 |
 | `user.id` | `ANTE_USER_ID`，仅显式配置 | 当名称不适用时由操作者指定的标识符。 |
 
-您可以编辑 `~/.ante/installation-id` 将标识更改为如 `anon` 这样的通用名称或任何您偏好的内容，或删除 `~/.ante/installation-id` 以重置为全新身份（在下一次配置了遥测的运行中会自动重新生成）。若 Ante 无法读写主目录，则直接在无安装 ID 的状态下上报。通过 `ANTE_ENV` 可对数据按环境分组（默认：`local`）。
+若需多个安装使用同一标签，可将 `~/.ante/installation-id` 的内容设为 `anon-team` 等有效标签。标签长度为 8 至 39 个字符，可包含小写 ASCII 字母、数字和连字符。连字符只能单个出现在字母或数字之间。删除文件或写入无效标签后，Ante 会在下次初始化导出时生成新标签。可用 `ANTE_ENV` 按部署环境分组（默认为 `local`）。
 
-所有通过 `RUST_LOG` 过滤规则的应用追踪记录也会一并导出。日志**正文内容（Bodies）**不会被脱敏处理，因此包含路径或工具参数的消息会如实记录 —— 请仅将 `OTEL_EXPORTER_OTLP_ENDPOINT` 指向您完全信任的收集端。
+导出器发送通过 `RUST_LOG` 过滤的应用日志。工具执行失败、未知工具和调用格式错误的日志会省略工具参数与错误输出。其他日志消息仍可能包含路径、搜索词等内容。配置自定义端点时，请选择您信任的收集端。
 
 ## 目录结构 {#directory-structure}
 

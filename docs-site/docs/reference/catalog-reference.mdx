@@ -1,249 +1,29 @@
 ---
 title: "Catalog Reference"
-description: "Built-in providers, models, and the catalog.json schema"
+description: "Inspect the local provider catalog and configure providers, credentials, and model defaults"
 ---
 
-Ante resolves every provider and model from a **catalog**: the built-in presets documented here, with your [`~/.ante/catalog.json`](#catalogjson-schema) merged on top at startup. The catalog is read once per process — restart Ante to pick up edits.
+Ante loads its built-in presets and merges [`~/.ante/catalog.json`](#catalogjson-schema) at startup. Restart Ante after editing the file.
 
-This page is the exhaustive reference. For sign-in and API-key setup, see [Connect a provider](/usage/providers). For configuration examples, jump to [Custom catalog](#custom-catalog).
+## Find a provider {#built-in-providers}
 
-## Built-in providers
-
-The presets below match **v0.3.2**: 15 hosted-provider presets, plus `local` when an offline server is running.
-
-| Provider | key | Wire style | Credential |
-|---|---|---|---|
-| Anthropic | `anthropic` | `AnthropicMessage` | `ANTHROPIC_API_KEY` |
-| Anthropic Subscription | `anthropic-subscription` | `AnthropicMessage` | OAuth (`anthropic`) |
-| OpenAI | `openai` | `OpenAiResponse` | `OPENAI_API_KEY` |
-| OpenAI Compatible | `openai-compatible` | `OpenAiCompatible` | `OPENAI_COMPATIBLE_API_KEY` |
-| OpenAI Subscription | `openai-subscription` | `OpenAiResponse` | OAuth (`openai`) |
-| Gemini | `gemini` | `Gemini` | `GEMINI_API_KEY` |
-| Vertex AI Gemini | `vertex-gemini` | `Gemini` | `VERTEX_GEMINI_API_KEY` |
-| Open Router | `openrouter` | `OpenAiCompatible` | `OPENROUTER_API_KEY` |
-| Open Router Responses | `openrouter-responses` | `OpenAiResponse` | `OPENROUTER_API_KEY` |
-| Open Router Anthropic | `openrouter-anthropic` | `AnthropicMessage` | `OPENROUTER_API_KEY` |
-| Grok (xAI) | `xai` | `OpenAiResponse` | `XAI_API_KEY` |
-| Zai | `zai` | `OpenAiCompatible` | `ZAI_API_KEY` |
-| DeepSeek | `deepseek` | `OpenAiCompatible` | `DEEPSEEK_API_KEY` |
-| MiniMax | `minimax` | `OpenAiCompatible` | `MINIMAX_API_KEY` |
-| Antix | `antix` | `AnthropicMessage` | OAuth (`antix`), then `ANTIX_API_KEY` |
-| Local | `local` | `OpenAiCompatible` | none |
-
-The `key` column is what you pass to `--provider`. An API-key provider reads its environment variable first, then a key stored with `ante auth add <key>` or pasted in `/providers`. An OAuth provider signs in from `/providers` in the TUI or with `ante auth login <key>` from the CLI. `antix` takes either: an Antix sign-in first, then `ANTIX_API_KEY`, then a stored key. See [Credentials](#credentials) for how to change any of this.
-
-## Models by provider
-
-Each provider ships a set of `preferred_models` — the ids that appear in the model picker. When you select a provider without naming a model, Ante defaults to its **heaviest-weight** model (see [Weight classes](#weight-classes)), not simply the first in the list. Explicit provider choices are authoritative: if you pass `--provider`, Ante sends the model id you supplied to that provider even when it is not listed in `preferred_models` (see [Resolution](#how-a-model-and-provider-are-chosen)).
-
-### Anthropic
-
-`anthropic` and `anthropic-subscription` serve the same models:
-
-| Model | Description | Context |
-|---|---|---|
-| `claude-haiku-5-5` | Fast, efficient model for high-volume agentic work | 1M |
-| `claude-sonnet-5-5` | Best combination of speed and intelligence | 1M |
-| `claude-opus-5-5` | Long-running agentic coding and knowledge work | 1M |
-| `claude-fable-5-1` | Highest capability for demanding reasoning | 1M |
+Open `/providers` to see which providers are connected. From the shell, run `ante catalog` to print the merged catalog as JSON. To list provider IDs and their configured credential references, use:
 
 ```bash
-ante --provider anthropic --model claude-sonnet-5-5
+ante catalog | jq '.providers[] | {id, credential}'
 ```
 
-### OpenAI
+An `env:` reference names an environment variable. For sign-in and API-key setup, see [Connect a provider](/usage/providers).
 
-| Model | Description | Context |
-|---|---|---|
-| `gpt-6-astra` | OpenAI's most capable model for complex agentic work | 1.05M |
-| `gpt-6.1-sol` | GPT-6.1 Sol for complex coding and agentic workflows | 1.05M |
-| `gpt-6.1-terra` | GPT-6.1 Terra for visual reasoning, computer use, and writing | 1.05M |
-| `gpt-6-luna` | GPT-6 model for focused, high-volume tasks | 1.05M |
+## Find a model {#models-by-provider}
+
+Open `/models` to see the current provider’s presets. To list Antix presets from your installation:
 
 ```bash
-ante --provider openai --model gpt-6.1-sol
+ante catalog | jq -r '.providers[] | select(.id == "antix") | .preferred_models[]?.id'
 ```
 
-The `openai-subscription` provider (ChatGPT/Codex OAuth) offers `gpt-6-astra` (the default, 272K context), `gpt-6.1-sol` and `gpt-6.1-terra` (500K), and `gpt-6-luna` (272K), all with image input. `gpt-6-luna` is its lightest model, so it handles [auxiliary calls](#weight-classes).
-
-#### OpenAI transports
-
-The `openai` and `openai-subscription` providers can stream responses two ways:
-
-| Transport | Endpoint | Default |
-|---|---|---|
-| `http_sse` (HTTP + SSE) | `https://api.openai.com/v1/responses` (or the subscription equivalent) | ✅ |
-| `websocket_auto` (persistent WebSocket) | `wss://.../v1/responses` | opt-in |
-
-WebSocket mode keeps one connection open per session and continues each turn with `previous_response_id` plus only the new input items. In long agentic tool loops this eliminates per-turn round-trip latency. See OpenAI's [WebSocket mode guide](https://developers.openai.com/api/docs/guides/websocket-mode) for the underlying protocol.
-
-Opt in via the process-scoped env var (default is `http_sse`):
-
-```bash
-ANTE_OPENAI_TRANSPORT=websocket_auto ante --provider openai --model gpt-6-luna
-```
-
-Accepted values: `http_sse`, `websocket_auto`. Unknown values warn and fall back to `http_sse`.
-
-Notes:
-
-- All model-generation calls use the streaming transport, including TUI turns, headless tasks, compaction, goal judging, and ambient hints. Calls that need a complete response collect that stream, so they can also use WebSocket when enabled. Cancelling a WebSocket call discards its connection so the next request cannot read the abandoned response.
-- Eligible WebSocket failures fall back to HTTP/SSE within the remaining call budget; falling back does not reset the deadline. If the budget expires, the call reports a timeout. Auth failures (`401`/`403`) disable WebSocket for the rest of the session.
-- Works against both `api.openai.com` (API-key) and the ChatGPT subscription backend at `chatgpt.com/backend-api/codex`.
-- To verify which transport is active: in debug builds, toggle the debug panel (`Ctrl+L`) and check the **Info** tab for the `OpenAI Transport:` line. Otherwise grep your session log for `transport selected`:
-
-  ```bash
-  grep "transport selected" ~/.ante/logs/*/ante.*.log
-  ```
-
-### Gemini
-
-`gemini` and `vertex-gemini` serve the same models:
-
-| Model | Description | Context |
-|---|---|---|
-| `gemini-3.8-flash` | Gemini 3.8 Flash for long-horizon coding and autonomous agents | 1.05M |
-| `gemini-4-argon` | Gemini 4 Argon for complex reasoning and autonomous agents | 1.05M |
-| `gemini-3.5-flash-lite` | Fastest, lowest-cost Gemini 3.5 model for high-throughput work | 1M |
-
-```bash
-ante --provider gemini --model gemini-3.8-flash
-```
-
-With no model supplied by CLI flags or settings, `--provider gemini` or `--provider vertex-gemini` selects the heaviest model, Gemini 4 Argon. Its native preset allows up to 32,768 output tokens; the OpenRouter `google/gemini-4-argon` preset allows 65,536. Both support image input and `low`, `medium`, and `high` effort.
-
-### Grok (xAI)
-
-| Model | Description | Context |
-|---|---|---|
-| `grok-4.7` | Grok 4.7 flagship reasoning model | 500K |
-
-```bash
-ante --provider xai --model grok-4.7
-```
-
-### Zai
-
-| Model | Description | Context |
-|---|---|---|
-| `glm-5.3` | Latest GLM-5.3 model for coding and agentic tasks | 1M |
-| `glm-5.3-flash` | Fast, cost-efficient GLM-5.3 multimodal model | 1M |
-| `glm-5.3-flashx` | High-speed GLM 5.3 FlashX with native vision | 1M |
-
-```bash
-ante --provider zai --model glm-5.3
-```
-
-### Open Router
-
-Open Router ships as three providers sharing one API key, split by wire style: `openrouter` (OpenAI-compatible chat), `openrouter-responses` (OpenAI Responses), and `openrouter-anthropic` (Anthropic Messages).
-
-`openrouter`:
-
-| Model | Description | Context |
-|---|---|---|
-| `deepseek/deepseek-v4.1-flash-1017` | DeepSeek V4.1 Flash October 17 coding upgrade with vision | 1.05M |
-| `reflection/beam-1.0-501b-a23b` | Reflection Beam 1.0 for coding and long-horizon agentic work | 1.05M |
-| `google/gemini-4-argon` | Gemini 4 Argon for complex reasoning via OpenRouter | 1.05M |
-| `google/gemini-3.8-flash` | Gemini 3.8 Flash for long-horizon coding and autonomous agents | 1.05M |
-| `x-ai/grok-4.7` | Grok 4.7 flagship reasoning model via OpenRouter | 500K |
-| `qwen/qwen3.8-max-0902` | Qwen 3.8 flagship multimodal reasoning model | 1M |
-| `qwen/qwen3.7-plus` | Cost-effective Qwen 3.7 model with vision | 1M |
-| `qwen/qwen3.8-flash` | Qwen 3.8 Flash multimodal reasoning model | 1M |
-| `meta/muse-wonder` | Muse Wonder for complex agentic reasoning and coding | 1.05M |
-| `meta/muse-spark-open` | Muse Spark Open for agentic coding workflows | 1.05M |
-| `meta/muse-spark-1.3` | Muse Spark 1.3 multimodal agentic reasoning model | 1.05M |
-| `tencent/hy3` | Tencent Hy3 agentic reasoning model | 262K |
-| `xiaomi/mimo-v2.6-pro` | MiMo-V2.6-Pro multimodal agentic model | 1.05M |
-| `xiaomi/mimo-v2.6-flash` | MiMo-V2.6-Flash multimodal agentic model | 1.05M |
-| `z-ai/glm-5.3` | GLM 5.3 coding and agentic reasoning model via OpenRouter | 1.05M |
-| `z-ai/glm-5.3-flash` | Fast, cost-efficient GLM 5.3 multimodal model via OpenRouter | 1.05M |
-| `moonshotai/kimi-k3.1-pro` | Kimi K3.1 Pro multimodal reasoning for long-horizon agentic work | 1.05M |
-| `moonshotai/kimi-k2.7-code` | Kimi K2.7 Code reasoning model with vision | 262K |
-| `minimax/minimax-m3.1-flash` | MiniMax M3.1 Flash multimodal reasoning model | 1M |
-| `qwen/qwen3.8-max-prime` | Higher-throughput Qwen 3.8 Max with vision | 1M |
-| `qwen/qwen3.8-omni-flash` | Qwen 3.8 Omni Flash multimodal reasoning | 1M |
-| `z-ai/glm-5.3-prime` | Higher-throughput GLM 5.3; text only | 1M |
-| `z-ai/glm-5.3-flashx` | High-speed GLM 5.3 FlashX with native vision | 1.05M |
-| `meta/muse-spark-1.3-contributor` | Cost-efficient Muse Spark 1.3 contributor model | 1.05M |
-| `nvidia/nemotron-3-ultra-550b-a55b` | Complex agentic reasoning; text only, medium/high effort | 202.8K |
-
-`openrouter-responses` serves `openai/gpt-6-astra`, `openai/gpt-6-astra-pro`, `openai/gpt-6.1-sol`, `openai/gpt-6.1-sol-pro`, `openai/gpt-6.1-terra`, `openai/gpt-6.1-terra-pro`, `openai/gpt-6-luna`, `openai/gpt-6-luna-pro`, all with 1.05M context. The `-pro` ids select OpenRouter's pro reasoning route.
-
-`openrouter-anthropic` serves the Claude family over Anthropic Messages: `anthropic/claude-haiku-5.5` (1M context), plus `anthropic/claude-sonnet-5.5`, `anthropic/claude-opus-5.5`, and `anthropic/claude-fable-5.1` (1M).
-
-Each provider also accepts any model from Open Router's [full model list](https://openrouter.ai/models) by id, as long as it speaks that provider's wire style.
-
-```bash
-ante --provider openrouter --model deepseek/deepseek-v4.1-flash-1017
-ante --provider openrouter-responses --model openai/gpt-6.1-sol
-ante --provider openrouter-anthropic --model anthropic/claude-fable-5.1
-```
-
-### DeepSeek
-
-| Model | Description | Context |
-|---|---|---|
-| `deepseek-flash` | DeepSeek V4.1 Flash with vision | 1M |
-
-```bash
-ante --provider deepseek --model deepseek-flash
-```
-
-Set `DEEPSEEK_API_KEY`, and optionally `DEEPSEEK_BASE_URL`.
-
-### MiniMax
-
-| Model | Description | Context |
-|---|---|---|
-| `MiniMax-M3.1-Flash` | MiniMax M3.1 Flash multimodal coding and reasoning model | 1M |
-
-```bash
-ante --provider minimax --model MiniMax-M3.1-Flash
-```
-
-Set `MINIMAX_API_KEY`, and optionally `MINIMAX_BASE_URL`.
-
-### Antix
-
-`antix` serves these models through Antigma, with an Antix sign-in or an Antix API key:
-
-| Model | Description | Context |
-|---|---|---|
-| `gemini-3.8-flash` | Gemini 3.8 Flash for long-horizon coding and autonomous agents | 1.05M |
-| `gemini-4-argon` | Gemini 4 Argon for complex reasoning and autonomous agents | 1.05M |
-| `grok-4.6` | Grok 4.6 flagship reasoning model | 500K |
-| `kimi-k3.1-pro` | Kimi K3.1 Pro multimodal reasoning for long-horizon agentic work | 1M |
-| `qwen3.8-max` | Latest Qwen 3.8 Max | 1M |
-| `qwen3.7-plus` | Latest Qwen 3.7 Plus | 1M |
-| `claude-haiku-5-5` | Fastest Claude model for high-volume, latency-sensitive work | 1M |
-| `claude-sonnet-5-5` | Best combination of speed and intelligence | 1M |
-| `claude-opus-5-5` | Long-running agentic coding and knowledge work | 1M |
-| `claude-fable-5-1` | Most capable Claude model | 1M |
-| `gpt-6-astra` | OpenAI's most capable model for complex agentic work | 1.05M |
-| `gpt-6.1-sol` | GPT-6.1 Sol for complex coding and agentic workflows | 1.05M |
-| `gpt-5.6-terra` | GPT-5.6 balance of intelligence and cost | 1.05M |
-| `gpt-5.6-luna` | GPT-5.6 model for efficient, high-volume workloads | 1.05M |
-| `gpt-5.4-mini` | Faster, cheaper GPT-5.4 model | 400K |
-| `gpt-5.4-nano` | Smallest GPT-5.4 model | 400K |
-| `deepseek-flash` | DeepSeek V4.1 Flash with native vision | 1M |
-| `deepseek-v4-pro` | Complex agentic work; text only, low/high/max effort | 1M |
-| `glm-5.3` | Latest GLM-5.3 model for coding and agentic tasks | 1M |
-| `glm-5.3-flash` | Fast GLM-5.3 Flash for coding and agentic tasks | 1M |
-| `glm-5.3-flashx` | High-speed GLM 5.3 FlashX with native vision | 1M |
-
-```bash
-ante auth login antix          # or: export ANTIX_API_KEY=...
-ante --provider antix --model claude-sonnet-5-5
-```
-
-### Local
-
-Run GGUF models locally via the built-in llama.cpp engine — no API key required. The `local` provider is available while an offline model is ready. For managed models, its settings reflect the active context window, thinking, temperature, and vision capabilities. Unloading the model or stopping the server makes `local` unavailable. Start or attach a model before using `--provider local`; the flag by itself does not start the engine. See [Offline Mode](/local/offline) for setup.
-
-```bash
-ante --provider local
-```
+A provider can serve a model before it appears in your installed presets. Pass its model ID directly with `ante --provider <provider> --model <model_id>`. See [Choosing a model](/usage/models-and-thinking#selecting-a-model).
 
 ## Custom catalog
 
@@ -284,7 +64,7 @@ To keep the key out of your shell profile instead, leave `credential` out and st
 
 ### Declare the effort levels a model accepts
 
-The [effort slider](/usage/models-and-thinking#effort)'s ladder is built in per provider and model family, so a model on a custom endpoint may get a ladder that doesn't match what the endpoint really accepts. Declare the true set with `supported_efforts` — the slider then shows exactly those levels, and OpenAI-compatible providers send the selected level as the same-named `reasoning_effort`:
+Set `supported_efforts` on a model when your endpoint accepts different levels from the built-in defaults. Ante uses the levels its API can express for both the [effort slider](/usage/models-and-thinking#effort) and outgoing requests. This model accepts three levels and defaults to `high`.
 
 ```json
 "preferred_models": [
@@ -295,6 +75,8 @@ The [effort slider](/usage/models-and-thinking#effort)'s ladder is built in per 
   }
 ]
 ```
+
+A request below the supported range uses the lowest level. Between two supported levels, Ante uses the lower one. For a model that accepts `min`, Responses sends `none` and Gemini sends `MINIMAL`.
 
 An empty list (`"supported_efforts": []`) declares that the model takes no effort setting at all. There is no API that reports supported levels, so when in doubt let `/add-provider` probe the endpoint for you.
 
@@ -332,6 +114,18 @@ local proxy:
       "base_url": "http://localhost:8080/v1",
       "credential": null
     }
+  }
+}
+```
+
+### Disable search on a DeepSeek gateway {#deepseek}
+
+The built-in `deepseek` provider uses the session credential to POST to `/v1/tools/search` on the same base URL. If your gateway forwards only chat requests, merge this into `~/.ante/catalog.json` and restart Ante.
+
+```json
+{
+  "providers": {
+    "deepseek": { "supports_web_search": false }
   }
 }
 ```
@@ -389,7 +183,7 @@ Patch a model on the provider that lists it. A `preferred_models` entry whose `i
       ]
     },
     "openai": {
-      "preferred_models": [{ "id": "gpt-6.1-sol", "temperature": 0.2 }]
+      "preferred_models": [{ "id": "gpt-6-luna", "effort": "min", "temperature": 0.2 }]
     }
   }
 }
@@ -410,6 +204,36 @@ A model served by several providers is patched on each one you use.
    ```bash
    ante --provider openrouter --model deepseek/deepseek-v4.1-flash-1017
    ```
+
+### OpenAI transports
+
+The `openai` and `openai-subscription` providers can stream responses two ways:
+
+| Transport | Endpoint | Default |
+|---|---|---|
+| `http_sse` (HTTP + SSE) | `https://api.openai.com/v1/responses` (or the subscription equivalent) | ✅ |
+| `websocket_auto` (persistent WebSocket) | `wss://.../v1/responses` | opt-in |
+
+WebSocket mode keeps one connection open per session and continues each turn with `previous_response_id` plus only the new input items. In long agentic tool loops this eliminates per-turn round-trip latency. See OpenAI's [WebSocket mode guide](https://developers.openai.com/api/docs/guides/websocket-mode) for the underlying protocol.
+
+Opt in via the process-scoped env var (default is `http_sse`):
+
+```bash
+ANTE_OPENAI_TRANSPORT=websocket_auto ante --provider openai --model gpt-6-luna
+```
+
+Accepted values: `http_sse`, `websocket_auto`. Unknown values warn and fall back to `http_sse`.
+
+Notes:
+
+- All model-generation calls use the streaming transport, including TUI turns, headless tasks, compaction, goal judging, and ambient hints. Calls that need a complete response collect that stream, so they can also use WebSocket when enabled. Cancelling a WebSocket call discards its connection so the next request cannot read the abandoned response.
+- Eligible WebSocket failures fall back to HTTP/SSE within the remaining call budget; falling back does not reset the deadline. If the budget expires, the call reports a timeout. Auth failures (`401`/`403`) disable WebSocket for the rest of the session.
+- Works against both `api.openai.com` (API-key) and the ChatGPT subscription backend at `chatgpt.com/backend-api/codex`.
+- To verify which transport is active: in debug builds, toggle the debug panel (`Ctrl+L`) and check the **Info** tab for the `OpenAI Transport:` line. Otherwise grep your session log for `transport selected`:
+
+  ```bash
+  grep "transport selected" ~/.ante/logs/*/ante.*.log
+  ```
 
 ### OpenAI-compatible providers
 
@@ -461,7 +285,7 @@ A `providers` entry whose key matches a built-in (e.g. `openai`) patches that pr
 | `extra_body` | — | Provider-specific JSON fields merged into every chat and streaming request body (see [Extra request fields](#extra-request-fields)). String values take [templates](#templates). |
 | `thinking_display` | — | Readable reasoning output: `off`, `concise`, or `detailed`, independent of reasoning effort (see [Thinking display](#thinking-display)). |
 | `max_request_images` | — | Non-negative integer limiting images per request across all models on this provider. Keeps the newest images and replaces older ones with text markers; `0` omits all images, `null` clears the cap. See [Request image limits](#request-image-limits). Available since v0.3.2. |
-| `supports_web_search` | — | Whether the provider exposes a native web-search affordance. When `true`, the `WebSearch` tool is added to sessions on this provider automatically; when `false` (the default), `WebSearch` is not offered. |
+| `supports_web_search` | When `true`, sessions offer `WebSearch` by default. The endpoint must support the corresponding search request. Defaults to `false` for new providers. For a chat-only gateway, see [DeepSeek](#deepseek). |
 | `preferred_models` | — | Models shown for this provider in the picker and used as provider defaults (see [Model fields](#model-fields)). For built-in provider overlays, matching model ids are patched and new ids are appended; omitted leaves the preset list unchanged. |
 | `stream_idle_timeout_secs` | — | Timeout in seconds; defaults to `300`. Opening a stream uses one shared budget for response headers, error bodies, OAuth refresh, transport retries and backoff, and WebSocket-to-HTTP fallback. Buffered HTTP calls also read their body within that budget. Once streaming, the same duration limits consecutive transport silence; every read resets it, including keepalives, lifecycle events, and partial tool arguments. All model-generation calls stream, including compaction, goal judging, and ambient hints. Raise it for slow local or proxied endpoints; lower it to detect stalls sooner. |
 
@@ -566,6 +390,8 @@ Values are passed through verbatim, so any JSON shape works. On a built-in provi
 | `OpenAiCompatible` | `model`, `messages`, `reasoning_effort`, `max_tokens`, `stream`, `stream_options`, `temperature`, `top_p`, `top_k`, `stop`, `tools`, `tool_choice`, `thinking`, `enable_thinking`, `thinking_budget`, `enable_search`, `search_options` |
 | `OpenAiResponse` | `model`, `instructions`, `input`, `tools`, `tool_choice`, `parallel_tool_calls`, `max_output_tokens`, `temperature`, `reasoning`, `stream`, `include`, `store` |
 | `Gemini` | `contents`, `systemInstruction`, `generationConfig`, `tools`, `toolConfig` |
+
+For Claude Sonnet 5.5 on Anthropic Messages, `tool_choice` cannot require a tool call or force a specific tool. Ante reports that error before sending the request.
 
 A reserved key is dropped at catalog load and named in the startup notice; the rest of the provider still loads. To change one of these, use the [model fields](#model-fields) or the [environment overrides](#environment-overrides) instead:
 
@@ -681,14 +507,14 @@ A model is described inside a provider's `preferred_models`. On a built-in provi
 | `id` | Model id (`name` is accepted as a legacy alias). |
 | `display_name` | Friendly name. |
 | `description` | Short description shown in the model picker. |
-| `temperature` | Sampling temperature. On `AnthropicMessage` providers, must be `1` while thinking is active; Claude Haiku 5.5 requires `1` regardless of thinking settings. Other values fail before the request is sent. |
+| `temperature` | Sampling temperature. Anthropic Messages requires `1` while thinking is active, and Claude Haiku 5.5 always requires `1`. The Responses API sends a configured temperature when reasoning is `none` or unset and omits it while reasoning is active. |
 | `top_p` | Nucleus sampling cutoff. |
 | `top_k` | Top-k sampling cutoff. |
 | `max_tokens` | Maximum output tokens per turn. On `AnthropicMessage` providers that take an explicit thinking budget, it must exceed 1024 — the API's minimum budget — when an effort level is set. |
 | `stop_sequences` | List of strings that end generation. |
 | `context_limit` | Context window size, in tokens. |
 | `effort` | Default [effort level](/usage/models-and-thinking#effort) — `min`, `low`, `medium`, `high`, `xhigh`, or `max`. Omit for models with no reasoning knob (Ante then sends no effort parameter and hides the effort slider). |
-| `supported_efforts` | The effort levels this model accepts on this provider, ascending (same values as `effort`). Replaces the built-in ladder: the effort slider shows exactly these levels, and OpenAI-compatible providers send the selected level as the same-named `reasoning_effort` (`min` is sent as `minimal`). An empty list declares that the model takes no effort setting. Omit to keep the built-in ladder. |
+| `supported_efforts` | Levels the model accepts (same values as `effort`). Each API uses the declared levels it can express. An empty list disables the effort parameter. Omit the field to use the built-in levels. |
 | `weight_class` | Size/cost tier — `Feather`, `Middle`, or `Heavy`. Drives automatic default and auxiliary model selection (see [Weight classes](#weight-classes)). |
 | `support_vision` | Whether the model accepts image input. Built-in models declare this explicitly; custom models default to `true` when unspecified, and an overlay that omits it keeps the preset value. Set `false` for a text-only endpoint. Images are filtered out before sending to non-vision models without altering saved history; reading an image returns its metadata instead of pixels. |
 
