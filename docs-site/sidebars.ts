@@ -40,7 +40,7 @@ const sidebars: SidebarsConfig = {
       type: 'category',
       label: 'Getting Started',
       className: 'sidebar-section sidebar-section--start',
-      collapsible: false,
+      collapsed: false,
       items: [
         'start/overview',
         'start/quickstart',
@@ -58,7 +58,7 @@ const sidebars: SidebarsConfig = {
       type: 'category',
       label: 'Using Ante',
       className: 'sidebar-section sidebar-section--use',
-      collapsible: false,
+      collapsed: false,
       items: [
         'usage/providers',
         'usage/custom-sign-ins',
@@ -80,7 +80,7 @@ const sidebars: SidebarsConfig = {
       type: 'category',
       label: 'Local Models',
       className: 'sidebar-section sidebar-section--local',
-      collapsible: false,
+      collapsed: false,
       items: [
         'local/overview',
         'local/offline',
