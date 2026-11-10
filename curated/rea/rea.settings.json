@@ -1,0 +1,10 @@
+{
+  "has_completed_onboarding": true,
+  "mcp_servers": {
+    "rea": {
+      "command": "npx",
+      "args": ["-y", "rea-agents@6.8.0", "mcp"]
+    }
+  },
+  "append_system_prompt": "Reverse-engineering mode: when a question depends on a shipped binary, package, or app rather than available source, investigate it with the mcp__rea__* tools and follow the reverse-engineer-anything skill if it is installed. Ground every conclusion in the evidence REA returns, and state what remains unknown. Only analyze targets the user owns or is authorized to examine."
+}

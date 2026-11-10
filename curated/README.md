@@ -75,6 +75,61 @@ The examples show configurations with API key authentication. Substitute `<your-
 | [perplexity](./web-search-MCP/perplexity.settings.json) | [doc](https://docs.perplexity.ai/docs/getting-started/integrations/mcp-server) |
 | [brave](./web-search-MCP/brave.settings.json) | [github](https://github.com/brave/brave-search-mcp-server) |
 
+### [rea](./rea/)
+
+A reverse-engineering agent backed by [REA](https://github.com/morluto/rea), an MCP server that inspects native binaries, Electron/JavaScript apps, .NET assemblies, APKs, and websites, returning decompiled code with the evidence behind each finding. The profile registers REA's stdio server and appends a short prompt that keeps conclusions tied to that evidence.
+
+```sh
+cp rea/rea.settings.json ~/.ante/
+npx skills add morluto/rea --skill reverse-engineer-anything   # optional workflow skill, lands in ~/.agents/skills/
+ante --profile rea
+```
+
+Then ask about any binary, package, or app on disk.
+
+Requires Node.js 22.19+ for `npx`. Native decompilation also needs Hopper, Ghidra, or IDA (see REA's [installation guide](https://github.com/morluto/rea/blob/main/docs/installation.md)); JavaScript and .NET inspection need none. With Ghidra (`brew install ghidra` on macOS), add its paths to the server entry so REA finds them:
+
+```json
+"env": {
+  "GHIDRA_INSTALL_DIR": "/opt/homebrew/opt/ghidra/libexec",
+  "JAVA_HOME": "/opt/homebrew/opt/openjdk@21/libexec/openjdk.jdk/Contents/Home",
+  "REA_GHIDRA_STARTUP_TIMEOUT_MS": "3600000"
+}
+```
+
+Ghidra's first analysis of a large binary can outlast both REA's 330-second startup default and Ante's 10-minute MCP call deadline; raise the latter with `ANTE_MCP_TOOL_TIMEOUT=3600`.
+
+The server is pinned to one `rea-agents` release, as REA recommends. Bump the version in `args` to upgrade. To keep your own model and settings instead of using a profile, merge the `mcp_servers.rea` entry into `~/.ante/settings.json`.
+
+#### Ante decompiles Ante
+
+Don't trust, verify. The Ante binary is closed source, so point Ante at itself and read what comes out. This walkthrough decompiles the first 200 functions of the v0.3.4 macOS arm64 release. It takes about 20 minutes, nearly all of it Ghidra's one-time analysis.
+
+1. Download the release and confirm the binary's hash:
+
+   ```sh
+   mkdir verify && cd verify
+   gh release download v0.3.4 --repo AntigmaLabs/ante --pattern 'ante-v0.3.4-darwin-arm64.tar.gz'
+   tar xzf ante-v0.3.4-darwin-arm64.tar.gz
+   shasum -a 256 ante
+   # 426cd33670bd89c8f2fcf5b070fbcf7cb63ce2d6672d9b5a92e9b8407b84f9c0
+   ```
+
+2. Ask Ante to decompile it. The profile needs the Ghidra `env` block above, with Ghidra 12.1.4:
+
+   ```sh
+   ANTE_MCP_TOOL_TIMEOUT=3600 ante --profile rea \
+     -p "Open $PWD/ante with the REA Ghidra provider, then run decompile_all with layout address, limit 200, output directory $PWD/decompiled. Do not write files yourself. Report the manifest counts."
+   ```
+
+The pseudocode lands in `decompiled/functions/`, one file per function, and `decompiled/decompile-index.json` records the binary hash, the Ghidra version, and a SHA-256 per function. The model only issues the tool calls; REA and Ghidra write the files.
+
+Our own run of these steps is attached to the release as [`decompiled-ante-v0.3.4-darwin-arm64.tar.gz`](https://github.com/AntigmaLabs/ante/releases/download/v0.3.4/decompiled-ante-v0.3.4-darwin-arm64.tar.gz), as an example of the output and something to diff yours against. With the same Ghidra version, the function files come out byte-identical.
+
+Drop `limit 200` to export all of the roughly 28,000 functions (about 280MB and 18 hours on a 24-core Mac), or add `resume true` to continue an earlier run. From there, ask Ante questions about what you exported, such as which functions reference network hosts.
+
+The output is decompiled pseudocode with generated names like `FUN_1000110e4`. It shows what the binary does, and it is not the original Rust source.
+
 ## Skills
 
 [Agent Skills](https://agentskills.io) folders, each with a `SKILL.md`. Copy a folder into `~/.ante/skills/` for all projects, or `.ante/skills/` for one project. See the [skills docs](https://docs.antigma.ai/extend/skills).
