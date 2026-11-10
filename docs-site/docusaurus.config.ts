@@ -4,15 +4,11 @@ import { themes as prismThemes } from 'prism-react-renderer'
 
 import { githubIcon } from './src/components/icons'
 
-// Prism themes write their background as an inline style, so the site's warm
-// code surface is set on the theme itself rather than overridden in CSS.
-const prismLight = {
-  ...prismThemes.github,
-  plain: { color: '#252525', backgroundColor: '#f1ede8' },
-}
-const prismDark = {
-  ...prismThemes.dracula,
-  plain: { color: '#ece7e1', backgroundColor: '#26231f' },
+// Prism writes inline styles into the static HTML. Use the active palette
+// there too so code is readable before React hydrates.
+const prismPlain = {
+  color: 'var(--ink-900)',
+  backgroundColor: 'var(--ifm-code-background)',
 }
 
 const isZhHansBuild = process.env.DOCUSAURUS_CURRENT_LOCALE === 'zh-Hans'
@@ -214,8 +210,8 @@ const config: Config = {
       ],
     },
     prism: {
-      theme: prismLight,
-      darkTheme: prismDark,
+      theme: { ...prismThemes.github, plain: prismPlain },
+      darkTheme: { ...prismThemes.dracula, plain: prismPlain },
       additionalLanguages: ['bash', 'json', 'rust', 'toml'],
     },
     colorMode: {

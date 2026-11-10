@@ -47,9 +47,9 @@
   --ifm-hover-overlay: rgba(37, 37, 37, 0.04);
 }
 
-/* Dark: warm near-black, the same ink family inverted. Every token set in
-   :root above is re-set here, since this block is what wins in dark mode. */
-[data-theme='dark'] {
+/* Keep the dark palette more specific than :root even when the production
+   CSS optimizer combines and reorders the base declarations. */
+:root[data-theme='dark'] {
   --paper: #1a1816;
   --ink-900: #ece7e1;
   --ink-700: #c9c2ba;
@@ -77,7 +77,6 @@
   --ifm-color-emphasis-700: var(--ink-700);
   --ifm-card-background-color: #22201d;
   --ifm-code-background: #26231f;
-  --ifm-pre-background: #26231f;
   --ifm-menu-color: var(--ink-900);
   --ifm-menu-color-background-active: #2e2a26;
   --ifm-menu-color-background-hover: #242120;
@@ -320,12 +319,6 @@ html:root {
   display: contents;
 }
 
-.navbar__items > .navbar-locale-switcher-wrapper > .navbar__item {
-  display: flex;
-  align-items: center;
-  padding: 0;
-}
-
 /* Language: a labelled dropdown ("English ▾"), not an icon */
 .navbar__items {
   align-items: center;
@@ -423,6 +416,16 @@ html:root {
 
 /* Desktop: search sits at the exact centre of the row, as on code.claude.com */
 @media (min-width: 997px) {
+  .navbar__items > .navbar-locale-switcher-wrapper > .navbar__item,
+  .navbar__items--right .navbar__item {
+    display: inline-flex;
+    align-items: center;
+  }
+
+  .navbar-locale-switcher-wrapper > .navbar__item {
+    padding: 0;
+  }
+
   .navbar__inner {
     position: relative;
   }
@@ -467,25 +470,15 @@ html:root {
   margin: 0 !important;
 }
 
-.navbar__items--right .navbar__item {
-  display: inline-flex;
-  align-items: center;
-  padding: 0;
-}
-
 .navbar__items--right .navbar-github {
   width: 32px;
   height: 32px;
+  padding: 0;
   justify-content: center;
 }
 
 .navbar__items--right .navbar-cta {
   margin-right: 8px !important;
-}
-
-.navbar__items--right [class*='colorModeToggle'] {
-  display: inline-flex;
-  align-items: center;
 }
 
 .navbar__items--right [class*='colorModeToggle'] button {
@@ -536,8 +529,6 @@ html:root {
 
 /* One call to action: same outlined brand button as the homepage hero */
 .navbar__items--right .navbar-cta {
-  display: inline-flex;
-  align-items: center;
   height: 36px;
   padding: 0 14px;
   border: 1px solid var(--ifm-color-primary);
@@ -568,8 +559,9 @@ html:root {
   --ifm-menu-link-sublist-icon-filter: none;
 }
 
-[data-theme='dark'] {
+:root[data-theme='dark'] {
   --ifm-menu-link-sublist-icon: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23a39b94' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+  --ifm-menu-link-sublist-icon-filter: none;
 }
 
 .menu__link--sublist-caret::after,
@@ -797,7 +789,6 @@ html[lang='zh-CN'] .table-of-contents::before {
 }
 
 :root {
-  --ifm-pre-background: #f1ede8;
   --ifm-code-border-radius: 8px;
   --ifm-pre-border-radius: 8px;
 }
