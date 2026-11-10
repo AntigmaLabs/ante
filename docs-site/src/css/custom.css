@@ -23,7 +23,6 @@
   --ifm-heading-font-weight: 600;
   --ifm-line-height-base: 1.7;
   --ifm-paragraph-margin-bottom: 20px;
-  --doc-sidebar-width: 240px;
   /* Two navbar rows: 72px brand/tools + 48px product tabs (code.claude.com rhythm) */
   --ifm-navbar-height: 120px;
   --ifm-navbar-padding-horizontal: 24px;
@@ -35,14 +34,16 @@
   --ifm-background-surface-color: #ffffff;
   --ifm-navbar-background-color: var(--paper);
   --ifm-footer-background-color: var(--paper);
-  --ifm-font-color-base: var(--ink-900);
+  /* Body copy is ink-700 per the site design system; ink-900 is for headings */
+  --ifm-font-color-base: var(--ink-700);
+  --ifm-heading-color: var(--ink-900);
   --ifm-toc-border-color: var(--line);
   --ifm-color-emphasis-300: var(--line);
   --ifm-card-background-color: #ffffff;
   --ifm-code-background: #f1ede8;
   --ifm-menu-color: var(--ink-900);
-  --ifm-menu-color-background-active: #f1ede8;
-  --ifm-menu-color-background-hover: #f1ede8;
+  --ifm-menu-color-background-active: #ede8e2;
+  --ifm-menu-color-background-hover: #f4f1ec;
   --ifm-hover-overlay: rgba(37, 37, 37, 0.04);
 }
 
@@ -68,7 +69,8 @@
   --ifm-background-surface-color: #22201d;
   --ifm-navbar-background-color: var(--paper);
   --ifm-footer-background-color: var(--paper);
-  --ifm-font-color-base: var(--ink-900);
+  --ifm-font-color-base: var(--ink-700);
+  --ifm-heading-color: var(--ink-900);
   --ifm-toc-border-color: var(--line);
   --ifm-color-emphasis-300: var(--line);
   --ifm-color-emphasis-600: var(--ink-500);
@@ -77,12 +79,16 @@
   --ifm-code-background: #26231f;
   --ifm-pre-background: #26231f;
   --ifm-menu-color: var(--ink-900);
-  --ifm-menu-color-background-active: #2a2724;
-  --ifm-menu-color-background-hover: #2a2724;
+  --ifm-menu-color-background-active: #2e2a26;
+  --ifm-menu-color-background-hover: #242120;
   --ifm-hover-overlay: rgba(255, 255, 255, 0.05);
 }
 
-/* Type scale for reading surfaces (docs/design/secondary-pages.md §3.1):
+/* Two tiers, kept apart on purpose:
+     reading  — article: 36 / 24 / 18 / 16 headings, 16px body (ink-700)
+     UI       — navbar, tabs, sidebar, TOC, search: 14px everywhere
+   When one UI element changes size, the rest of the tier moves with it.
+   Type scale for reading surfaces (docs/design/secondary-pages.md §3.1):
    36 title · 24 heading · 18 subheading · 16 body · 14 small · 13 label.
    Headings stay Space Grotesk; metadata (breadcrumbs, TOC, labels) is mono. */
 .markdown {
@@ -127,6 +133,12 @@
 
 .markdown li {
   margin-top: 6px;
+}
+
+.markdown strong,
+.markdown b,
+.markdown th {
+  color: var(--ink-900);
 }
 
 /* Breadcrumbs become a section eyebrow (as on code.claude.com): only the
@@ -193,10 +205,25 @@
   }
 }
 
-/* Article starts a little lower, like code.claude.com */
+/* Column widths after code.claude.com: sidebar 240, TOC 250, article takes the rest.
+   html:root outranks the theme's own :root declaration of the sidebar width. */
+html:root {
+  --doc-sidebar-width: 240px;
+}
+
 @media (min-width: 997px) {
   main[class*='docMainContainer'] > .container {
     padding-top: 40px;
+  }
+
+  main[class*='docMainContainer'] .row > .col.col--3 {
+    flex: 0 0 250px;
+    max-width: 250px;
+  }
+
+  main[class*='docMainContainer'] .row > .col:first-child {
+    flex: 1 1 0;
+    max-width: none;
   }
 }
 
@@ -232,7 +259,7 @@
   align-items: center;
   padding-top: 2px;
   border-bottom: 2px solid transparent;
-  font-size: 15px;
+  font-size: 14px;
   font-weight: 500;
   color: var(--ink-700);
   white-space: nowrap;
@@ -275,9 +302,10 @@
 }
 
 /* Brand wordmark in the display face, same as antigma.ai's navbar */
+.navbar__brand,
 .navbar__brand:hover,
 .navbar__brand:hover .navbar__title {
-  color: var(--ifm-font-color-base);
+  color: var(--ink-900);
 }
 
 .navbar__title {
@@ -371,7 +399,7 @@
   height: 40px;
   padding-left: 40px;
   padding-right: 56px;
-  font-size: 15px;
+  font-size: 14px;
   color: var(--ink-900);
   background-color: var(--ifm-background-surface-color);
   background-position: 14px center;
@@ -577,21 +605,35 @@
   padding: 0 6px;
 }
 
-/* Sidebar, after code.claude.com: bold sentence-case group headers,
-   quiet links, and a soft pill on the active page. Orange stays in content. */
+/* Sidebar, after code.claude.com. One rhythm for every row so sizes and
+   spacing move together:
+     row      14px / 20px text + 6px padding  = 32px, 2px between rows
+     header   same row, weight 600, ink-900   (level 1, collapsible)
+     label    13px / 600, 12px above          (nested, not a link)
+     group    20px below an open group
+   Hierarchy is carried by weight and colour only: headers ink-900/600,
+   links ink-700/400, active page ink-900/500 on a soft pill. */
 .theme-doc-sidebar-menu {
-  --ifm-menu-link-padding-vertical: 7px;
-  --ifm-menu-link-padding-horizontal: 10px;
+  --side-row-font: 14px;
+  --side-row-leading: 20px;
+  --side-row-pad-y: 6px;
+  --side-row-pad-x: 10px;
+  --side-row-gap: 2px;
+  --ifm-menu-link-padding-vertical: var(--side-row-pad-y);
+  --ifm-menu-link-padding-horizontal: var(--side-row-pad-x);
 }
 
 .theme-doc-sidebar-item-link,
 .theme-doc-sidebar-item-category {
-  font-size: 15px;
+  font-size: var(--side-row-font);
 }
 
 .theme-doc-sidebar-menu .menu__link {
+  min-height: 0;
+  padding: var(--side-row-pad-y) var(--side-row-pad-x);
+  font-size: var(--side-row-font);
   font-weight: 400;
-  line-height: 1.4;
+  line-height: var(--side-row-leading);
   color: var(--ink-700);
   border-radius: 8px;
 }
@@ -606,43 +648,62 @@
   background: var(--ifm-menu-color-background-active);
 }
 
+.theme-doc-sidebar-menu .menu__list-item,
 .theme-doc-sidebar-menu .menu__list-item:not(:first-child) {
-  margin-top: 2px;
+  margin-top: var(--side-row-gap);
 }
 
-/* Top-level group headers */
+.theme-doc-sidebar-menu .menu__list .menu__list {
+  margin-top: 0;
+  padding-left: 12px;
+}
+
+/* Level-1 group headers: a row like any other, heavier */
 .theme-doc-sidebar-menu > .theme-doc-sidebar-item-category-level-1 {
-  margin-top: 4px;
+  margin-top: var(--side-row-gap);
 }
 
 .theme-doc-sidebar-menu > .theme-doc-sidebar-item-category-level-1:not(.menu__list-item--collapsed) {
-  margin-bottom: 24px;
+  margin-bottom: 20px;
 }
 
 .theme-doc-sidebar-item-category-level-1 > .menu__list-item-collapsible > .menu__link,
 .theme-doc-sidebar-item-category-level-1 > .menu__list-item-collapsible > .menu__link:hover,
 .theme-doc-sidebar-item-category-level-1 > .menu__list-item-collapsible > .menu__link--active {
-  font-size: 15px;
+  font-size: var(--side-row-font);
   font-weight: 600;
   color: var(--ink-900);
   background: transparent;
 }
 
-/* Nested group labels (Benchmarks, Input): same voice, one size down, not links */
+.theme-doc-sidebar-item-category-level-1 > .menu__list-item-collapsible {
+  border-radius: 8px;
+}
+
+/* Nested labels (Benchmarks, Input): one step under the header, not links */
+.theme-doc-sidebar-item-category:not(.theme-doc-sidebar-item-category-level-1) {
+  margin-top: 12px;
+}
+
 .theme-doc-sidebar-item-category:not(.theme-doc-sidebar-item-category-level-1)
   > .menu__list-item-collapsible
   > .menu__link:not(.menu__link--sublist) {
   cursor: default;
-  font-size: 14px;
+  padding-top: 2px;
+  padding-bottom: 2px;
+  font-size: 13px;
   font-weight: 600;
   color: var(--ink-900);
-  padding-top: 10px;
 }
 
 .theme-doc-sidebar-item-category:not(.theme-doc-sidebar-item-category-level-1)
   > .menu__list-item-collapsible
   > .menu__link:not(.menu__link--sublist):hover {
   background: transparent;
+}
+
+.theme-doc-sidebar-item-category:not(.theme-doc-sidebar-item-category-level-1) + .menu__list-item {
+  margin-top: 12px;
 }
 
 /* No divider between sidebar and content (as on code.claude.com) */
@@ -691,9 +752,11 @@
 .table-of-contents::before {
   content: 'On this page';
   display: block;
-  margin: 0 0 8px var(--ifm-toc-padding-horizontal);
+  margin: 0 0 4px var(--ifm-toc-padding-horizontal);
+  padding: 6px 0;
   font-family: var(--ifm-font-family-base);
   font-size: 14px;
+  line-height: 20px;
   font-weight: 600;
   color: var(--ink-900);
 }
@@ -707,13 +770,20 @@ html[lang='zh-CN'] .table-of-contents::before {
   font-size: 14px;
 }
 
-.table-of-contents__link {
-  color: var(--ink-700);
-  line-height: 1.5;
+/* Same 32px row rhythm as the sidebar */
+.table-of-contents li {
+  margin: 0;
 }
 
-.table-of-contents li {
-  margin: 8px 0;
+.table-of-contents__link {
+  display: block;
+  padding: 6px 0;
+  line-height: 20px;
+  color: var(--ink-700);
+}
+
+.table-of-contents__link:hover {
+  color: var(--ink-900);
 }
 
 .table-of-contents__link--active {
@@ -747,6 +817,20 @@ html[lang='zh-CN'] .table-of-contents::before {
 
 [data-theme='dark'] .install-command .theme-code-block {
   border-color: #4a443e;
+}
+
+/* Copy button always visible (Docusaurus hides it until hover) */
+.theme-code-block div[class*='buttonGroup'] button {
+  opacity: 1;
+  background: transparent;
+  border: 1px solid var(--line);
+  color: var(--ink-500);
+  transition: color 0.15s ease, border-color 0.15s ease;
+}
+
+.theme-code-block div[class*='buttonGroup'] button:hover {
+  color: var(--ink-900);
+  border-color: #d5cfc8;
 }
 
 /* Install command: same treatment as the homepage install box —
