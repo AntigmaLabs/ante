@@ -1,5 +1,24 @@
 # Changelog
 
+## v0.3.4 - 2026-11-09
+
+### Added
+- DeepSeek sessions can use WebSearch through DeepSeek's Search API with the session's existing credential. A `deepseek` provider pointed at a gateway that doesn't forward the search endpoint can turn it off with `"supports_web_search": false` in `catalog.json`
+
+### Changed
+- Anthropic API, Anthropic subscription and OpenRouter offer Claude Fable 5.2 in place of Fable 5.1, at high effort by default. OpenRouter offers Tencent Hy4 in place of Hy3. Antix drops GPT-5.4 mini and nano. GPT-6 Astra on the OpenAI subscription gets a 500,000-token context window. Explicitly configured models still work
+- A model's declared `supported_efforts` now decide the effort level sent on every wire, not only what the picker offers. The lowest level is sent explicitly (`none` on the Responses API, `MINIMAL` on Gemini) instead of falling back to the provider's default
+- Startup notices and the update offer print under the session header instead of above the logo
+- The offline engine is pinned to llama.cpp b12182
+
+### Fixed
+- Switching models within one provider (for example Gemini to Claude on Antix) no longer breaks later turns with an invalid thinking `signature` error
+- A configured temperature is sent on the Responses API when reasoning effort is `none`
+- Tool-error, unknown-tool and malformed-call warnings in the log no longer include tool arguments or error output
+
+### Crates
+- Public crates published as 0.3.4: ante-protocol-shape, ante-llm, ante-exec, ante-sdk
+
 ## v0.3.3 - 2026-11-05
 
 ### Added
