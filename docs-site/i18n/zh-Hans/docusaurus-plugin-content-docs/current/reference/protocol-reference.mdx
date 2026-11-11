@@ -52,6 +52,8 @@ Ante 在客户端（Client）与守护进程（Daemon）之间采用强类型的
 
 示例：`op_01J5A3B7C9D0E1F2G3H4J5K6M7`
 
+每个操作指令都必须带有 `id`，且前缀之后的部分必须是有效的 ULID。缺少 `id` 或 `id` 格式有误（例如 `op_1`）的操作指令会被拒绝，并返回 `Error` 事件。
+
 ## 操作指令（客户端 → 守护进程） {#operations-client--daemon}
 
 ### StartSession {#startsession}
@@ -190,7 +192,7 @@ Ante 在客户端（Client）与守护进程（Daemon）之间采用强类型的
 将活跃会话的对话和可见历史恢复到输入 `to` 之前。该 ID 是输入对应的 `TurnStart.turn_id`（对于用户输入，即提交该输入的操作 ID）。所选输入及其后的内容会移除；不会开始新轮次，也不会撤销文件修改或其他外部操作。
 
 ```json
-{ "op": { "RewindSession": { "to": "op_input_1" } }, "id": "op_rewind_1" }
+{ "op": { "RewindSession": { "to": "op_01ARZ..." } }, "id": "op_..." }
 ```
 
 会话必须启用保存，且没有运行或排队的轮次、活动目标或运行中的后台任务。输入必须仍可恢复：保存的输入边界在恢复会话后保留，并复制到分叉会话中；成功替换历史的压缩或切换提供商会使之前的边界失效，压缩失败则保留它们。请求被拒绝时发出 `Error`，不改变对话；成功时发出 [`SessionRewound`](#sessionrewound)。
@@ -200,7 +202,7 @@ Ante 在客户端（Client）与守护进程（Daemon）之间采用强类型的
 从活跃对话保存一个新会话。`at` 指定仍可恢复的输入 ID 时，复制该输入之前的对话，切点与 `RewindSession` 相同；省略 `at`（或传 `null`）则复制完整对话。
 
 ```json
-{ "op": { "ForkSession": {} }, "id": "op_fork_1" }
+{ "op": { "ForkSession": {} }, "id": "op_..." }
 ```
 
 来源会话必须启用保存，且没有运行或排队的轮次及活动目标；它本身保持不变。新会话只保存，不启动：[`SessionForked`](#sessionforked) 返回其 ID，客户端再发送 `ResumeSession` 才会切换到它。请求被拒绝时发出 `Error`，不创建新会话。分叉复制对话状态，不复制文件、Git 工作树或运行中的进程。
@@ -237,7 +239,7 @@ Ante 在客户端（Client）与守护进程（Daemon）之间采用强类型的
 {
   "op": {
     "ApprovalResponse": {
-      "turn_id": "step_01ARZ...",
+      "turn_id": "op_01ARZ...",
       "responses": [
         { "tool_use_id": "tool_use_abc123", "decision": "Accept" },
         {
@@ -277,7 +279,7 @@ Ante 在客户端（Client）与守护进程（Daemon）之间采用强类型的
 {
   "op": {
     "QuestionResponse": {
-      "turn_id": "step_01ARZ...",
+      "turn_id": "op_01ARZ...",
       "tool_use_id": "toolu_1",
       "reply": {
         "Answered": [
@@ -458,7 +460,7 @@ Ante 在客户端（Client）与守护进程（Daemon）之间采用强类型的
 确认活跃对话及其持久化历史现已恢复到 `to` 之前。该确认事件绝不会包含在恢复会话的回放中。客户端收到后应从对话视图移除所选输入及其后的条目。
 
 ```json
-{ "event": { "SessionRewound": { "to": "op_input_1" } }, "parent": "op_rewind_1" }
+{ "event": { "SessionRewound": { "to": "op_01ARZ..." } }, "parent": "op_..." }
 ```
 
 #### SessionForked {#sessionforked}
@@ -466,7 +468,7 @@ Ante 在客户端（Client）与守护进程（Daemon）之间采用强类型的
 确认已从 `forked_from` 保存新会话 `session_id`；存在 `at` 时从该输入之前复制，否则复制完整对话。这不表示新会话已经运行；需恢复返回的 ID 才能使用它。
 
 ```json
-{ "event": { "SessionForked": { "forked_from": "ses_parent", "session_id": "ses_child" } }, "parent": "op_fork_1" }
+{ "event": { "SessionForked": { "forked_from": "ses_parent", "session_id": "ses_child" } }, "parent": "op_..." }
 ```
 
 #### SessionUpdated {#sessionupdated}
@@ -520,10 +522,10 @@ Ante 在客户端（Client）与守护进程（Daemon）之间采用强类型的
 
 #### TurnStart {#turnstart}
 
-新轮次开始处理时触发。
+新轮次开始处理时触发。`turn_id` 用于在该轮次后续的 `TurnPause`、`TurnResume` 和 `TurnEnd` 事件中标识这一轮次。对于由 `UserInput` 发起的轮次，它就是该操作的 ID。
 
 ```json
-{ "event": { "TurnStart": { "turn_id": "step_01ARZ..." } } }
+{ "event": { "TurnStart": { "turn_id": "op_01ARZ..." } } }
 ```
 
 #### TurnPause {#turnpause}
@@ -534,11 +536,11 @@ Ante 在客户端（Client）与守护进程（Daemon）之间采用强类型的
 {
   "event": {
     "TurnPause": {
-      "turn_id": "step_01ARZ...",
+      "turn_id": "op_01ARZ...",
       "reason": {
         "Approval": {
           "tools": [
-            { "id": "tool_use_abc123", "name": "Bash", "input": { "command": "ls -la" } }
+            { "id": "tool_use_abc123", "name": "Bash", "args": { "command": "ls -la" } }
           ],
           "message": "是否允许运行 Shell 命令？"
         }
@@ -571,7 +573,7 @@ Ante 在客户端（Client）与守护进程（Daemon）之间采用强类型的
 在 `TurnPause` 后恢复执行时触发（例如审批得到响应或收到实时引导指令），客户端无需从下一个工具事件反推恢复状态。
 
 ```json
-{ "event": { "TurnResume": { "turn_id": "step_01ARZ..." } } }
+{ "event": { "TurnResume": { "turn_id": "op_01ARZ..." } } }
 ```
 
 #### TurnEnd {#turnend}
@@ -579,7 +581,7 @@ Ante 在客户端（Client）与守护进程（Daemon）之间采用强类型的
 轮次完成时触发。`steps` 为轮次结束前尝试的单步循环次数。
 
 ```json
-{ "event": { "TurnEnd": { "turn_id": "step_01ARZ...", "status": "Completed", "steps": 4 } } }
+{ "event": { "TurnEnd": { "turn_id": "op_01ARZ...", "status": "Completed", "steps": 4 } } }
 ```
 
 **TurnEndStatus 取值变体：**
@@ -636,7 +638,7 @@ Ante 在客户端（Client）与守护进程（Daemon）之间采用强类型的
     "ToolStart": {
       "id": "tool_use_abc123",
       "name": "Read",
-      "input": { "file_path": "/src/main.rs" }
+      "args": { "file_path": "/src/main.rs" }
     }
   }
 }

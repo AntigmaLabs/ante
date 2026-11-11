@@ -77,7 +77,7 @@ Protocol input is read independently from event output, so `Interrupt` and `Shut
 
 ## Example session
 
-Save this as `client.cjs` and run `node client.cjs` with Ante on `PATH` and Anthropic credentials configured. The client keeps stdin open, waits for `SessionStart` before submitting its prompt, and sends `Shutdown` after the turn ends or an error occurs. `unattended: true` denies calls that require approval and skips structured questions so this non-interactive example can finish.
+Save this as `client.cjs` and run `node client.cjs` with Ante on `PATH` and Anthropic credentials configured. The client keeps stdin open, waits for `SessionStart` before submitting its prompt, and sends `Shutdown` after the turn ends or an error occurs. Each operation `id` is `op_` plus a valid ULID, so the client zero-pads a counter to 26 characters. `unattended: true` denies calls that require approval and skips structured questions so this non-interactive example can finish.
 
 ```javascript
 const { spawn } = require("node:child_process");
@@ -90,7 +90,7 @@ const lines = createInterface({ input: ante.stdout, crlfDelay: Infinity });
 let sequence = 0;
 let stopping = false;
 const send = (op) => ante.stdin.write(
-  JSON.stringify({ op, id: `op_${++sequence}` }) + "\n"
+  JSON.stringify({ op, id: `op_${String(++sequence).padStart(26, "0")}` }) + "\n"
 );
 
 const fail = (error) => {

@@ -78,7 +78,7 @@ NO_COLOR=1 ante serve --sock > serve-transcript.log
 
 ## 调用会话示例 {#example-session}
 
-将以下代码保存为 `client.cjs`，并运行 `node client.cjs`（需在 `PATH` 上安装 Ante，且已配置 Anthropic 凭证）。示例保持 stdin 开启，等待 `SessionStart` 后提交提示词，并在轮次结束或发生错误时发送 `Shutdown`。`unattended: true` 会立即拒绝需要审批的调用，并跳过结构化提问，以便此无交互示例顺利结束。
+将以下代码保存为 `client.cjs`，并运行 `node client.cjs`（需在 `PATH` 上安装 Ante，且已配置 Anthropic 凭证）。示例保持 stdin 开启，等待 `SessionStart` 后提交提示词，并在轮次结束或发生错误时发送 `Shutdown`。每个操作指令的 `id` 都是 `op_` 加一个有效的 ULID，因此示例将计数器补零至 26 位。`unattended: true` 会立即拒绝需要审批的调用，并跳过结构化提问，以便此无交互示例顺利结束。
 
 ```javascript
 const { spawn } = require("node:child_process");
@@ -91,7 +91,7 @@ const lines = createInterface({ input: ante.stdout, crlfDelay: Infinity });
 let sequence = 0;
 let stopping = false;
 const send = (op) => ante.stdin.write(
-  JSON.stringify({ op, id: `op_${++sequence}` }) + "\n"
+  JSON.stringify({ op, id: `op_${String(++sequence).padStart(26, "0")}` }) + "\n"
 );
 
 const fail = (error) => {

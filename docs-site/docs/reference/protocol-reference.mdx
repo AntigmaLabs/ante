@@ -51,6 +51,8 @@ Every message has a typed `Id` consisting of a prefix (up to 4 bytes) and a [ULI
 
 Example: `op_01J5A3B7C9D0E1F2G3H4J5K6M7`
 
+Every operation needs an `id`, and the part after the prefix must be a valid ULID. An operation with a missing or malformed `id`, such as `op_1`, is rejected with an `Error` event.
+
 ## Operations (Client → Daemon)
 
 ### StartSession
@@ -189,7 +191,7 @@ On success the daemon emits `SessionEnd` for the current session (if any), then 
 Restore the active session's conversation and visible history to just before input `to`. The ID is the `TurnStart.turn_id` for that input (for user input, the submitting operation's ID). The chosen input and everything after it are removed; no new turn starts and no file edits or other external effects are undone.
 
 ```json
-{ "op": { "RewindSession": { "to": "op_input_1" } }, "id": "op_rewind_1" }
+{ "op": { "RewindSession": { "to": "op_01ARZ..." } }, "id": "op_..." }
 ```
 
 The session must be saved, with no running or queued turn, active goal, or running background job. The input must still be reachable: saved input boundaries survive resume and are copied into forks, but a successful history-replacing compaction or provider switch invalidates earlier boundaries. Failed compaction leaves them intact. A refused request emits `Error` without changing the conversation. Success emits [`SessionRewound`](#sessionrewound).
@@ -199,7 +201,7 @@ The session must be saved, with no running or queued turn, active goal, or runni
 Save a new session from the active conversation. Set `at` to a reachable input ID to copy the conversation just before it, using the same cut as `RewindSession`; omit `at` (or pass `null`) to copy the whole conversation.
 
 ```json
-{ "op": { "ForkSession": {} }, "id": "op_fork_1" }
+{ "op": { "ForkSession": {} }, "id": "op_..." }
 ```
 
 The source must be saved with no running or queued turn and no active goal. It stays unchanged. The new session is saved but not started: [`SessionForked`](#sessionforked) returns its ID, and the client sends `ResumeSession` to switch to it. A refused request emits `Error` and creates no session. Forking copies conversation state, not files, a Git worktree, or running processes.
@@ -236,7 +238,7 @@ Respond to a tool approval request (sent after receiving a `TurnPause` event wit
 {
   "op": {
     "ApprovalResponse": {
-      "turn_id": "step_01ARZ...",
+      "turn_id": "op_01ARZ...",
       "responses": [
         { "tool_use_id": "tool_use_abc123", "decision": "Accept" },
         {
@@ -276,7 +278,7 @@ Resolve a pending question pause (`TurnPauseReason::Question`). Sent after the u
 {
   "op": {
     "QuestionResponse": {
-      "turn_id": "step_01ARZ...",
+      "turn_id": "op_01ARZ...",
       "tool_use_id": "toolu_1",
       "reply": {
         "Answered": [
@@ -457,7 +459,7 @@ The payload type was named `SessionInitialized` before `v0.preview.94` and is no
 Confirms that the active conversation and its persisted history now stand just before `to`. This acknowledgment is never included in resume replay. A client should remove the selected input and later entries from its displayed conversation after receiving it.
 
 ```json
-{ "event": { "SessionRewound": { "to": "op_input_1" } }, "parent": "op_rewind_1" }
+{ "event": { "SessionRewound": { "to": "op_01ARZ..." } }, "parent": "op_..." }
 ```
 
 #### SessionForked
@@ -465,7 +467,7 @@ Confirms that the active conversation and its persisted history now stand just b
 Confirms that `session_id` was saved from `forked_from`, before input `at` when present or from the whole conversation when omitted. It does not announce a running session; resume the returned ID to start using it.
 
 ```json
-{ "event": { "SessionForked": { "forked_from": "ses_parent", "session_id": "ses_child" } }, "parent": "op_fork_1" }
+{ "event": { "SessionForked": { "forked_from": "ses_parent", "session_id": "ses_child" } }, "parent": "op_..." }
 ```
 
 #### SessionUpdated
@@ -519,10 +521,10 @@ Emitted when the session span closes. Mirrors `TurnEnd`: it carries the session'
 
 #### TurnStart
 
-Emitted when a new turn begins processing.
+Emitted when a new turn begins processing. `turn_id` identifies the turn in its later `TurnPause`, `TurnResume`, and `TurnEnd` events. For a turn started by `UserInput`, it is that operation's ID.
 
 ```json
-{ "event": { "TurnStart": { "turn_id": "step_01ARZ..." } } }
+{ "event": { "TurnStart": { "turn_id": "op_01ARZ..." } } }
 ```
 
 #### TurnPause
@@ -533,11 +535,11 @@ Emitted when a turn is paused waiting for user input (e.g. tool approval).
 {
   "event": {
     "TurnPause": {
-      "turn_id": "step_01ARZ...",
+      "turn_id": "op_01ARZ...",
       "reason": {
         "Approval": {
           "tools": [
-            { "id": "tool_use_abc123", "name": "Bash", "input": { "command": "ls -la" } }
+            { "id": "tool_use_abc123", "name": "Bash", "args": { "command": "ls -la" } }
           ],
           "message": "Allow running shell command?"
         }
@@ -570,7 +572,7 @@ Each `QuestionOption` has `label` and `description` strings, plus an optional `p
 Emitted when the turn resumes after a `TurnPause` (e.g. the approval was answered or a steer arrived), so clients never have to infer resumption from the next tool event.
 
 ```json
-{ "event": { "TurnResume": { "turn_id": "step_01ARZ..." } } }
+{ "event": { "TurnResume": { "turn_id": "op_01ARZ..." } } }
 ```
 
 #### TurnEnd
@@ -578,7 +580,7 @@ Emitted when the turn resumes after a `TurnPause` (e.g. the approval was answere
 Emitted when a turn completes. `steps` is the number of turn-loop steps attempted before the turn ended.
 
 ```json
-{ "event": { "TurnEnd": { "turn_id": "step_01ARZ...", "status": "Completed", "steps": 4 } } }
+{ "event": { "TurnEnd": { "turn_id": "op_01ARZ...", "status": "Completed", "steps": 4 } } }
 ```
 
 **TurnEndStatus variants:**
@@ -635,7 +637,7 @@ Emitted when a tool invocation begins.
     "ToolStart": {
       "id": "tool_use_abc123",
       "name": "Read",
-      "input": { "file_path": "/src/main.rs" }
+      "args": { "file_path": "/src/main.rs" }
     }
   }
 }
