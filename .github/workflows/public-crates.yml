@@ -58,6 +58,13 @@ jobs:
 
     steps:
       - uses: actions/checkout@v7
+        with:
+          sparse-checkout: |
+            .cargo
+            crates
+            examples
+            ante-acp
+            ante-gateway
       - uses: actions-rust-lang/setup-rust-toolchain@v2.0.0
         with:
           toolchain: stable
