@@ -39,7 +39,33 @@ Ante 是一个独立的单二进制程序（压缩下载仅 ~15MB），能够自
 - **多客户端共享同一本地模型。** `ante serve --offline-model <path>` 加载一次即可供所有接入客户端复用，且任何会话均可直接[连接到已运行的 llama 服务](/local/existing-servers)（自动扫描 8080-8179 端口）。
 - **为子智能体分配轻量模型。** [Sub-agent 子智能体](/extend/subagents)可通过 Frontmatter 中的 `model:` 单独指定模型 ID，使探索或搜索智能体运行在比主循环更小、更快的模型上。
 
-需要了解的一项边界：一个会话一次与一个提供商通信。切换是即时的，但子智能体会运行在其父会话的提供商上，因此目前尚不支持在同一个会话中将主循环路由至前沿提供商而将子智能体路由至 `local`。
+需要了解的一项边界：一个会话一次与一个提供商通信。切换是即时的，但子智能体会运行在其父会话的提供商上，因此目前尚不支持在同一个会话中将主循环路由至前沿提供商而将子智能体路由至 `local`。独立的 Ante 进程不受此限制，下面的示例正是利用了这一点。
+
+### 将敏感文件交给本地子智能体 {#local-subagent}
+
+运行在托管模型上的主智能体，可以把敏感文件交给运行本地模型的 Ante 处理，再基于返回的结果继续工作。主智能体可以是 Claude Code、Codex，或使用托管提供商的 Ante 会话。假设它需要分析 `tickets.csv`，这是一份包含客户姓名、邮箱和电话号码的工单导出文件。它执行：
+
+```bash
+ANTE_TELEMETRY=off ante --offline-model --no-session-save --tools Read,Write \
+  -p "Read tickets.csv. Write tickets.redacted.csv with the same rows and columns, replacing every person name, email address, and phone number with [NAME], [EMAIL], and [PHONE]. Reply with only the number of rows written."
+```
+
+本地模型读取导出文件并写出脱敏副本。主智能体只收到行数，随后分析 `tickets.redacted.csv`。以下是结果中的一行：
+
+```csv
+1003,[NAME],[EMAIL],[PHONE],"Login loop on Safari after the last update. My colleague [NAME] sees it too."
+```
+
+命令的每个部分都在收窄数据的去向：
+
+- `--offline-model` 启动通过 [`ante offline use`](/local/offline#configure-without-the-tui) 保存的默认模型，文件内容只会进入你本机硬件上的模型。
+- `--tools Read,Write` 让子智能体只能访问文件，没有 shell、网络或 MCP 工具。
+- `--no-session-save` 跳过会话记录；否则模型读到的内容会在 `~/.ante/sessions/` 下留有副本。
+- `ANTE_TELEMETRY=off` 关闭指标与日志导出。参见[遥测机制](/configuration/preference#telemetry)。
+
+有两件事仍需你来把控。子智能体输出的所有内容都会返回给主智能体及其托管模型，因此应要求它只回复可以放心共享的内容，例如一个计数。主智能体也不能读取原始文件，只传递文件路径。本地模型可能漏掉某个姓名，在托管模型读取脱敏文件之前，请先抽查一遍。
+
+精选的 [`ante` 技能](https://github.com/AntigmaLabs/ante/tree/main/curated/skills/ante)会教其他智能体使用这一模式，以及将 Ante 作为子智能体运行的其他方式。
 
 ## 真实可验证的基准数据 {#numbers-you-can-check}
 

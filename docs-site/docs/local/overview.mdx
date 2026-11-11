@@ -39,7 +39,33 @@ When offline mode loads a model, Ante registers it as the `local` provider: an o
 - **Share one model across clients.** `ante serve --offline-model <path>` loads the model once for every connecting client, and any session can [attach to a llama server](/local/existing-servers) already running on your machine (ports 8080-8179 are scanned automatically).
 - **Lighter models for subagents.** A [subagent](/extend/subagents) can pin its own model id via `model:` frontmatter, so exploration or search agents can run on a smaller model than the main loop.
 
-One boundary to know: a session talks to one provider at a time. Switching is instant, but a subagent runs on its parent session's provider, so you cannot yet route the main loop to a frontier provider and a subagent to `local` within the same session.
+One boundary to know: a session talks to one provider at a time. Switching is instant, but a subagent runs on its parent session's provider, so you cannot yet route the main loop to a frontier provider and a subagent to `local` within the same session. A separate Ante process has no such limit, and the next example uses one.
+
+### Keep sensitive files on a local subagent {#local-subagent}
+
+A main agent on a hosted model can hand a sensitive file to Ante on a local model and work from what comes back. The main agent can be Claude Code, Codex, or an Ante session on a hosted provider. Say it needs to analyze `tickets.csv`, a support export that holds customer names, emails, and phone numbers. It runs:
+
+```bash
+ANTE_TELEMETRY=off ante --offline-model --no-session-save --tools Read,Write \
+  -p "Read tickets.csv. Write tickets.redacted.csv with the same rows and columns, replacing every person name, email address, and phone number with [NAME], [EMAIL], and [PHONE]. Reply with only the number of rows written."
+```
+
+The local model reads the export and writes the redacted copy. The main agent gets back a row count, then analyzes `tickets.redacted.csv`. A row from the result:
+
+```csv
+1003,[NAME],[EMAIL],[PHONE],"Login loop on Safari after the last update. My colleague [NAME] sees it too."
+```
+
+Each part of the command narrows where the data can go:
+
+- `--offline-model` starts the default saved with [`ante offline use`](/local/offline#configure-without-the-tui), so the file's contents go to a model on your hardware.
+- `--tools Read,Write` gives the subagent file access only: no shell, web, or MCP tools.
+- `--no-session-save` skips the transcript, which would keep a copy of what the model read under `~/.ante/sessions/`.
+- `ANTE_TELEMETRY=off` turns off metric and log export. See [Telemetry](/configuration/preference#telemetry).
+
+Two things stay in your hands. Everything the subagent prints returns to the main agent and its hosted model, so ask for a reply that is safe to share, such as a count. The main agent also has to leave the original file unread and pass only its path. A local model can miss a name, so spot-check the redacted file before a hosted model reads it.
+
+The curated [`ante` skill](https://github.com/AntigmaLabs/ante/tree/main/curated/skills/ante) teaches other agents this pattern, along with the other ways to run Ante as a subagent.
 
 ## Numbers you can check
 

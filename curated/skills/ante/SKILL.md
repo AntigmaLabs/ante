@@ -36,6 +36,17 @@ jq -r '.event.SessionStart?.session_id // empty' run.jsonl     # session ID
 ante --resume <session-id> -p "<follow-up>"
 ```
 
+### Sensitive data
+
+To keep a file's contents away from your own model, hand the file to Ante on a local model. Pass its path without reading it, and ask for a reply that is safe for you to see, because everything Ante prints comes back to you:
+
+```sh
+ANTE_TELEMETRY=off ante --offline-model --no-session-save --tools Read,Write \
+  -p "Read tickets.csv. Write tickets.redacted.csv with the same rows and columns, replacing every person name, email address, and phone number with [NAME], [EMAIL], and [PHONE]. Reply with only the number of rows written."
+```
+
+`--offline-model` runs the default the user saved with `ante offline use`. `--tools Read,Write` limits Ante to file access, `--no-session-save` leaves no transcript, and `ANTE_TELEMETRY=off` stops log export. The [walkthrough](https://docs.antigma.ai/local/overview#local-subagent) explains the boundary.
+
 ## Interactive
 
 Run the TUI in tmux so you and the user share one terminal:
