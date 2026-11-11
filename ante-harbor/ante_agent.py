@@ -105,7 +105,7 @@ _CATALOG_PAYLOAD_PATH = "/installed-agent/ante-catalog.json"
 # Nothing else is rewritten, so an unverified ``sse`` server reaches Ante as
 # declared and Ante reports the unsupported transport at startup.
 VERIFIED_STREAMABLE_HTTP_ENDPOINTS = {
-    # medical-claims-processing (terminal-bench v4.0.0): @playwright/mcp@0.0.64
+    # medical-claims-processing: @playwright/mcp@0.0.64
     # routes /sse to legacy SSE and /mcp to Streamable HTTP on the same port.
     "http://playwright-mcp:3080/sse": "http://playwright-mcp:3080/mcp",
 }
