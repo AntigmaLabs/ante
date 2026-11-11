@@ -134,6 +134,8 @@ The output is decompiled pseudocode with generated names like `FUN_1000110e4`. I
 
 [Agent Skills](https://agentskills.io) folders, each with a `SKILL.md`. Copy a folder into `~/.ante/skills/` for all projects, or `.ante/skills/` for one project. See the [skills docs](https://docs.antigma.ai/extend/skills).
 
+[`ante`](./skills/ante/) is for other agents: it teaches them to run Ante as a subagent, one-shot, in a shared tmux session, or through `ante serve`. Copy it into that agent's skills folder instead, such as `~/.claude/skills/` for Claude Code or `~/.agents/skills/`.
+
 ## Contributing
 
 Open a PR that adds your profile or skill. Include a line or two on what it does and when to reach for it: in the skill's `description` frontmatter, or a short section in this README for a profile. New categories are welcome; add a folder and explain it here.
