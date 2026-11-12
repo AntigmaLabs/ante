@@ -86,6 +86,10 @@ pub enum Op {
         /// `SessionRequest::credential`; absent uses configured precedence.
         #[serde(default, skip_serializing_if = "Option::is_none")]
         credential: Option<String>,
+        /// The permission mode for this resume, with the meaning of
+        /// `SessionRequest::permission_mode`; absent uses current settings.
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        permission_mode: Option<PermissionMode>,
     },
     RegisterLocalProvider {
         port: u16,
@@ -1302,6 +1306,7 @@ mod tests {
             include_tools: None,
             exclude_tools: None,
             credential: None,
+            permission_mode: None,
         };
         let mut json = serde_json::to_value(&op).unwrap();
         json["ResumeSession"].as_object_mut().unwrap().remove("unattended");
@@ -1314,6 +1319,7 @@ mod tests {
                 include_tools: None,
                 exclude_tools: None,
                 credential: None,
+                permission_mode: None,
                 ..
             }
         ));
@@ -1329,16 +1335,24 @@ mod tests {
                 include_tools: Some(vec!["Bash".to_string()]),
                 exclude_tools: Some(vec!["Agent".to_string()]),
                 credential: Some("oauth:anthropic/work".to_string()),
+                permission_mode: Some(PermissionMode::Strict),
             };
             let json = serde_json::to_value(&op).unwrap();
             assert_eq!(json["ResumeSession"].get("tools").is_none(), tools.is_none());
             assert_eq!(json["ResumeSession"]["credential"], "oauth:anthropic/work");
+            assert_eq!(json["ResumeSession"]["permission_mode"], "strict");
             let decoded: Op = serde_json::from_value(json).unwrap();
-            let Op::ResumeSession { tools: decoded_tools, include_tools, exclude_tools, .. } =
-                decoded
+            let Op::ResumeSession {
+                tools: decoded_tools,
+                include_tools,
+                exclude_tools,
+                permission_mode,
+                ..
+            } = decoded
             else {
                 panic!("expected ResumeSession");
             };
+            assert_eq!(permission_mode, Some(PermissionMode::Strict));
             assert_eq!(decoded_tools, tools);
             assert_eq!(include_tools, Some(vec!["Bash".to_string()]));
             assert_eq!(exclude_tools, Some(vec!["Agent".to_string()]));

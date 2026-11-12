@@ -1,5 +1,24 @@
 # Changelog
 
+## v0.3.5 - 2026-11-11
+
+### Changed
+- Anthropic requests cache the tool definitions and the shared system prompt separately from the conversation. A new session, including one in another directory, reuses that cached prefix instead of writing it again
+- The environment and memory-index details now come at the start of each turn instead of in the system prompt
+- Antix offers Claude Fable 5.2 in place of Fable 5.1
+
+### Fixed
+- When a model ends its turn with an empty reply, the turn ends with one notice instead of storing `[end_turn]`. Other empty replies are retried through the normal reconnect path
+- A resume, including the one that ends every TUI rewind, keeps the client's permission mode instead of switching back to the mode in settings
+- A rewind adds a record to the session's event log instead of rewriting the log, so a crash during a rewind no longer leaves the session half-rewound
+- An MCP tool whose schema has a JSON-value union with a sibling `items` no longer breaks requests to Gemini
+
+### Wire
+- `ResumeSession` accepts an optional `permission_mode`. If it is absent, the session uses the current settings
+
+### Crates
+- Public crates published as 0.3.5: ante-protocol-shape, ante-llm, ante-exec, ante-sdk
+
 ## v0.3.4 - 2026-11-09
 
 ### Added
