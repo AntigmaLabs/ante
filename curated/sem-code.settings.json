@@ -1,0 +1,9 @@
+{
+  "mcp_servers": {
+    "sem": {
+      "command": "sem",
+      "args": ["mcp"],
+      "enabled_tools": ["sem_find", "sem_grep"]
+    }
+  }
+}
