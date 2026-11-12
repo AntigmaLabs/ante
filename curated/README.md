@@ -64,6 +64,7 @@ See the [Ante MCP documentation](https://docs.antigma.ai/extend/mcp) for more in
 | [parallel](./web-search-MCP/parallel.settings.json) | [doc](https://docs.parallel.ai/integrations/mcp/search-mcp) | Rate-limited. |
 | [firecrawl](./web-search-MCP/firecrawl.settings.json) | [github](https://github.com/firecrawl/firecrawl-mcp-server) | A keyless connection gets a limited set of tools, `search` included. |
 | [duckduckgo](./web-search-MCP/duckduckgo.settings.json) | [github](https://github.com/nickclyde/duckduckgo-mcp-server) | Unofficial, community maintained. No account or API key. Requires `uvx`. |
+| [keenable](./web-search-MCP/keenable.settings.json) | [doc](https://docs.keenable.ai/mcp-server) | Rate-limited. |
 
 - Authentication required
 
