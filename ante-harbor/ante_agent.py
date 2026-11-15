@@ -522,6 +522,7 @@ class AnteAgent(BaseInstalledAgent):
         # downloaded ante.txt. Timeouts leave this unset and use the file.
         self._event_output: str | None = None
         self._cleanup_error: Exception | None = None
+        self._cleanup_error_raised = False
 
     @staticmethod
     def name() -> str:
@@ -790,9 +791,19 @@ class AnteAgent(BaseInstalledAgent):
             # Harbor catches AgentTimeoutError then synchronizes output before
             # verification. Fail at that boundary if cleanup was unsuccessful,
             # retaining the already-recorded timeout as the trial's cause.
-            raise AgentCleanupError(
-                "Cannot capture final Ante usage or verify an active agent"
-            ) from self._cleanup_error
+            # Raise only once: Harbor's failure handler syncs output again
+            # inside its `except` block, where a second raise escapes the trial
+            # and cancels every other trial in the job. By then the trial has
+            # already failed, so record the partial log instead.
+            if not self._cleanup_error_raised:
+                self._cleanup_error_raised = True
+                raise AgentCleanupError(
+                    "Cannot capture final Ante usage or verify an active agent"
+                ) from self._cleanup_error
+            self.logger.warning(
+                "Ante process cleanup was not confirmed; recording partial usage "
+                "for the already-failed trial"
+            )
         log_text = read_event_log_text(Path(self.logs_dir))
         # A successful exec captured the complete stream even when the log could
         # only write a prefix. Timeouts never set _event_output, so their
@@ -887,6 +898,7 @@ class AnteAgent(BaseInstalledAgent):
     ) -> None:
         self._event_output = None
         self._cleanup_error = None
+        self._cleanup_error_raised = False
 
         model_name = self.model_name or os.environ.get("MODEL_NAME")
         if not model_name:

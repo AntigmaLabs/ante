@@ -111,6 +111,22 @@ class LifecycleTests(unittest.IsolatedAsyncioTestCase):
         with self.assertRaises(AgentCleanupError):
             self.agent.populate_context_post_run(AgentContext())
 
+    async def test_cleanup_failure_raises_once_so_harbor_recovery_survives(self):
+        # Harbor's `except Exception` handler calls _recover_outputs, which syncs
+        # output again. A second raise there escapes the trial and its TaskGroup
+        # cancels every other trial in the job.
+        env = ControlledEnvironment(self.logs, fail_cleanup=True)
+        env.allow_stop.set()
+        with self.assertLogs(self.agent.logger, level="ERROR"):
+            with self.assertRaises(asyncio.TimeoutError):
+                await asyncio.wait_for(
+                    self.agent.run("test", env, AgentContext()), timeout=0.02
+                )
+        with self.assertRaises(AgentCleanupError):
+            self.agent.populate_context_post_run(AgentContext())
+        with self.assertLogs(self.agent.logger, level="WARNING"):
+            self.agent.populate_context_post_run(AgentContext())
+
     async def test_harbor_timeout_captures_after_stop_before_verifier(self):
         # Exercise the consumed Harbor method that catches AgentTimeoutError and
         # then calls _sync_agent_output. Its continuation must see settled logs.
