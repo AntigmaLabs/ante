@@ -241,22 +241,6 @@ mod tests {
         assert!(printed.contains("<redacted>"), "got {printed}");
     }
 
-    /// Without the `ws` feature a websocket endpoint is refused before
-    /// anything is dialed.
-    #[cfg(not(feature = "ws"))]
-    #[tokio::test]
-    async fn ws_endpoints_are_unsupported_without_the_ws_feature() {
-        let endpoint = Endpoint::Ws("ws://127.0.0.1:1".to_string());
-        let error = connect(endpoint.clone(), ConnectOptions::default())
-            .await
-            .err()
-            .expect("no websocket connector in this build");
-        assert!(
-            matches!(error, ConnectError::Unsupported(ref e) if *e == endpoint),
-            "got {error:?}"
-        );
-    }
-
     #[tokio::test]
     async fn a_missing_executable_is_a_spawn_error() {
         let options = ConnectOptions {

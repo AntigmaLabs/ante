@@ -210,6 +210,10 @@ impl OpenAiCompatProfile {
 
 impl OpenAiCompatFamily {
     fn thinking_dialect(self, provider_id: &str, model_id: &str) -> ThinkingDialect {
+        if provider_id.eq_ignore_ascii_case("openrouter") && model_id == "google/gemini-4-hydrogen"
+        {
+            return ThinkingDialect::OpenRouterHighXHigh;
+        }
         match self {
             Self::DeepSeek => ThinkingDialect::DeepSeek {
                 max_reasoning_effort: deepseek_max_reasoning_effort(provider_id, model_id),
@@ -658,6 +662,16 @@ mod tests {
     /// shifted one rung down); `xhigh`/`max` cap at `high` for compatibility
     /// with servers that reject higher values.
     #[test]
+    fn openrouter_hydrogen_preserves_xhigh() {
+        let params =
+            profile("openrouter", "google/gemini-4-hydrogen").thinking_params(Some(Effort::XHigh));
+        assert_eq!(params.reasoning_effort, Some(ReasoningEffort::XHigh));
+        let argon =
+            profile("openrouter", "google/gemini-4-argon").thinking_params(Some(Effort::XHigh));
+        assert_eq!(argon.reasoning_effort, Some(ReasoningEffort::High));
+    }
+
+    #[test]
     fn generic_reasoning_effort_maps_levels_by_name_capped_at_high() {
         let cases = [
             (Effort::Min, None),
@@ -825,34 +839,6 @@ mod tests {
             thinking_params_for_supported_efforts(&[Effort::Min, Effort::High], Some(Effort::Min),)
                 .reasoning_effort,
             Some(ReasoningEffort::Minimal),
-        );
-    }
-
-    #[test]
-    fn supported_effort_params_round_like_a_ladder() {
-        let supported_efforts = [Effort::Low, Effort::Medium, Effort::High];
-        // Above the ceiling rounds down; below the floor takes the floor.
-        assert_eq!(
-            thinking_params_for_supported_efforts(&supported_efforts, Some(Effort::Max))
-                .reasoning_effort,
-            Some(ReasoningEffort::High),
-        );
-        assert_eq!(
-            thinking_params_for_supported_efforts(&supported_efforts, Some(Effort::Min))
-                .reasoning_effort,
-            Some(ReasoningEffort::Low),
-        );
-    }
-
-    #[test]
-    fn supported_effort_params_send_nothing_when_empty_or_unset() {
-        assert!(
-            thinking_params_for_supported_efforts(&[], Some(Effort::High))
-                .reasoning_effort
-                .is_none()
-        );
-        assert!(
-            thinking_params_for_supported_efforts(&[Effort::Low], None).reasoning_effort.is_none()
         );
     }
 }

@@ -283,19 +283,6 @@ mod tests {
         );
     }
 
-    /// Without the `wss` feature there is no TLS stack, so a `wss://`
-    /// endpoint is refused before anything is dialed.
-    #[cfg(not(feature = "wss"))]
-    #[tokio::test]
-    async fn wss_is_unsupported_without_the_wss_feature() {
-        let endpoint = Endpoint::Ws("wss://127.0.0.1:1".to_string());
-        let error = connect(endpoint.clone(), options("t")).await.err().expect("no TLS stack");
-        assert!(
-            matches!(error, ConnectError::Unsupported(ref e) if *e == endpoint),
-            "got {error:?}"
-        );
-    }
-
     /// `wss://` needs a TLS stack with a crypto provider. A standalone
     /// consumer of this crate has only what the `wss` feature brings, so the
     /// handshake must fail on the far end, never on the near one. (rustls

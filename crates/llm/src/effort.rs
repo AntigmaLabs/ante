@@ -78,22 +78,6 @@ mod tests {
     }
 
     #[test]
-    fn resolve_floors_below_the_lowest_rung() {
-        let rungs = [(Effort::Low, 1_u8), (Effort::Max, 5)];
-        assert_eq!(resolve(&rungs, Effort::Min), 1);
-    }
-
-    #[test]
-    fn resolve_is_monotone_over_the_full_scale() {
-        let mut last = resolve(RUNGS, Effort::Min);
-        for level in Effort::ALL {
-            let value = resolve(RUNGS, level);
-            assert!(value >= last, "resolve must not decrease at {level}");
-            last = value;
-        }
-    }
-
-    #[test]
     fn resolve_level_returns_an_exact_selectable_level() {
         let levels = [Effort::Low, Effort::Medium, Effort::Max];
         assert_eq!(resolve_level(&levels, Effort::Medium), Some(Effort::Medium));

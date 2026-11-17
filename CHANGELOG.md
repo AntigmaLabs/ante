@@ -1,5 +1,29 @@
 # Changelog
 
+## v0.3.6 - 2026-11-17
+
+### Added
+- Gemini 4 Carbon and Hydrogen on the Gemini API, Vertex AI and OpenRouter. Hydrogen defaults to high effort on Gemini API and Vertex, and both routes support `xhigh`
+- OpenRouter offers Qwen4 Max, Tencent Hy4 Flash and Meta Muse Ember
+
+### Changed
+- The OpenAI API and subscription offer GPT-6.2 Astra in place of GPT-6 Astra, at low effort by default. The Astra subscription context window is corrected to 272,000 tokens
+- Gemini 4 output budgets on Gemini API and Vertex rise to 65,536 tokens. Gemini 3.8 Flash is removed from the pickers; Flash-Lite stays
+- Dark and light themes use the v2 palette: higher-contrast greys and blue, code blocks without a background, and explicit colors for notices and approval decisions
+- The offline engine is pinned to llama.cpp b12375
+- Dependency updates
+
+### Fixed
+- `ante serve` waits for MCP tools to register before the first turn. Previously the tool list could change between turns, which broke Claude Fable 5.2 sessions with an invalid thinking `signature` error and missed the prompt cache on other models
+- A response cut off at `max_tokens` still runs the tool calls that finished before the cut. Only a call cut mid-arguments is dropped
+- An Anthropic web search that pauses its turn is resumed, up to 3 times
+- An Agent call fails when the subagent's turn did not complete. The parent sees the reason, the child's last message and the transcript path, instead of a success carrying an `[interrupted]` marker
+- A cancellation that arrives after a response completed no longer marks that response as cancelled
+- Edit keeps the line endings of untouched lines in files that mix LF and CRLF
+
+### Crates
+- Public crates published as 0.3.6: ante-protocol-shape, ante-llm, ante-exec, ante-sdk
+
 ## v0.3.5 - 2026-11-11
 
 ### Changed

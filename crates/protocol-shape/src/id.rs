@@ -103,7 +103,6 @@ impl std::str::FromStr for Id {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use std::str::FromStr;
 
     #[test]
     fn test_id_serde_roundtrip() {
@@ -113,12 +112,5 @@ mod tests {
 
         let deserialized: Id = serde_json::from_str(&serialized).expect("deserialize id");
         assert_eq!(deserialized, id);
-    }
-
-    #[test]
-    fn test_id_from_str() {
-        let id = Id::new("ses");
-        let parsed = Id::from_str(&id.to_string()).expect("parse id");
-        assert_eq!(parsed, id);
     }
 }

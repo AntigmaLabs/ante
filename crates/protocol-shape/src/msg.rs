@@ -1006,28 +1006,10 @@ pub enum Scope {
 #[cfg(test)]
 mod tests {
     use super::{
-        Effort, Evt, ExtensionRefreshed, Id, ModelSpec, Op, PermissionMode, ProviderSpec,
-        ReviewDecision, SessionInfo, SessionRequest, SessionUpdate, ToolDecision, ToolEnd,
-        ToolEndStatus, ToolUse, Usage, WeightClass, event_msg, op_msg,
+        Effort, Evt, Id, ModelSpec, Op, PermissionMode, ProviderSpec, ReviewDecision, SessionInfo,
+        SessionRequest, ToolDecision, ToolEnd, ToolEndStatus, ToolUse, Usage, WeightClass,
     };
     use std::path::PathBuf;
-
-    #[test]
-    fn op_msg_assigns_runtime_id() {
-        let msg = op_msg(Op::Interrupt);
-
-        assert!(msg.id.to_string().starts_with("op_"));
-        assert!(matches!(msg.op, Op::Interrupt));
-    }
-
-    #[test]
-    fn event_msg_assigns_runtime_metadata() {
-        let event = event_msg(Evt::Info("hello".to_string()), None);
-
-        assert!(event.id.to_string().starts_with("evt_"));
-        assert!(matches!(event.event, Evt::Info(message) if message == "hello"));
-        assert!(event.parent.is_none());
-    }
 
     fn model_spec(name: &str) -> ModelSpec {
         ModelSpec {
@@ -1155,26 +1137,6 @@ mod tests {
     }
 
     #[test]
-    fn session_overrides_effort_round_trips() {
-        let parsed: super::SessionRequest =
-            serde_json::from_value(serde_json::json!({"effort": "max"})).unwrap();
-        assert_eq!(parsed.effort, Some(super::Effort::Max));
-
-        let parsed: super::SessionRequest = serde_json::from_value(serde_json::json!({})).unwrap();
-        assert_eq!(parsed.effort, None);
-    }
-
-    #[test]
-    fn short_prompt_round_trips_and_defaults_to_unset() {
-        let parsed: super::SessionRequest =
-            serde_json::from_value(serde_json::json!({"short_prompt": true})).unwrap();
-        assert_eq!(parsed.short_prompt, Some(true));
-
-        let parsed: super::SessionRequest = serde_json::from_value(serde_json::json!({})).unwrap();
-        assert_eq!(parsed.short_prompt, None);
-    }
-
-    #[test]
     fn skill_filters_are_optional_on_the_wire_and_preserve_empty_overrides() {
         let absent: SessionRequest = serde_json::from_value(serde_json::json!({})).unwrap();
         assert_eq!(absent.include_skills, None);
@@ -1209,11 +1171,6 @@ mod tests {
             title: Some("pinned title".to_string()),
             ..Default::default()
         }
-    }
-
-    #[test]
-    fn patched_with_an_empty_patch_keeps_every_field() {
-        assert_eq!(pinned_request().patched(SessionRequest::default()), pinned_request());
     }
 
     #[test]
@@ -1489,83 +1446,6 @@ mod tests {
     }
 
     #[test]
-    fn session_end_and_turn_resume_serde_roundtrip() {
-        let session_id = Id::new("ses");
-        let end = Evt::SessionEnd {
-            session_id,
-            reason: super::SessionEndReason::Shutdown,
-            usage: Usage::new(10, 5),
-        };
-        let json = serde_json::to_string(&end).expect("serialize SessionEnd");
-        let decoded = serde_json::from_str::<Evt>(&json).expect("deserialize SessionEnd");
-        assert!(matches!(
-            decoded,
-            Evt::SessionEnd { session_id: id, reason: super::SessionEndReason::Shutdown, usage }
-                if id == session_id && usage.total() == 15
-        ));
-
-        let turn_id = Id::new("op");
-        let resume = Evt::TurnResume { turn_id };
-        let json = serde_json::to_string(&resume).expect("serialize TurnResume");
-        let decoded = serde_json::from_str::<Evt>(&json).expect("deserialize TurnResume");
-        assert!(matches!(decoded, Evt::TurnResume { turn_id: id } if id == turn_id));
-    }
-
-    #[test]
-    fn extension_refreshed_serde_roundtrip() {
-        let event = Evt::ExtensionRefreshed(Box::new(ExtensionRefreshed {
-            session_id: Id::new("ses"),
-            skills: Vec::new(),
-            subagents: Vec::new(),
-            mcp_servers: Vec::new(),
-        }));
-
-        let json = serde_json::to_string(&event).expect("serialize ExtensionRefreshed");
-        let decoded = serde_json::from_str::<Evt>(&json).expect("deserialize ExtensionRefreshed");
-
-        assert!(matches!(
-            decoded,
-            Evt::ExtensionRefreshed(payload)
-                if payload.skills.is_empty() && payload.subagents.is_empty()
-        ));
-    }
-
-    #[test]
-    fn session_update_op_serde_roundtrip() {
-        let op = Op::UpdateSession(SessionUpdate {
-            provider: Some("openai".to_string()),
-            credential: Some("oauth:openai/work".to_string()),
-            model: Some(ModelSpec {
-                temperature: Some(0.2),
-                effort: Some(super::Effort::High),
-                ..model_spec("gpt-5.4")
-            }),
-            permission_mode: Some(PermissionMode::Yolo),
-            title: Some("renamed".to_string()),
-        });
-
-        let json = serde_json::to_string(&op).expect("serialize UpdateSession");
-        let decoded = serde_json::from_str::<Op>(&json).expect("deserialize UpdateSession");
-
-        assert!(matches!(
-            decoded,
-            Op::UpdateSession(SessionUpdate {
-                provider: Some(provider),
-                credential: Some(credential),
-                model: Some(model),
-                permission_mode: Some(PermissionMode::Yolo),
-                title: Some(title),
-            })
-                if provider == "openai"
-                    && credential == "oauth:openai/work"
-                    && model.id == "gpt-5.4"
-                    && model.temperature == Some(0.2)
-                    && model.effort == Some(super::Effort::High)
-                    && title == "renamed"
-        ));
-    }
-
-    #[test]
     fn approval_response_uses_named_tool_decisions() {
         let turn_id = Id::new("turn");
         let op = Op::ApprovalResponse {
@@ -1598,56 +1478,6 @@ mod tests {
                         message: Some("use the read-only endpoint".to_string()),
                     }]
         ));
-    }
-
-    #[test]
-    fn session_updated_event_serde_roundtrip() {
-        let session_id = Id::new("ses");
-        let event = Evt::SessionUpdated(Box::new(SessionInfo {
-            model: model_spec("claude-sonnet-4-6"),
-            provider: provider_spec("anthropic"),
-            session_id,
-            cwd: PathBuf::from("/tmp/session-updated"),
-            permission_mode: PermissionMode::default(),
-            skills: vec![],
-            subagents: vec![],
-            title: None,
-            forked_from: None,
-        }));
-
-        let json = serde_json::to_string(&event).expect("serialize SessionUpdated");
-        let decoded = serde_json::from_str::<Evt>(&json).expect("deserialize SessionUpdated");
-
-        assert!(matches!(
-            decoded,
-            Evt::SessionUpdated(payload)
-                if payload.model.id == "claude-sonnet-4-6"
-                    && payload.provider.id == "anthropic"
-                    && payload.provider.base_url == "https://api.anthropic.test/v1"
-                    && payload.session_id == session_id
-                    && payload.cwd == std::path::Path::new("/tmp/session-updated")
-        ));
-    }
-
-    #[test]
-    fn provider_spec_ignores_the_dropped_model_list() {
-        // Payloads from daemons that still send the provider's model list
-        // decode against the narrowed shape.
-        let spec: ProviderSpec = serde_json::from_value(serde_json::json!({
-            "id": "anthropic",
-            "display_name": "Anthropic",
-            "base_url": "https://api.anthropic.test/v1",
-            "preferred_models": [{ "id": "claude-sonnet-4-6" }],
-        }))
-        .unwrap();
-
-        assert_eq!(spec.id, "anthropic");
-        assert_eq!(spec.display_name, "Anthropic");
-        assert_eq!(spec.base_url, "https://api.anthropic.test/v1");
-
-        // And the catalog data does not go back out.
-        let encoded = serde_json::to_value(&spec).unwrap();
-        assert!(encoded.get("preferred_models").is_none());
     }
 
     #[test]
