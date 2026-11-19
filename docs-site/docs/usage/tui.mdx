@@ -217,9 +217,9 @@ With session saving enabled (the default), you can exit with `/exit` and return 
   <img src="/assets/cookbook/resume-demo-1.gif" alt="Choosing a saved conversation with /resume and continuing it with a new message" className="cookbook-demo" loading="lazy" />
 </a>
 
-Ante restores the saved conversation and uses your current permission settings. You can also run `ante --resume` (or `ante -r`) to open the picker directly, or `ante --resume <SESSION_ID>` to choose a session by ID. If the current directory has no saved sessions, bare `--resume` exits with a message. Sessions started with `--no-session-save` aren't available to resume.
+Ante restores the saved conversation and keeps the TUI's current permission mode, including after a rewind. You can also run `ante --resume` (or `ante -r`) to open the picker directly, or `ante --resume <SESSION_ID>` to choose a session by ID. CLI permission flags apply on resume; without an override, a new launch uses current settings. If the current directory has no saved sessions, bare `--resume` exits with a message. Sessions started with `--no-session-save` aren't available to resume.
 
-The picker lists sessions by last use. Resuming inside the TUI opens a fresh screen with the selected session's header and history. Saved system prompts and prompt mode are preserved; current prompt flags apply only to fresh sessions. If the local date, OS, or shell changed, Ante tells the model once on its next turn.
+The picker lists sessions by last use. Resuming inside the TUI opens a fresh screen with the selected session's header and history. Saved system prompts and prompt mode are preserved; current prompt flags apply only to fresh sessions. Ante supplies environment details before each turn and reloads the project's memory index on resume when [auto-memory](/extend/memory#how-it-works) applies to the saved prompts.
 
 ### Continue work from Claude Code or Codex {#coming-from-claude-code-or-codex}
 

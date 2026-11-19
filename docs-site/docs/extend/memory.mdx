@@ -3,13 +3,15 @@ title: "Memory"
 description: "Persistent auto-memory that carries context across conversations"
 ---
 
-Ante has a persistent memory system that lets the agent build up knowledge across conversations. Insights, patterns, and lessons learned are stored in memory files and automatically loaded into the system prompt for future sessions.
+Ante keeps project memory across conversations so you can carry useful feedback, preferences, and decisions into later work without repeating them.
 
 ## How it works
 
-Each project has a memory directory at `~/.ante/projects/<project-id>/memory/`, where `<project-id>` is a sanitized form of the project's absolute path. The key file is `MEMORY.md` — its contents are injected into the system prompt at the start of every conversation.
+Each project has a memory directory at `~/.ante/projects/<project-id>/memory/`, where `<project-id>` is a sanitized form of the project's absolute path. `MEMORY.md` is the index: Ante reads it when a session starts or resumes and includes it in the context before the conversation. The system prompt holds the general memory instructions; the project directory and index travel in a separate reminder prepared at each turn's start.
 
 Auto-memory is enabled by default in the interactive TUI and disabled by default in headless `-p` runs. Use `--enable-auto-memory` to opt a headless run into memory, or `--disable-auto-memory` to turn it off for a TUI session. To make either choice persistent, set `auto_memory` in [`settings.json`](/configuration/preference#settings-file).
+
+A replacement system prompt disables built-in auto-memory for a fresh session. A resumed session includes the current index only when auto-memory is enabled and its saved system prompts contain Ante's memory instructions. Saved prompts themselves are preserved.
 
 ### Automatic behavior
 
@@ -21,18 +23,14 @@ As the agent works on your project, it:
 
 ### MEMORY.md
 
-The main memory file. It is injected into the system prompt up to a cap of 200 lines or 25 KB, whichever comes first (a truncation note is appended when it overflows). Keep it concise — link to separate topic files for details.
+The main memory index is included up to a cap of 200 lines or 25 KB, whichever comes first (a truncation note is appended when it overflows). Keep one short pointer per memory and put details in topic files:
 
 ```markdown
-# Project patterns
+# Project memory
 
-- Use `anyhow::Result` for all fallible functions
-- Tests go in `#[cfg(test)]` modules alongside code
-- See [debugging.md](debugging.md) for common issues
-
-# Known issues
-
-- The auth module needs refactoring (tracked in #123)
+- [Review feedback](review-feedback.md) — how the team prefers changes grouped
+- [Release context](release-context.md) — why the rollout is staged
+- [Service ownership](service-ownership.md) — where to check the current owner
 ```
 
 ### Topic files
@@ -41,10 +39,10 @@ For detailed notes, create separate files and reference them from `MEMORY.md`:
 
 ```
 memory/
-├── MEMORY.md           # Main file (auto-loaded, max 200 lines)
-├── debugging.md        # Detailed debugging notes
-├── patterns.md         # Code patterns and conventions
-└── architecture.md     # Architecture decisions
+├── MEMORY.md             # Index (auto-loaded, max 200 lines or 25 KB)
+├── review-feedback.md    # Confirmed working preferences
+├── release-context.md    # Decision context not recorded in the repo
+└── service-ownership.md  # Pointer to an external source of truth
 ```
 
 ## Memory types
@@ -94,4 +92,4 @@ Memory is scoped to each project directory. Different projects have independent 
 
 ## Manual editing
 
-You can edit memory files directly — they are plain markdown. The agent can also update them using the `Write` and `Edit` tools during a session.
+You can edit memory files directly — they are plain markdown. The agent can also update them using the `Write` and `Edit` tools during a session. The index is read from disk at session start or resume, not on every turn. To use an external edit in an already open conversation, ask the agent to read the changed file or resume the session to reload the index.

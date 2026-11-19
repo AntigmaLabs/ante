@@ -215,9 +215,9 @@ Ante 会持续检查进展是否满足条件。使用 `/goal` 查看状态，使
   <img src="/assets/cookbook/resume-demo-1.gif" alt="使用 /resume 选择已保存的对话并发送新消息继续工作" className="cookbook-demo" loading="lazy" />
 </a>
 
-Ante 会恢复保存的对话，并使用当前权限设置。也可以运行 `ante --resume`（或 `ante -r`）直接打开选择器，或用 `ante --resume <SESSION_ID>` 按 ID 指定会话。若当前目录没有已保存的会话，不带 ID 的 `--resume` 会提示后退出。使用 `--no-session-save` 启动的会话无法恢复。
+Ante 会恢复保存的对话，并保留 TUI 当前的权限模式，回退后也不例外。也可以运行 `ante --resume`（或 `ante -r`）直接打开选择器，或用 `ante --resume <SESSION_ID>` 按 ID 指定会话。CLI 权限参数在恢复时同样生效；全新启动时若没有覆盖参数，则使用当前设置。若当前目录没有已保存的会话，不带 ID 的 `--resume` 会提示后退出。使用 `--no-session-save` 启动的会话无法恢复。
 
-选择器按最近使用时间排序。在 TUI 内恢复会话时，会清空当前屏幕并显示所选会话的标题与历史。已保存的系统提示词及提示词模式会保留；当前启动参数中的提示词选项只作用于全新会话。如果本地日期、操作系统或 Shell 改变，Ante 会在下一轮用一条通知告知模型。
+选择器按最近使用时间排序。在 TUI 内恢复会话时，会清空当前屏幕并显示所选会话的标题与历史。已保存的系统提示词及提示词模式会保留；当前启动参数中的提示词选项只作用于全新会话。Ante 在每轮之前提供环境信息，并在[自动记忆](/extend/memory#how-it-works) 适用于已保存提示词时，于恢复会话时重新加载项目记忆索引。
 
 ### 接续 Claude Code 或 Codex 的工作 {#coming-from-claude-code-or-codex}
 

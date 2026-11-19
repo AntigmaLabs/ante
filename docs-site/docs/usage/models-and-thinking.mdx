@@ -14,7 +14,9 @@ Ante lets you switch between models, providers, and effort levels mid-session �
 
 Type `/models` in the TUI to open the model selector. It lists the current provider's models (the title shows the scope, e.g. *Switch Model — Anthropic*). Use the arrow keys to pick a model, adjust the effort slider, and press Enter to confirm.
 
-Use `/models <model_id>` to switch directly to a model on the current provider. For example, to use Fable 5.2 on Antix, select Antix in `/providers`. If your endpoint serves the model before it appears in the picker, enter `/models <model_id>` with the ID supplied by Antix.
+For example, to use Fable 5.2 on Antix, select Antix in `/providers`, then choose Fable 5.2 in `/models`.
+
+Use `/models <model_id>` to switch directly to a model on the current provider. If your endpoint serves a model before it appears in your installed picker, use the model ID supplied by that provider.
 
 When you switch models on the same provider, for example from Gemini to Claude on Antix, you can continue the conversation. Ante clears the previous model’s reasoning data and tool-call signatures before sending the next request.
 

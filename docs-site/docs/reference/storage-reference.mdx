@@ -89,7 +89,7 @@ Each `~/.ante/sessions/<session-id>/` directory holds the resumable dialog, even
 
 On resume, Ante restores the session from its saved snapshot and replays `events.jsonl` to display the history. If the log contains damaged records, it replays the valid entries and reports how many records it skipped.
 
-Before a rewind replaces the current history, Ante keeps the abandoned dialog and event log under `abandoned/<rwd-id>/dialog.json` and `events.jsonl` inside that session directory. These are retained copies, not separate sessions in the resume picker. See [rewind and fork](/usage/tui#rewind-a-conversation) for the conversation-only restore boundaries.
+A rewind appends a `SessionRewound` record to `events.jsonl` and saves the shortened dialog. The raw event log keeps the earlier messages and tool outputs; replay hides the abandoned branch using the rewind record and saved dialog. Rewinding does not erase that content from disk or create an `abandoned/` copy. See [rewind and fork](/usage/tui#rewind-a-conversation) for the conversation-only restore boundaries.
 
 ## `catalog.json`
 

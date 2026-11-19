@@ -68,6 +68,8 @@ In the main chat, contiguous quiet calls such as Bash, Read, Grep, Glob, WebFetc
 
 After compaction — manual `/compact` or [automatic](/configuration/preference#settings-file) — the conversation shows a collapsed compaction marker. Earlier history remains visible for reference while the model uses a summary of older context alongside recent conversation and your messages. The transcript view shows the full summary. To focus the summary on a topic, add instructions such as `/compact focus on the API changes`. When no summary is needed, an info line reports any trimmed tool results instead.
 
+If a model ends its turn without a reply, Ante shows `The model ended its turn without a reply.` and completes the turn without adding a placeholder response to the saved conversation. Unexpected empty replies are retried through the normal reconnect path.
+
 ### Selecting and copying text
 
 The fullscreen views — fullscreen chat, the transcript, the [diff view](#diff-view), and `/diff` output — capture the mouse for wheel scrolling, so they handle selection themselves instead of leaving it to the terminal. Drag across the text and it copies on release; the footer confirms with `copied N lines`. Double-click selects a word, counting `_-./~+@#$%&=:` as word characters so a path or URL comes out whole, and triple-click selects the logical line. Dragging on the top or bottom row scrolls and keeps extending the selection past the viewport. In fullscreen chat, `PgUp` / `PgDn` also scroll the conversation. While you're scrolled up, a `Jump to bottom (ctrl+l) ↓` pill — or `N new messages (ctrl+l) ↓` once new entries arrive — sits under the conversation; press `Ctrl+L`, click the pill, or send a message to follow new output again. Scrolling back to the bottom also re-pins the view.
@@ -123,12 +125,12 @@ Ante persists sessions to disk when session saving is enabled (the default). Use
 4. Press **d** (or **Delete**) to delete the selected session — press **d** again to confirm, any other key cancels. The currently active session can't be deleted
 
 On resume, Ante:
-- Restores the full conversation history
+- Restores the conversation history remaining after any rewinds
 - Re-discovers agents and skills in the project directory (unless the session was started with `--no-skills`)
 - Preserves the saved system prompts and prompt mode (including `--system-prompt`, `--append-system-prompt`, and `--short-prompt`) while refreshing tool definitions
-- Adds one notice on the next turn if the local date, OS, or shell changed; an unchanged environment adds none
-- Adopts your current permission settings instead of stale saved modes (a session saved in Yolo no longer overrides your Strict or Auto rules on resume)
-- Replays the complete persisted event log to rebuild the conversation view, with no 200-event cap
+- Supplies environment details in the context before each turn and reloads the memory index when [auto-memory](/extend/memory#how-it-works) applies to the saved prompts
+- Keeps the TUI's current permission mode, including after a rewind, and reloads permission rules from current settings; old snapshots do not restore a saved mode
+- Replays visible events from the persisted log to rebuild the conversation view, omitting rewound branches with no 200-event cap
 
 Sessions are stored in `~/.ante/sessions/{session_id}/` with atomic writes for crash safety.
 

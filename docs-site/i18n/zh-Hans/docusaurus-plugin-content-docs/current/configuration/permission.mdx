@@ -36,7 +36,7 @@ ante --permission-mode auto "update docs and run tests"
 
 在 TUI 中，按 **Shift+Tab** 可实时循环切换模式：`strict` → `auto` → `yolo` → `strict`。变动立即生效，适用于当前正在运行轮次中的后续工具调用。切换到 `strict` 或 `auto` 还会自动将其保存为 `~/.ante/settings.json` 的全局默认值；切换到 `yolo` 仅对当前会话生效，确保未来的新会话不会在无保护状态下静默启动。
 
-恢复会话时使用当前权限设置。历史保存的 Yolo 模式不会覆盖当前的 Strict 或 Auto 模式；旧版快照仍可加载，但其中保存的权限模式会被忽略。
+在 TUI 内恢复或回退会话时，会保留您当前使用的权限模式，包括仅在当前会话生效的 `yolo` 选择。从命令行恢复时，`--permission-mode` 或 `--yolo` 同样生效。客户端未指定模式时，Ante 使用当前设置。旧对话快照保存的模式不会覆盖这一选择。恢复时会重新加载当前设置中的权限规则。
 
 :::warning
 无头模式默认使用 `yolo`，但会遵从显式的 `--permission-mode strict` 或 `--permission-mode auto`。由于无头会话无人值守，原本需要审批的调用会被立即拒绝，而不会等待交互提示。参阅[无头模式](/usage/headless)。
@@ -181,4 +181,4 @@ ante --exclude-tools Bash,Write -p "read-only analysis"
 
 在 **TUI 模式**下，需要审批的工具会弹出交互式提示菜单。您可以批准或拒绝单次调用、为本次会话放行，或保存“始终允许”规则（参见[会话临时授权](#session-grants)）。
 
-在 **无头模式** 下，默认隐式使用 `yolo` 模式。请使用 `--tools`、`--include-tools` 或 `--exclude-tools` 限制智能体可用的操作集。
+在 **无头模式** 下，默认使用 `yolo`。设置 `--permission-mode strict` 或 `--permission-mode auto` 可启用权限检查；由于无人可以回答审批提示，需要审批的调用会直接被拒绝。可用 `--tools`、`--include-tools` 或 `--exclude-tools` 限制可用工具。

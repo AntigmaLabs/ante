@@ -360,6 +360,10 @@ Ante retains the newest images in request order and replaces older ones with tex
 
 Once the cap is reached, each new image can replace an image in an earlier message in the outgoing request. That changes the prompt prefix and can reduce cache reuse from that point onward.
 
+### Anthropic prompt caching
+
+On the `AnthropicMessage` wire, Ante automatically marks the final tool definition and final system-prompt block for ephemeral caching, separately from conversation caching. Sessions with matching tools and system prompts can reuse those prefixes across project directories; environment details and the memory index travel in separate conversation context. No catalog setting is needed to enable this behavior.
+
 ### Extra request fields
 
 Some gateways and proxies require parameters Ante doesn't model — a service tier, a routing hint, a vendor-specific beta block. `extra_body` is a JSON object merged into the top level of every chat and streaming request body Ante sends to that provider:

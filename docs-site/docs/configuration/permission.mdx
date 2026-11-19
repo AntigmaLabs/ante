@@ -35,7 +35,7 @@ ante --permission-mode auto "update docs and run tests"
 
 In the TUI, press **Shift+Tab** to cycle the mode live: `strict` → `auto` → `yolo` → `strict`. The change applies immediately, including to later tool calls in a turn that is already running. Cycling to `strict` or `auto` also saves that mode as the default in `~/.ante/settings.json`; cycling to `yolo` is session-only, so future sessions do not silently start with permission checks off.
 
-Resuming a session uses the current permission settings. A saved Yolo mode cannot override your current Strict or Auto mode; legacy snapshots still load, but their saved permission mode is ignored.
+Resuming or rewinding inside the TUI keeps the permission mode you are currently using, including a session-only `yolo` choice. From the command line, `--permission-mode` or `--yolo` also applies when resuming. If a client does not supply a mode, Ante uses the current settings. A mode stored in an old conversation snapshot never overrides that choice. Permission rules are reloaded from current settings on resume.
 
 :::warning
 Headless runs default to `yolo`. An explicit `--permission-mode strict` or `--permission-mode auto` is honored; because headless sessions are unattended, calls that would require approval are denied immediately instead of waiting for a prompt. See [Headless mode](/usage/headless).
@@ -182,4 +182,4 @@ Tool filtering and permissions are independent. Filtering controls what tools **
 
 In **TUI mode**, tools that require approval show an interactive prompt. You can approve or deny each call, grant it for the rest of the session, or save an "always allow" rule (see [Session grants](#session-grants)).
 
-In **headless mode**, `yolo` mode is implied. Use `--tools`, `--include-tools`, or `--exclude-tools` to restrict what the agent can do.
+In **headless mode**, `yolo` is the default. Set `--permission-mode strict` or `--permission-mode auto` to apply permission checks; any call that needs approval is denied because no one can answer a prompt. Use `--tools`, `--include-tools`, or `--exclude-tools` to restrict which tools are available.

@@ -97,7 +97,7 @@ Ante 将用户偏好设置保存在 `~/.ante/settings.json` 中。仓库还可�
 | `provider_model` | 各提供商最后选用的模型记录 —— 切换提供商时优先采用此记录，其次回退至该提供商的默认模型。每次选择模型/提供商时自动写入 |
 | `mcp_servers` | 会话启动时通过 stdio 启动或通过 Streamable HTTP 连接的 MCP 服务器配置（参见 [MCP 服务器](/extend/mcp)） |
 
-恢复会话会保留已保存的系统提示词和提示词模式。`system_prompt`、`append_system_prompt`、`short_prompt` 的修改（包括项目设置与 CLI 覆盖）只作用于全新会话，例如通过 `/clear` 创建的会话。权限和工具选择等其他会话设置仍从当前配置解析。
+恢复会话会保留已保存的系统提示词和提示词模式。`system_prompt`、`append_system_prompt`、`short_prompt` 的修改（包括项目设置与 CLI 覆盖）只作用于全新会话，例如通过 `/clear` 创建的会话。权限规则和工具选择等其他会话设置从当前配置解析，并应用客户端支持的覆盖项。TUI 在恢复或回退时沿用当前权限模式；CLI 权限参数在恢复时同样生效。
 
 ### 命名 Profile 配置文件 {#named-profiles}
 
@@ -210,7 +210,7 @@ JSON 输入是 [Claude Code statusline 输入](https://code.claude.com/docs/en/s
 {
   "cwd": "/work/repo",
   "session_id": "ses_...",
-  "version": "0.3.4",
+  "version": "0.3.5",
   "model": { "id": "claude-sonnet-5-5", "display_name": "claude-sonnet-5-5" },
   "workspace": { "current_dir": "/work/repo", "project_dir": "/work/repo" },
   "thinking": { "enabled": true },

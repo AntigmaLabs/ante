@@ -90,7 +90,7 @@ WebFetch 溢出文件使用系统缓存目录：macOS 为 `~/Library/Caches/ante
 
 恢复会话时，Ante 从单独保存的快照加载会话状态，并重放 `events.jsonl` 来显示对话历史。如果日志中有损坏的记录，Ante 会跳过这些记录、重放其余有效内容，并显示跳过的记录数。
 
-回退替换当前历史前，Ante 会在该会话目录的 `abandoned/<rwd-id>/dialog.json` 与 `events.jsonl` 中保留放弃的对话和事件日志。这些是保留副本，不会作为独立会话出现在恢复选择器中。仅恢复对话的边界请参阅[回退与分叉](/usage/tui#rewind-a-conversation)。
+回退会向 `events.jsonl` 追加一条 `SessionRewound` 记录，并保存缩短后的对话。原始事件日志仍保留此前的消息与工具输出；回放会结合回退记录和保存的对话隐藏已放弃的分支。回退不会从磁盘擦除这些内容，也不会创建 `abandoned/` 副本。仅恢复对话的边界请参阅[回退与分叉](/usage/tui#rewind-a-conversation)。
 
 ## `catalog.json` {#catalogjson}
 

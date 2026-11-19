@@ -148,11 +148,11 @@ A `provider` change continues the conversation on the named catalog provider, ke
 
 ### ResumeSession
 
-Resume a previously persisted session by its ID. The daemon restores the saved dialog and pinned model, provider, and effort, resolves anything the snapshot did not pin from the host's current defaults, re-discovers extensions, and replays the complete persisted conversation so the client can rebuild its view.
+Resume a previously persisted session by its ID. The daemon restores the saved dialog and pinned model, provider, and effort, resolves anything the snapshot did not pin from the host's current defaults, re-discovers extensions, and replays the conversation remaining after any rewinds so the client can rebuild its view.
 
-Saved system prompts and prompt mode are restored as sent, including replacements, appended instructions, and `short_prompt`. Current launch prompt flags apply only to fresh sessions. A change in local date, OS, or shell is reported to the model once on its next turn; an unchanged environment adds no notice.
+Saved system prompts and prompt mode are restored as sent, including replacements, appended instructions, and `short_prompt`. Current launch prompt flags apply only to fresh sessions. The environment is supplied in context before the conversation, refreshed at each turn's start. When auto-memory is enabled and the saved prompts contain Ante's memory instructions, resume also reloads the project's current `MEMORY.md` index into that context.
 
-Permission mode always resolves from the host's current settings. Older snapshots still load, but their saved permission mode is ignored and omitted on the next save.
+The optional `permission_mode` overrides the host's current settings for this resume. Omitted or `null` uses current settings. The TUI sends its current mode when switching or rewinding a session. Older snapshots still load, but their saved permission mode is ignored and omitted on the next save.
 
 ```json
 { "op": { "ResumeSession": { "session_id": "ses_01ARZ...", "unattended": false } }, "id": "op_..." }
@@ -162,6 +162,7 @@ Permission mode always resolves from the host's current settings. Older snapshot
 |---|---|---|
 | `session_id` | `Id` | The session identifier to resume |
 | `unattended` | `bool` | Whether no client can answer approval prompts for this resumed incarnation. Defaults to `false` when absent; when `true`, would-be prompts are denied at admission |
+| `permission_mode` | `PermissionMode?` | Mode for this resume: `"strict"`, `"auto"`, or `"yolo"`. Omitted or `null` uses current settings. Available since v0.3.5 |
 | `tools` | `string[]?` | Base tool set for this resume, replacing the default set and also gating MCP tools. Omitted or `null` uses current settings. Available since v0.3.1 |
 | `include_tools` | `string[]?` | Tools added to the base set for this resume. Omitted or `null` adds none. Available since v0.3.1 |
 | `exclude_tools` | `string[]?` | Tools removed for this resume; wins over `tools` and `include_tools`. Omitted or `null` excludes none. Available since v0.3.1 |
@@ -175,6 +176,7 @@ For example, resume a conversation saved on `anthropic-subscription` with the `w
     "ResumeSession": {
       "session_id": "ses_01ARZ3NDEKTSV4RRFFQ69G5FAV",
       "credential": "oauth:anthropic/work",
+      "permission_mode": "strict",
       "tools": ["Read", "Glob", "Grep"]
     }
   },
@@ -184,7 +186,7 @@ For example, resume a conversation saved on `anthropic-subscription` with the `w
 
 The base tool set resolves from the current `tools` setting unless this request supplies `tools`; the saved conversation does not restore an old tool set. Additions and exclusions apply to this resume only.
 
-On success the daemon emits `SessionEnd` for the current session (if any), then `SessionStart` and `ExtensionRefreshed` for the resumed session, followed by the complete persisted event log in order, excluding session lifecycle events and malformed lines. There is no 200-event cap. On failure it emits an `Error` event.
+On success the daemon emits `SessionEnd` for the current session (if any), then `SessionStart` and `ExtensionRefreshed` for the resumed session, followed by the visible conversation events in order. Replay applies recorded rewinds against the saved dialog and excludes abandoned branches, the `SessionRewound` records themselves, session lifecycle events, and malformed lines. The raw log remains intact, and there is no 200-event cap. On failure it emits an `Error` event.
 
 ### RewindSession
 
@@ -456,7 +458,7 @@ The payload type was named `SessionInitialized` before `v0.preview.94` and is no
 
 #### SessionRewound
 
-Confirms that the active conversation and its persisted history now stand just before `to`. This acknowledgment is never included in resume replay. A client should remove the selected input and later entries from its displayed conversation after receiving it.
+Confirms that the saved dialog and visible conversation now stand just before `to`; the raw event log retains the earlier content and a rewind record. This acknowledgment is never included in resume replay. A client should remove the selected input and later entries from its displayed conversation after receiving it.
 
 ```json
 { "event": { "SessionRewound": { "to": "op_01ARZ..." } }, "parent": "op_..." }

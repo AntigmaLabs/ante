@@ -14,7 +14,9 @@ Ante 允许在会话进行中随时无缝切换模型、提供商和思考深度
 
 在 TUI 终端中输入 `/models` 即可打开模型选择器面板。面板会列出当前提供商支持的模型（标题展示作用域，如 *Switch Model — Anthropic*）。使用方向键浏览模型，调节下方思考深度滑块，按 Enter 回车确认。
 
-输入 `/models <model_id>` 可直接切换到当前提供商的指定模型。例如，在 Antix 上使用 Fable 5.2 时，先在 `/providers` 中选择 Antix。若您的端点已支持该模型，但本机选择器尚未列出，可将 Antix 提供的模型 ID 传给 `/models`。
+例如，要在 Antix 上使用 Fable 5.2，先在 `/providers` 中选择 Antix，再在 `/models` 中选择 Fable 5.2。
+
+输入 `/models <model_id>` 可直接切换到当前提供商的指定模型。若端点已支持某个模型，但本机选择器尚未列出，可使用提供商给出的模型 ID。
 
 在同一提供商内切换模型时（例如在 Antix 上从 Gemini 切换到 Claude），您可以继续当前对话。Ante 会在新模型的请求中清除旧模型专用的推理数据与工具调用签名。
 

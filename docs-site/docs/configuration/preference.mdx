@@ -96,7 +96,7 @@ An example `settings.json`:
 | `provider_model` | Last model used per provider — a provider switch adopts this before falling back to the provider's default model. Written automatically on every model/provider selection |
 | `mcp_servers` | MCP servers to launch over stdio or connect to over Streamable HTTP at session start (see [MCP Servers](/extend/mcp)) |
 
-Resumed sessions keep their saved system prompts and prompt mode. Changes to `system_prompt`, `append_system_prompt`, or `short_prompt` (including project settings and CLI overrides) apply to fresh sessions, such as those started with `/clear`. Other session settings, including permissions and tool selection, still resolve from current settings.
+Resumed sessions keep their saved system prompts and prompt mode. Changes to `system_prompt`, `append_system_prompt`, or `short_prompt` (including project settings and CLI overrides) apply to fresh sessions, such as those started with `/clear`. Other session settings, including permission rules and tool selection, resolve from current settings plus any supported client overrides. The TUI carries its current permission mode through a resume or rewind; CLI permission flags also apply when resuming.
 
 ### Named profiles
 
@@ -211,7 +211,7 @@ The JSON input is a compatible subset of [Claude Code's statusline input](https:
 {
   "cwd": "/work/repo",
   "session_id": "ses_...",
-  "version": "0.3.4",
+  "version": "0.3.5",
   "model": { "id": "claude-sonnet-5-5", "display_name": "claude-sonnet-5-5" },
   "workspace": { "current_dir": "/work/repo", "project_dir": "/work/repo" },
   "thinking": { "enabled": true },
