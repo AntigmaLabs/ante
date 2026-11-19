@@ -24,7 +24,7 @@ const docsFooterItems = isZhHansBuild
   : [
       { label: 'Overview', to: '/' },
       { label: 'Quickstart', to: '/start/quickstart' },
-      { label: 'Benchmarks', to: '/benchmarks/eval' },
+      { label: 'Eval', to: '/benchmarks/eval' },
       { label: 'Local Models', to: '/local/overview' },
       { label: 'Connect a provider', to: '/usage/providers' },
     ]

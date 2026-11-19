@@ -48,7 +48,7 @@ const sidebars: SidebarsConfig = {
         'start/philosophy',
         {
           type: 'category',
-          label: 'Benchmarks',
+          label: 'Eval',
           collapsible: false,
           items: ['benchmarks/eval', 'benchmarks/compare_table'],
         },

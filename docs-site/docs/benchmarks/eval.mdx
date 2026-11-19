@@ -1,48 +1,72 @@
 ---
-title: "Benchmarks"
+title: "Eval"
 sidebar_label: "Terminal-Bench"
-description: "Public, reproducible benchmarks of the exact builds we ship — live results at antigma.ai/eval"
+description: "Public, reproducible evals of the exact builds we ship. Terminal-Bench 4.1 is our primary benchmark, with live results at antigma.ai/eval"
 ---
 
-# Benchmarks
+# Eval
 
-## We benchmark what we ship
+**We keep up with the frontier so you don't have to.** New models and harder benchmarks land every few weeks. We run each new model family through the same public eval, and we move to the harder benchmark when the old one saturates. The Ante you install has already been measured against both, with the score and the inference cost on one page.
 
-Our benchmarks are designed to be checked:
+## Our standard
 
-- **We benchmark what we ship.** Every eval runs against a pinned, publicly downloadable Ante release, the same binary `ante update` installs (e.g. `0.preview.43`). No eval-only branches, no benchmark-specific prompts.
+We hold Ante to the same official standard as the frontier labs' own agents, and every number is built to be checked:
+
+- **The restrictions are official.** Every task keeps the benchmark's own timeout and sandbox resource limits. We never raise them.
+- **We benchmark what we ship.** Every eval runs against a pinned, publicly downloadable Ante release, the same binary `ante update` installs (e.g. `0.3.5`). No eval-only branches, no benchmark-specific prompts.
 - **The runs are auditable.** Every result links its raw [Harbor](https://github.com/harbor-framework/harbor) run, so anyone can inspect the trials behind the number.
-- **The constraints are official.** All trials use the same parameters as the official Terminal-Bench leaderboard: 89 tasks, 5 trials per task, strict timeouts and hardware limits.
+- **Every run starts clean.** When a score drops, we know it reflects a real regression.
 - **The results are live.** We publish continuously at [antigma.ai/eval](https://antigma.ai/eval).
 
-## Terminal-Bench 2.1: one harness, any model
+> We evaluate the **agent** and how well it channels the model's power — not the model itself.
 
-We evaluate the **agent harness**, not the model. So instead of one hero number, we publish Ante's score across many models. For **every model we run, Ante is the #1 same-model agent**: no other harness posts a higher score with that model.
+When a score needs to go up, we improve the harness: the runtime, orchestration, and reliability. A gain that comes from a better system stays. A gain from a prompt tuned to one benchmark is fragile. We also start early and simple: a small, honest eval set drawn from actual failures beats a large contrived one.
 
-Highlights from the [live dashboard](https://antigma.ai/eval) (as of June 2026):
+## Terminal-Bench 4.1: our primary benchmark
 
-| Model | Accuracy | Same-model rank |
-|---|---|---|
-| DeepSeek V4.1 Flash | **83.9%** | #1 |
-| GLM 5.2 | 74.6% ±2.06 | #1 |
-| MiMo V2.5 | 65.8% ±2.30 | #1 |
-| DeepSeek V4 Pro | 65.8% ±2.25 | #1 |
-| DeepSeek V4 Flash | 62.7% ±2.29 | #1 |
-| MiniMax M3 | 62.1% ±2.33 | #1 |
+[Terminal-Bench 4.1](https://hub.harborframework.com/datasets/terminal-bench/terminal-bench/5?tab=leaderboard&leaderboard=4-1-0) became our primary benchmark in November 2026. It is where frontier labs' own agents are ranked today: Claude Code, Codex, and Antigravity CLI with their newest models.
 
-Two things worth noticing:
+It is also the harder test. The top rows of Terminal-Bench 2.1 sit above 85%. On the 66 tasks of 4.1, three of which need a GPU, the best verified row is near 71% (November 2026). That headroom is where harness work shows.
 
-- **Ante + DeepSeek V4.1 Flash reaches 83.9%**: 370/445 trials under official Terminal-Bench 2.1 constraints, for about $18 of inference across the full run.
-- **Ante + GLM 5.2 at 74.6%** places in the top tier of the public verified leaderboard with an open-weight model.
+We publish Ante's score across model families instead of one hero number. The current headline: **Ante + DeepSeek V4.1 Flash 1017 reaches 40.9%** on Ante `0.3.5`, for about $38 of inference across the full run ([raw run](https://hub.harborframework.com/jobs/c7b8b27d-6759-4e5e-8ca7-3c7c25ff6a43)). The verified Claude Code row for the same model reads 38.5%.
 
-A good harness moves the frontier down-market: it makes open-weight models do work you'd otherwise pay frontier prices for.
+Current results live in one place, the [dashboard](https://antigma.ai/eval): every model we have run, each next to the verified rows for the same model.
 
 **[Explore the live results →](https://antigma.ai/eval)**
 
 ## Track record
 
-- #1 on the Terminal Bench 1.0 leaderboard (2025)
-- #1 on the Terminal Bench 2.0 leaderboard among verified agents — and best in class among Gemini-based agents (February 2026)
+Every benchmark we have used as our primary stays here with its proof, so each number keeps its provenance.
+
+| When | Benchmark | Result |
+|---|---|---|
+| September 2025 | Terminal Bench 1.0 | #1 on the public leaderboard, with Claude Sonnet 4.5 ([screenshot](#terminal-bench-20-and-10)) |
+| January to February 2026 | Terminal Bench 2.0 | #1 among verified agents and the top Gemini-based agent ([screenshot](#terminal-bench-20-and-10)) |
+| June to October 2026 | Terminal-Bench 2.1 | 83.9% with open-weight DeepSeek V4.1 Flash, edging past Fable 5 in its native Claude Code (83.8%), and #1 same-model agent for every model we ran ([runs](#terminal-bench-21)) |
+| September to November 2026 | Terminal-Bench 4.0 | Early runs, still on the [dashboard](https://antigma.ai/eval). 4.1 updates the same 66 tasks, so compare scores within one version. |
+| November 2026 onward | Terminal-Bench 4.1 | Primary benchmark, [results above](#terminal-bench-41-our-primary-benchmark) |
+
+### Terminal-Bench 2.1
+
+Our primary benchmark from June to October 2026. All runs follow the official leaderboard parameters: 89 tasks, 5 trials per task, strict timeouts and hardware limits. For every model we ran, Ante was the #1 same-model agent: no other harness posted a higher score with that model.
+
+| Model | Accuracy | Ante build | Raw run |
+|---|---|---|---|
+| DeepSeek V4.1 Flash | **83.9%** | `20260911-0727-4f99a30` | [Harbor](https://hub.harborframework.com/jobs/4f88e533-ea4c-4ea5-8fc0-95e5b5638ca3) |
+| Claude Haiku 5.5 | 82.9% | `0.2.12` | [Harbor](https://hub.harborframework.com/jobs/1a09f16e-c704-4468-bec0-29baaaaaea1c) |
+| DeepSeek V4 Flash 0731 | 82.7% | `0.preview.71` | [Harbor](https://hub.harborframework.com/jobs/b2a14e4b-a422-45f2-832e-cf2eec5c8bff) |
+| Grok 4.5 | 80.9% | `0.preview.56` | [Harbor](https://hub.harborframework.com/jobs/e3303908-1b9b-46f9-a11d-2478b4f49e55) |
+| GLM 5.2 | 74.6% | `0.preview.43` | [Harbor](https://hub.harborframework.com/jobs/cba23937-0ec6-43bd-9b7c-9fc5f262348b) |
+| DeepSeek V4 Pro | 69.1% | `0.preview.54` | [Harbor](https://hub.harborframework.com/jobs/04ad04e8-fc21-49b0-b3ae-d46dd0c1851c) |
+| DeepSeek V4 Flash | 66.4% | `0.preview.53` | [Harbor](https://hub.harborframework.com/jobs/dbd5aafc-cd65-42f3-b073-657a2ebd2a7c) |
+| MiMo V2.5 | 65.8% | `20260625-0824-e383a92` | [Harbor](https://hub.harborframework.com/jobs/0b939ac8-e45f-4c5e-ad13-4869f3d78e69) |
+| MiniMax M3.1 Flash | 64.8% | `0.2.14` | [Harbor](https://hub.harborframework.com/jobs/32b0cff9-bd57-4eb3-a4bf-360e22eed14a) |
+| MiniMax M3 | 62.1% | `20260623-0825-ff174ee` | [Harbor](https://hub.harborframework.com/jobs/9a893ee4-1426-46ed-ab15-c2ba89598fe1) |
+| Qwen3.6 27B (local, 17 GB) | 56.2% | `20260701-0837-70d2aac` | [Harbor](https://hub.harborframework.com/jobs/262c178d-502f-4034-a84d-e0c0c219c852) |
+
+The headline run: Ante + DeepSeek V4.1 Flash scored 83.9% for about $18 of inference. The [verified row](https://hub.harborframework.com/datasets/terminal-bench/terminal-bench-2-1/6/leaderboards/main/rows/40dbe33d-e8af-475b-8eba-7d5d8f70054c) for Fable 5 in its native Claude Code reads 83.8% for about $553. A good harness moves the frontier down-market: it makes open-weight models do work you'd otherwise pay frontier prices for.
+
+### Terminal Bench 2.0 and 1.0
 
 <div className="benchmark-gallery">
   <figure className="benchmark-shot">
@@ -61,27 +85,19 @@ A good harness moves the frontier down-market: it makes open-weight models do wo
       alt="Harbor Terminal-Bench 2.0 leaderboard showing Ante near the top with Gemini 3 Pro on January 6, 2026."
     />
     <figcaption>
-      <strong>Terminal Bench 2.0.</strong> Ante ranked #1 among verified agents on January 6, 2026 — 2nd overall, and the highest-ranked Gemini-based agent in the displayed leaderboard.
+      <strong>Terminal Bench 2.0.</strong> Ante ranked #1 among verified agents on January 6, 2026: 2nd overall, and the highest-ranked Gemini-based agent in the displayed leaderboard.
     </figcaption>
   </figure>
 </div>
 
-We use [Terminal Bench](https://github.com/harbor-framework/terminal-bench-1) and [Harbor](https://github.com/harbor-framework/harbor) as our primary external benchmark. The team behind Harbor and Terminal Bench are genuine researchers — rigorous, principled, and motivated by getting it right rather than hype.
+## Why Terminal-Bench
 
-Why Terminal Bench:
+We use [Terminal Bench](https://github.com/harbor-framework/terminal-bench-1) and [Harbor](https://github.com/harbor-framework/harbor) as our primary external benchmark. The team behind Harbor and Terminal Bench are genuine researchers: rigorous, principled, and motivated by getting it right rather than hype.
+
 - **Rigorous.** Unambiguous task specs, deterministic grading where possible, and isolated execution environments.
-- **Focused on core capability.** Can the agent accomplish real tasks in a real shell? Reading context, reasoning, acting, verifying — the exact loop we are building Ante around.
+- **Focused on core capability.** Can the agent accomplish real tasks in a real shell? Reading context, reasoning, acting, verifying: the exact loop we are building Ante around.
+- **It keeps moving.** Each release raises the bar as models catch up, and we move with it.
 
 ## Resource footprint
 
 Capability is half the story; cost to run is the other half. See [Resource Footprint](/benchmarks/compare_table) for Docker-measured CPU, memory, and disk usage across 20 parallel tasks — Ante vs Claude Code vs Opencode.
-
-## Evaluation principles
-
-Most of the magic comes from the model — but the agent harness is the critical conduit between human and AI.
-
-> We evaluate the **agent** and how well it channels the model's power — not the model itself.
-
-**Improve the harness, not the prompt.** When eval scores need to go up, we invest in the agent chassis — the runtime, orchestration, reliability — not in prompt-engineering for a specific benchmark. If a score improves because the system genuinely got better, it stays improved. If it improved because we tuned a prompt, it's fragile.
-**Start early, start simple.** A small but honest eval set drawn from actual failures beats a large contrived one.
-**Isolate and reproduce.** Every eval run starts clean. When a score drops, we know it reflects a real regression.

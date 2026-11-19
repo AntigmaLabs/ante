@@ -672,7 +672,7 @@ html:root {
   border-radius: 8px;
 }
 
-/* Nested labels (Benchmarks, Input): one step under the header, not links */
+/* Nested labels (Eval, Input): one step under the header, not links */
 .theme-doc-sidebar-item-category:not(.theme-doc-sidebar-item-category-level-1) {
   margin-top: 12px;
 }

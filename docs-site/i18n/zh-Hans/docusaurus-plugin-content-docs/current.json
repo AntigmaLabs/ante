@@ -7,9 +7,9 @@
     "message": "快速入门",
     "description": "The label for category 'Getting Started' in sidebar 'docs'"
   },
-  "sidebar.docs.category.Benchmarks": {
+  "sidebar.docs.category.Eval": {
     "message": "基准评测",
-    "description": "The label for category 'Benchmarks' in sidebar 'docs'"
+    "description": "The label for category 'Eval' in sidebar 'docs'"
   },
   "sidebar.docs.category.Using Ante": {
     "message": "使用 Ante",

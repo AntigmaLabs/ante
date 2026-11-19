@@ -30,16 +30,19 @@ uv run --python 3.12 --with harbor harbor run \
   --ak provider=anthropic \
   --ak install_args= \
   --ae 'ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}' \
-  --dataset terminal-bench/terminal-bench-2-1 \
+  --dataset terminal-bench/terminal-bench@sha256:5881c1b1c74a96f07baef00a7c869e09802704bc0dc912c870e7acccc11440da \
   --n-attempts 1
 ```
 
+The dataset above is Terminal-Bench 4.1, the benchmark behind Ante's current published results. Leave task timeouts and sandbox resources at their defaults so the run matches the official restrictions.
+
 Adjust for the request:
 
+- Dataset: three Terminal-Bench 4.1 tasks need a GPU (`fp8-rmsnorm-gemm`, `jax-speedrun-gpu`, `math-eval-grader`), so they need a GPU sandbox. For the earlier Terminal-Bench 2.1 results, use `--dataset terminal-bench/terminal-bench-2-1` with `--n-attempts 5`.
 - `provider` selects which key Ante reads inside the sandbox. For `openai` or `gemini`, forward `OPENAI_API_KEY` or `GEMINI_API_KEY` with `--ae` instead.
 - `install_args` picks the Ante build installed in each sandbox: empty for the latest release, or a version to pin.
 - Scope: add `-i <task-id>` (repeatable) to run specific tasks. Smoke-test one task before a full run unless the user asks otherwise.
-- Throughput: `--n-concurrent <n>` caps parallel sandboxes. `--n-attempts <n>` sets attempts per task; published leaderboard runs use 5.
+- Throughput: `--n-concurrent <n>` caps parallel sandboxes. `--n-attempts <n>` sets attempts per task.
 - Custom endpoint: add `--ae 'MODEL_BASE_URL=${MODEL_BASE_URL}'` when routing through a proxy.
 
 ## Read results

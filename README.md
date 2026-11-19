@@ -5,7 +5,7 @@
 
 <p align="center">
   <a href="https://github.com/AntigmaLabs/ante/releases"><img src="https://img.shields.io/github/v/release/AntigmaLabs/ante?include_prereleases&label=release&color=blueviolet" /></a>
-  <a href="https://antigma.ai/eval"><img src="https://img.shields.io/badge/Terminal--Bench_2.1-live_results-2ea44f?logo=speedtest&logoColor=white" /></a>
+  <a href="https://antigma.ai/eval"><img src="https://img.shields.io/badge/Terminal--Bench_4.1-live_results-2ea44f?logo=speedtest&logoColor=white" /></a>
   <a href="https://docs.antigma.ai"><img src="https://img.shields.io/badge/Docs-docs.antigma.ai-orange?logo=safari&logoColor=white" /></a>
   <a href="https://discord.gg/CbAsUR434B"><img src="https://img.shields.io/badge/Discord-Join%20Us-5865F2?logo=discord&logoColor=white" /></a>
   <a href="https://twitter.com/antigma_labs"><img src="https://img.shields.io/badge/X-@antigma__labs-black?logo=x&logoColor=white" /></a>
@@ -33,7 +33,11 @@ Ante makes this declarative: [one settings profile](#one-binary-many-agents) can
 
 ### 🥇 Continuously evaluated and evolved in public
 
-We evaluate Ante as a harness across different model families instead of coupling it to one hero model. Ante runs [Terminal-Bench 2.1](https://antigma.ai/eval) continuously under official leaderboard constraints: 89 tasks, 5 trials each. Each result pins the exact Ante build you can download and links the raw Harbor run for independent audit. Latest full run: **83.9%** with open-weight **DeepSeek V4.1 Flash** (370/445 trials, Ante 0.preview.98, about $18 of inference).
+**We keep up with the frontier so you don't have to.** New models and harder benchmarks land every few weeks. We run each one through the same public eval, so the Ante you install has already been measured against them.
+
+Our primary benchmark is now [Terminal-Bench 4.1](https://antigma.ai/eval). We hold Ante to the same official standard as the frontier labs' own agents: every task keeps the benchmark's timeout and sandbox resource limits. We evaluate it as a harness across model families instead of coupling it to one hero model. Each result pins the exact Ante build you can download and links the raw Harbor run for independent audit. Latest: **40.9%** with **DeepSeek V4.1 Flash 1017** (Ante 0.3.5, about $38 of inference). The verified Claude Code row for the same model reads 38.5%.
+
+Earlier results stay on the record: #1 on Terminal Bench 1.0 (2025) and #1 verified agent on Terminal Bench 2.0 (early 2026). On Terminal-Bench 2.1, Ante with open-weight DeepSeek V4.1 Flash scored 83.9% for about $18 of inference, edging past Fable 5 in its native Claude Code (83.8%, about $553). [Track record →](https://docs.antigma.ai/benchmarks/eval#track-record)
 
 #### Same model, different harness
 

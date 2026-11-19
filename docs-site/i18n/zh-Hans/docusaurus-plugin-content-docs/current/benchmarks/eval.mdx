@@ -1,48 +1,72 @@
 ---
 title: "基准评测"
 sidebar_label: "Terminal-Bench 评测"
-description: "公开发布版本的真实可复现基准评测 — 实时结果展示于 antigma.ai/eval"
+description: "公开发布版本的真实可复现基准评测。Terminal-Bench 4.1 是我们的主要基准，实时结果展示于 antigma.ai/eval"
 ---
 
 # 基准评测
 
-## 评测真实分发版本 {#we-benchmark-what-we-ship}
+**我们紧跟前沿，您无需操心。** 新模型与更难的基准每隔几周就会出现。每个新的模型系列我们都会用同一套公开评测跑一遍，旧基准趋于饱和时就切换到更难的基准。您安装的 Ante 已经经过这两方面的检验，得分与推理成本都在同一页面公布。
 
-我们的基准评测以可检验为核心设计：
+## 我们的标准 {#our-standard}
 
-- **评测真实分发的构建版本。** 每次评测均基于固定且公开可下载的 Ante 发行版运行，与 `ante update` 安装的二进制完全一致（例如 `0.preview.43`）。没有专用于评测的分支，也没有针对 Benchmark 定制的专用提示词。
+我们以与前沿实验室自家智能体相同的官方标准要求 Ante，并让每个数字都可检验：
+
+- **遵循官方限制。** 每个任务都保留基准自身的超时时间与沙箱资源限制，我们从不放宽。
+- **评测真实分发的构建版本。** 每次评测均基于固定且公开可下载的 Ante 发行版运行，与 `ante update` 安装的二进制完全一致（例如 `0.3.5`）。没有专用于评测的分支，也没有针对 Benchmark 定制的专用提示词。
 - **运行记录完全可审计。** 每个结果均链接其原始 [Harbor](https://github.com/harbor-framework/harbor) 运行记录，任何人都可以审阅每个 Trial 运行过程。
-- **遵循官方严格限制。** 所有评测均采用与 Terminal-Bench 官方排行榜相同的参数：89 个任务、每个任务 5 次试验，并严格限制超时时间与硬件资源。
+- **每次评测均在干净环境下启动。** 当得分下降时，我们知道它反映的是真实的回归问题。
 - **结果实时持续发布。** 我们持续在 [antigma.ai/eval](https://antigma.ai/eval) 公布最新的评测数据。
 
-## Terminal-Bench 2.1：统一 Harness 评测各模型 {#terminal-bench-21-one-harness-any-model}
+> 我们评测的是 **Agent 底座** 激发并转化模型能力的效果 —— 而非仅仅评测模型自身。
 
-我们评测的是 **Agent Harness 底座能力**，而非仅仅评测大模型本身。因此，我们公布了 Ante 搭配不同模型时的综合表现。在**所有参与评测的模型中，Ante 均取得了同模型智能体排名第一（#1 same-model agent）**：在相同模型下，没有其他 Harness 跑出比 Ante 更高的准确率。
+当评测得分需要提升时，我们优化的是 Harness 本身：运行时架构、调度编排与可靠性。由系统变好带来的提升具有持久性，而针对某个 Benchmark 调优提示词得到的提升则脆弱易失。我们也坚持尽早评测、从简出发：基于真实失败案例提炼出的精简评测集，远胜于人工构造的庞大测试用例。
 
-实时看板重点数据（截至 2026 年 6 月）：
+## Terminal-Bench 4.1：我们的主要基准 {#terminal-bench-41-our-primary-benchmark}
 
-| 模型 | 准确率 | 同模型排名 |
-|---|---|---|
-| DeepSeek V4.1 Flash | **83.9%** | #1 |
-| GLM 5.2 | 74.6% ±2.06 | #1 |
-| MiMo V2.5 | 65.8% ±2.30 | #1 |
-| DeepSeek V4 Pro | 65.8% ±2.25 | #1 |
-| DeepSeek V4 Flash | 62.7% ±2.29 | #1 |
-| MiniMax M3 | 62.1% ±2.33 | #1 |
+自 2026 年 11 月起，[Terminal-Bench 4.1](https://hub.harborframework.com/datasets/terminal-bench/terminal-bench/5?tab=leaderboard&leaderboard=4-1-0) 成为我们的主要基准。它是当下前沿实验室自家智能体同台排名的榜单：Claude Code、Codex 与 Antigravity CLI 均以各自最新模型上榜。
 
-两项值得关注的事实：
+它也是更难的考验。Terminal-Bench 2.1 的榜首成绩已超过 85%。而在 4.1 的 66 个任务（其中 3 个需要 GPU）上，最高的官方验证成绩约为 71%（2026 年 11 月）。这段差距正是 Harness 能力得以体现的空间。
 
-- **Ante + DeepSeek V4.1 Flash 达到 83.9% 准确率**：在官方 Terminal-Bench 2.1 约束下 370/445 次成功，全量评测总推理费用仅约 $18。
-- **Ante + GLM 5.2 达到 74.6% 准确率**，使开源权重模型直接位列公开验证榜单的前列。
+我们公布 Ante 搭配不同模型系列的成绩，而不是单一的明星数字。当前的代表性成绩：**Ante + DeepSeek V4.1 Flash 1017 达到 40.9%**，基于 Ante `0.3.5`，全量评测总推理费用约 $38（[原始运行记录](https://hub.harborframework.com/jobs/c7b8b27d-6759-4e5e-8ca7-3c7c25ff6a43)）。同一模型下 Claude Code 的官方验证成绩为 38.5%。
 
-优秀的高性能 Harness 能够将前沿能力下放：让开源和高性价比模型完成以往只有昂贵前沿模型才能胜任的工作。
+当前结果只在一处维护，即[实时看板](https://antigma.ai/eval)：我们评测过的每个模型，均与同模型的官方验证成绩并列展示。
 
 **[查看实时评测结果 →](https://antigma.ai/eval)**
 
 ## 历史战绩 {#track-record}
 
-- Terminal Bench 1.0 排行榜第一名（2025 年）
-- Terminal Bench 2.0 验证 Agent 排行榜第一名 —— 且在基于 Gemini 的 Agent 中位列第一（2026 年 2 月）
+我们用过的每一个主要基准都连同证据保留在这里，让每个数字的来源都可追溯。
+
+| 时间 | 基准 | 结果 |
+|---|---|---|
+| 2025 年 9 月 | Terminal Bench 1.0 | 搭配 Claude Sonnet 4.5 位列公开排行榜第一（[截图](#terminal-bench-20-and-10)） |
+| 2026 年 1 月至 2 月 | Terminal Bench 2.0 | 验证 Agent 中排名第一，且为排名最高的 Gemini 系列 Agent（[截图](#terminal-bench-20-and-10)） |
+| 2026 年 6 月至 10 月 | Terminal-Bench 2.1 | 搭配开源权重模型 DeepSeek V4.1 Flash 达到 83.9%，小幅超过原生 Claude Code 搭配 Fable 5 的成绩（83.8%），且在所有评测过的模型上均为同模型智能体第一（[运行记录](#terminal-bench-21)） |
+| 2026 年 9 月至 11 月 | Terminal-Bench 4.0 | 早期的评测结果，仍保留在[看板](https://antigma.ai/eval)上。4.1 更新了相同的 66 个任务，因此请在同一版本内比较得分。 |
+| 2026 年 11 月起 | Terminal-Bench 4.1 | 主要基准，[结果见上文](#terminal-bench-41-our-primary-benchmark) |
+
+### Terminal-Bench 2.1 {#terminal-bench-21}
+
+2026 年 6 月至 10 月期间的主要基准。所有评测均采用官方排行榜参数：89 个任务、每个任务 5 次试验，并严格限制超时时间与硬件资源。在所有评测过的模型中，Ante 均取得同模型智能体排名第一（#1 same-model agent）：在相同模型下，没有其他 Harness 跑出更高的得分。
+
+| 模型 | 准确率 | Ante 构建版本 | 原始运行记录 |
+|---|---|---|---|
+| DeepSeek V4.1 Flash | **83.9%** | `20260911-0727-4f99a30` | [Harbor](https://hub.harborframework.com/jobs/4f88e533-ea4c-4ea5-8fc0-95e5b5638ca3) |
+| Claude Haiku 5.5 | 82.9% | `0.2.12` | [Harbor](https://hub.harborframework.com/jobs/1a09f16e-c704-4468-bec0-29baaaaaea1c) |
+| DeepSeek V4 Flash 0731 | 82.7% | `0.preview.71` | [Harbor](https://hub.harborframework.com/jobs/b2a14e4b-a422-45f2-832e-cf2eec5c8bff) |
+| Grok 4.5 | 80.9% | `0.preview.56` | [Harbor](https://hub.harborframework.com/jobs/e3303908-1b9b-46f9-a11d-2478b4f49e55) |
+| GLM 5.2 | 74.6% | `0.preview.43` | [Harbor](https://hub.harborframework.com/jobs/cba23937-0ec6-43bd-9b7c-9fc5f262348b) |
+| DeepSeek V4 Pro | 69.1% | `0.preview.54` | [Harbor](https://hub.harborframework.com/jobs/04ad04e8-fc21-49b0-b3ae-d46dd0c1851c) |
+| DeepSeek V4 Flash | 66.4% | `0.preview.53` | [Harbor](https://hub.harborframework.com/jobs/dbd5aafc-cd65-42f3-b073-657a2ebd2a7c) |
+| MiMo V2.5 | 65.8% | `20260625-0824-e383a92` | [Harbor](https://hub.harborframework.com/jobs/0b939ac8-e45f-4c5e-ad13-4869f3d78e69) |
+| MiniMax M3.1 Flash | 64.8% | `0.2.14` | [Harbor](https://hub.harborframework.com/jobs/32b0cff9-bd57-4eb3-a4bf-360e22eed14a) |
+| MiniMax M3 | 62.1% | `20260623-0825-ff174ee` | [Harbor](https://hub.harborframework.com/jobs/9a893ee4-1426-46ed-ab15-c2ba89598fe1) |
+| Qwen3.6 27B（本地，17 GB） | 56.2% | `20260701-0837-70d2aac` | [Harbor](https://hub.harborframework.com/jobs/262c178d-502f-4034-a84d-e0c0c219c852) |
+
+代表性成绩：Ante + DeepSeek V4.1 Flash 得分 83.9%，推理费用约 $18。原生 Claude Code 搭配 Fable 5 的[已验证成绩](https://hub.harborframework.com/datasets/terminal-bench/terminal-bench-2-1/6/leaderboards/main/rows/40dbe33d-e8af-475b-8eba-7d5d8f70054c)为 83.8%，费用约 $553。优秀的 Harness 能够将前沿能力下放：让开源权重模型完成以往只有昂贵前沿模型才能胜任的工作。
+
+### Terminal Bench 2.0 与 1.0 {#terminal-bench-20-and-10}
 
 <div className="benchmark-gallery">
   <figure className="benchmark-shot">
@@ -66,22 +90,14 @@ description: "公开发布版本的真实可复现基准评测 — 实时结果�
   </figure>
 </div>
 
+## 为什么选择 Terminal-Bench {#why-terminal-bench}
+
 我们将 [Terminal Bench](https://github.com/harbor-framework/terminal-bench-1) 与 [Harbor](https://github.com/harbor-framework/harbor) 作为主要的外部基准评测体系。Harbor 与 Terminal Bench 团队秉承严谨、扎实的研究精神，不追逐噱头。
 
-为什么选择 Terminal Bench：
 - **严谨规范。** 任务规格明确，尽可能采用确定性评分，且在隔离环境中执行。
-- **聚焦核心编码能力。** 智能体能否在真实的 Shell 环境中完成实际任务？读取上下文、推理、行动、验证 —— 这正是 Ante 围绕其构建的核心闭环。
+- **聚焦核心编码能力。** 智能体能否在真实的 Shell 环境中完成实际任务？读取上下文、推理、行动、验证：这正是 Ante 围绕其构建的核心闭环。
+- **持续演进。** 随着模型不断进步，每个新版本都会提高门槛，我们也随之跟进。
 
 ## 资源占用分析 {#resource-footprint}
 
 能力表现只是其中一方面；运行成本是另一大关键。请查阅[资源占用对比](/benchmarks/compare_table)，查看在 Docker 严格限制下 20 个并行任务的 CPU、内存和磁盘占用实测（Ante vs Claude Code vs Opencode）。
-
-## 评测原则 {#evaluation-principles}
-
-智能体的大部分智慧源于模型 —— 但 Agent Harness 是连接人类与 AI 之间的关键底座。
-
-> 我们评测的是 **Agent 底座** 激发并转化模型能力的效果 —— 而非仅仅评测模型自身。
-
-**优化 Harness 底座，而非优化特定提示词。** 当评测得分需要提升时，我们专注于优化智能体运行底座 —— 运行时架构、调度编排、可靠性系统 —— 而非针对特定 Benchmark 调整提示词。通过系统底层优化带来的性能提升具有持久性，而仅靠调优提示词则容易脆弱失效。
-**尽早评测，从简出发。** 基于真实失败案例提炼出的精简评测集，远胜于人工构造的庞大测试用例。
-**隔离与可复现。** 每次评测均在干净环境下启动。当得分下降时，能够准确发现真实的回归问题。
