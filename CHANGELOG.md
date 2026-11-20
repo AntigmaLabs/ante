@@ -1,5 +1,31 @@
 # Changelog
 
+## v0.3.7 - 2026-11-19
+
+### Added
+- `/rollover [instructions]` continues the conversation in a new session. The current session writes a handoff and stays resumable; the new session starts from the handoff alone, under current prompts and settings. The resume picker shows which session a session continues
+- Gemini 4 Neon on the Gemini API, Vertex AI and OpenRouter, with a 1,048,576-token context and low to xhigh thinking. It defaults to high effort on Gemini API and Vertex
+
+### Changed
+- The OpenAI API and subscription offer GPT-6.2 Sol in place of GPT-6.1 Sol, at low effort by default
+- Antix offers GPT-6.2 Astra and GPT-6.2 Sol in place of GPT-6 Astra and GPT-6.1 Sol
+- Bash can wait up to one hour for a command (was 10 minutes) and explains how to block on a backgrounded command's status file. A job's `status.json` records the session that started it
+- A reply that has thinking but no answer and no tool call is no longer stored and no longer ends the turn. The model is asked to continue, up to 3 times in a row, a limit shared with `max_tokens` continuations
+- Starting a session, including `/clear`, builds the new session before ending the current one, so a failed start leaves the current session as it was
+- Dependency updates
+
+### Fixed
+- Long lines in code blocks wrap instead of being cut at the right edge, and copying a wrapped line returns the original text, runs of spaces included
+- When Bash output is truncated, the full output stays in the file named on the first line until gc
+- The chat column on very narrow windows lines up with scrollback, and the offline model settings dialog no longer breaks at one row of height
+- The resume picker no longer adds `…` to a non-ASCII first message that fits
+
+### Wire
+- `StartSession` accepts optional `SessionRequest.rollover { instructions }`, and `SessionInfo` carries optional `rolled_from`
+
+### Crates
+- Public crates published as 0.3.7: ante-protocol-shape, ante-llm, ante-exec, ante-sdk
+
 ## v0.3.6 - 2026-11-17
 
 ### Added

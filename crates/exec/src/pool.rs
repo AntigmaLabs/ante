@@ -179,7 +179,7 @@ impl ProcessPool {
     }
 
     pub async fn exec(&self, request: ExecRequest) -> Result<ExecResponse, ExecError> {
-        let _spawn_guard = self.inner.spawn_gate.lock().await;
+        let spawn_guard = self.inner.spawn_gate.lock().await;
         self.ensure_capacity().await?;
 
         let process_id = self.next_process_id();
@@ -191,7 +191,7 @@ impl ProcessPool {
         );
 
         self.inner.entries.lock().await.insert(process_id.clone(), Arc::clone(&entry));
-        drop(_spawn_guard);
+        drop(spawn_guard);
 
         self.interact(&entry, &process_id, None, request.yield_time_ms, request.max_output_bytes)
             .await
@@ -414,13 +414,10 @@ impl ProcessPool {
         let timeout = Duration::from_millis(self.inner.config.background_timeout_ms);
         let now = Instant::now();
         let mut entries = self.inner.entries.lock().await;
-        let expired_ids = entries
-            .iter()
-            .filter(|(_, entry)| now.duration_since(entry.last_used()) > timeout)
-            .map(|(process_id, _)| process_id.clone())
-            .collect::<Vec<_>>();
-
-        expired_ids.into_iter().filter_map(|process_id| entries.remove(&process_id)).collect()
+        entries
+            .extract_if(|_, entry| now.duration_since(entry.last_used()) > timeout)
+            .map(|(_, entry)| entry)
+            .collect()
     }
 }
 
@@ -453,7 +450,7 @@ impl ProcessEntry {
                     self.push_chunk(chunk);
                     self.notify.notify_waiters();
                 }
-                Err(broadcast::error::RecvError::Lagged(_)) => continue,
+                Err(broadcast::error::RecvError::Lagged(_)) => {}
                 Err(broadcast::error::RecvError::Closed) => return,
             }
         }

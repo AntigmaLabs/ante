@@ -260,12 +260,11 @@ where
         let mut buffer = [0u8; 8192];
         loop {
             match reader.read(&mut buffer).await {
-                Ok(0) => return,
+                Ok(0) | Err(_) => return,
                 Ok(n) => {
                     let chunk = OutputChunk { stream, data: buffer[..n].to_vec() };
                     let _ = output_tx.send(chunk);
                 }
-                Err(_) => return,
             }
         }
     });
@@ -277,12 +276,8 @@ fn spawn_exit_watcher(
     exit_notify: Arc<Notify>,
 ) {
     tokio::spawn(async move {
-        let code = match child.wait().await {
-            Ok(status) => Some(normalize_exit_code(status)),
-            Err(_) => Some(-1),
-        };
-
-        *lock_or_recover(&exit_code) = code;
+        let code = child.wait().await.map_or(-1, normalize_exit_code);
+        *lock_or_recover(&exit_code) = Some(code);
         exit_notify.notify_waiters();
     });
 }

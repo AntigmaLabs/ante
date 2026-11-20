@@ -31,13 +31,13 @@ pub fn event_msg(event: Evt, parent: Option<Id>) -> EventMsg {
     EventMsg { timestamp: Utc::now(), id: Id::evt(), event, parent }
 }
 
-#[allow(clippy::large_enum_variant)]
 #[derive(Debug, Clone, Deserialize, Serialize)]
 pub enum Op {
-    /// Start a session from the request, replacing any running one: set
-    /// fields are pinned, unset fields resolve to the host's defaults. There
-    /// is no separate restart op — a client keeps the request it sent and
-    /// re-sends it (optionally `patched`) for `/clear` semantics.
+    /// Start a session from the request, replacing any running one; a start
+    /// that fails leaves the running session as it was. The new
+    /// conversation is empty unless the request asks for a rollover. There
+    /// is no restart op: for `/clear`, a client re-sends the request it
+    /// kept (optionally `patched`).
     StartSession(SessionRequest),
     UpdateSession(SessionUpdate),
     Interrupt,
@@ -51,8 +51,7 @@ pub enum Op {
     /// Resolve the active turn's pending question pause
     /// ([`TurnPauseReason::Question`]). `turn_id` must be the paused turn and
     /// `tool_use_id` must echo the pause's; stale or mismatched responses are
-    /// dropped. `reply` is what the user did: answered, skipped, or asked to
-    /// talk instead ([`QuestionReply`]).
+    /// dropped.
     QuestionResponse {
         turn_id: Id,
         tool_use_id: String,
@@ -62,12 +61,11 @@ pub enum Op {
         name: String,
         args: String,
     },
-    /// Continue a saved conversation from its persisted snapshot: what the
-    /// host persisted is restored — the system instructions included — and
-    /// everything the snapshot does not pin resolves like a fresh session
-    /// from the host's current defaults, with the requested tool filters.
-    /// `unattended` is the resuming client's declaration, with the meaning
-    /// of `SessionRequest::unattended`; absent means false.
+    /// Continue a saved conversation from its persisted snapshot, system
+    /// instructions included. Everything the snapshot does not pin resolves
+    /// from the host's current defaults, as for a fresh session.
+    /// `unattended` has the meaning of `SessionRequest::unattended`; absent
+    /// means false.
     ResumeSession {
         session_id: Id,
         #[serde(default)]
@@ -106,17 +104,16 @@ pub enum Op {
     /// Request a per-category breakdown of the active session's context-window
     /// occupancy. Answered with [`Evt::ContextReport`].
     ContextReport,
-    /// Rewind the active session's conversation — its model context and its
-    /// visible history — to input `to`: how it stood just before that input
-    /// was applied, the input and everything after it gone. `to` is a turn
-    /// id as [`Evt::TurnStart`] reports it: for a user's input, the id of
-    /// the op that submitted it. Answered with [`Evt::SessionRewound`];
-    /// refused with an [`Evt::Error`], changing nothing, while a turn runs
-    /// or is queued, a goal is set, or background jobs run, or when `to`
-    /// cannot be restored: a turn from before the session was resumed, or
-    /// one whose earlier conversation a compaction or provider switch has
-    /// since rewritten. Starts no work and undoes nothing outside the
-    /// conversation.
+    /// Rewind the active session's conversation — model context and visible
+    /// history — to just before input `to`; that input and everything after
+    /// it are gone. `to` is a turn id as [`Evt::TurnStart`] reports it: for
+    /// a user's input, the id of the op that submitted it. Answered with
+    /// [`Evt::SessionRewound`]. Refused with an [`Evt::Error`], changing
+    /// nothing, while a turn runs or is queued, a goal is set, or
+    /// background jobs run, or when `to` cannot be restored: a turn from
+    /// before the session was resumed, or one whose earlier conversation a
+    /// compaction or provider switch has since rewritten. Starts no work
+    /// and undoes nothing outside the conversation.
     RewindSession {
         to: Id,
     },
@@ -135,19 +132,16 @@ pub enum Op {
     /// judging the condition after each one — until it is met, judged
     /// unreachable, or cleared.
     Goal(GoalCommand),
-    /// Request an ad-hoc "thinking phrase" prediction for the in-progress
-    /// draft. Runs off the conversation critical path on a cheap model and
-    /// answers with `Evt::Ambient`. `req_id` lets the client discard stale
-    /// results when a newer request supersedes this one.
+    /// Request a "thinking phrase" prediction for the in-progress draft,
+    /// outside the conversation. Answered with [`Evt::Ambient`]; `req_id`
+    /// lets the client discard a result a newer request superseded.
     AmbientPhrase {
         draft: String,
         req_id: u64,
     },
-    /// Request an ad-hoc next-prompt suggestion from the last exchange, shown as
-    /// input ghost text. Like [`Op::AmbientPhrase`] it runs off the critical
-    /// path on a cheap model and answers with `Evt::Ambient`. The client carries
-    /// the context (so this stays a client-only feature — headless never fires
-    /// it) and a monotonic `req_id` to drop stale results.
+    /// Request a next-prompt suggestion for input ghost text, outside the
+    /// conversation. The client supplies the last exchange and a monotonic
+    /// `req_id` to drop stale results. Answered with [`Evt::Ambient`].
     AmbientSuggestion {
         recent_user: String,
         recent_agent: String,
@@ -167,8 +161,7 @@ pub enum GoalCommand {
     Status,
 }
 
-/// Which ambient feature produced an [`Evt::Ambient`]. Both run off the main
-/// conversation on a cheap model; they differ in trigger, prompt, and sink.
+/// Which ambient feature produced an [`Evt::Ambient`].
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub enum AmbientKind {
     /// Predicted phrase for the in-progress draft, shown in the status spinner.
@@ -182,8 +175,7 @@ pub enum Evt {
     SessionStart(Box<SessionInfo>),
     SessionUpdated(Box<SessionInfo>),
     ExtensionRefreshed(Box<ExtensionRefreshed>),
-    /// The session span closed. Mirrors `TurnEnd`: carries the span's
-    /// identity, why it ended, and its final usage accounting.
+    /// The session ended; `usage` is its final accounting.
     SessionEnd {
         session_id: Id,
         reason: SessionEndReason,
@@ -201,14 +193,10 @@ pub enum Evt {
     MessageDelta(String),
     ThinkingDelta(String),
     Info(String),
-    /// Open a grouped Info entry with `header`. Subsequent
-    /// `InfoBlockAppend` events with the same `id` are rendered as
-    /// tree-indented child lines under it. Use for multi-step background
-    /// notifications (e.g. MCP warm-up) that should visually cluster.
-    ///
-    /// When `loading` is true the renderer appends an animated `.`/`../...`
-    /// suffix to the header until the first `InfoBlockAppend` arrives,
-    /// signalling that background work is still in flight.
+    /// Open a grouped info entry titled `header`, for multi-step background
+    /// notifications such as MCP warm-up. Later `InfoBlockAppend` events
+    /// with the same `id` are its child lines. `loading` marks work still
+    /// in flight until the first append arrives.
     InfoBlockStart {
         id: String,
         header: String,
@@ -236,7 +224,9 @@ pub enum Evt {
     CompactStart,
     /// Compaction finished. A present `summary` is the text that replaced
     /// the compacted history and carries forward as the session's context.
-    /// `None` means no history replacement was committed.
+    /// `None` means no history replacement was committed. A session started
+    /// by a rollover opens with one whose `summary` is the handoff it starts
+    /// from.
     CompactEnd {
         #[serde(default)]
         summary: Option<String>,
@@ -288,10 +278,9 @@ pub enum Evt {
         #[serde(default, skip_serializing_if = "Option::is_none")]
         at: Option<Id>,
     },
-    /// An ephemeral ambient hint produced off the main conversation (a predicted
-    /// "thinking phrase" for the draft, or a suggested next prompt — see
-    /// [`AmbientKind`]). Never persisted to the event log. `req_id` lets clients
-    /// drop superseded results.
+    /// An ephemeral hint outside the conversation (see [`AmbientKind`]),
+    /// never persisted. `req_id` echoes the request's so clients can drop
+    /// superseded results.
     Ambient {
         kind: AmbientKind,
         req_id: u64,
@@ -312,8 +301,8 @@ pub enum TurnPauseReason {
     /// arrive while it is pending. Each question's first option is the
     /// model's recommendation; clients resolve the pause with
     /// [`Op::QuestionResponse`], and no option is ever chosen on the user's
-    /// behalf. Clients must clear question UI on `TurnResume` *and* on
-    /// `TurnEnd` — a cancelled turn may end without a resume.
+    /// behalf. Clients must clear question UI on both `TurnResume` and
+    /// `TurnEnd`: a cancelled turn may end without a resume.
     Question {
         tool_use_id: String,
         questions: Vec<QuestionSpec>,
@@ -517,6 +506,10 @@ pub struct SessionInfo {
     /// [`Op::ForkSession`]): the session it was forked from.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub forked_from: Option<Id>,
+    /// Set when the session was started by a rollover (see
+    /// [`SessionRequest::rollover`]): the session it continues.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub rolled_from: Option<Id>,
 }
 
 /// Partial update to a live session's mutable state. Each field is optional so
@@ -597,11 +590,9 @@ pub struct McpToolParam {
 }
 
 /// The requested session configuration — the payload of [`Op::StartSession`].
-/// A set field is pinned: it wins over every default. An unset field means
-/// "the host's default for this, now": the daemon fills it from the user's
-/// settings (re-read at the session boundary) or its built-in default. There
-/// is exactly one meaning, regardless of who built the value — never "leave
-/// unchanged".
+/// A set field is pinned and wins over every default. An unset field means
+/// the host's current default (the user's settings, else built-in), never
+/// "leave unchanged".
 #[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
 pub struct SessionRequest {
     #[serde(default, skip_serializing_if = "Option::is_none")]
@@ -660,16 +651,33 @@ pub struct SessionRequest {
     /// A title for the session (see `SessionUpdate::title` for the rules).
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub title: Option<String>,
+    /// Continue the running session in this one. The running session writes
+    /// a handoff of its conversation and ends; this session starts from the
+    /// handoff alone and names that session as its
+    /// [`SessionInfo::rolled_from`]. Refused with an [`Evt::Error`] that
+    /// leaves the running session as it was when there is none, it is not
+    /// idle, it has background jobs running, or the handoff cannot be
+    /// written.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub rollover: Option<Rollover>,
+}
+
+/// Asks [`Op::StartSession`] for a rollover. `instructions` optionally steer
+/// the handoff, as they steer the summary of [`Op::Compact`].
+#[derive(Debug, Clone, Default, PartialEq, Eq, Serialize, Deserialize)]
+pub struct Rollover {
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub instructions: Option<String>,
 }
 
 impl SessionRequest {
     /// Fold `patch` onto `self`, field by field: a set field in the patch
-    /// wins, an unset one keeps `self`'s value. This is the rule for every
-    /// request-over-request combination (e.g. a client retargeting the
-    /// request it keeps for `/clear`). `patch` is destructured exhaustively
-    /// (no `..` rest) so adding a field fails to compile here until its fold
-    /// rule is decided.
+    /// wins, an unset one keeps `self`'s value. The exception is `rollover`,
+    /// which only the patch can ask for: a kept request never rolls over
+    /// again.
     pub fn patched(self, patch: SessionRequest) -> SessionRequest {
+        // No `..` rest: a new field fails to compile here until its fold
+        // rule is decided.
         let SessionRequest {
             model,
             provider,
@@ -690,6 +698,7 @@ impl SessionRequest {
             save_session,
             unattended,
             title,
+            rollover,
         } = patch;
         SessionRequest {
             model: model.or(self.model),
@@ -711,6 +720,7 @@ impl SessionRequest {
             save_session: save_session.or(self.save_session),
             unattended: unattended.or(self.unattended),
             title: title.or(self.title),
+            rollover,
         }
     }
 }
@@ -788,8 +798,7 @@ pub struct ModelSpec {
 /// `min` is the lowest effort the model supports — thinking is disabled where
 /// the model allows that; models with always-on reasoning clamp to their
 /// lowest level. Providers that expose fewer levels round a requested effort
-/// down to the nearest supported one. Variants are declared in ascending
-/// order so the derived `Ord` sorts `Min < Low < ... < Max`.
+/// down to the nearest supported one. Ordered `Min < Low < ... < Max`.
 #[derive(Debug, Clone, Serialize, Deserialize, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 #[serde(rename_all = "lowercase")]
 pub enum Effort {
@@ -835,12 +844,9 @@ impl std::str::FromStr for Effort {
     }
 }
 
-/// Innate size/cost class of a model, set once per model in the catalog.
-///
-/// Orthogonal to the per-request [`Effort`] and to `context_limit`:
-/// a model's weight class reflects roughly how large and costly it is to run,
-/// not how hard it is asked to think on a given turn. Variants are declared in
-/// ascending order so the derived `Ord` sorts `Feather < Middle < Heavy`.
+/// Size/cost class of a model, set once per model in the catalog: roughly
+/// how large and costly it is to run, independent of the per-request
+/// [`Effort`] and of `context_limit`. Ordered `Feather < Middle < Heavy`.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize)]
 #[serde(rename_all = "lowercase")]
 pub enum WeightClass {
@@ -869,17 +875,13 @@ impl<'de> Deserialize<'de> for WeightClass {
 
 /// Token usage for one model response.
 ///
-/// Convention, uniform across every provider mapping: `input_tokens` is the
-/// **full, cache-inclusive prompt size**. It always contains `cache_read_tokens`
-/// as a subset (verified live: OpenAI/OpenRouter/DeepSeek report it inside
-/// `prompt_tokens`; the Anthropic mapping adds it back since that API reports
-/// input net of cache). `cache_creation_tokens` is likewise inside `input_tokens`
-/// for providers that report cache writes (Anthropic); the OpenAI-style
-/// providers we use don't report writes at all. So [`Usage::total`]
-/// (`input + output`) is the context-window occupancy.
+/// For every provider, `input_tokens` is the full, cache-inclusive prompt
+/// size: `cache_read_tokens` and `cache_creation_tokens` are subsets of it
+/// (the latter absent for providers that do not report cache writes). So
+/// [`Usage::total`] (`input + output`) is the context-window occupancy.
 ///
-/// For **cost**, the cache buckets bill at different rates, so subtract them
-/// from the input rate instead of charging the full rate twice:
+/// The cache buckets bill at their own rates, so subtract them before
+/// applying the input rate:
 /// `cost = (input - cache_read - cache_creation)·p_in
 ///        + cache_read·p_cache_read + cache_creation·p_cache_write
 ///        + output·p_out`.
@@ -898,9 +900,8 @@ pub struct Usage {
     pub cache_creation_tokens: Option<u32>,
 }
 
-/// Context-window occupancy snapshot for the current (root) session, surfaced in
-/// the statusline. Raw measurements only — any percentage is a presentation
-/// concern derived at the edges, with no policy (e.g. auto-compaction) baked in.
+/// Context-window occupancy snapshot for the root session. Raw measurements
+/// only: percentages are for clients to derive.
 #[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq)]
 pub struct ContextWindow {
     /// Tokens currently occupying the window (cache-inclusive input + output of
@@ -1006,27 +1007,15 @@ pub enum Scope {
 #[cfg(test)]
 mod tests {
     use super::{
-        Effort, Evt, Id, ModelSpec, Op, PermissionMode, ProviderSpec, ReviewDecision, SessionInfo,
-        SessionRequest, ToolDecision, ToolEnd, ToolEndStatus, ToolUse, Usage, WeightClass,
+        ContextBreakdown, Effort, Evt, Id, ModelSpec, Op, PermissionMode, ProviderSpec,
+        QuestionAnswer, QuestionOption, QuestionReply, QuestionSpec, ReviewDecision, Rollover,
+        SessionInfo, SessionRequest, ToolDecision, ToolEnd, ToolEndStatus, ToolUse, TurnEndStatus,
+        TurnPauseReason, Usage, WeightClass,
     };
     use std::path::PathBuf;
 
     fn model_spec(name: &str) -> ModelSpec {
-        ModelSpec {
-            id: name.to_string(),
-            display_name: None,
-            description: None,
-            temperature: None,
-            top_p: None,
-            top_k: None,
-            max_tokens: None,
-            stop_sequences: None,
-            context_limit: None,
-            effort: None,
-            supported_efforts: None,
-            support_vision: None,
-            weight_class: None,
-        }
+        ModelSpec { id: name.to_string(), ..Default::default() }
     }
 
     #[test]
@@ -1066,8 +1055,8 @@ mod tests {
             let json = serde_json::json!({
                 "TaskEnd": { "tool_use_id": "bash-1", "exit_code": exit_code }
             });
-            let event: super::Evt = serde_json::from_value(json.clone()).unwrap();
-            assert!(matches!(&event, super::Evt::TaskEnd { tool_use_id, exit_code: code }
+            let event: Evt = serde_json::from_value(json.clone()).unwrap();
+            assert!(matches!(&event, Evt::TaskEnd { tool_use_id, exit_code: code }
                 if tool_use_id == "bash-1" && *code == exit_code));
             assert_eq!(serde_json::to_value(event).unwrap(), json);
         }
@@ -1076,11 +1065,11 @@ mod tests {
     #[test]
     fn turn_end_error_kind_is_optional_on_the_wire() {
         // Payloads from daemons predating the field still deserialize.
-        let old: super::TurnEndStatus = serde_json::from_value(serde_json::json!({
+        let old: TurnEndStatus = serde_json::from_value(serde_json::json!({
             "Error": { "headline": "authentication error", "details": [] }
         }))
         .unwrap();
-        let super::TurnEndStatus::Error { kind, .. } = &old else {
+        let TurnEndStatus::Error { kind, .. } = &old else {
             panic!("expected Error variant");
         };
         assert!(kind.is_none());
@@ -1090,7 +1079,7 @@ mod tests {
         assert!(json["Error"].get("kind").is_none());
 
         // Some round-trips.
-        let with = super::TurnEndStatus::Error {
+        let with = TurnEndStatus::Error {
             kind: Some("oauth".to_string()),
             headline: "OAuth sign-in required".to_string(),
             details: vec![],
@@ -1101,16 +1090,13 @@ mod tests {
 
     #[test]
     fn turn_end_steps_default_for_older_events() {
-        let event = super::Evt::TurnEnd {
-            turn_id: super::Id::new("turn"),
-            status: super::TurnEndStatus::Completed,
-            steps: 3,
-        };
+        let event =
+            Evt::TurnEnd { turn_id: Id::new("turn"), status: TurnEndStatus::Completed, steps: 3 };
         let mut json = serde_json::to_value(&event).unwrap();
         json["TurnEnd"].as_object_mut().unwrap().remove("steps");
-        let old: super::Evt = serde_json::from_value(json).unwrap();
+        let old: Evt = serde_json::from_value(json).unwrap();
 
-        assert!(matches!(old, super::Evt::TurnEnd { steps: 0, .. }));
+        assert!(matches!(old, Evt::TurnEnd { steps: 0, .. }));
 
         let json = serde_json::to_value(event).unwrap();
         assert_eq!(json["TurnEnd"]["steps"], 3);
@@ -1119,7 +1105,7 @@ mod tests {
     #[test]
     fn effort_serializes_as_lowercase_tokens() {
         let mut spec = model_spec("m");
-        spec.effort = Some(super::Effort::XHigh);
+        spec.effort = Some(Effort::XHigh);
         let json = serde_json::to_value(&spec).unwrap();
         assert_eq!(json["effort"], "xhigh");
 
@@ -1128,7 +1114,7 @@ mod tests {
         assert!(json_none.get("effort").is_none());
 
         // Every level round-trips through its wire token.
-        for level in super::Effort::ALL {
+        for level in Effort::ALL {
             let parsed: ModelSpec =
                 serde_json::from_value(serde_json::json!({"id": "m", "effort": level.as_str()}))
                     .unwrap();
@@ -1159,7 +1145,7 @@ mod tests {
             credential: Some("oauth:anthropic/work".to_string()),
             permission_mode: Some(PermissionMode::Strict),
             system_prompt: Some("base prompt".to_string()),
-            cwd: Some(std::path::PathBuf::from("/base")),
+            cwd: Some(PathBuf::from("/base")),
             effort: Some(Effort::Medium),
             enable_auto_memory: Some(true),
             short_prompt: Some(true),
@@ -1249,6 +1235,45 @@ mod tests {
         assert!(serde_json::to_value(&plain).unwrap().get("forked_from").is_none());
     }
 
+    // A rollover rides optional fields: a request that asks for none and a
+    // session that was not rolled over serialize as they did before.
+    #[test]
+    fn a_rollover_is_optional_on_the_wire() {
+        let plain = serde_json::to_value(SessionRequest::default()).unwrap();
+        assert!(plain.get("rollover").is_none());
+        let decoded: SessionRequest = serde_json::from_value(plain).unwrap();
+        assert_eq!(decoded.rollover, None);
+
+        let rollover = Rollover { instructions: Some("keep the open bugs".to_string()) };
+        let asked = SessionRequest { rollover: Some(rollover.clone()), ..Default::default() };
+        let json = serde_json::to_value(&asked).unwrap();
+        assert_eq!(json["rollover"], serde_json::json!({ "instructions": "keep the open bugs" }));
+        let decoded: SessionRequest = serde_json::from_value(json).unwrap();
+        assert_eq!(decoded.rollover, Some(rollover));
+        let bare: SessionRequest =
+            serde_json::from_value(serde_json::json!({ "rollover": {} })).unwrap();
+        assert_eq!(bare.rollover, Some(Rollover::default()));
+
+        let source = Id::ses();
+        let info = SessionInfo { rolled_from: Some(source), ..Default::default() };
+        let mut json = serde_json::to_value(&info).unwrap();
+        assert_eq!(json["rolled_from"], serde_json::json!(source));
+        json.as_object_mut().unwrap().remove("rolled_from");
+        let plain: SessionInfo = serde_json::from_value(json).unwrap();
+        assert_eq!(plain.rolled_from, None);
+        assert!(serde_json::to_value(&plain).unwrap().get("rolled_from").is_none());
+    }
+
+    // Only the patch asks for a rollover: the request a client keeps and
+    // sends again starts an empty conversation.
+    #[test]
+    fn a_kept_request_never_rolls_over_again() {
+        let kept = SessionRequest { rollover: Some(Rollover::default()), ..pinned_request() };
+        assert_eq!(kept.clone().patched(SessionRequest::default()).rollover, None);
+        let again = SessionRequest { rollover: Some(Rollover::default()), ..Default::default() };
+        assert_eq!(kept.patched(again).rollover, Some(Rollover::default()));
+    }
+
     #[test]
     fn unattended_is_optional_on_the_wire() {
         // A request without the field, and a resume op written before the
@@ -1323,11 +1348,7 @@ mod tests {
             provider: provider_spec("p"),
             session_id: Id::new("ses"),
             cwd: PathBuf::from("/tmp"),
-            permission_mode: PermissionMode::default(),
-            skills: vec![],
-            subagents: vec![],
-            title: None,
-            forked_from: None,
+            ..Default::default()
         };
 
         let json = serde_json::to_value(&payload).unwrap();
@@ -1482,7 +1503,7 @@ mod tests {
 
     #[test]
     fn context_report_serde_roundtrip() {
-        let breakdown = super::ContextBreakdown {
+        let breakdown = ContextBreakdown {
             system_prompt_tokens: 1200,
             system_tools_tokens: 3400,
             mcp_tools_tokens: 0,
@@ -1514,7 +1535,7 @@ mod tests {
         assert!(matches!(decoded, Evt::ContextReport(b) if b == breakdown));
 
         // Fields absent on the wire (older daemons) fall back to defaults.
-        let sparse: super::ContextBreakdown =
+        let sparse: ContextBreakdown =
             serde_json::from_value(serde_json::json!({"used_tokens": 10})).unwrap();
         assert_eq!(sparse.used_tokens, 10);
         assert_eq!(sparse.limit_tokens, None);
@@ -1529,19 +1550,19 @@ mod tests {
         let turn_id = Id::new("op");
         let pause = Evt::TurnPause {
             turn_id,
-            reason: super::TurnPauseReason::Question {
+            reason: TurnPauseReason::Question {
                 tool_use_id: "toolu_1".to_string(),
-                questions: vec![super::QuestionSpec {
+                questions: vec![QuestionSpec {
                     header: "Auth method".to_string(),
                     question: "Which auth method should we use?".to_string(),
                     multi_select: false,
                     options: vec![
-                        super::QuestionOption {
+                        QuestionOption {
                             label: "JWT (Recommended)".to_string(),
                             description: "Stateless tokens".to_string(),
                             preview: None,
                         },
-                        super::QuestionOption {
+                        QuestionOption {
                             label: "Sessions".to_string(),
                             description: "Server-side sessions".to_string(),
                             preview: Some("fn login() {}".to_string()),
@@ -1558,10 +1579,8 @@ mod tests {
         assert_eq!(spec["options"][1]["preview"], "fn login() {}");
 
         let decoded: Evt = serde_json::from_value(json).expect("deserialize question pause");
-        let Evt::TurnPause {
-            reason: super::TurnPauseReason::Question { tool_use_id, questions },
-            ..
-        } = decoded
+        let Evt::TurnPause { reason: TurnPauseReason::Question { tool_use_id, questions }, .. } =
+            decoded
         else {
             panic!("expected Question pause");
         };
@@ -1570,7 +1589,7 @@ mod tests {
         assert!(!questions[0].multi_select);
 
         // A spec without `multi_select` on the wire still decodes.
-        let sparse: super::QuestionSpec = serde_json::from_value(serde_json::json!({
+        let sparse: QuestionSpec = serde_json::from_value(serde_json::json!({
             "header": "Scope",
             "question": "How broad?",
             "options": [],
@@ -1585,7 +1604,7 @@ mod tests {
         let op = Op::QuestionResponse {
             turn_id,
             tool_use_id: "toolu_1".to_string(),
-            reply: super::QuestionReply::Answered(vec![super::QuestionAnswer {
+            reply: QuestionReply::Answered(vec![QuestionAnswer {
                 selected: vec!["JWT".to_string(), "Sessions".to_string()],
                 note: None,
             }]),
@@ -1594,24 +1613,23 @@ mod tests {
         let decoded: Op = serde_json::from_str(&json).expect("deserialize QuestionResponse");
         assert!(matches!(
             decoded,
-            Op::QuestionResponse { tool_use_id, reply: super::QuestionReply::Answered(answers), .. }
+            Op::QuestionResponse { tool_use_id, reply: QuestionReply::Answered(answers), .. }
                 if tool_use_id == "toolu_1" && answers[0].selected.len() == 2
         ));
 
         // A skip is the bare variant; a discussion request without words is
         // an empty object, so `message` is never null on the wire.
         for (reply, expected) in [
-            (super::QuestionReply::Dismissed, serde_json::json!("Dismissed")),
-            (super::QuestionReply::Discuss { message: None }, serde_json::json!({ "Discuss": {} })),
+            (QuestionReply::Dismissed, serde_json::json!("Dismissed")),
+            (QuestionReply::Discuss { message: None }, serde_json::json!({ "Discuss": {} })),
             (
-                super::QuestionReply::Discuss { message: Some("later".to_string()) },
+                QuestionReply::Discuss { message: Some("later".to_string()) },
                 serde_json::json!({ "Discuss": { "message": "later" } }),
             ),
         ] {
             let json = serde_json::to_value(&reply).expect("serialize reply");
             assert_eq!(json, expected);
-            let decoded: super::QuestionReply =
-                serde_json::from_value(json).expect("deserialize reply");
+            let decoded: QuestionReply = serde_json::from_value(json).expect("deserialize reply");
             assert_eq!(decoded, reply);
         }
     }

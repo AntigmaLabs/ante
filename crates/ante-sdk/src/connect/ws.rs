@@ -15,11 +15,10 @@ use crate::{Client, Endpoint};
 
 /// Dial the websocket URL an `ante serve --ws` host listens on and bridge
 /// its frames onto a client's channel pair. Plain `ws://` is dialed only to
-/// a loopback host; the bearer token rides the upgrade request and must not
-/// cross a network in clear. `wss://` needs the `wss` feature; without it
-/// the endpoint is unsupported. Dropping every `OpSender` sends the close
-/// frame, which is how the host learns the peer is gone; the host closing
-/// the socket ends the event stream.
+/// a loopback host (see [`Endpoint::Ws`]); `wss://` needs the `wss`
+/// feature. Dropping every `OpSender` sends the close frame, which is how
+/// the host learns the peer is gone; the host closing the socket ends the
+/// event stream.
 pub(super) async fn connect(url: String, token: Option<String>) -> Result<Client, ConnectError> {
     let uri: Uri = match url.parse() {
         Ok(uri) => uri,

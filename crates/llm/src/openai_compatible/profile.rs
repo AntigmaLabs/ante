@@ -298,9 +298,7 @@ impl OpenAiCompatFamily {
         if owner == "meta" && starts_with_family_token(name, "muse-spark") {
             return Self::MuseSpark;
         }
-        if (owner == "moonshotai" && starts_with_family_token(name, "kimi"))
-            || starts_with_family_token(name, "kimi")
-        {
+        if starts_with_family_token(name, "kimi") {
             return Self::Kimi;
         }
         if owner == "minimax" || starts_with_family_token(name, "minimax") {
@@ -326,7 +324,7 @@ fn openrouter_web_search_extra_body() -> Map<String, Value> {
 
 /// On/off ladder shared by the binary dialects (GLM, Kimi K2.x, and Qwen
 /// before 3.8): `min` is off, anything above is on. An unset effort defaults
-/// to on, matching each dialect's historical behavior.
+/// to on.
 const ON_OFF_RUNGS: &[(Effort, bool)] = &[(Effort::Min, false), (Effort::Low, true)];
 
 /// GLM 5.3 always reasons and accepts three named effort levels. Requests
@@ -606,7 +604,7 @@ mod tests {
         assert_eq!(qwen.enable_thinking, Some(false));
         assert!(qwen.reasoning_effort.is_none());
 
-        // Unset effort keeps each dialect's historical default: on.
+        // Unset effort defaults to on.
         let qwen_unset = profile("openai-compatible", "qwen3.7-max").thinking_params(None);
         assert_eq!(qwen_unset.enable_thinking, Some(true));
 
@@ -657,10 +655,6 @@ mod tests {
         assert!(kimi_k3_unset.reasoning_effort.is_none());
     }
 
-    /// Golden table for the generic `reasoning_effort` dialect. `medium` and
-    /// `high` now map to their same-named wire values (previously they were
-    /// shifted one rung down); `xhigh`/`max` cap at `high` for compatibility
-    /// with servers that reject higher values.
     #[test]
     fn openrouter_hydrogen_preserves_xhigh() {
         let params =
@@ -720,9 +714,8 @@ mod tests {
         assert!(openrouter.enable_thinking.is_none());
     }
 
-    /// Golden table for the OpenRouter dialect. `medium` no longer collapses
-    /// into `high`; `min` still sends an explicit "none" while an unset
-    /// effort omits the field entirely.
+    /// Golden table for the OpenRouter dialect: `min` sends an explicit
+    /// "none", an unset effort omits the field.
     #[test]
     fn openrouter_dialect_maps_the_full_scale() {
         let cases = [

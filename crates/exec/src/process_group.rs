@@ -97,16 +97,15 @@ pub fn kill_by_pid(_pid: u32) -> io::Result<()> {
 }
 
 #[cfg(unix)]
-/// Send SIGKILL to the process group `pgid` directly — no lookup through the
-/// leader pid. This is the form that still reaches a group's surviving
-/// members after the leader exited and was reaped: [`kill_by_pid`]'s
-/// `getpgid` resolution returns `ESRCH` then and silently spares them. A
-/// fully-gone group reads as success. Groups 0 and 1 are rejected rather
-/// than signalled: to `killpg` they mean the caller's own group and init's.
+/// Send SIGKILL to the process group `pgid` directly, without resolving it
+/// through the leader pid. Unlike [`kill_by_pid`], this still reaches a
+/// group's surviving members after the leader exited and was reaped
+/// (`getpgid` returns `ESRCH` then). A group that is already gone reads as
+/// success. Groups 0 and 1 are never signalled: to `killpg` they mean the
+/// caller's own group and init's.
 ///
-/// Signals the group id, not the job that created it: a caller holding a
-/// pgid past its group's death accepts the same theoretical recycled-pgid
-/// exposure as a manual `kill -- -<pgid>`.
+/// Signals the group id, not the job that created it: a pgid held past its
+/// group's death may have been recycled.
 pub fn kill_process_group(pgid: u32) -> io::Result<()> {
     use std::io::ErrorKind;
 
@@ -133,13 +132,12 @@ pub fn kill_process_group(_pgid: u32) -> io::Result<()> {
 
 #[cfg(unix)]
 /// Whether any process remains in the group led by `pgid`, including members
-/// that outlived the leader. Signal 0 runs `killpg`'s existence and permission
-/// checks without delivering anything, so `EPERM` (the group is another user's)
-/// counts as alive. Groups 0 and 1 are rejected rather than probed: to `killpg`
+/// that outlived the leader. `EPERM` (the group is another user's) counts as
+/// alive. Groups 0 and 1 are never probed and read as not alive: to `killpg`
 /// they mean the caller's own group and init's.
 ///
-/// Answers about the group id, not about the job that created it: a recycled
-/// pgid reads as alive.
+/// Answers about the group id, not the job that created it: a recycled pgid
+/// reads as alive.
 pub fn process_group_is_alive(pgid: u32) -> bool {
     if pgid <= 1 {
         return false;

@@ -4,8 +4,7 @@
 //! and receives [`protocol::EventMsg`]s. Obtain one with [`connect`] against
 //! an [`Endpoint`] — where a host is reachable — or, inside a process that
 //! hosts sessions itself, from that host directly. Both paths yield the same
-//! type, and the in-process channel carries the same wire types the remote
-//! codecs serialize, so nothing a client can observe differs between them.
+//! type and carry the same wire types, so a client observes no difference.
 
 mod client;
 mod connect;

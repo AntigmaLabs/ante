@@ -17,7 +17,7 @@ impl OutputReceiver {
         loop {
             match self.rx.recv().await {
                 Ok(chunk) => return Some(chunk),
-                Err(RecvError::Lagged(_)) => continue,
+                Err(RecvError::Lagged(_)) => {}
                 Err(RecvError::Closed) => return None,
             }
         }
@@ -37,7 +37,7 @@ impl OutputReceiver {
         loop {
             match self.rx.try_recv() {
                 Ok(chunk) => on_chunk(chunk),
-                Err(TryRecvError::Lagged(_)) => continue,
+                Err(TryRecvError::Lagged(_)) => {}
                 Err(TryRecvError::Empty | TryRecvError::Closed) => return,
             }
         }

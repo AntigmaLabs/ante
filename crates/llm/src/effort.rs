@@ -29,9 +29,8 @@ pub fn offered_levels<T>(spelling: &[(Effort, T)], levels: &[Effort]) -> Vec<Eff
     spelling.iter().map(|(level, _)| *level).filter(|level| levels.contains(level)).collect()
 }
 
-/// The one rounding rule: the setting of the highest rung at or below
-/// `requested`, or the lowest rung's when every rung is above it. `None` only
-/// for an empty ladder.
+/// The setting of the highest rung at or below `requested`, or the lowest
+/// rung's when every rung is above it. `None` only for an empty ladder.
 fn round_down<T>(rungs: impl IntoIterator<Item = (Effort, T)>, requested: Effort) -> Option<T> {
     let mut selected = None;
     for (level, setting) in rungs {
