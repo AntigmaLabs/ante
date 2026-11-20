@@ -130,6 +130,17 @@ Drop `limit 200` to export all of the roughly 28,000 functions (about 280MB and 
 
 The output is decompiled pseudocode with generated names like `FUN_1000110e4`. It shows what the binary does, and it is not the original Rust source.
 
+### [deja-vu](./deja-vu/)
+
+Connects [deja-vu](https://github.com/vshulcz/deja-vu), a local MCP server that indexes and searches coding-agent transcripts already on disk (Ante, Claude Code, Codex, Cursor, OpenCode, and others) with no LLM calls, embeddings, or API keys. The profile registers `deja mcp` over stdio and appends a short prompt telling Ante when to check past sessions (`recall`, `blame`, `fix`, `how`, `orient`).
+
+```sh
+cp curated/deja-vu/deja-vu.settings.json ~/.ante/
+ante --profile deja-vu
+```
+
+If `deja` is already installed (`brew install deja-vu` or a release binary), replace `"command": "npx"` and `"args"` with `"command": "deja", "args": ["mcp"]` to skip `npx` startup. To keep your existing model and preferences instead of switching profiles, merge the `mcp_servers.deja` block into `~/.ante/settings.json`.
+
 ## Skills
 
 [Agent Skills](https://agentskills.io) folders, each with a `SKILL.md`. Copy a folder into `~/.ante/skills/` for all projects, or `.ante/skills/` for one project. See the [skills docs](https://docs.antigma.ai/extend/skills).
