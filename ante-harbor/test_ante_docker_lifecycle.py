@@ -62,7 +62,8 @@ class DockerLifecycleTests(unittest.IsolatedAsyncioTestCase):
                         15 if mode in {"normal", "nonzero"} else 2
                     ),
                     "kwargs": {
-                        "install_command": "mkdir -p /logs/agent; nohup ante service >/dev/null 2>&1 &"
+                        "install_command": "mkdir -p /logs/agent; nohup ante service >/dev/null 2>&1 &",
+                        "reasoning_effort": "high",
                     },
                     "env": {"ANTE_HEARTBEAT_MODE": mode},
                 },
