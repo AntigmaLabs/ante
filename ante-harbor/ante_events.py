@@ -25,7 +25,7 @@ USAGE_FIELDS = (
     ("input_tokens", "n_input_tokens"),
     ("output_tokens", "n_output_tokens"),
     ("cache_read_tokens", "n_cache_tokens"),
-    ("cache_creation_tokens", "n_cache_creation_tokens"),
+    ("cache_write_tokens", "n_cache_creation_tokens"),
 )
 
 OPTIONAL_USAGE_FIELDS = {"n_cache_creation_tokens"}
@@ -102,6 +102,13 @@ _FUTURE_TURN_ERROR_POLICY = _TurnErrorPolicy("model_error", "unknown_api")
 
 def is_number(value: Any) -> bool:
     return isinstance(value, (int, float)) and not isinstance(value, bool)
+
+
+def _usage_token_count(usage: dict[str, Any], field: str) -> Any:
+    # Older Ante event logs used cache_creation_tokens for cache writes.
+    if field == "cache_write_tokens" and field not in usage:
+        field = "cache_creation_tokens"
+    return usage.get(field)
 
 
 def usage_from_event(event_msg: dict[str, Any]) -> dict[str, Any] | None:
@@ -411,7 +418,7 @@ def _usage_from_payloads(payloads: Iterable[dict[str, Any] | None]) -> dict[str,
             continue
         seen = True
         for source, target in USAGE_FIELDS:
-            value = usage.get(source)
+            value = _usage_token_count(usage, source)
             if isinstance(value, int) and not isinstance(value, bool):
                 totals[target] += value
                 seen_field[target] = True
@@ -490,7 +497,7 @@ def request_cost_usd(price: dict[str, Any], usage: dict[str, Any]) -> float:
         usage.get("input_tokens"),
         usage.get("output_tokens"),
         usage.get("cache_read_tokens"),
-        usage.get("cache_creation_tokens"),
+        _usage_token_count(usage, "cache_write_tokens"),
     )
 
 
@@ -690,7 +697,7 @@ def _metrics_from_usage(usage: dict[str, Any] | None) -> Any | None:
     prompt_tokens = usage.get("input_tokens")
     completion_tokens = usage.get("output_tokens")
     cached_tokens = usage.get("cache_read_tokens")
-    cache_creation_tokens = usage.get("cache_creation_tokens")
+    cache_write_tokens = _usage_token_count(usage, "cache_write_tokens")
 
     metrics: dict[str, Any] = {}
     if isinstance(prompt_tokens, int) and not isinstance(prompt_tokens, bool):
@@ -699,8 +706,8 @@ def _metrics_from_usage(usage: dict[str, Any] | None) -> Any | None:
         metrics["completion_tokens"] = completion_tokens
     if isinstance(cached_tokens, int) and not isinstance(cached_tokens, bool):
         metrics["cached_tokens"] = cached_tokens
-    if isinstance(cache_creation_tokens, int) and not isinstance(cache_creation_tokens, bool):
-        metrics["extra"] = {"cache_creation_tokens": cache_creation_tokens}
+    if isinstance(cache_write_tokens, int) and not isinstance(cache_write_tokens, bool):
+        metrics["extra"] = {"cache_creation_tokens": cache_write_tokens}
     return Metrics(**metrics) if metrics else None
 
 

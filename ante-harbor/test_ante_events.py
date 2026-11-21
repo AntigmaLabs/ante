@@ -242,7 +242,7 @@ class EventStreamTests(unittest.TestCase):
             {"total": 4, "errors": 3, "malformed": 2},
         )
 
-    def test_usage_aggregation_preserves_optional_cache_creation(self):
+    def test_usage_aggregation_accepts_both_cache_write_spellings(self):
         events = [
             _usage(
                 input_tokens=10,
@@ -255,7 +255,7 @@ class EventStreamTests(unittest.TestCase):
                 input_tokens=7,
                 output_tokens=5,
                 cache_read_tokens=True,
-                cache_creation_tokens=0,
+                cache_write_tokens=2,
             ),
         ]
 
@@ -265,14 +265,21 @@ class EventStreamTests(unittest.TestCase):
                 "n_input_tokens": 17,
                 "n_output_tokens": 7,
                 "n_cache_tokens": 4,
-                "n_cache_creation_tokens": 3,
+                "n_cache_creation_tokens": 5,
             },
         )
-        self.assertIsNone(
-            ante_events.accumulate_usage_from_events(
-                [_usage(input_tokens=1, output_tokens=2)]
-            )["n_cache_creation_tokens"]
-        )
+
+    def test_cache_writes_preserve_zero_and_unreported_counts(self):
+        for fields, expected in (
+            ({"cache_write_tokens": 0, "cache_creation_tokens": 3}, 0),
+            ({}, None),
+            ({"cache_write_tokens": None}, None),
+        ):
+            with self.subTest(fields=fields):
+                usage = ante_events.accumulate_usage_from_events(
+                    [_usage(input_tokens=10, **fields)]
+                )
+                self.assertEqual(usage["n_cache_creation_tokens"], expected)
 
     def test_final_metrics_accept_one_shot_iterables(self):
         events = [
@@ -441,7 +448,7 @@ class TrajectoryTests(unittest.TestCase):
                 input_tokens=100,
                 output_tokens=20,
                 cache_read_tokens=40,
-                cache_creation_tokens=5,
+                cache_write_tokens=5,
             ),
             _event("AgentMessage", "Done."),
             _usage(input_tokens=30, output_tokens=4, cache_read_tokens=10),

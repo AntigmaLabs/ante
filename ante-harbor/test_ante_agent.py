@@ -1301,7 +1301,7 @@ def synthetic_events():
                         "input_tokens": 100,
                         "output_tokens": 20,
                         "cache_read_tokens": 10,
-                        "cache_creation_tokens": 5,
+                        "cache_write_tokens": 5,
                     }
                 }
             },
