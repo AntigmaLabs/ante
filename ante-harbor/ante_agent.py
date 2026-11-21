@@ -511,7 +511,9 @@ def supported_capabilities(**flags: bool) -> AgentCapabilities:
 
 
 class AnteAgent(BaseInstalledAgent):
-    capabilities = supported_capabilities(atif=True, skills=True, mcp_servers=True)
+    capabilities = supported_capabilities(
+        atif=True, skills=True, mcp_servers=True, reasoning_effort=True
+    )
     options_model = AnteOptions
     options: AnteOptions
     _INSTALL_VERSION_COMMAND = "ante --version"
