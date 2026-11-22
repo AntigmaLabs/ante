@@ -24,6 +24,8 @@ Ante 通过原生管理的 [llama.cpp](https://github.com/ggml-org/llama.cpp) �
 4. 根据模型文件大小与上下文窗口自动预估内存/显存需求
 5. 通过 `llama serve` 启动并监管单个共享 llama.cpp 路由器；切换托管模型时只加载或卸载 Worker，无需重启该进程
 
+v0.3.8 使用 llama.cpp `b12375`，Linux CUDA 预编译包不再包含 `sm_86`。对应 GPU 会回退到兼容的 Vulkan 构建；如需其他构建，可配置[自定义引擎](/local/custom-engines)。
+
 若希望使用自定义的 llama.cpp 构建版本、指定专属启动参数或接入已启动的服务，请参见[自定义引擎](/local/custom-engines)。
 
 ## 环境准备 {#setting-up}
@@ -55,7 +57,7 @@ Ante 通过原生管理的 [llama.cpp](https://github.com/ggml-org/llama.cpp) �
 ante offline install
 ante offline status
 ante offline list
-ante offline use Qwen3.5-9B
+ante offline use Qwen3.8-27B
 ante --offline-model
 ```
 
@@ -70,7 +72,7 @@ ante --offline-model
 传入 `--offline-model` 针对本地 GGUF 文件执行一次性任务 —— 无需启动 TUI：
 
 ```bash
-ante --offline-model ~/.ante/models/Qwen3.5-9B-Q4_K_M.gguf -p "Explain this code"
+ante --offline-model ~/.ante/models/Qwen3.8-27B-UD-Q4_K_M.gguf -p "Explain this code"
 ```
 
 <img src="/assets/offline-headless.gif" alt="无头离线模式运行本地 GGUF 模型" style={{width: '100%', borderRadius: '8px', margin: '16px 0'}} />
@@ -131,9 +133,9 @@ Ante 会自动扫描以下目录中的 GGUF 模型文件：
 也可通过 CLI 保存偏好，供下次 TUI、无头或 `serve` 加载时使用：
 
 ```bash
-ante offline use Qwen3.5-9B --context 16384 --thinking off --temperature 0.7
-ante offline use Qwen3.5-9B --args "--threads 12"
-ante offline use Qwen3.5-9B --temperature default --args ""
+ante offline use Qwen3.8-27B --context 16384 --thinking off --temperature 0.7
+ante offline use Qwen3.8-27B --args "--threads 12"
+ante offline use Qwen3.8-27B --temperature default --args ""
 ```
 
 每个选项只替换自己的值，其余保存值保留。`--temperature default` 清除温度覆盖，`--args ""` 清除额外参数。每次 `use` 都会输出 `Loads with:`，即使没有传入偏好选项。

@@ -9,10 +9,11 @@ Type `/` in the [interactive TUI](/usage/tui) to run built-in commands for commo
 
 | Command | Description |
 |---|---|
-| `/clear` | Clear conversation history |
+| `/clear` | Start an empty session; keep the current session if setup fails |
 | `/init` | Analyze the project and create an `AGENTS.md` file |
 | `/exit` | Exit Ante |
 | `/compact [instructions]` | Free context by compacting older history; optional instructions steer what the handoff summary emphasizes or preserves |
+| `/rollover [instructions]` | Write a handoff and continue in a new session, keeping the original resumable; see [Rollover](/usage/tui#rollover) |
 | `/config` | Open the settings dialog — search, toggle, and jump into the theme, model, provider, status line, MCP, and offline dialogs (see [Preferences](/configuration/preference#settings-file)) |
 | `/theme` | Open theme selection dialog |
 | `/diff` | Show git diff (including untracked files) |
@@ -37,7 +38,7 @@ Type `/` in the [interactive TUI](/usage/tui) to run built-in commands for commo
 | `/goal [<condition> \| clear]` | Keep working until a condition is met, clear the active goal, or show goal status |
 
 :::note
-Some commands are "visible" (appear in conversation history) and others are "silent" (execute without adding to history). `/clear`, `/init`, `/exit`, `/compact`, `/context`, `/usage`, `/goal`, and `/rename` are visible; the rest are silent.
+Some commands are "visible" (appear in conversation history) and others are "silent" (execute without adding to history). `/clear`, `/init`, `/exit`, `/compact`, `/rollover`, `/context`, `/usage`, `/goal`, and `/rename` are visible; the rest are silent.
 :::
 
 ## Skills as slash commands

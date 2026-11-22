@@ -10,10 +10,11 @@ description: "在交互式 TUI 终端中用于常用操作的内置命令"
 
 | 命令 | 说明 |
 |---|---|
-| `/clear` | 清空对话历史 |
+| `/clear` | 开启空白新会话；初始化失败时保留当前会话 |
 | `/init` | 分析项目并创建 `AGENTS.md` 文件 |
 | `/exit` | 退出 Ante |
 | `/compact [instructions]` | 压缩较早的对话历史以释放上下文；可选指令可引导交接摘要强调或保留特定内容 |
+| `/rollover [instructions]` | 生成交接摘要并在新会话中继续，保留原会话供恢复；参见[会话交接](/usage/tui#rollover) |
 | `/config` | 打开设置对话框 —— 搜索、开关并跳转至主题、模型、提供商、状态栏、MCP 及离线设置（参见[偏好设置](/configuration/preference#settings-file)） |
 | `/theme` | 打开主题选择对话框 |
 | `/diff` | 展示 Git 改动 diff（包含未跟踪的文件） |
@@ -38,7 +39,7 @@ description: "在交互式 TUI 终端中用于常用操作的内置命令"
 | `/goal [<condition> \| clear]` | 持续工作直至满足条件、清除活跃目标或展示目标状态 |
 
 :::note
-部分命令是“可见”命令（记录在对话历史中），另一些则是“静默”命令（执行后不计入历史记录）。其中 `/clear`、`/init`、`/exit`、`/compact`、`/context`、`/usage`、`/goal` 和 `/rename` 是可见命令；其余均为静默命令。
+部分命令是“可见”命令（记录在对话历史中），另一些则是“静默”命令（执行后不计入历史记录）。其中 `/clear`、`/init`、`/exit`、`/compact`、`/rollover`、`/context`、`/usage`、`/goal` 和 `/rename` 是可见命令；其余均为静默命令。
 :::
 
 ## 技能作为斜杠命令 {#skills-as-slash-commands}

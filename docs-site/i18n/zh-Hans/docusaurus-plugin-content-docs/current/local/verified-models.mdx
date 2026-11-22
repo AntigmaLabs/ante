@@ -4,31 +4,31 @@ sidebar_label: "推荐验证模型"
 description: "经过 Ante 严格测试与基准评测的精选本地 GGUF 模型列表"
 ---
 
-在[离线模式](/local/offline)选择器中的 **Verified models（推荐验证模型）** 列表经过严格筛选：均经过 Ante 智能体闭环测试，可直接从 Hugging Face 下载，并预先获知内存/显存需求。每个模型具有以下两种状态之一：
+[离线模式](/local/offline)选择器中的 **Verified models（推荐验证模型）** 是经过 Ante 智能体循环兼容性测试的 GGUF 构建，可从 Hugging Face 下载，并提供内存需求估算。
 
-- **Evaled（已评测）** — 运行了完整的公开基准评测：与[云端前沿模型结果](/benchmarks/eval)完全相同的 Terminal-Bench 2.1 Harness、固定构建与公开 Harbor 审计记录。实时得分展示于 [antigma.ai/eval](https://antigma.ai/eval)。
-- **Verified（已验证）** — 经过端到端兼容性测试：模型能够顺利加载、对话模板解析正确，且在 Ante 智能体闭环中支持稳定的工具调用。尚未完成全部评测。
+兼容性验证与基准评测是不同的检查：验证确认模型加载、对话模板和工具调用可用；基准成绩则应以注明具体构建与公开运行记录的[评测页](/benchmarks/eval)为准。
 
-随着基准评测运行完成，模型会从 Verified 逐步升级为 Evaled。
+## 查看当前推荐模型 {#current-list}
 
-## 当前推荐模型列表 {#current-list}
+内置列表会随 Ante 版本更新。请在 `/offline-mode` 中打开 **Verified models**，或查看当前安装版本提供的模型：
 
-| 模型 | 量化格式 | 下载大小 | 最大上下文 | 评测状态 |
-|---|---|---|---|---|
-| Qwen3.8 27B | Q4_K_M | 17 GB | 256K | Verified |
-| MiniMax-M2.7 | Q3_K_XL | 102 GB | 192K | Verified |
-| Qwen3.5 122B-A10B | Q2_K | 45 GB | 256K | Verified |
-| Qwen3.6 35B-A3B | Q4_K_M | 22 GB | 256K | Verified |
-| Qwen3.6 27B | Q4_K_M | 17 GB | 256K | **Evaled** — [Terminal-Bench 2.1 准确率 56.2%](https://antigma.ai/eval) |
-| GLM-4.7-Flash | Q4_K_M | 18 GB | 198K | Verified |
-| Gemma 4 26B-A4B-it | Q4_K_M | 16 GB | 256K | Verified |
-| Devstral-Small-2 24B | Q4_K_M | 14 GB | 384K | Verified |
-| Qwen3.5 9B | Q4_K_M | 5.7 GB | 256K | Verified |
-| Gemma 4 E4B-it | Q4_K_M | 4.7 GB | 128K | Verified |
+```bash
+ante offline list
+ante offline list --json
+```
 
-“最大上下文”为模型底层架构支持的上限；Ante 默认将初始上下文窗口设置为 32K 以保持内存占用可预测，您可以在[偏好设置](/local/offline#model-preferences)中针对各模型调大，或在尚无已保存偏好时通过 `ANTE_OFFLINE_CONTEXT` 环境变量覆盖。运行 `ante offline list` 可查看这些模型与发现的本地文件；`ante offline use <MODEL> --context <TOKENS>` 可保存默认模型及加载窗口。
+输出同时列出已发现的本地 GGUF 文件，并显示下载大小、最大上下文、内存适配估算与默认模型标记。JSON 中的 `reference` 可直接用于 `ante offline use` 或 `--offline-model`，无需猜测文件名。
 
-迄今为止的一项完整评测：Qwen3.6 27B 在 89 个 Terminal-Bench 2.1 任务（共 445 次 Trial）中取得了 **56.2%** 的准确率 —— 单个 17 GB 的本地模型在与我们[云端模型评测](/benchmarks/eval#terminal-bench-21)相同的榜单上展现出扎实实力。
+```bash
+ante offline use Qwen3.8-27B --context 32768
+ante --offline-model
+```
+
+“最大上下文”是模型支持的上限，不是建议加载窗口。Ante 默认将上下文限制为 32K 以控制内存需求；可通过[模型偏好](/local/offline#model-preferences)调整，或在没有已保存偏好时设置 `ANTE_OFFLINE_CONTEXT`。选择模型前请查看实际内存适配估算。
+
+如果之前选择的模型已不在内置列表中，可通过本地 GGUF 路径继续使用，或按下文添加自己的验证条目。
+
+历史评测：Qwen3.6 27B 在 89 个 Terminal-Bench 2.1 任务、共 445 次 Trial 中取得 **56.2%** 的准确率。该结果仍可在[评测页](/benchmarks/eval#terminal-bench-21)查看，但不表示模型仍在当前内置列表中。
 
 ## 自定义添加验证模型 {#add-your-own}
 
@@ -56,6 +56,6 @@ Ante 在启动时会自动将 `~/.ante/verified_models.json` 合并到内置推�
 | `repo` | 文件下载来源的 Hugging Face 仓库 |
 | `filename` | 仓库内的 GGUF 文件名（同时也是合并匹配的 Key） |
 | `context_window` | 模型支持的最大上下文（Token 数） |
-| `file_size_mb` | 下载大小，用于内存估算 |
+| `file_size_mb` | 下载大小，以 MiB 向上取整，用于内存估算 |
 | `kv_cache_bytes_per_token` | 每个上下文 Token 的 KV 缓存增长量，用于内存估算 |
 | `support_vision` | 模型是否支持图片输入（可选） |

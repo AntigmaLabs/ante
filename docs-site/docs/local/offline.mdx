@@ -21,6 +21,8 @@ When you select offline mode, Ante:
 4. Estimates memory requirements from model size and context window
 5. Starts and supervises one shared llama.cpp router with `llama serve`; switching managed models loads and unloads workers without restarting that process
 
+v0.3.8 uses llama.cpp `b12375` and no longer ships Linux CUDA prebuilts for `sm_86`. Those GPUs fall back to a compatible Vulkan build; you can also configure a [custom engine](/local/custom-engines).
+
 Prefer your own llama.cpp build, extra server flags, or a server you started yourself? See [Custom Engines](/local/custom-engines).
 
 ## Setting up
@@ -52,7 +54,7 @@ Prefer your own llama.cpp build, extra server flags, or a server you started you
 ante offline install
 ante offline status
 ante offline list
-ante offline use Qwen3.5-9B
+ante offline use Qwen3.8-27B
 ante --offline-model
 ```
 
@@ -67,7 +69,7 @@ Once a model is loaded, it is registered as the `local` provider in the catalog,
 Pass `--offline-model` to run a one-shot prompt against a local GGUF file — no TUI required:
 
 ```bash
-ante --offline-model ~/.ante/models/Qwen3.5-9B-Q4_K_M.gguf -p "Explain this code"
+ante --offline-model ~/.ante/models/Qwen3.8-27B-UD-Q4_K_M.gguf -p "Explain this code"
 ```
 
 <img src="/assets/offline-headless.gif" alt="Headless offline mode running a one-shot prompt against a local GGUF model" style={{width: '100%', borderRadius: '8px', margin: '16px 0'}} />
@@ -128,9 +130,9 @@ Per-model settings, saved automatically in the offline config:
 Save preferences from the CLI for the next TUI, headless, or `serve` load:
 
 ```bash
-ante offline use Qwen3.5-9B --context 16384 --thinking off --temperature 0.7
-ante offline use Qwen3.5-9B --args "--threads 12"
-ante offline use Qwen3.5-9B --temperature default --args ""
+ante offline use Qwen3.8-27B --context 16384 --thinking off --temperature 0.7
+ante offline use Qwen3.8-27B --args "--threads 12"
+ante offline use Qwen3.8-27B --temperature default --args ""
 ```
 
 Each option replaces only its own value and preserves the others. `--temperature default` clears the temperature override; `--args ""` clears extra options. Every `use` prints `Loads with:`, including when no preference flags are supplied.

@@ -364,6 +364,10 @@ Once the cap is reached, each new image can replace an image in an earlier messa
 
 On the `AnthropicMessage` wire, Ante automatically marks the final tool definition and final system-prompt block for ephemeral caching, separately from conversation caching. Sessions with matching tools and system prompts can reuse those prefixes across project directories; environment details and the memory index travel in separate conversation context. No catalog setting is needed to enable this behavior.
 
+### OpenAI Responses caching and reasoning {#openai-responses-caching}
+
+On the `OpenAiResponse` wire, Ante places the system prompt in the first developer message in `input`, making it part of the cacheable prefix. With reasoning enabled, Ante also requests and returns opaque encrypted reasoning content on subsequent calls so the model can continue its reasoning with `store: false`. Both behaviors are automatic and independent of whether `thinking_display` shows readable reasoning.
+
 ### Extra request fields
 
 Some gateways and proxies require parameters Ante doesn't model — a service tier, a routing hint, a vendor-specific beta block. `extra_body` is a JSON object merged into the top level of every chat and streaming request body Ante sends to that provider:
@@ -390,9 +394,9 @@ Values are passed through verbatim, so any JSON shape works. On a built-in provi
 
 | `wire_style` | Reserved keys |
 |---|---|
-| `AnthropicMessage` | `model`, `max_tokens`, `messages`, `system`, `temperature`, `tools`, `stream`, `thinking`, `stop_sequences`, `output_config`, `cache_control` |
-| `OpenAiCompatible` | `model`, `messages`, `reasoning_effort`, `max_tokens`, `stream`, `stream_options`, `temperature`, `top_p`, `top_k`, `stop`, `tools`, `tool_choice`, `thinking`, `enable_thinking`, `thinking_budget`, `enable_search`, `search_options` |
-| `OpenAiResponse` | `model`, `instructions`, `input`, `tools`, `tool_choice`, `parallel_tool_calls`, `max_output_tokens`, `temperature`, `reasoning`, `stream`, `include`, `store` |
+| `AnthropicMessage` | `model`, `max_tokens`, `messages`, `system`, `temperature`, `tools`, `tool_choice`, `stream`, `thinking`, `stop_sequences`, `output_config`, `cache_control` |
+| `OpenAiCompatible` | `model`, `messages`, `reasoning_effort`, `max_tokens`, `stream`, `stream_options`, `temperature`, `stop`, `tools`, `tool_choice`, `thinking`, `enable_thinking`, `enable_search`, `search_options` |
+| `OpenAiResponse` | `model`, `input`, `tools`, `tool_choice`, `parallel_tool_calls`, `max_output_tokens`, `temperature`, `reasoning`, `stream`, `include`, `store` |
 | `Gemini` | `contents`, `systemInstruction`, `generationConfig`, `tools`, `toolConfig` |
 
 For Claude Sonnet 5.5 on Anthropic Messages, `tool_choice` cannot require a tool call or force a specific tool. Ante reports that error before sending the request.
@@ -511,9 +515,7 @@ A model is described inside a provider's `preferred_models`. On a built-in provi
 | `id` | Model id (`name` is accepted as a legacy alias). |
 | `display_name` | Friendly name. |
 | `description` | Short description shown in the model picker. |
-| `temperature` | Sampling temperature. Anthropic Messages requires `1` while thinking is active, and Claude Haiku 5.5 always requires `1`. The Responses API sends a configured temperature when reasoning is `none` or unset and omits it while reasoning is active. |
-| `top_p` | Nucleus sampling cutoff. |
-| `top_k` | Top-k sampling cutoff. |
+| `temperature` | Sampling temperature. Anthropic Messages requires `1` while thinking is active, and Claude Haiku 5.5 always requires `1`. The Responses API sends a configured temperature when reasoning is `none` or unset and omits it while reasoning is active. The Gemini wire sends no sampling parameters, including temperature. |
 | `max_tokens` | Maximum output tokens per turn. On `AnthropicMessage` providers that take an explicit thinking budget, it must exceed 1024 — the API's minimum budget — when an effort level is set. |
 | `stop_sequences` | List of strings that end generation. |
 | `context_limit` | Context window size, in tokens. |
@@ -522,12 +524,15 @@ A model is described inside a provider's `preferred_models`. On a built-in provi
 | `weight_class` | Size/cost tier — `Feather`, `Middle`, or `Heavy`. Drives automatic default and auxiliary model selection (see [Weight classes](#weight-classes)). |
 | `support_vision` | Whether the model accepts image input. Built-in models declare this explicitly; custom models default to `true` when unspecified, and an overlay that omits it keeps the preset value. Set `false` for a text-only endpoint. Images are filtered out before sending to non-vision models without altering saved history; reading an image returns its metadata instead of pixels. |
 
+As of v0.3.8, `top_p`, `top_k`, and `MODEL_TOP_P` are removed. Delete old overrides from model configuration and launch environments; they no longer control sampling.
+
 ### Weight classes
 
 Every built-in model carries a `weight_class` — `Feather` (small/fast/cheap), `Middle`, or `Heavy` (largest/most capable). Ante uses it to pick models without you naming one:
 
 - **Default model** — selecting a provider with no explicit model resolves to its **heaviest** model.
 - **Ambient UI calls** — cosmetic thinking phrases and next-prompt suggestions use the provider's **lightest** model when it is classified as Feather or Middle. WebFetch returns page content directly to the active session model and does not use this path.
+- **Automatic session titles** — use that cheap model when available, otherwise the current session model. Titles are generated only for untitled attended sessions and do not block the task.
 
 Models with no `weight_class` set fall back to catalog order. Set `weight_class` on a custom model to steer these choices.
 
@@ -554,7 +559,6 @@ These process env vars override catalog values for the session without editing t
 |---|---|
 | `MODEL_BASE_URL` | Base URL for all providers (a per-provider var like `ANTHROPIC_BASE_URL` takes precedence). |
 | `MODEL_TEMPERATURE` | `temperature` |
-| `MODEL_TOP_P` | `top_p` |
 | `MODEL_MAX_TOKENS` | `max_tokens` |
 | `MODEL_CONTEXT_LIMIT` | `context_limit` |
 

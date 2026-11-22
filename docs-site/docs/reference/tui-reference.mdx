@@ -68,13 +68,17 @@ In the main chat, contiguous quiet calls such as Bash, Read, Grep, Glob, WebFetc
 
 After compaction — manual `/compact` or [automatic](/configuration/preference#settings-file) — the conversation shows a collapsed compaction marker. Earlier history remains visible for reference while the model uses a summary of older context alongside recent conversation and your messages. The transcript view shows the full summary. To focus the summary on a topic, add instructions such as `/compact focus on the API changes`. When no summary is needed, an info line reports any trimmed tool results instead.
 
-If a model ends its turn without a reply, Ante shows `The model ended its turn without a reply.` and completes the turn without adding a placeholder response to the saved conversation. Unexpected empty replies are retried through the normal reconnect path.
+If a reply contains only thinking, with no answer or tool call, Ante leaves it out of the saved conversation and asks the model to continue. These retries share a limit of three consecutive nudges with output-limit continuations. Tool calls completed before a `max_tokens` cutoff still run; only calls cut off inside their arguments are dropped. Anthropic web searches that pause a turn are also resumed automatically, up to three times.
+
+If a model ends its turn with no output at all, Ante shows `The model ended its turn without a reply.` without saving a placeholder response. Other unexpected empty replies are retried through the normal reconnect path.
 
 ### Selecting and copying text
 
+Long code-block lines wrap to the available width. Copying rejoins the original line, including runs of spaces.
+
 The fullscreen views — fullscreen chat, the transcript, the [diff view](#diff-view), and `/diff` output — capture the mouse for wheel scrolling, so they handle selection themselves instead of leaving it to the terminal. Drag across the text and it copies on release; the footer confirms with `copied N lines`. Double-click selects a word, counting `_-./~+@#$%&=:` as word characters so a path or URL comes out whole, and triple-click selects the logical line. Dragging on the top or bottom row scrolls and keeps extending the selection past the viewport. In fullscreen chat, `PgUp` / `PgDn` also scroll the conversation. While you're scrolled up, a `Jump to bottom (ctrl+l) ↓` pill — or `N new messages (ctrl+l) ↓` once new entries arrive — sits under the conversation; press `Ctrl+L`, click the pill, or send a message to follow new output again. Scrolling back to the bottom also re-pins the view.
 
-Copies rejoin soft-wrapped rows, including notices and user-run shell output, into the lines they came from, so a wrapped command or URL pastes back intact. Tool output, code blocks, tables, and diffs copy as displayed. Copies go to the OS clipboard and also as an OSC 52 escape, so they work over SSH and inside tmux; selections above 100 KB skip the OSC 52 channel. Clicking outside the content clears the selection, and a whitespace-only grab never touches the clipboard.
+Copies rejoin soft-wrapped rows, including notices and user-run shell output, into the lines they came from, so a wrapped command or URL pastes back intact. Tool output, tables, and diffs copy as displayed. Copies go to the OS clipboard and also as an OSC 52 escape, so they work over SSH and inside tmux; selections above 100 KB skip the OSC 52 channel. Clicking outside the content clears the selection, and a whitespace-only grab never touches the clipboard.
 
 In inline mode you can select and scroll with the terminal’s own controls. A streaming Markdown table updates in the chat and enters terminal scrollback once its layout settles.
 
@@ -146,7 +150,7 @@ Opening a saved conversation from the terminal restores its history so you can c
 
 ### Session title
 
-A session can carry a title — a name you choose, never one derived from the conversation:
+An untitled interactive session generates a short title in the background from its first prompt. Use `/rename` to replace it; manually naming or clearing the title cancels any pending automatic title:
 
 ```
 /rename auth refactor
@@ -155,7 +159,7 @@ A session can carry a title — a name you choose, never one derived from the co
 
 The title shows in the `/resume` picker in place of the first message, so a long-running session is recognizable by what it is for rather than by how it opened. It also follows into the terminal tab, which makes several Ante windows tellable apart at a glance, and it survives a resume — rename once and the label sticks.
 
-Whitespace around the title is trimmed, and a title that is empty after trimming clears it.
+Whitespace around the title is trimmed, and a title that is empty after trimming clears it. After clearing it, a later prompt can generate a new title. Headless and other unattended sessions do not generate titles automatically; a failed title request does not block your task.
 
 ### Coming from Claude Code or Codex
 

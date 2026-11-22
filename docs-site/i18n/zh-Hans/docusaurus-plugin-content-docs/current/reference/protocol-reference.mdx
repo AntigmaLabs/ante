@@ -82,7 +82,8 @@ Ante 在客户端（Client）与守护进程（Daemon）之间采用强类型的
       "exclude_skills": null,
       "save_session": null,
       "unattended": null,
-      "title": null
+      "title": null,
+      "rollover": null
     }
   },
   "id": "op_..."
@@ -112,10 +113,28 @@ Ante 在客户端（Client）与守护进程（Daemon）之间采用强类型的
 | `save_session` | `bool?` | 是否写入对话记录与可恢复快照。`null` 保留主机的会话保存默认值 |
 | `unattended` | `bool?` | 声明没有客户端可以回答审批提示。为 `true` 时，需要审批的调用会被拒绝而不是暂停；省略或设为 `null` 表示 `false` |
 | `title` | `string?` | 会话的展示名称，在恢复选择器中替代首条消息显示。文本两端会被裁剪，裁剪后为空即视为无标题。`null` 表示会话以无标题启动 |
+| `rollover` | `Rollover?` | 从当前会话生成交接摘要并开启新会话。对象可包含 `instructions: string`；省略或为 `null` 表示普通启动。参见[会话交接](#rollover) |
 
 `SessionRequest` 在 `v0.preview.92` 中取代旧名称 `SessionOverrides`。JSON 字段名保持不变，但对 `StartSession` 而言，缺省值现在只有一个明确含义：立即解析主机默认值，而不是“保留上一会话不变”。实现 `/clear` 的客户端应自行保留并重新发送其请求，同时合并用户做过的模型或权限模式变更；协议中没有独立的重启操作。
 
 使用 [`ante auth list --json`](/reference/cli-reference#json-credential-inventory) 可查看已存储的凭据引用及接受它们的提供商。固定凭据仅作用于当前会话，不随对话保存；恢复时需再次传入引用。引用被拒绝时不会回退到其他凭据。
+
+#### 根据交接摘要继续 {#rollover}
+
+`StartSession` 的 `rollover` 字段用于在新会话中接续当前会话，仅携带其生成的交接摘要。新会话使用当前提示词与设置以及本次请求的覆盖项；原对话在启用保存时仍可恢复。客户端应像 `/clear` 一样重发需要保留的会话选项。
+
+```json
+{
+  "op": {
+    "StartSession": {
+      "rollover": { "instructions": "Preserve decisions and remaining test failures" }
+    }
+  },
+  "id": "op_..."
+}
+```
+
+`instructions` 可省略。请求要求当前存在非空会话，且没有运行或排队的轮次、活动目标或运行中的后台任务。交接或初始化失败时返回 `Error`，保留当前会话。成功时先发出原会话的 `SessionEnd`，再以 `SessionStart` 宣告新会话；`SessionInfo.rolled_from` 标识来源，交接摘要记录为新会话的 `CompactEnd`。后续普通启动应省略 `rollover`。
 
 ### UpdateSession {#updatesession}
 
@@ -197,7 +216,7 @@ Ante 在客户端（Client）与守护进程（Daemon）之间采用强类型的
 { "op": { "RewindSession": { "to": "op_01ARZ..." } }, "id": "op_..." }
 ```
 
-会话必须启用保存，且没有运行或排队的轮次、活动目标或运行中的后台任务。输入必须仍可恢复：保存的输入边界在恢复会话后保留，并复制到分叉会话中；成功替换历史的压缩或切换提供商会使之前的边界失效，压缩失败则保留它们。请求被拒绝时发出 `Error`，不改变对话；成功时发出 [`SessionRewound`](#sessionrewound)。
+会话必须启用保存，且没有运行或排队的轮次、活动目标或运行中的后台任务。输入必须仍可恢复：保存的输入边界在恢复会话后保留，并复制到分叉会话中；切换模型或提供商不会使这些边界失效。成功替换历史的压缩会使之前的边界失效，压缩失败则保留它们。请求被拒绝时发出 `Error`，不改变对话；成功时发出 [`SessionRewound`](#sessionrewound)。
 
 ### ForkSession {#forksession}
 
@@ -439,8 +458,9 @@ Ante 在客户端（Client）与守护进程（Daemon）之间采用强类型的
 | `permission_mode` | `PermissionMode` | 当前活跃的权限模式（`"strict"`、`"auto"` 或 `"yolo"`） |
 | `skills` | `SkillMetadata[]` | 用户可在此会话中调用的 Skills；缺省时为兼容旧版本默认空列表 |
 | `subagents` | `SubagentMetadata[]` | 此会话可委派的子智能体；缺省时为兼容旧版本默认空列表 |
-| `title` | `string?` | 已设置时为会话的[标题](/usage/tui#session-title) —— 由用户或客户端指定，绝不会从对话内容中推断。未设置时该字段整体从载荷中省略 |
+| `title` | `string?` | 已设置时为会话的[标题](/usage/tui#session-title) —— 由用户或客户端指定，或为未命名的交互式会话自动生成。未设置时该字段整体从载荷中省略 |
 | `forked_from` | `Id?` | 分叉来源会话的 ID。普通会话省略；不表示子智能体的父级关系 |
+| `rolled_from` | `Id?` | 本会话通过交接接续的原会话 ID；其他会话省略 |
 
 其中的 `ModelSpec` 使用[目录参考手册](/reference/catalog-reference#model-fields)列出的模型字段。自 `v0.preview.92` 起，可选字段 `supported_efforts` 用于携带自定义模型接受的思考深度档位，并取代旧的仅输出字段 `effort_options`。
 
@@ -475,13 +495,13 @@ Ante 在客户端（Client）与守护进程（Daemon）之间采用强类型的
 
 #### SessionUpdated {#sessionupdated}
 
-当活跃会话原地更新（如通过 `UpdateSession` 切换模型）时触发。携带与 `SessionStart` 相同的字段。
+当活跃会话原地更新（如通过 `UpdateSession` 切换模型）时触发。携带与 `SessionStart` 相同的字段。自动生成的标题也通过 `SessionUpdated` 发布，不带父操作 ID。
 
 ```json
 {
   "event": {
     "SessionUpdated": {
-      "model": { "id": "gpt-6.1-sol" },
+      "model": { "id": "gpt-6.2-sol" },
       "provider": {
         "id": "openai",
         "display_name": "OpenAI",
@@ -769,7 +789,7 @@ Skills 技能、子智能体或 MCP 服务器刷新时触发。`SessionStart` �
 
 #### UsageUpdate {#usageupdate}
 
-会话的 Token 消耗统计。在首条回复前、模型上下文限制未知或用量来自子智能体时省略 `context`。客户端应将每个 `usage` 累加进总计，但在 `context` 缺失时保留最后一次根会话上下文快照；委派任务不得覆盖根会话指示器。存在的 `context` 仅包含原始测量数据 —— `used_tokens`（包含缓存的窗口占用）与 `limit_tokens`（模型原始上下文限制）；百分比由客户端自行计算。在提供商支持时，`usage` 还包含 `cache_read_tokens` 与 `cache_creation_tokens`。
+会话的 Token 消耗统计。在首条回复前、模型上下文限制未知或用量来自子智能体时省略 `context`。客户端应将每个 `usage` 累加进总计，但在 `context` 缺失时保留最后一次根会话上下文快照；委派任务不得覆盖根会话指示器。存在的 `context` 仅包含原始测量数据 —— `used_tokens`（包含缓存的窗口占用）与 `limit_tokens`（模型原始上下文限制）；百分比由客户端自行计算。在提供商支持时，`usage` 还包含 `cache_read_tokens` 与 `cache_write_tokens`。自 v0.3.8 起，`cache_write_tokens` 取代 `cache_creation_tokens`；客户端应更新字段读取。OpenAI Responses 返回的缓存写入 Token 也会计入用量与费用估算。
 
 ```json
 {

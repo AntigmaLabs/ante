@@ -13,6 +13,8 @@ ante serve
 
 This starts the daemon and bridges the [JSONL protocol](/reference/protocol-reference) over stdin/stdout. The process stays alive until the client sends a `Shutdown` operation or closes stdin.
 
+When MCP servers are configured, `serve` waits for discovery before the first turn so the first model request has a stable tool list. See [MCP lifecycle](/extend/mcp#lifecycle) for handshake deadlines and failed-server handling.
+
 ### Stdio transport (default)
 
 ```bash

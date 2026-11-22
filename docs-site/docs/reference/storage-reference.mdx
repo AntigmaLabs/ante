@@ -44,7 +44,7 @@ Ante persists configuration and state on the local filesystem. This page is a re
 
 WebFetch spill files use the OS cache directory: `~/Library/Caches/ante` on macOS, `$XDG_CACHE_HOME/ante` on Linux (falling back to `~/.cache/ante` when unset or not absolute), and `%LOCALAPPDATA%/ante` on Windows. Only when the OS cache directory cannot be resolved does Ante fall back to `$ANTE_HOME/cache`; changing `ANTE_HOME` normally does not move the cache. Cache entries older than 48 hours are collected on a later startup. Disposable staging files and intermediate downloads use the OS temp directory and are outside this 48-hour cache sweep.
 
-Background job directories are live process state rather than scratch data. Ante never removes a live job because of age; after a job settles, its directory is retained for 24 hours and then collected on a later startup.
+Background job directories are live process state rather than scratch data. Ante never removes a live job because of age; after a job settles, its directory is retained for 24 hours and then collected on a later startup. Truncated inline Bash results also retain their full-output files in a job directory under this collection policy.
 
 ## `settings.json`
 

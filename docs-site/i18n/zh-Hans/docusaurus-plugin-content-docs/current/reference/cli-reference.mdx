@@ -243,7 +243,7 @@ ante update [OPTIONS] [CHANNEL]
 | 参数标识 | 说明 |
 |---|---|
 | `--channel <CHANNEL>` | 更新追踪的发布通道。等同于位置参数形式。 |
-| `--version <VERSION>` | 安装指定的具体发布版本而非通道最新版。支持带或不带前缀 `v`（如 `v0.3.5` 或 `0.3.5`）。与通道参数互斥。 |
+| `--version <VERSION>` | 安装指定的具体发布版本而非通道最新版。支持带或不带前缀 `v`（如 `v0.3.8` 或 `0.3.8`）。与通道参数互斥。 |
 | `-h`, `--help` | 打印帮助信息。 |
 
 ### 使用示例 {#ante-update-examples}
@@ -252,7 +252,7 @@ ante update [OPTIONS] [CHANNEL]
 ante update
 ante update nightly
 ante update --channel stable
-ante update --version v0.3.5
+ante update --version v0.3.8
 ```
 
 ## `ante offline` {#ante-offline}
@@ -290,7 +290,7 @@ ante offline <COMMAND>
 ante offline install
 ante offline status
 ante offline list --json
-ante offline use Qwen3.5-9B --context 32768 --thinking off --temperature 0.7
+ante offline use Qwen3.8-27B --context 32768 --thinking off --temperature 0.7
 ante --offline-model
 ante --offline-model -p "Explain this code"
 ante serve --sock --offline-model

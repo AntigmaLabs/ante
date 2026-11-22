@@ -358,6 +358,10 @@ Ante 按请求顺序保留最新图片，并将较早的图片替换为文本，
 
 使用 `AnthropicMessage` 协议时，Ante 会自动在最后一个工具定义和最后一个系统提示词块上标记临时缓存，与对话缓存分开处理。工具与系统提示词相同的会话可以跨项目目录复用这些前缀；环境信息与记忆索引通过独立的对话上下文提供。无需添加目录配置即可启用这一行为。
 
+### OpenAI Responses 缓存与推理续接 {#openai-responses-caching}
+
+在 `OpenAiResponse` 协议上，Ante 将系统提示词放在 `input` 的首条 developer 消息中，使其成为可缓存的前缀。启用推理时，Ante 还会请求并在后续调用中传回不透明的加密推理内容；即使 `store: false`，模型也能接续此前的推理。这些行为自动启用，与 `thinking_display` 是否显示可读推理无关。
+
 ### 额外请求字段 {#extra-request-fields}
 
 部分网关或代理需要 Ante 原生未建模的特定参数（服务等级、路由提示、厂商专属 Beta 字段）。`extra_body` 是一个 JSON 对象，会直接合并到发送给该提供商的每个请求体顶层：
@@ -384,9 +388,9 @@ Ante 按请求顺序保留最新图片，并将较早的图片替换为文本，
 
 | `wire_style` | 保留关键字列表 |
 |---|---|
-| `AnthropicMessage` | `model`, `max_tokens`, `messages`, `system`, `temperature`, `tools`, `stream`, `thinking`, `stop_sequences`, `output_config`, `cache_control` |
-| `OpenAiCompatible` | `model`, `messages`, `reasoning_effort`, `max_tokens`, `stream`, `stream_options`, `temperature`, `top_p`, `top_k`, `stop`, `tools`, `tool_choice`, `thinking`, `enable_thinking`, `thinking_budget`, `enable_search`, `search_options` |
-| `OpenAiResponse` | `model`, `instructions`, `input`, `tools`, `tool_choice`, `parallel_tool_calls`, `max_output_tokens`, `temperature`, `reasoning`, `stream`, `include`, `store` |
+| `AnthropicMessage` | `model`, `max_tokens`, `messages`, `system`, `temperature`, `tools`, `tool_choice`, `stream`, `thinking`, `stop_sequences`, `output_config`, `cache_control` |
+| `OpenAiCompatible` | `model`, `messages`, `reasoning_effort`, `max_tokens`, `stream`, `stream_options`, `temperature`, `stop`, `tools`, `tool_choice`, `thinking`, `enable_thinking`, `enable_search`, `search_options` |
+| `OpenAiResponse` | `model`, `input`, `tools`, `tool_choice`, `parallel_tool_calls`, `max_output_tokens`, `temperature`, `reasoning`, `stream`, `include`, `store` |
 | `Gemini` | `contents`, `systemInstruction`, `generationConfig`, `tools`, `toolConfig` |
 
 通过 Anthropic Messages 调用 Claude Sonnet 5.5 时，`tool_choice` 不能强制调用工具或指定某个工具。Ante 会在发送请求前报告此错误。
@@ -505,9 +509,7 @@ OAuth Profile 是一次登录的配置方案。内置的有 `anthropic`、`opena
 | `id` | 模型 ID（兼容历史别名 `name`） |
 | `display_name` | 友好展示名称 |
 | `description` | 在模型选择器中展示的简短说明 |
-| `temperature` | 采样温度。Anthropic Messages 在思考开启时要求为 `1`，Claude Haiku 5.5 始终要求为 `1`。Responses API 在推理关闭（`none`）或未设置推理时发送配置的温度，启用推理时省略该参数。 |
-| `top_p` | Nucleus 采样截断阈值 |
-| `top_k` | Top-k 采样截断阈值 |
+| `temperature` | 采样温度。Anthropic Messages 在思考开启时要求为 `1`，Claude Haiku 5.5 始终要求为 `1`。Responses API 在推理关闭（`none`）或未设置推理时发送配置的温度，启用推理时省略该参数。 Gemini 协议不发送温度等采样参数。 |
 | `max_tokens` | 单轮最大输出 Token 数。在需要显式思考预算的 `AnthropicMessage` 提供商上，设置思考等级时必须大于 1024 —— API 的最低预算要求 |
 | `stop_sequences` | 停止生成的标记字符串列表 |
 | `context_limit` | 上下文窗口上限（Token 数） |
@@ -516,12 +518,15 @@ OAuth Profile 是一次登录的配置方案。内置的有 `anthropic`、`opena
 | `weight_class` | 规模/成本等级 —— `Feather`（轻量/快速/低成本）、`Middle`（中等）或 `Heavy`（最大/能力最强）。驱动默认模型与辅助模型选取（参见[权重等级](#weight-classes)） |
 | `support_vision` | 是否支持图片输入。内置模型显式声明此能力；自定义模型未指定时默认为 `true`，覆盖已有预设时省略该字段则保留预设值。纯文本端点应设置为 `false`。发送给无视觉能力的模型之前会过滤图片，不影响保存的历史记录；读取图片时返回元数据而非像素。 |
 
+自 v0.3.8 起，`top_p`、`top_k` 与 `MODEL_TOP_P` 已移除。请从模型配置和启动环境中删除旧覆盖项；它们不再控制采样。
+
 ### 权重等级 {#weight-classes}
 
 每个内置模型均带有 `weight_class`（`Feather`、`Middle` 或 `Heavy`），Ante 根据此属性自动进行智能选择：
 
 - **默认模型** — 选择提供商但未指明具体模型时，默认解析为其 **Heavy** 旗舰模型。
 - **环境感知 UI 调用** — 加载状态语和下一提示词建议等装饰性调用会在提供商拥有 Feather 或 Middle 模型时选用其最轻量模型。WebFetch 会把网页内容直接返回给当前会话模型，不走此路径。
+- **自动会话标题** — 优先使用上述轻量模型；没有合适的轻量模型时使用当前会话模型。仅在未命名的有人值守会话中生成，不阻塞任务。
 
 未设置 `weight_class` 的模型回退到目录声明顺序。在自定义模型上设置 `weight_class` 可以精确引导这些自动化选择。
 
@@ -549,7 +554,6 @@ OAuth Profile 是一次登录的配置方案。内置的有 `anthropic`、`opena
 |---|---|
 | `MODEL_BASE_URL` | 所有提供商的基础 URL（专属变量如 `ANTHROPIC_BASE_URL` 优先级更高） |
 | `MODEL_TEMPERATURE` | `temperature` |
-| `MODEL_TOP_P` | `top_p` |
 | `MODEL_MAX_TOKENS` | `max_tokens` |
 | `MODEL_CONTEXT_LIMIT` | `context_limit` |
 

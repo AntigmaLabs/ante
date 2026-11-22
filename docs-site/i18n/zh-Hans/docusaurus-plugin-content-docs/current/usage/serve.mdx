@@ -14,6 +14,8 @@ ante serve
 
 该命令将启动守护进程，并通过 stdin/stdout 桥接 [JSONL 协议](/reference/protocol-reference)。进程会持续运行，直到客户端发送 `Shutdown` 操作指令或关闭 stdin。
 
+配置了 MCP 服务器时，`serve` 会在首轮开始前等待工具发现完成，确保从第一次模型请求起就使用稳定的工具列表。握手截止时间与失败服务器的处理方式参见 [MCP 生命周期](/extend/mcp#lifecycle)。
+
 ### Stdio 标准输入输出传输（默认） {#stdio-transport-default}
 
 ```bash

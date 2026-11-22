@@ -21,7 +21,7 @@ Create or overwrite a file. Requires approval.
 
 ### Edit
 
-Make exact string replacements in a file. Requires approval.
+Make exact string replacements in a file. Requires approval. Untouched lines keep their original line endings in files that mix LF and CRLF.
 
 Completed edit results use a 32-row inline budget that preserves complete diff hunks in file order, with remaining changes summarized and accessible in full via Ctrl+O.
 
@@ -45,9 +45,15 @@ In content mode, each long line is clipped to 500 characters including truncatio
 
 ### Bash
 
-Execute shell commands. Each call runs in a fresh non-interactive process — shell state does not persist between calls. Commands receive the calling session ID in `ANTE_SESSION` instead of inheriting stale parent process values. The optional `max_wait_ms` field controls how long Ante waits for the command to finish inline (default `10000`, clamped to `250`–`600000`). Expiring that window never kills or times out the command: Ante returns a background handle under `~/.ante/run/jobs/<proc-id>/` with its pid, partial output, and growing `status.json`, `stdout.txt`, and `stderr.txt` files. Use a short window such as `250` for a server or watcher; do not append `&`, which is redundant and stripped automatically.
+Execute shell commands. Each call runs in a fresh non-interactive process — shell state does not persist between calls. Commands receive the calling session ID in `ANTE_SESSION` instead of inheriting stale parent process values. The optional `max_wait_ms` field controls how long Ante waits for the command to finish inline (default `10000`, clamped to `250`–`3600000`, up to one hour). Expiring that window never kills or times out the command: Ante returns a background handle under `~/.ante/run/jobs/<proc-id>/` with its pid, partial output, and growing `status.json`, `stdout.txt`, and `stderr.txt` files. Use a short window such as `250` for a server or watcher; do not append `&`, which is redundant and stripped automatically.
 
-If the command finishes inside the window, Ante returns its output inline and explicitly discards the handle files. After a background handle has been returned, the job survives Ante restarts and is never collected while live; once settled, its directory is collected on a later startup after sitting unchanged for 24 hours. When a background job exits, its completion notification automatically re-enters the session at the model's next step boundary or turn start (delivering a notification block with exit code, duration, output tails, and file paths), removing the need for manual polling loops or long wait windows. Interrupting a Bash call before it returns a handle terminates the whole process group, including child and grandchild processes. To stop an already-backgrounded job, send a signal to its process group with `kill -- -<pid>`. Requires approval.
+If the command finishes inside the window, Ante returns its output inline. A stream over 20,000 bytes keeps its beginning and end, with the full-output file named on its first line; those files remain until later collection. Untruncated inline results discard their handle files immediately.
+
+After a background handle has been returned, the job survives Ante restarts and is never collected while live; once settled, its directory is collected on a later startup after sitting unchanged for 24 hours. When a background job exits, its completion notification automatically re-enters the session at the model's next step boundary or turn start (delivering a notification block with exit code, duration, output tails, and file paths), removing the need for manual polling. If the current task depends on the result, choose a longer `max_wait_ms` when starting the command.
+
+Interrupting a Bash call before it returns a handle terminates the whole process group, including child and grandchild processes. To stop an already-backgrounded job, send a signal to its process group with `kill -- -<pid>`. Requires approval.
+
+`status.json` records `state`, `pid`, `started_at_ms`, `exit_code`, and the originating session ID in `session` when available. `state` changes from `running` to `exited`; `exit_code` is `null` while running.
 
 Results begin with `status: exited` and an explicit `exit_code`, followed by separate `stdout` and `stderr` sections when those streams are non-empty. A background result instead begins with `status: running` and names its process id and handle files. Signal-terminated commands use the shell convention `128 + signal` for the exit code.
 

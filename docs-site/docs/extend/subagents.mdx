@@ -70,6 +70,8 @@ When the main agent encounters a task that matches a sub-agent's description, it
 3. The sub-agent runs independently with its own context
 4. The sub-agent’s final answer and deliverables are returned directly to the main agent
 
+If the child turn does not complete, the `Agent` call fails and includes the reason, the child’s last message, and its transcript path when available. Partial output is not reported as a successful task.
+
 ### Watch sub-agents work
 
 While sub-agents run, the footer lists each one with its task, runtime, and token count. With the composer empty, press `↓` to select one and `Enter` to open its live transcript. Inside, `↑`/`↓` and `Enter` switch to another agent, `PgUp`/`PgDn` scroll, and `Esc` returns to the chat.

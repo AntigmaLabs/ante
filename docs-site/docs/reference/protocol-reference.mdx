@@ -81,7 +81,8 @@ Initialize a new session, replacing any session already running. A field supplie
       "exclude_skills": null,
       "save_session": null,
       "unattended": null,
-      "title": null
+      "title": null,
+      "rollover": null
     }
   },
   "id": "op_..."
@@ -111,10 +112,28 @@ Initialize a new session, replacing any session already running. A field supplie
 | `save_session` | `bool?` | Whether to write a transcript and resumable snapshot. `null` leaves the host's session-saving default |
 | `unattended` | `bool?` | Declare that no client can answer approval prompts. When `true`, a call that would require approval is denied instead of pausing. Omitted or `null` means `false` |
 | `title` | `string?` | A display name for the session, shown in place of the first message in resume pickers. Trimmed; empty after trimming means no title. `null` starts the session untitled |
+| `rollover` | `Rollover?` | Continue the current session in a new one from a handoff. The object accepts optional `instructions: string`; omitted or `null` means an ordinary start. See [Rollover](#rollover) |
 
 `SessionRequest` replaced the former `SessionOverrides` name in `v0.preview.92`. The JSON field names stayed the same, but absence now has one explicit meaning for `StartSession`: resolve the host's default now, never “leave the previous session unchanged.” A client implementing `/clear` should retain and resend its own request, applying any model or permission-mode changes it made; there is no separate restart operation.
 
 Use [`ante auth list --json`](/reference/cli-reference#json-credential-inventory) to discover stored credential references and the providers that accept them. Credential pins apply to the current session only and are not saved with the conversation; send the reference again when resuming. A rejected pin does not fall back to another credential.
+
+#### Continue from a handoff {#rollover}
+
+Set `StartSession.rollover` to continue the running session in a new one, carrying only a generated handoff summary. The new session uses current prompts and settings plus this request's overrides; the original conversation stays resumable when saving is enabled. Clients should resend session choices they want to retain, as for `/clear`.
+
+```json
+{
+  "op": {
+    "StartSession": {
+      "rollover": { "instructions": "Preserve decisions and remaining test failures" }
+    }
+  },
+  "id": "op_..."
+}
+```
+
+`instructions` is optional. The running conversation must be nonempty, with no running or queued turn, active goal, or running background job. A failed handoff or initialization returns `Error` and preserves the current session. Success ends the old session with `SessionEnd`, then announces the new one with `SessionStart`; `SessionInfo.rolled_from` names its source, and the handoff is recorded as the new session's `CompactEnd`. Omit `rollover` on later ordinary starts.
 
 ### UpdateSession
 
@@ -196,7 +215,7 @@ Restore the active session's conversation and visible history to just before inp
 { "op": { "RewindSession": { "to": "op_01ARZ..." } }, "id": "op_..." }
 ```
 
-The session must be saved, with no running or queued turn, active goal, or running background job. The input must still be reachable: saved input boundaries survive resume and are copied into forks, but a successful history-replacing compaction or provider switch invalidates earlier boundaries. Failed compaction leaves them intact. A refused request emits `Error` without changing the conversation. Success emits [`SessionRewound`](#sessionrewound).
+The session must be saved, with no running or queued turn, active goal, or running background job. The input must still be reachable: saved input boundaries survive resume and are copied into forks; switching models or providers preserves them. A successful history-replacing compaction invalidates earlier boundaries; failed compaction leaves them intact. A refused request emits `Error` without changing the conversation. Success emits [`SessionRewound`](#sessionrewound).
 
 ### ForkSession
 
@@ -438,8 +457,9 @@ Emitted when a session is initialized. It announces the session identity, mutabl
 | `permission_mode` | `PermissionMode` | Active permission mode (`"strict"`, `"auto"`, or `"yolo"`) |
 | `skills` | `SkillMetadata[]` | Skills the user can invoke in this session. Defaults to an empty list when absent for backward compatibility |
 | `subagents` | `SubagentMetadata[]` | Subagents this session can delegate to. Defaults to an empty list when absent for backward compatibility |
-| `title` | `string?` | The session's [title](/usage/tui#session-title) when one is set — chosen by the user or the client, never derived from the conversation. Omitted from the payload entirely when unset |
+| `title` | `string?` | The session's [title](/usage/tui#session-title) when one is set — chosen by the user or client, or generated automatically for an untitled attended session. Omitted from the payload entirely when unset |
 | `forked_from` | `Id?` | Source session ID for a fork. Omitted for sessions that were not forked; distinct from subagent parentage |
+| `rolled_from` | `Id?` | Source session continued by a rollover; omitted otherwise |
 
 The embedded `ModelSpec` uses the model fields documented in the [Catalog Reference](/reference/catalog-reference#model-fields). Since `v0.preview.92`, its optional `supported_efforts` field carries a custom model's accepted effort ladder; it replaces the old output-only `effort_options` field.
 
@@ -474,13 +494,13 @@ Confirms that `session_id` was saved from `forked_from`, before input `at` when 
 
 #### SessionUpdated
 
-Emitted when the active session is updated in place (e.g. model changed via `UpdateSession`). Carries the same fields as `SessionStart`.
+Emitted when the active session is updated in place (e.g. model changed via `UpdateSession`). Carries the same fields as `SessionStart`. Automatic titles also arrive as `SessionUpdated`, without a parent operation ID.
 
 ```json
 {
   "event": {
     "SessionUpdated": {
-      "model": { "id": "gpt-6.1-sol" },
+      "model": { "id": "gpt-6.2-sol" },
       "provider": {
         "id": "openai",
         "display_name": "OpenAI",
@@ -768,7 +788,7 @@ Each entry in `mcp_servers` describes a configured server and its discovered too
 
 #### UsageUpdate
 
-Token usage statistics for the session. `context` is omitted before the first response, when the model context limit is unknown, and on usage forwarded from a sub-agent. A client should add every `usage` value to its totals but retain the last root-session context snapshot when `context` is absent; delegated work must not replace the root indicator. A present context carries raw measurements only — `used_tokens` (cache-inclusive window occupancy) and `limit_tokens` (the raw model context limit); any percentage is derived by the client. `usage` may also include `cache_read_tokens` and `cache_creation_tokens` when the provider reports them.
+Token usage statistics for the session. `context` is omitted before the first response, when the model context limit is unknown, and on usage forwarded from a sub-agent. A client should add every `usage` value to its totals but retain the last root-session context snapshot when `context` is absent; delegated work must not replace the root indicator. A present context carries raw measurements only — `used_tokens` (cache-inclusive window occupancy) and `limit_tokens` (the raw model context limit); any percentage is derived by the client. `usage` may also include `cache_read_tokens` and `cache_write_tokens` when the provider reports them. Since v0.3.8, `cache_write_tokens` replaces `cache_creation_tokens`; clients should update their field readers. Cache writes reported by OpenAI Responses also contribute to usage and cost estimates.
 
 ```json
 {
