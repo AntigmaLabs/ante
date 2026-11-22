@@ -498,8 +498,9 @@ pub struct SessionInfo {
     /// The subagents this session can delegate to. Empty when absent.
     #[serde(default)]
     pub subagents: Vec<SubagentMetadata>,
-    /// The session's title, when one is set: a display name chosen by the
-    /// user (or the client), never derived from the conversation.
+    /// The session's title, when one is set: a short display name, chosen by
+    /// the user (or the client), or written automatically for an attended
+    /// session they left unnamed.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub title: Option<String>,
     /// Set when the session was forked from another (see
@@ -771,10 +772,6 @@ pub struct ModelSpec {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub temperature: Option<f32>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub top_p: Option<f32>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub top_k: Option<u32>,
-    #[serde(skip_serializing_if = "Option::is_none")]
     pub max_tokens: Option<u32>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub stop_sequences: Option<Vec<String>>,
@@ -876,14 +873,14 @@ impl<'de> Deserialize<'de> for WeightClass {
 /// Token usage for one model response.
 ///
 /// For every provider, `input_tokens` is the full, cache-inclusive prompt
-/// size: `cache_read_tokens` and `cache_creation_tokens` are subsets of it
+/// size: `cache_read_tokens` and `cache_write_tokens` are subsets of it
 /// (the latter absent for providers that do not report cache writes). So
 /// [`Usage::total`] (`input + output`) is the context-window occupancy.
 ///
 /// The cache buckets bill at their own rates, so subtract them before
 /// applying the input rate:
-/// `cost = (input - cache_read - cache_creation)·p_in
-///        + cache_read·p_cache_read + cache_creation·p_cache_write
+/// `cost = (input - cache_read - cache_write)·p_in
+///        + cache_read·p_cache_read + cache_write·p_cache_write
 ///        + output·p_out`.
 #[derive(Debug, Clone, Deserialize, Serialize, Default, Copy)]
 #[serde(default)]
@@ -897,7 +894,7 @@ pub struct Usage {
     pub cache_read_tokens: Option<u32>,
     /// Subset of `input_tokens` written into the prompt cache (surcharge rate).
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub cache_creation_tokens: Option<u32>,
+    pub cache_write_tokens: Option<u32>,
 }
 
 /// Context-window occupancy snapshot for the root session. Raw measurements
@@ -945,7 +942,7 @@ pub struct ContextBreakdown {
 
 impl Usage {
     pub fn new(input_tokens: u32, output_tokens: u32) -> Self {
-        Self { input_tokens, output_tokens, cache_read_tokens: None, cache_creation_tokens: None }
+        Self { input_tokens, output_tokens, cache_read_tokens: None, cache_write_tokens: None }
     }
 
     /// Context-window occupancy: the full (cache-inclusive) prompt plus output.
@@ -962,10 +959,7 @@ impl std::ops::Add<Usage> for Usage {
             input_tokens: self.input_tokens.saturating_add(other.input_tokens),
             output_tokens: self.output_tokens.saturating_add(other.output_tokens),
             cache_read_tokens: add_optional_u32(self.cache_read_tokens, other.cache_read_tokens),
-            cache_creation_tokens: add_optional_u32(
-                self.cache_creation_tokens,
-                other.cache_creation_tokens,
-            ),
+            cache_write_tokens: add_optional_u32(self.cache_write_tokens, other.cache_write_tokens),
         }
     }
 }
@@ -1640,19 +1634,19 @@ mod tests {
             input_tokens: 10,
             output_tokens: 20,
             cache_read_tokens: Some(3),
-            cache_creation_tokens: None,
+            cache_write_tokens: None,
         };
         usage += Usage {
             input_tokens: 5,
             output_tokens: 6,
             cache_read_tokens: Some(4),
-            cache_creation_tokens: Some(8),
+            cache_write_tokens: Some(8),
         };
 
         assert_eq!(usage.input_tokens, 15);
         assert_eq!(usage.output_tokens, 26);
         assert_eq!(usage.total(), 41);
         assert_eq!(usage.cache_read_tokens, Some(7));
-        assert_eq!(usage.cache_creation_tokens, Some(8));
+        assert_eq!(usage.cache_write_tokens, Some(8));
     }
 }

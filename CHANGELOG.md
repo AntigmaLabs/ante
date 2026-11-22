@@ -1,5 +1,26 @@
 # Changelog
 
+## v0.3.8 - 2026-11-21
+
+### Added
+- Untitled sessions name themselves from the first prompt; `/rename` wins
+
+### Changed
+- OpenAI Responses caches the system prompt and hands reasoning back, so the model stops re-reasoning each step
+- Gemini uses its own tool-call ids and gets no sampling parameters
+- `top_p`, `top_k` and `MODEL_TOP_P` are removed
+- Restore points survive a model or provider switch
+- Refreshed verified offline models; Linux CUDA prebuilts drop `sm_86` (Vulkan fallback)
+
+### Fixed
+- Cache-write tokens on OpenAI Responses are counted and priced
+
+### Wire
+- `Usage.cache_creation_tokens` → `cache_write_tokens`; `ModelSpec` drops `top_p`/`top_k`
+
+### Crates
+- Public crates published as 0.3.8: ante-protocol-shape, ante-llm, ante-exec, ante-sdk
+
 ## v0.3.7 - 2026-11-19
 
 ### Added
