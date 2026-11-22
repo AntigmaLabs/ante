@@ -1,3 +1,6 @@
+// Copyright 2026 Antigma Labs, Inc.
+// SPDX-License-Identifier: Apache-2.0
+
 use crate::handle::{
     ChildTerminator, OUTPUT_CHANNEL_CAPACITY, OutputChunk, ProcessHandle, STDIN_CHANNEL_CAPACITY,
     SpawnedProcess, Stream,

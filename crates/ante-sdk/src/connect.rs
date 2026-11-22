@@ -1,3 +1,6 @@
+// Copyright 2026 Antigma Labs, Inc.
+// SPDX-License-Identifier: Apache-2.0
+
 //! Open a connection to a host at an [`Endpoint`].
 
 #[cfg(feature = "ws")]

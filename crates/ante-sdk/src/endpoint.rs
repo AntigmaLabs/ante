@@ -1,3 +1,6 @@
+// Copyright 2026 Antigma Labs, Inc.
+// SPDX-License-Identifier: Apache-2.0
+
 //! Where a host is reachable.
 
 use std::{fmt, path::PathBuf, str::FromStr};

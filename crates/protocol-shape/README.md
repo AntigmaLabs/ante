@@ -19,3 +19,5 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     Ok(())
 }
 ```
+
+Part of [Ante](https://github.com/AntigmaLabs/ante), a self-contained agent runtime by [Antigma Labs](https://antigma.ai).

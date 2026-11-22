@@ -1,3 +1,6 @@
+// Copyright 2026 Antigma Labs, Inc.
+// SPDX-License-Identifier: Apache-2.0
+
 use anyhow::{Result, anyhow};
 use std::sync::{Arc, Mutex as StdMutex};
 use tokio::sync::{Notify, broadcast, mpsc};

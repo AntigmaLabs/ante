@@ -1,3 +1,6 @@
+// Copyright 2026 Antigma Labs, Inc.
+// SPDX-License-Identifier: Apache-2.0
+
 //! Process-group helpers shared by process execution backends.
 //!
 //! On non-Unix platforms these helpers are no-ops.

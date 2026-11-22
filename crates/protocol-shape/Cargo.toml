@@ -3,9 +3,14 @@ name = "ante-protocol-shape"
 version = "0.3.8"
 edition = "2024"
 rust-version = "1.88"
-description = "Protocol schema and wire message shapes for Ante"
+description = "Wire protocol (Op/Evt) for driving Ante agent runtime sessions"
+authors = ["Antigma Labs, Inc."]
 license = "Apache-2.0"
 repository = "https://github.com/AntigmaLabs/ante"
+homepage = "https://antigma.ai"
+documentation = "https://docs.rs/ante-protocol-shape"
+keywords = ["agent-runtime", "ai-agent", "multi-agent", "protocol", "llm"]
+categories = ["encoding", "api-bindings"]
 readme = "README.md"
 
 [dependencies]

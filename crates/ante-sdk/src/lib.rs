@@ -1,3 +1,6 @@
+// Copyright 2026 Antigma Labs, Inc.
+// SPDX-License-Identifier: Apache-2.0
+
 //! Rust SDK for Ante.
 //!
 //! A [`Client`] is one connection to an Ante host: it sends [`protocol::Op`]s

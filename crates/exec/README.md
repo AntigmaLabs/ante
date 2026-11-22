@@ -12,7 +12,7 @@ use std::time::Duration;
 
 use ante_exec::{CommandOptions, run_with_timeout};
 
-#[tokio::main]
+#[tokio::main(flavor = "current_thread")]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let output = run_with_timeout(
         CommandOptions::new("git", ".").args(["status", "--short"]),
@@ -28,3 +28,5 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
 Ante targets macOS and Linux. Process-group behavior is implemented on Unix;
 non-Unix fallbacks do not provide equivalent lifecycle guarantees.
+
+Part of [Ante](https://github.com/AntigmaLabs/ante), a self-contained agent runtime by [Antigma Labs](https://antigma.ai).

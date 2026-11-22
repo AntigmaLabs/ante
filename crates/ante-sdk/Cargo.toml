@@ -3,9 +3,14 @@ name = "ante-sdk"
 version = "0.3.8"
 edition = "2024"
 rust-version = "1.88"
-description = "Rust SDK for Ante: connect to a host and drive sessions over the Op/Evt protocol"
+description = "Rust client for the Ante agent runtime: orchestrate many agent sessions on local or remote hosts over stdio, Unix sockets or WebSocket"
+authors = ["Antigma Labs, Inc."]
 license = "Apache-2.0"
 repository = "https://github.com/AntigmaLabs/ante"
+homepage = "https://antigma.ai"
+documentation = "https://docs.rs/ante-sdk"
+keywords = ["agent-runtime", "ai-agent", "orchestration", "multi-agent", "swarm"]
+categories = ["api-bindings", "asynchronous"]
 readme = "README.md"
 
 [package.metadata.docs.rs]

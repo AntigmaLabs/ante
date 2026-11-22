@@ -3,9 +3,14 @@ name = "ante-exec"
 version = "0.3.8"
 edition = "2024"
 rust-version = "1.88"
-description = "Standalone process execution utilities for Ante"
+description = "Async subprocess runner for agent runtimes: timeouts, bounded output, stdin, Unix process-group cleanup"
+authors = ["Antigma Labs, Inc."]
 license = "Apache-2.0"
 repository = "https://github.com/AntigmaLabs/ante"
+homepage = "https://antigma.ai"
+documentation = "https://docs.rs/ante-exec"
+keywords = ["subprocess", "process", "timeout", "async", "agent-runtime"]
+categories = ["asynchronous", "os::unix-apis"]
 readme = "README.md"
 
 [dependencies]

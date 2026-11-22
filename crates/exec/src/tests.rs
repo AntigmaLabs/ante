@@ -1,3 +1,6 @@
+// Copyright 2026 Antigma Labs, Inc.
+// SPDX-License-Identifier: Apache-2.0
+
 use crate::{
     CommandOptions, ExecRequest, PollRequest, PoolConfig, ProcessPool, StdinRequest, Stream,
     kill_by_pid, run_with_timeout, subprocess,

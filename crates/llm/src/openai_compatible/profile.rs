@@ -1,3 +1,6 @@
+// Copyright 2026 Antigma Labs, Inc.
+// SPDX-License-Identifier: Apache-2.0
+
 use crate::effort;
 use ante_protocol_shape::Effort;
 use serde::Serialize;

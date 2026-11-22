@@ -1,3 +1,6 @@
+// Copyright 2026 Antigma Labs, Inc.
+// SPDX-License-Identifier: Apache-2.0
+
 use crate::handle::{OutputChunk, ProcessHandle, SpawnedProcess, Stream};
 use crate::{CommandOptions, HeadTailBuffer, lock_or_recover, subprocess};
 use std::collections::HashMap;

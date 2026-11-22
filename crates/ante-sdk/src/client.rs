@@ -1,3 +1,6 @@
+// Copyright 2026 Antigma Labs, Inc.
+// SPDX-License-Identifier: Apache-2.0
+
 //! The client end of one connection: an op sender and an event receiver.
 
 use ante_protocol_shape::{EventMsg, Evt, Op, OpMsg, op_msg};

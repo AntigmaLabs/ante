@@ -1,3 +1,6 @@
+// Copyright 2026 Antigma Labs, Inc.
+// SPDX-License-Identifier: Apache-2.0
+
 //! Effort ladder resolution shared by provider profiles. Every resolver here
 //! rounds a requested effort down to the nearest level at or below it, and up
 //! to the lowest level when every level is above it.

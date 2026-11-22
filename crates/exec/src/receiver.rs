@@ -1,3 +1,6 @@
+// Copyright 2026 Antigma Labs, Inc.
+// SPDX-License-Identifier: Apache-2.0
+
 use crate::{HeadTailBuffer, OutputChunk};
 use tokio::sync::broadcast;
 use tokio::sync::broadcast::error::{RecvError, TryRecvError};

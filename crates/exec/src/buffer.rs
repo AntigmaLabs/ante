@@ -1,3 +1,6 @@
+// Copyright 2026 Antigma Labs, Inc.
+// SPDX-License-Identifier: Apache-2.0
+
 use std::collections::VecDeque;
 
 /// Byte buffer that preserves the beginning and end, dropping the middle.
