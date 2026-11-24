@@ -1,6 +1,6 @@
 [package]
 name = "ante-sdk"
-version = "0.3.8"
+version = "0.3.9"
 edition = "2024"
 rust-version = "1.88"
 description = "Rust client for the Ante agent runtime: orchestrate many agent sessions on local or remote hosts over stdio, Unix sockets or WebSocket"
@@ -27,7 +27,7 @@ ws = ["dep:tokio-tungstenite", "dep:futures-util"]
 wss = ["ws", "tokio-tungstenite/rustls-tls-webpki-roots", "dep:rustls", "dep:webpki-roots"]
 
 [dependencies]
-ante-protocol-shape = { version = "=0.3.8", path = "../protocol-shape" }
+ante-protocol-shape = { version = "=0.3.9", path = "../protocol-shape" }
 futures-util = { version = "0.3", default-features = false, features = ["sink", "std"], optional = true }
 rustls = { version = "0.23", default-features = false, features = ["aws-lc-rs", "std"], optional = true }
 serde_json = "1.0"

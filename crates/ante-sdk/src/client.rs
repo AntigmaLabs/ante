@@ -3,7 +3,7 @@
 
 //! The client end of one connection: an op sender and an event receiver.
 
-use ante_protocol_shape::{EventMsg, Evt, Op, OpMsg, op_msg};
+use ante_protocol_shape::{EventMsg, Evt, Id, Op, OpMsg, op_msg};
 use thiserror::Error;
 use tokio::sync::mpsc::{Sender, UnboundedReceiver, error::TrySendError};
 
@@ -71,8 +71,13 @@ impl Client {
         self.sender.clone()
     }
 
-    pub async fn send(&self, op: Op) -> Result<(), Closed> {
-        self.sender.send(op_msg(op)).await
+    /// Send `op` and hand back the id it was stamped with: the `parent` of
+    /// every event that answers it.
+    pub async fn send(&self, op: Op) -> Result<Id, Closed> {
+        let msg = op_msg(op);
+        let id = msg.id;
+        self.sender.send(msg).await?;
+        Ok(id)
     }
 
     /// The next event, or `None` once the connection has ended.

@@ -1,6 +1,6 @@
 [package]
 name = "ante-llm"
-version = "0.3.8"
+version = "0.3.9"
 edition = "2024"
 rust-version = "1.88"
 description = "OpenAI-compatible provider and model profiles for agent runtimes"
@@ -14,6 +14,6 @@ categories = ["api-bindings"]
 readme = "README.md"
 
 [dependencies]
-ante-protocol-shape = { version = "=0.3.8", path = "../protocol-shape" }
+ante-protocol-shape = { version = "=0.3.9", path = "../protocol-shape" }
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"

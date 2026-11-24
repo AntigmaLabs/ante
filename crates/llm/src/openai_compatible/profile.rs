@@ -19,14 +19,34 @@ pub enum ThinkingDialect {
     ReasoningEffort,
     OpenRouterHighXHigh,
     ThinkingObject,
-    Glm53ReasoningEffort { native_thinking: bool },
+    Glm53ReasoningEffort {
+        native_thinking: bool,
+    },
     KimiThinkingObject,
     KimiK3ReasoningEffort,
     MuseSparkReasoningEffort,
     Qwen38ReasoningEffort,
     QwenEnableThinking,
-    DeepSeek { max_reasoning_effort: ReasoningEffort },
+    DeepSeek {
+        max_reasoning_effort: ReasoningEffort,
+    },
+    /// A llama.cpp server: the levels are the ones its chat template reports,
+    /// so nothing is sent for a model that declares none.
+    LlamaCpp,
     None,
+}
+
+impl ThinkingDialect {
+    /// The ladder a model that declares `levels` offers. llama.cpp turns
+    /// thinking off on `none`, so levels that do not themselves start at
+    /// `min` (`minimal`) get `min` under them for that.
+    fn declared_ladder(self, levels: &[Effort]) -> Vec<Effort> {
+        let mut ladder = levels.to_vec();
+        if self == Self::LlamaCpp && ladder.first().is_some_and(|lowest| *lowest != Effort::Min) {
+            ladder.insert(0, Effort::Min);
+        }
+        ladder
+    }
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -99,6 +119,9 @@ enum OpenAiCompatFamily {
     MiniMax,
     Qwen,
     MistralNoSystem,
+    /// The `local` provider. The server applies the model's chat template
+    /// itself, so the file name says nothing about the wire.
+    LlamaCpp,
     Generic,
 }
 
@@ -174,7 +197,32 @@ impl OpenAiCompatProfile {
                 reasoning_effort: requested.map(|r| effort::resolve(OPENROUTER_RUNGS, r)),
                 ..Default::default()
             },
-            ThinkingDialect::None => ThinkingParams::default(),
+            ThinkingDialect::LlamaCpp | ThinkingDialect::None => ThinkingParams::default(),
+        }
+    }
+
+    /// Thinking params for a model whose effort levels are declared: each
+    /// level is sent as the same-named `reasoning_effort` value, and requests
+    /// between levels round down like any built-in ladder. The provider
+    /// client has already normalized the levels; an empty list sends nothing.
+    pub fn thinking_params_for_supported_efforts(
+        self,
+        supported_efforts: &[Effort],
+        requested: Option<Effort>,
+    ) -> ThinkingParams {
+        let ladder = self.thinking_dialect.declared_ladder(supported_efforts);
+        let level = requested.and_then(|requested| effort::resolve_level(&ladder, requested));
+        ThinkingParams {
+            reasoning_effort: level.map(|level| {
+                if supported_efforts.contains(&level) {
+                    reasoning_effort_ident(level)
+                } else {
+                    // The `min` llama.cpp's ladder adds under the declared
+                    // levels.
+                    ReasoningEffort::None
+                }
+            }),
+            ..Default::default()
         }
     }
 
@@ -234,6 +282,7 @@ impl OpenAiCompatFamily {
             Self::MiniMax => ThinkingDialect::None,
             Self::Qwen if is_qwen38(model_id) => ThinkingDialect::Qwen38ReasoningEffort,
             Self::Qwen => ThinkingDialect::QwenEnableThinking,
+            Self::LlamaCpp => ThinkingDialect::LlamaCpp,
             Self::MistralNoSystem | Self::Generic => ThinkingDialect::ReasoningEffort,
         }
     }
@@ -243,8 +292,9 @@ impl OpenAiCompatFamily {
             // Unknown OpenAI-compatible models may use strict local chat
             // templates that only accept one leading system message. Merge by
             // default; keep separate messages only for families known to
-            // support them.
-            Self::MiniMax | Self::Qwen | Self::Generic => SystemRolePolicy::Merged,
+            // support them. llama.cpp folds the one message into the first
+            // user turn itself when a template takes no system role.
+            Self::MiniMax | Self::Qwen | Self::LlamaCpp | Self::Generic => SystemRolePolicy::Merged,
             Self::MistralNoSystem => SystemRolePolicy::PrependToFirstUser,
             Self::DeepSeek | Self::Glm | Self::Kimi | Self::KimiK3 | Self::MuseSpark => {
                 SystemRolePolicy::Separate
@@ -266,6 +316,7 @@ impl OpenAiCompatFamily {
             | Self::MuseSpark
             | Self::MiniMax
             | Self::MistralNoSystem
+            | Self::LlamaCpp
             | Self::Generic => SearchPolicy::Unsupported,
         }
     }
@@ -281,6 +332,9 @@ impl OpenAiCompatFamily {
         }
         if provider == "zai" {
             return Self::Glm;
+        }
+        if provider == "local" {
+            return Self::LlamaCpp;
         }
 
         let model = model_id.to_ascii_lowercase();
@@ -403,7 +457,6 @@ fn deepseek_max_reasoning_effort(provider_id: &str, model_id: &str) -> Reasoning
     // advertise DeepSeek's native `max` spelling.
     if provider_id.eq_ignore_ascii_case("openrouter")
         && !model_id.eq_ignore_ascii_case("deepseek/deepseek-v4-pro-0813")
-        && !model_id.eq_ignore_ascii_case("deepseek/deepseek-v4.1-flash")
         && !model_id.eq_ignore_ascii_case("deepseek/deepseek-v4.1-flash-1017")
     {
         ReasoningEffort::XHigh
@@ -424,22 +477,6 @@ fn deepseek_rungs(max_reasoning_effort: ReasoningEffort) -> [(Effort, Option<Rea
     ]
 }
 
-/// Thinking params for catalog-supported efforts: each supported level is sent
-/// as the same-named `reasoning_effort` value, and requests between levels
-/// round down like any built-in ladder. The provider client has already
-/// normalized the levels; an empty list sends nothing.
-pub fn thinking_params_for_supported_efforts(
-    supported_efforts: &[Effort],
-    requested: Option<Effort>,
-) -> ThinkingParams {
-    ThinkingParams {
-        reasoning_effort: requested
-            .and_then(|requested| effort::resolve_level(supported_efforts, requested))
-            .map(reasoning_effort_ident),
-        ..Default::default()
-    }
-}
-
 /// The same-named wire value for each internal level (`min` is spelled
 /// `minimal` on the wire).
 fn reasoning_effort_ident(level: Effort) -> ReasoningEffort {
@@ -453,10 +490,19 @@ fn reasoning_effort_ident(level: Effort) -> ReasoningEffort {
     }
 }
 
-/// The distinct effort levels a compat provider+model exposes, for the UI.
-pub fn effort_levels(provider_id: &str, model_id: &str) -> Vec<Effort> {
+/// The distinct effort levels a compat provider+model exposes, for the UI:
+/// the ladder of its `declared` levels when it has them, else its family's.
+pub fn effort_levels(
+    provider_id: &str,
+    model_id: &str,
+    declared: Option<&[Effort]>,
+) -> Vec<Effort> {
     let family = OpenAiCompatFamily::from_provider_model(provider_id, model_id);
-    match family.thinking_dialect(provider_id, model_id) {
+    let dialect = family.thinking_dialect(provider_id, model_id);
+    if let Some(declared) = declared {
+        return dialect.declared_ladder(declared);
+    }
+    match dialect {
         ThinkingDialect::ThinkingObject
         | ThinkingDialect::KimiThinkingObject
         | ThinkingDialect::QwenEnableThinking => effort::levels(ON_OFF_RUNGS),
@@ -469,7 +515,7 @@ pub fn effort_levels(provider_id: &str, model_id: &str) -> Vec<Effort> {
         }
         ThinkingDialect::ReasoningEffort => effort::levels(REASONING_EFFORT_RUNGS),
         ThinkingDialect::OpenRouterHighXHigh => effort::levels(OPENROUTER_RUNGS),
-        ThinkingDialect::None => Vec::new(),
+        ThinkingDialect::LlamaCpp | ThinkingDialect::None => Vec::new(),
     }
 }
 
@@ -625,11 +671,10 @@ mod tests {
         assert!(matches!(openrouter_deepseek_ga.reasoning_effort, Some(ReasoningEffort::Max)));
         assert_eq!(openrouter_deepseek_ga.thinking.unwrap().thinking_type, "enabled");
 
-        for model in ["deepseek/deepseek-v4.1-flash", "deepseek/deepseek-v4.1-flash-1017"] {
-            let flash = profile("openrouter", model).thinking_params(Some(Effort::Max));
-            assert_eq!(flash.reasoning_effort, Some(ReasoningEffort::Max), "{model}");
-            assert_eq!(flash.thinking.unwrap().thinking_type, "enabled");
-        }
+        let flash = profile("openrouter", "deepseek/deepseek-v4.1-flash-1017")
+            .thinking_params(Some(Effort::Max));
+        assert_eq!(flash.reasoning_effort, Some(ReasoningEffort::Max));
+        assert_eq!(flash.thinking.unwrap().thinking_type, "enabled");
 
         // The middle of the DeepSeek scale rides on "high", its known-good level.
         let deepseek_mid =
@@ -791,50 +836,116 @@ mod tests {
     #[test]
     fn effort_levels_match_each_dialect() {
         assert_eq!(
-            effort_levels("openai-compatible", "qwen3.7-max"),
+            effort_levels("openai-compatible", "qwen3.7-max", None),
             vec![Effort::Min, Effort::Low],
         );
         assert_eq!(
-            effort_levels("openai-compatible", "Qwen3.8-27B-MLX"),
+            effort_levels("openai-compatible", "Qwen3.8-27B-MLX", None),
             vec![Effort::Min, Effort::Low, Effort::Medium, Effort::XHigh],
         );
         assert_eq!(
-            effort_levels("deepseek", "deepseek-v4-pro"),
+            effort_levels("deepseek", "deepseek-v4-pro", None),
             vec![Effort::Min, Effort::Medium, Effort::Max],
         );
         assert_eq!(
-            effort_levels("openrouter", "z-ai/glm-5.2"),
+            effort_levels("openrouter", "z-ai/glm-5.2", None),
             vec![Effort::Min, Effort::Low, Effort::Medium, Effort::High, Effort::XHigh],
         );
-        assert_eq!(effort_levels("zai", "glm-5.3"), vec![Effort::Low, Effort::High, Effort::Max],);
         assert_eq!(
-            effort_levels("openrouter", "z-ai/glm-5.3"),
+            effort_levels("zai", "glm-5.3", None),
             vec![Effort::Low, Effort::High, Effort::Max],
         );
         assert_eq!(
-            effort_levels("openrouter", "meta/muse-spark-1.3"),
+            effort_levels("openrouter", "z-ai/glm-5.3", None),
+            vec![Effort::Low, Effort::High, Effort::Max],
+        );
+        assert_eq!(
+            effort_levels("openrouter", "meta/muse-spark-1.3", None),
             vec![Effort::Min, Effort::Low, Effort::Medium, Effort::High, Effort::XHigh],
         );
         assert_eq!(
-            effort_levels("openai-compatible", "gpt-oss"),
+            effort_levels("openai-compatible", "gpt-oss", None),
             vec![Effort::Min, Effort::Low, Effort::Medium, Effort::High],
         );
         // The None dialect supports no effort values.
-        assert!(effort_levels("openrouter", "minimax/minimax-m3").is_empty());
+        assert!(effort_levels("openrouter", "minimax/minimax-m3", None).is_empty());
     }
 
     #[test]
     fn supported_effort_params_send_the_same_named_value() {
+        let generic = profile("openai-compatible", "gpt-oss");
         let supported_efforts = [Effort::Low, Effort::Medium, Effort::High];
         let params =
-            thinking_params_for_supported_efforts(&supported_efforts, Some(Effort::Medium));
+            generic.thinking_params_for_supported_efforts(&supported_efforts, Some(Effort::Medium));
         assert_eq!(params.reasoning_effort, Some(ReasoningEffort::Medium));
         assert!(params.thinking.is_none());
         assert!(params.enable_thinking.is_none());
         assert_eq!(
-            thinking_params_for_supported_efforts(&[Effort::Min, Effort::High], Some(Effort::Min),)
+            generic
+                .thinking_params_for_supported_efforts(
+                    &[Effort::Min, Effort::High],
+                    Some(Effort::Min)
+                )
                 .reasoning_effort,
             Some(ReasoningEffort::Minimal),
         );
+    }
+
+    /// `local` is a llama.cpp server whatever the model file is called: no
+    /// family guess, no search, and `min` sent as `none`.
+    #[test]
+    fn local_is_llama_cpp_whatever_the_model_is_called() {
+        for model in ["Qwen3.8-27B-Q4_K_M_local", "deepseek-r1-distill_local", "devstral_local"] {
+            let local = profile("local", model);
+            assert_eq!(local.thinking_dialect, ThinkingDialect::LlamaCpp);
+            assert_eq!(local.system_role, SystemRolePolicy::Merged);
+            assert_eq!(local.search, SearchPolicy::Unsupported);
+            assert!(!local.requires_assistant_reasoning);
+            assert!(effort_levels("local", model, None).is_empty());
+            assert!(effort_levels("local", model, Some(&[])).is_empty());
+
+            // Without declared levels nothing is sent.
+            let undeclared = local.thinking_params(Some(Effort::High));
+            assert!(undeclared.reasoning_effort.is_none());
+            assert!(undeclared.thinking.is_none() && undeclared.enable_thinking.is_none());
+        }
+
+        // Levels that start above `minimal` get `min` under them, sent as
+        // `none`: no thinking.
+        let model = "Qwen3.8-27B-Q4_K_M_local";
+        let local = profile("local", model);
+        let declared = [Effort::Low, Effort::Medium, Effort::XHigh];
+        assert_eq!(
+            effort_levels("local", model, Some(&declared)),
+            [Effort::Min, Effort::Low, Effort::Medium, Effort::XHigh]
+        );
+        for (requested, expected) in [
+            (Effort::Min, ReasoningEffort::None),
+            (Effort::Low, ReasoningEffort::Low),
+            (Effort::High, ReasoningEffort::Medium),
+            (Effort::Max, ReasoningEffort::XHigh),
+        ] {
+            let params = local.thinking_params_for_supported_efforts(&declared, Some(requested));
+            assert_eq!(params.reasoning_effort, Some(expected), "llama.cpp {requested}");
+        }
+        let unset = local.thinking_params_for_supported_efforts(&declared, None);
+        assert!(unset.reasoning_effort.is_none(), "unset leaves the template's default");
+
+        // A template that declares `minimal` is sent it: `none` would fall
+        // back to that template's default level.
+        let declared = [Effort::Min, Effort::Low, Effort::High];
+        assert_eq!(effort_levels("local", model, Some(&declared)), declared);
+        for (requested, expected) in [
+            (Effort::Min, ReasoningEffort::Minimal),
+            (Effort::Medium, ReasoningEffort::Low),
+            (Effort::Max, ReasoningEffort::High),
+        ] {
+            let params = local.thinking_params_for_supported_efforts(&declared, Some(requested));
+            assert_eq!(params.reasoning_effort, Some(expected), "llama.cpp {requested}");
+        }
+
+        // Other compat providers offer the declared levels as they are.
+        let declared = [Effort::Low, Effort::High];
+        assert_eq!(effort_levels("openai-compatible", "some-model", Some(&declared)), declared);
     }
 }

@@ -1,5 +1,37 @@
 # Changelog
 
+## v0.3.9 - 2026-11-23
+
+### Added
+- `compact_at` in the catalog sets the token count at which auto-compact starts for a model. Gemini 4 models start at 500,000 tokens instead of near the end of their 1M window
+- Inkling 2 Mini in the offline catalog: `ante --offline-model Inkling-2-Mini`
+- The installer shows the release version, platform and archive size before downloading, confirms the SHA256 check, and takes `--dir PATH` to choose the install directory for one run
+- Homebrew installs update through `brew upgrade`: `ante update` and the update on exit no longer install a second binary under `~/.ante/bin`
+
+### Changed
+- A reply or prompt blocked by the provider is dropped and retried with a note instead of ending the turn. An empty reply is nudged the same way. Both share the limit of 3 in a row with the other nudges
+- Headless sends the prompt as typed; the working-directory tree is no longer appended
+- Offline models take their context, vision, tool support and effort levels from the engine after a load. The effort picker shows the levels the model's chat template declares, and with no effort chosen the template's default applies. The thinking checkbox and `ante offline use --thinking` are removed
+- With no context set, llama.cpp sizes an offline model's context to fit memory, and the session uses the per-slot context the engine reports. `--context` above the model's maximum is refused, and `--context 0` clears a saved value
+- An offline load is refused when the fitted context is too small for the agent, and a model whose chat template does not describe tools loads with a warning
+- The offline engine is pinned to llama.cpp b12606 on macOS and b12607 on Linux
+- Deleted lines in diffs are no longer struck through
+
+### Fixed
+- Resuming a session in the TUI no longer takes the permission mode, model, effort, title or MCP servers from replayed history, and no longer reopens old approval prompts
+- Headless fails the run when a session start, or a `--provider`/`--model` switch on resume, is refused, instead of hanging or running on the saved provider. MCP warm-up events no longer leak into resume output
+- Gemini reports a blocked prompt as a content-policy error instead of a dropped stream
+- Compaction summary requests carry no tool definitions, so a local model can no longer answer with a tool call and leave the summary empty
+- Linux offline installs check that the CUDA or Vulkan build can see a device, and fall back to the CPU build with the reason. `ante offline install` repairs a broken engine
+- The TUI saves offline model preferences when no offline config file exists yet
+- A long queued message wraps instead of being cut off along with its `ctrl-s to steer` hint
+
+### Wire
+- `ModelSpec` gains optional `compact_at`
+
+### Crates
+- Public crates published as 0.3.9: ante-protocol-shape, ante-llm, ante-exec, ante-sdk. `ante-sdk` `Client::send` returns the op's id, and `ante-llm` `openai_compatible::effort_levels` takes the model's declared levels
+
 ## v0.3.8 - 2026-11-21
 
 ### Added

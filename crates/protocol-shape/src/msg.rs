@@ -780,6 +780,10 @@ pub struct ModelSpec {
     pub stop_sequences: Option<Vec<String>>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub context_limit: Option<u32>,
+    /// Occupancy in tokens at which auto-compact starts. The default, and
+    /// the ceiling, is a fixed share of `context_limit`.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub compact_at: Option<u32>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub effort: Option<Effort>,
     /// The effort levels this model supports when configured in the user catalog.

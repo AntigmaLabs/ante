@@ -1,6 +1,6 @@
 [package]
 name = "ante-exec"
-version = "0.3.8"
+version = "0.3.9"
 edition = "2024"
 rust-version = "1.88"
 description = "Async subprocess runner for agent runtimes: timeouts, bounded output, stdin, Unix process-group cleanup"
