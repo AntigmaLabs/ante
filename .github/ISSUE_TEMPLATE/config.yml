@@ -1,0 +1,14 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Questions and ideas
+    url: https://github.com/AntigmaLabs/ante/discussions
+    about: Ask how to do something, or talk through an idea before filing it.
+  - name: Discord
+    url: https://discord.gg/CbAsUR434B
+    about: Chat with the team and other users.
+  - name: Documentation
+    url: https://docs.antigma.ai
+    about: Guides and reference for Ante.
+  - name: Report a security vulnerability
+    url: https://github.com/AntigmaLabs/ante/security/policy
+    about: Report privately. Never open a public issue for a security problem.
