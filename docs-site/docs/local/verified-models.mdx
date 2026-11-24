@@ -23,7 +23,7 @@ ante offline use Qwen3.8-27B --context 32768
 ante --offline-model
 ```
 
-Maximum context is the model's limit, not the recommended load window. Ante caps the default window at 32K to keep memory predictable; change it in [model preferences](/local/offline#model-preferences), or with `ANTE_OFFLINE_CONTEXT` when no preferences are saved. Check the memory-fit estimate before choosing a model.
+Maximum context is the model's limit, not the load window. With no context set, llama.cpp fits the window to available memory; set one in [model preferences](/local/offline#model-preferences), or with `ANTE_OFFLINE_CONTEXT` when no context is saved. Check the memory-fit estimate before choosing a model.
 
 If an older selection is no longer in the built-in list, you can still use its local GGUF path or add your own verified entry below.
 
@@ -42,8 +42,7 @@ Ante merges `~/.ante/verified_models.json` on top of the built-in list at startu
       "filename": "model-Q4_K_M.gguf",
       "context_window": 32768,
       "file_size_mb": 5000,
-      "kv_cache_bytes_per_token": 131072,
-      "support_vision": false
+      "kv_cache_bytes_per_token": 131072
     }
   ]
 }
@@ -57,4 +56,5 @@ Ante merges `~/.ante/verified_models.json` on top of the built-in list at startu
 | `context_window` | Maximum context the model supports (tokens) |
 | `file_size_mb` | Download size in MiB, rounded up; used for memory estimation |
 | `kv_cache_bytes_per_token` | KV cache growth per context token, used for memory estimation |
-| `support_vision` | Whether the model accepts image input (optional) |
+
+Vision support, tool support, and effort levels are not listed here: Ante reads them from the engine after the model loads.

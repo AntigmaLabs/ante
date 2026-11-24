@@ -834,7 +834,7 @@ Skills 技能、子智能体或 MCP 服务器刷新时触发。`SessionStart` �
 | `messages_tokens` | `u32` | 对话消息内容 —— 未归入上述类别的全部内容 |
 | `used_tokens` | `u32` | 上下文窗口总占用 Token 数 |
 | `limit_tokens` | `u32?` | 模型上下文上限；未验证时为 `null` |
-| `compact_buffer_tokens` | `u32` | 窗口顶部预留的缓冲 Token；一旦占用进入该预留区将触发自动压缩 |
+| `compact_buffer_tokens` | `u32` | 自动压缩触发点与窗口上限之间的 Token 数；一旦占用进入该预留区将触发自动压缩。模型目录中的 `compact_at` 会下移触发点并扩大预留区 |
 
 #### Info {#info}
 

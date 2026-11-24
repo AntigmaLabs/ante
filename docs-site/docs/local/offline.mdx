@@ -15,13 +15,14 @@ Offline mode is under active development. Expect rough edges and rapid iteration
 
 When you select offline mode, Ante:
 
-1. Checks for llama.cpp and offers to install or upgrade it: a pinned, checksum-verified official build matched to your hardware. macOS uses Metal; Linux chooses the strongest compatible CPU/Vulkan feature tier, prefers a CUDA build matched to the NVIDIA compute capability, and falls back to Vulkan when the pinned release has no compatible CUDA artifact
+1. Checks for llama.cpp and offers to install or upgrade it: a pinned, checksum-verified official build matched to your hardware. macOS uses Metal; Linux chooses the strongest compatible CPU/Vulkan feature tier, prefers a CUDA build matched to the NVIDIA compute capability, and falls back to Vulkan when the pinned release has no compatible CUDA artifact. On Linux, Ante checks that a CUDA or Vulkan build can see a device and otherwise installs the CPU build, reporting why
 2. Discovers GGUF models on your system
 3. Detects llama servers already running on local ports
 4. Estimates memory requirements from model size and context window
 5. Starts and supervises one shared llama.cpp router with `llama serve`; switching managed models loads and unloads workers without restarting that process
+6. Reads the loaded model's context, vision support, tool support, and effort levels from the engine
 
-v0.3.8 uses llama.cpp `b12375` and no longer ships Linux CUDA prebuilts for `sm_86`. Those GPUs fall back to a compatible Vulkan build; you can also configure a [custom engine](/local/custom-engines).
+v0.3.9 uses llama.cpp `b12606` on macOS and `b12607` on Linux. Linux CUDA prebuilts do not cover `sm_86`; those GPUs fall back to a compatible Vulkan build; you can also configure a [custom engine](/local/custom-engines).
 
 Prefer your own llama.cpp build, extra server flags, or a server you started yourself? See [Custom Engines](/local/custom-engines).
 
@@ -35,7 +36,7 @@ Prefer your own llama.cpp build, extra server flags, or a server you started you
    /offline-mode
    ```
 
-2. **Install llama.cpp** — If not installed, Ante will prompt you to install it automatically to `~/.ante/llama.cpp`. When the pinned version changes in a new Ante release, Ante offers an upgrade. To do the same without the TUI, run [`ante offline install`](/reference/cli-reference#ante-offline): it installs the pinned build, replaces a mismatched one, and is a no-op when already current.
+2. **Install llama.cpp** — If not installed, Ante will prompt you to install it automatically to `~/.ante/llama.cpp`. When the pinned version changes in a new Ante release, Ante offers an upgrade. To do the same without the TUI, run [`ante offline install`](/reference/cli-reference#ante-offline): it installs the pinned build, replaces a mismatched or broken one, and is a no-op when already current.
 
 3. **Select a model** — Choose from:
    - **Verified models** — [curated models](/local/verified-models) downloaded from Hugging Face
@@ -122,35 +123,42 @@ Per-model settings, saved automatically in the offline config:
 
 | Setting | Description |
 |---|---|
-| `context_window` | Load context window: 8,192 tokens up to the model maximum; default cap is 32,768 |
-| `thinking` | Enable/disable thinking; stored as `thinking_enabled` in the config |
+| `context_window` | Load context window, up to the model maximum. Unset (`0`) lets llama.cpp fit the context to available memory |
 | `temperature` | Sampling temperature (0–2); unset uses the model default |
 | `extra_args` | Extra llama.cpp model options, translated into the shared router's per-model preset — see [Custom Engines](/local/custom-engines#tune-the-launch-command) |
 
 Save preferences from the CLI for the next TUI, headless, or `serve` load:
 
 ```bash
-ante offline use Qwen3.8-27B --context 16384 --thinking off --temperature 0.7
+ante offline use Qwen3.8-27B --context 65536 --temperature 0.7
 ante offline use Qwen3.8-27B --args "--threads 12"
-ante offline use Qwen3.8-27B --temperature default --args ""
+ante offline use Qwen3.8-27B --context 0 --temperature default --args ""
 ```
 
-Each option replaces only its own value and preserves the others. `--temperature default` clears the temperature override; `--args ""` clears extra options. Every `use` prints `Loads with:`, including when no preference flags are supplied.
+Each option replaces only its own value and preserves the others. `--context 0` clears the context, `--temperature default` the temperature override, and `--args ""` the extra options. Every `use` prints `Loads with:`, including when no preference flags are supplied.
 
-Before saving, `--context` and `--temperature` are range-checked. `--args` receives basic syntax checks and rejects reserved or removed options; other invalid options or values may only fail when loading a model.
+Before saving, `--context` and `--temperature` are range-checked; a context above the model's maximum is refused. `--args` receives basic syntax checks and rejects reserved or removed options; other invalid options or values may only fail when loading a model.
 
 In the config, preferences are keyed by the local file's absolute path or the verified model's download URL, available as `reference` in `list --json`.
 
+Thinking is not a load preference. Choose an effort level in the model picker instead: it lists the levels the model's chat template declares, and with no effort chosen the template's default applies.
+
+## After a load
+
+Once a model loads, Ante takes its context, vision support, tool support, and effort levels from the engine. The session uses the per-slot context llama.cpp reports, which can be smaller than the requested window.
+
+When no context is set, llama.cpp sizes it to fit memory. If the fitted context is too small for the agent (32,768 tokens, or the model's maximum if lower), the load is refused; free memory or pick a smaller model. A context you set yourself is always used. A model whose chat template does not describe tools still loads, with a warning that it is not shown Ante's tools.
+
 ## Vision models
 
-If a multimodal projector file (`mmproj-*.gguf`) sits next to the model file, Ante attaches it automatically at launch, and the model accepts images in chat.
+If a multimodal projector file (`mmproj-*.gguf`) sits next to the model file, Ante attaches it automatically at launch. When the engine reports vision support, the model accepts images in chat.
 
 ## Memory considerations
 
 Ante estimates memory usage based on model file size, KV cache (scales with context window), and shard count.
 
 :::tip
-For large models, lower the load window with `ante offline use <MODEL> --context 8192` to reduce memory use. 8,192 tokens is the minimum setting; 32,768 is the default cap. The memory-fit estimate in `list` uses a 32K context, not the per-model saved load window.
+With no context set, llama.cpp fits the context to available memory. To cap memory use on a large model, set a window with `ante offline use <MODEL> --context 32768`. The memory-fit estimate in `list` uses a 32K context, not the per-model saved load window.
 :::
 
 ## Server management
@@ -182,7 +190,6 @@ All offline mode configuration is stored in `~/.ante/offline-config.json`:
     "/models/model.gguf": {
       "model_id": "/models/model.gguf",
       "context_window": 32768,
-      "thinking_enabled": true,
       "temperature": 0.7,
       "extra_args": "--threads 12"
     }
@@ -204,4 +211,4 @@ Per-model preferences are read during discovery. After editing `offline-config.j
 
 | Variable | Description |
 |---|---|
-| `ANTE_OFFLINE_CONTEXT` | Override the initial context window in tokens when a model has no saved preferences (default cap: 32K). To change an existing preference, use `ante offline use <MODEL> --context <TOKENS>` |
+| `ANTE_OFFLINE_CONTEXT` | Context window in tokens for a model with no saved context; ignored above the model's maximum. Unset, llama.cpp fits the context to memory. To save a per-model context, use `ante offline use <MODEL> --context <TOKENS>` |

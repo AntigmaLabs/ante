@@ -6,7 +6,7 @@ description: "保持 Ante 为最新版本，并选择符合需求的发布通道
 
 Ante 以单一二进制文件分发并支持原地自我更新 —— 首次安装使用的 `install.sh` 脚本会被 `ante update` 针对当前二进制追踪的通道重新运行。
 
-本指南对应 **v0.3.8**。运行 `ante --version` 可查看已安装版本。
+本指南对应 **v0.3.9**。运行 `ante --version` 可查看已安装版本。
 
 ## 检查与更新 {#update}
 
@@ -18,9 +18,13 @@ ante update
 
 若存在新版本，Ante 会运行对应通道的安装程序，并在安装就绪后打印新版本号。重启 Ante 即可使用新版本。
 
-发布清单提供下载大小时，安装程序会在下载行显示该大小，并在验证新二进制文件后替换现有文件。下载或验证失败时，现有二进制文件会保留。
+安装程序会在下载前显示发布版本、平台和下载大小，确认 SHA256 校验结果，并在验证新二进制文件后替换现有文件。下载或验证失败时，现有二进制文件会保留。
 
 如果当前已是最新版本，Ante 会打印确认信息并退出，不会修改二进制文件。
+
+### Homebrew 安装 {#homebrew-installs}
+
+如果 Ante 是通过 `brew install antigmalabs/tap/ante` 安装的，`ante update` 和退出时的自动更新会运行 `brew upgrade antigmalabs/tap/ante` 而非安装脚本，因此不会在 `~/.ante/bin` 中再落下第二个二进制文件。Homebrew 安装仅跟踪 `stable`；`--version` 及其他通道会被拒绝。如需锁定版本或跟随 `nightly`，请改用下文的独立安装脚本。
 
 ### 在 TUI 终端界面中更新 {#update-from-the-tui}
 
@@ -37,8 +41,8 @@ ante update
 使用 `--version` 安装指定版本：
 
 ```bash
-ante update --version v0.3.8
-ante update --version 0.3.8
+ante update --version v0.3.9
+ante update --version 0.3.9
 ```
 
 该方式会跳过通道的“版本更新校验”，因此可用于升级、重新安装当前版本，或回滚到已发布的历史版本。回滚时，Ante 会记录您回滚前的版本，避免后台更新提示立即建议重新安装。
@@ -93,11 +97,14 @@ curl -fsSL https://ante.run/install.sh | bash -s -- nightly
 
 不带参数时，安装脚本默认采用 `stable`。
 
-默认情况下安装程序会将二进制文件写入 `~/.ante/bin`。若想安装到已在 `PATH` 中的其他目录，可设置 `ANTE_INSTALL_DIR`：
+默认情况下安装程序会将二进制文件写入 `~/.ante/bin`。若想单次安装到已在 `PATH` 中的其他目录，可传入 `--dir PATH`，或设置 `ANTE_INSTALL_DIR`：
 
 ```bash
+curl -fsSL https://ante.run/install.sh | bash -s -- --dir ~/.local/bin
 curl -fsSL https://ante.run/install.sh | ANTE_INSTALL_DIR=/usr/local/bin bash
 ```
+
+`--dir` 优先于 `ANTE_INSTALL_DIR`。`ante update` 会重新安装到 `ANTE_INSTALL_DIR`，因此若希望后续更新使用同一目录，请导出（export）该变量。
 
 安装程序会为支持的 Shell（Bash、Zsh、Fish、sh 和 ash）配置 `PATH`。打开新终端后可直接运行 `ante`；如需在当前终端立即启动，请使用安装程序打印的完整路径。在 GitHub Actions 中，安装目录也会写入 `GITHUB_PATH`，供后续步骤使用。
 

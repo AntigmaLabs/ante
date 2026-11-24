@@ -6,7 +6,7 @@ description: "Keep Ante up to date and pick the release channel that fits your a
 
 Ante ships as a single binary and updates itself in place — the same `install.sh` script that performs the first install is re-run by `ante update` against the channel this binary tracks.
 
-This guide targets **v0.3.8**. Check your installed version with `ante --version`.
+This guide targets **v0.3.9**. Check your installed version with `ante --version`.
 
 ## Update
 
@@ -18,9 +18,13 @@ ante update
 
 If a newer version exists, Ante runs the installer for the same channel and prints the new version once it is in place. Restart Ante to start using it.
 
-The installer shows the download size when the release manifest provides it and verifies the replacement binary before swapping it into place. A failed download or verification leaves the existing binary intact.
+The installer shows the release version, platform, and download size before downloading, confirms the SHA256 check, and verifies the replacement binary before swapping it into place. A failed download or verification leaves the existing binary intact.
 
 If you are already on the latest version, Ante prints a confirmation and exits without touching the binary.
+
+### Homebrew installs
+
+If Ante was installed with `brew install antigmalabs/tap/ante`, `ante update` and the update on exit run `brew upgrade antigmalabs/tap/ante` instead of the installer, so no second binary lands in `~/.ante/bin`. Homebrew installs track `stable`; `--version` and other channels are refused. To pin a version or follow `nightly`, switch to the standalone installer below.
 
 ### Update from the TUI
 
@@ -37,8 +41,8 @@ The install choice is scoped to the running session. Ante applies an accepted up
 Install an exact release with `--version`:
 
 ```bash
-ante update --version v0.3.8
-ante update --version 0.3.8
+ante update --version v0.3.9
+ante update --version 0.3.9
 ```
 
 This bypasses the channel's "newer than current" check, so it can upgrade, reinstall the current version, or roll back to an older published release. When rolling back, Ante remembers the version you left so the next background update notice does not immediately offer to reinstall it.
@@ -93,11 +97,14 @@ curl -fsSL https://ante.run/install.sh | bash -s -- nightly
 
 Without an argument, the installer uses `stable`.
 
-By default the installer writes the binary to `~/.ante/bin`. Set `ANTE_INSTALL_DIR` to install into a directory that is already on your `PATH`:
+By default the installer writes the binary to `~/.ante/bin`. Pass `--dir PATH` to install into a directory that is already on your `PATH` for one run, or set `ANTE_INSTALL_DIR`:
 
 ```bash
+curl -fsSL https://ante.run/install.sh | bash -s -- --dir ~/.local/bin
 curl -fsSL https://ante.run/install.sh | ANTE_INSTALL_DIR=/usr/local/bin bash
 ```
+
+`--dir` overrides `ANTE_INSTALL_DIR`. `ante update` reinstalls into `ANTE_INSTALL_DIR`, so export it if you want later updates to use the same directory.
 
 The installer configures `PATH` for supported shells (Bash, Zsh, Fish, sh, and ash). Open a new terminal to use `ante`, or run the full path printed by the installer in your current terminal. It also adds the install directory to `GITHUB_PATH` in GitHub Actions for later steps.
 

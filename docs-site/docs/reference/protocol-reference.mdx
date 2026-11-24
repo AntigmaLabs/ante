@@ -833,7 +833,7 @@ Answer to the [`ContextReport`](#contextreport) operation: a per-category breakd
 | `messages_tokens` | `u32` | Conversation messages — everything not attributed to a category above |
 | `used_tokens` | `u32` | Total context-window occupancy |
 | `limit_tokens` | `u32?` | Model context limit; `null` when unverified |
-| `compact_buffer_tokens` | `u32` | Tokens reserved at the top of the window; auto-compaction triggers once occupancy grows into this reserve |
+| `compact_buffer_tokens` | `u32` | Tokens between the auto-compact point and the window limit; auto-compaction triggers once occupancy grows into this reserve. A model's catalog `compact_at` moves the point down and enlarges the reserve |
 
 #### Info
 

@@ -519,6 +519,7 @@ A model is described inside a provider's `preferred_models`. On a built-in provi
 | `max_tokens` | Maximum output tokens per turn. On `AnthropicMessage` providers that take an explicit thinking budget, it must exceed 1024 — the API's minimum budget — when an effort level is set. |
 | `stop_sequences` | List of strings that end generation. |
 | `context_limit` | Context window size, in tokens. |
+| `compact_at` | Context occupancy, in tokens, at which auto-compact starts. Defaults to, and is capped at, 90% of `context_limit`; compaction targets scale down with it. Built-in Gemini 4 models set `500000`. Not validated: a very low value compacts on every step. |
 | `effort` | Default [effort level](/usage/models-and-thinking#effort) — `min`, `low`, `medium`, `high`, `xhigh`, or `max`. Omit for models with no reasoning knob (Ante then sends no effort parameter and hides the effort slider). |
 | `supported_efforts` | Levels the model accepts (same values as `effort`). Each API uses the declared levels it can express. An empty list disables the effort parameter. Omit the field to use the built-in levels. |
 | `weight_class` | Size/cost tier — `Feather`, `Middle`, or `Heavy`. Drives automatic default and auxiliary model selection (see [Weight classes](#weight-classes)). |

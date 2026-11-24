@@ -53,7 +53,6 @@ ante offline use Qwen3.8-27B --args "--threads 12 --load-mode mmap --cache-type-
     "/models/Qwen3.6-27B-Q4_K_M.gguf": {
       "model_id": "/models/Qwen3.6-27B-Q4_K_M.gguf",
       "context_window": 32768,
-      "thinking_enabled": true,
       "extra_args": "--threads 12 --load-mode mmap --cache-type-k q8_0"
     }
   }
@@ -62,7 +61,7 @@ ante offline use Qwen3.8-27B --args "--threads 12 --load-mode mmap --cache-type-
 
 请使用已安装 llama.cpp 版本支持的选项。`ante offline use` 会检查基本语法，并拒绝 `--host`、`--port`、`--model`、`--alias` 等保留选项。其他无效选项或参数值可能到加载模型时才报错。
 
-Ante v0.3.8 固定使用 llama.cpp `b12375`。旧加载参数 `--mlock`、`--mmap`、`--no-mmap`、`--dio` / `--direct-io` 与 `--ndio` / `--no-direct-io` 已被拒绝。请将已保存的 `extra_args` 中这些参数替换为 `--load-mode` 与引擎支持的模式，例如上面的 `--load-mode mmap`。
+Ante v0.3.9 固定使用 llama.cpp 版本：macOS 为 `b12606`，Linux 为 `b12607`。旧加载参数 `--mlock`、`--mmap`、`--no-mmap`、`--dio` / `--direct-io` 与 `--ndio` / `--no-direct-io` 已被拒绝。请将已保存的 `extra_args` 中这些参数替换为 `--load-mode` 与引擎支持的模式，例如上面的 `--load-mode mmap`。
 
 **GPU 卸载层数。** `llama_cpp.server_defaults.gpu_layers` 控制 `-ngl` 参数。默认 `-1` 代表将所有网络层卸载至 GPU；若显存紧张可适当调小数值：
 

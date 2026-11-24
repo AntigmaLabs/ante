@@ -154,6 +154,8 @@ while let Some(event) = client.next_event().await {
 client.close().await;
 ```
 
+`Client::send` returns the `Id` the op was stamped with, which is the `parent` of every event that answers it. Ignore it with `;` when you do not need to match replies.
+
 An `Endpoint` names where a host is reachable — never a session. Which session a connection drives is decided by the ops sent over it (`StartSession`, `ResumeSession`):
 
 | Endpoint | What the client does | Host lifetime |

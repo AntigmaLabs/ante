@@ -24,7 +24,7 @@ ante offline use Qwen3.8-27B --context 32768
 ante --offline-model
 ```
 
-“最大上下文”是模型支持的上限，不是建议加载窗口。Ante 默认将上下文限制为 32K 以控制内存需求；可通过[模型偏好](/local/offline#model-preferences)调整，或在没有已保存偏好时设置 `ANTE_OFFLINE_CONTEXT`。选择模型前请查看实际内存适配估算。
+“最大上下文”是模型支持的上限，不是加载窗口。未设置上下文时，llama.cpp 会根据可用内存自动适配窗口；可通过[模型偏好](/local/offline#model-preferences)设置，或在没有已保存上下文时设置 `ANTE_OFFLINE_CONTEXT`。选择模型前请查看实际内存适配估算。
 
 如果之前选择的模型已不在内置列表中，可通过本地 GGUF 路径继续使用，或按下文添加自己的验证条目。
 
@@ -43,8 +43,7 @@ Ante 在启动时会自动将 `~/.ante/verified_models.json` 合并到内置推�
       "filename": "model-Q4_K_M.gguf",
       "context_window": 32768,
       "file_size_mb": 5000,
-      "kv_cache_bytes_per_token": 131072,
-      "support_vision": false
+      "kv_cache_bytes_per_token": 131072
     }
   ]
 }
@@ -58,4 +57,5 @@ Ante 在启动时会自动将 `~/.ante/verified_models.json` 合并到内置推�
 | `context_window` | 模型支持的最大上下文（Token 数） |
 | `file_size_mb` | 下载大小，以 MiB 向上取整，用于内存估算 |
 | `kv_cache_bytes_per_token` | 每个上下文 Token 的 KV 缓存增长量，用于内存估算 |
-| `support_vision` | 模型是否支持图片输入（可选） |
+
+视觉支持、工具支持和思考深度等级无需在此列出：Ante 会在模型加载后从引擎读取。

@@ -155,6 +155,8 @@ while let Some(event) = client.next_event().await {
 client.close().await;
 ```
 
+`Client::send` 返回该 op 被标记的 `Id`，它也是所有响应该 op 的事件的 `parent`。不需要匹配回复时，用 `;` 忽略即可。
+
 `Endpoint` 描述的是宿主在哪里可达 —— 而非某个会话。连接驱动哪个会话，由其上发送的 op（`StartSession`、`ResumeSession`）决定：
 
 | Endpoint | 客户端行为 | 宿主生命周期 |

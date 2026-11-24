@@ -243,7 +243,7 @@ ante update [OPTIONS] [CHANNEL]
 | 参数标识 | 说明 |
 |---|---|
 | `--channel <CHANNEL>` | 更新追踪的发布通道。等同于位置参数形式。 |
-| `--version <VERSION>` | 安装指定的具体发布版本而非通道最新版。支持带或不带前缀 `v`（如 `v0.3.8` 或 `0.3.8`）。与通道参数互斥。 |
+| `--version <VERSION>` | 安装指定的具体发布版本而非通道最新版。支持带或不带前缀 `v`（如 `v0.3.9` 或 `0.3.9`）。与通道参数互斥。 |
 | `-h`, `--help` | 打印帮助信息。 |
 
 ### 使用示例 {#ante-update-examples}
@@ -252,8 +252,10 @@ ante update [OPTIONS] [CHANNEL]
 ante update
 ante update nightly
 ante update --channel stable
-ante update --version v0.3.8
+ante update --version v0.3.9
 ```
+
+通过 Homebrew 安装（`brew install antigmalabs/tap/ante`）时，更新通过 `brew upgrade antigmalabs/tap/ante` 完成，仅跟踪 `stable`，并拒绝 `--version` 及其他通道。
 
 ## `ante offline` {#ante-offline}
 
@@ -265,7 +267,7 @@ ante offline <COMMAND>
 
 | 子命令 | 说明 |
 |---|---|
-| `install` | 下载并安装 Ante 固定版本的 llama.cpp 运行时。已是当前版本时不做修改，否则替换不匹配或未记录版本的安装。 |
+| `install` | 下载并安装 Ante 固定版本的 llama.cpp 运行时。已是当前版本时不做修改，否则替换不匹配、未记录版本或已损坏的安装。 |
 | `status [--json]` | 显示引擎版本与路径、模型目录、默认模型、托管路由器、其他本地服务及可用内存。 |
 | `list [--json]` | 列出本地 GGUF 与验证模型，包含大小、最大上下文、内存适配估算和默认标记。JSON 中的 `reference` 可直接传给 `use` 或 `--offline-model`。 |
 | `use <MODEL> [OPTIONS]` | 保存默认模型及指定的加载偏好，不启动引擎或下载模型。每次都会输出 `Loads with:` 配置摘要。 |
@@ -273,16 +275,15 @@ ante offline <COMMAND>
 
 `MODEL` 接受 GGUF 路径、已发现的文件名或验证模型名称/URL（见 `ante offline list`）。裸 `--offline-model` 使用 `use` 保存的默认模型；尚未设置时会报错并提示先设置默认值。验证模型在首次加载时下载，`use` 本身不下载。
 
-`use` 的加载选项（v0.2.12）：
+`use` 的加载选项：
 
 | 选项 | 说明 |
 |---|---|
-| `--context <TOKENS>` | 上下文窗口，从 `8192` 到模型支持的最大值。 |
-| `--thinking on` / `--thinking off` | 开启或关闭思考。 |
+| `--context <TOKENS>` | 上下文窗口，最大为模型支持的上限。`0` 表示清除，此时加载会使用已设置的 `ANTE_OFFLINE_CONTEXT`，否则根据可用内存自动适配。 |
 | `--temperature <T>` | 采样温度，范围 `0`–`2`；传入 `default` 清除已保存的覆盖值。 |
 | `--args "<OPTIONS>"` | 替换额外 llama.cpp 选项；支持 Shell 风格引号。传入 `--args ""` 清除。 |
 
-每个选项只替换自己的保存值，其余偏好保留。保存前会检查上下文与温度选项的取值范围。额外参数只进行基本语法检查，并拒绝保留或已移除的选项；其他错误可能到加载模型时才出现。偏好适用于后续 TUI、无头及 `serve` 加载；完整说明见[模型偏好](/local/offline#model-preferences)。
+每个选项只替换自己的保存值，其余偏好保留。思考通过每个会话的思考深度等级设置，而非在此处。保存前会检查上下文与温度选项的取值范围。额外参数只进行基本语法检查，并拒绝保留或已移除的选项；其他错误可能到加载模型时才出现。偏好适用于后续 TUI、无头及 `serve` 加载；完整说明见[模型偏好](/local/offline#model-preferences)。
 
 ### 使用示例 {#ante-offline-examples}
 
@@ -290,7 +291,7 @@ ante offline <COMMAND>
 ante offline install
 ante offline status
 ante offline list --json
-ante offline use Qwen3.8-27B --context 32768 --thinking off --temperature 0.7
+ante offline use Qwen3.8-27B --context 32768 --temperature 0.7
 ante --offline-model
 ante --offline-model -p "Explain this code"
 ante serve --sock --offline-model

@@ -513,6 +513,7 @@ OAuth Profile 是一次登录的配置方案。内置的有 `anthropic`、`opena
 | `max_tokens` | 单轮最大输出 Token 数。在需要显式思考预算的 `AnthropicMessage` 提供商上，设置思考等级时必须大于 1024 —— API 的最低预算要求 |
 | `stop_sequences` | 停止生成的标记字符串列表 |
 | `context_limit` | 上下文窗口上限（Token 数） |
+| `compact_at` | 开始自动压缩时的上下文占用量（Token 数）。默认值和上限均为 `context_limit` 的 90%；压缩目标随之按比例缩小。内置 Gemini 4 模型设为 `500000`。该值不做校验：设得过低会导致每一步都进行压缩。 |
 | `effort` | 默认[思考深度等级](/usage/models-and-thinking#effort) —— `min`、`low`、`medium`、`high`、`xhigh` 或 `max`。不支持推理调节的模型请省略（Ante 不会发送 effort 参数并隐藏滑块） |
 | `supported_efforts` | 模型接受的思考档位（取值同 `effort`）。所有协议都按声明且可表达的档位取值。空列表关闭思考档位参数，省略字段则使用内置档位。 |
 | `weight_class` | 规模/成本等级 —— `Feather`（轻量/快速/低成本）、`Middle`（中等）或 `Heavy`（最大/能力最强）。驱动默认模型与辅助模型选取（参见[权重等级](#weight-classes)） |

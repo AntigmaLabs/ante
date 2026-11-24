@@ -18,13 +18,14 @@ Ante 通过原生管理的 [llama.cpp](https://github.com/ggml-org/llama.cpp) �
 
 当您选择离线模式时，Ante 会自动：
 
-1. 检查 llama.cpp 运行时，并提供安装或升级服务：拉取与当前硬件架构（Apple Silicon Metal；Linux CUDA、Vulkan 或 CPU）严格匹配且经过校验和验证的官方固定版本
+1. 检查 llama.cpp 运行时，并提供安装或升级服务：拉取与当前硬件架构（Apple Silicon Metal；Linux CUDA、Vulkan 或 CPU）严格匹配且经过校验和验证的官方固定版本。在 Linux 上，Ante 会检查 CUDA 或 Vulkan 构建能否识别到设备，若不能则改装 CPU 构建并说明原因
 2. 扫描并发现系统中的 GGUF 模型文件
 3. 检测本地端口上已在运行的 llama 服务端
 4. 根据模型文件大小与上下文窗口自动预估内存/显存需求
 5. 通过 `llama serve` 启动并监管单个共享 llama.cpp 路由器；切换托管模型时只加载或卸载 Worker，无需重启该进程
+6. 从引擎读取已加载模型的上下文、视觉支持、工具支持及思考深度等级
 
-v0.3.8 使用 llama.cpp `b12375`，Linux CUDA 预编译包不再包含 `sm_86`。对应 GPU 会回退到兼容的 Vulkan 构建；如需其他构建，可配置[自定义引擎](/local/custom-engines)。
+v0.3.9 使用 llama.cpp 版本：macOS 为 `b12606`，Linux 为 `b12607`。Linux CUDA 预编译包不包含 `sm_86`；对应 GPU 会回退到兼容的 Vulkan 构建；如需其他构建，可配置[自定义引擎](/local/custom-engines)。
 
 若希望使用自定义的 llama.cpp 构建版本、指定专属启动参数或接入已启动的服务，请参见[自定义引擎](/local/custom-engines)。
 
@@ -38,7 +39,7 @@ v0.3.8 使用 llama.cpp `b12375`，Linux CUDA 预编译包不再包含 `sm_86`�
    /offline-mode
    ```
 
-2. **安装 llama.cpp** — 若尚未安装，Ante 会提示自动安装至 `~/.ante/llama.cpp`。当 Ante 新版本更新了固定引擎版本时，也会提示一键升级。在非交互环境下可直接运行 [`ante offline install`](/reference/cli-reference#ante-offline)：它会安装固定版本，替换不匹配的版本，并在已是最新时直接退出。
+2. **安装 llama.cpp** — 若尚未安装，Ante 会提示自动安装至 `~/.ante/llama.cpp`。当 Ante 新版本更新了固定引擎版本时，也会提示一键升级。在非交互环境下可直接运行 [`ante offline install`](/reference/cli-reference#ante-offline)：它会安装固定版本，替换不匹配或已损坏的版本，并在已是最新时直接退出。
 
 3. **选择模型** — 支持三种来源：
    - **推荐验证模型** — 从 Hugging Face 直接下载[官方验证推荐的模型](/local/verified-models)
@@ -125,35 +126,42 @@ Ante 会自动扫描以下目录中的 GGUF 模型文件：
 
 | 设置项 | 说明 |
 |---|---|
-| `context_window` | 加载上下文窗口：8,192 Token 至模型最大值；默认上限为 32,768 |
-| `thinking` | 开启/关闭思考；配置文件中的字段为 `thinking_enabled` |
+| `context_window` | 加载上下文窗口，最大为模型上限。未设置（`0`）时由 llama.cpp 根据可用内存自动适配上下文 |
 | `temperature` | 采样温度（0–2）；未设置时采用模型默认值 |
 | `extra_args` | 额外的 llama.cpp 模型选项，会转换为共享路由器的按模型预设 —— 参见[自定义引擎](/local/custom-engines#tune-the-launch-command) |
 
 也可通过 CLI 保存偏好，供下次 TUI、无头或 `serve` 加载时使用：
 
 ```bash
-ante offline use Qwen3.8-27B --context 16384 --thinking off --temperature 0.7
+ante offline use Qwen3.8-27B --context 65536 --temperature 0.7
 ante offline use Qwen3.8-27B --args "--threads 12"
-ante offline use Qwen3.8-27B --temperature default --args ""
+ante offline use Qwen3.8-27B --context 0 --temperature default --args ""
 ```
 
-每个选项只替换自己的值，其余保存值保留。`--temperature default` 清除温度覆盖，`--args ""` 清除额外参数。每次 `use` 都会输出 `Loads with:`，即使没有传入偏好选项。
+每个选项只替换自己的值，其余保存值保留。`--context 0` 清除上下文，`--temperature default` 清除温度覆盖，`--args ""` 清除额外参数。每次 `use` 都会输出 `Loads with:`，即使没有传入偏好选项。
 
-保存前会检查 `--context` 和 `--temperature` 的取值范围。`--args` 只进行基本语法检查，并拒绝保留或已移除的选项；其他无效选项或参数值可能到加载模型时才报错。
+保存前会检查 `--context` 和 `--temperature` 的取值范围；超过模型最大值的上下文会被拒绝。`--args` 只进行基本语法检查，并拒绝保留或已移除的选项；其他无效选项或参数值可能到加载模型时才报错。
 
 配置中的偏好键为本地文件绝对路径或验证模型下载 URL，可从 `list --json` 的 `reference` 字段取得。
 
+思考不是加载偏好。请改在模型选择器中选择思考深度等级：选择器会列出模型聊天模板声明的等级；未选择时使用模板的默认值。
+
+## 加载之后 {#after-a-load}
+
+模型加载后，Ante 从引擎获取其上下文、视觉支持、工具支持及思考深度等级。会话使用 llama.cpp 报告的单槽（per-slot）上下文，可能小于请求的窗口。
+
+未设置上下文时，llama.cpp 会根据内存自动确定其大小。若适配出的上下文对智能体而言过小（32,768 Token，若模型最大值更低则以其为准），加载会被拒绝；请释放内存或改选更小的模型。您自行设置的上下文始终会被采用。若模型的聊天模板未描述工具，模型仍会加载，但会警告其看不到 Ante 的工具。
+
 ## 视觉多模态模型 {#vision-models}
 
-若模型文件同级目录下存在多模态投影文件（`mmproj-*.gguf`），Ante 会在启动时自动挂载，模型将在对话中支持接收图片。
+若模型文件同级目录下存在多模态投影文件（`mmproj-*.gguf`），Ante 会在启动时自动挂载。当引擎报告支持视觉时，模型可在对话中接收图片。
 
 ## 内存显存考量 {#memory-considerations}
 
 Ante 根据模型文件大小、KV 缓存（随上下文窗口伸缩）及分片数量综合估算内存占用。
 
 :::tip
-对于大模型，可通过 `ante offline use <MODEL> --context 8192` 降低加载窗口以节省内存。8,192 Token 是可设置的最小值，32,768 是默认上限。`list` 的内存适配估算按 32K 上下文计算，不反映逐模型保存的加载窗口。
+未设置上下文时，llama.cpp 会根据可用内存自动适配上下文。如需限制大模型的内存占用，可通过 `ante offline use <MODEL> --context 32768` 设置窗口。`list` 的内存适配估算按 32K 上下文计算，不反映逐模型保存的加载窗口。
 :::
 
 ## 本地服务管理 {#server-management}
@@ -185,7 +193,6 @@ Ante 根据模型文件大小、KV 缓存（随上下文窗口伸缩）及分片
     "/models/model.gguf": {
       "model_id": "/models/model.gguf",
       "context_window": 32768,
-      "thinking_enabled": true,
       "temperature": 0.7,
       "extra_args": "--threads 12"
     }
@@ -207,4 +214,4 @@ Ante 根据模型文件大小、KV 缓存（随上下文窗口伸缩）及分片
 
 | 环境变量 | 说明 |
 |---|---|
-| `ANTE_OFFLINE_CONTEXT` | 在模型没有已保存偏好时覆盖初始上下文窗口（Token 数），默认上限为 32K。已有偏好请通过 `ante offline use <MODEL> --context <TOKENS>` 修改 |
+| `ANTE_OFFLINE_CONTEXT` | 用于未保存上下文的模型的上下文窗口（Token 数）；超过模型最大值时忽略。未设置时由 llama.cpp 根据内存自动适配上下文。如需按模型保存上下文，请使用 `ante offline use <MODEL> --context <TOKENS>` |

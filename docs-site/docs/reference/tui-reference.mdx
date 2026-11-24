@@ -68,9 +68,9 @@ In the main chat, contiguous quiet calls such as Bash, Read, Grep, Glob, WebFetc
 
 After compaction — manual `/compact` or [automatic](/configuration/preference#settings-file) — the conversation shows a collapsed compaction marker. Earlier history remains visible for reference while the model uses a summary of older context alongside recent conversation and your messages. The transcript view shows the full summary. To focus the summary on a topic, add instructions such as `/compact focus on the API changes`. When no summary is needed, an info line reports any trimmed tool results instead.
 
-If a reply contains only thinking, with no answer or tool call, Ante leaves it out of the saved conversation and asks the model to continue. These retries share a limit of three consecutive nudges with output-limit continuations. Tool calls completed before a `max_tokens` cutoff still run; only calls cut off inside their arguments are dropped. Anthropic web searches that pause a turn are also resumed automatically, up to three times.
+If a reply has no answer and no tool call — only thinking, or nothing at all — Ante leaves it out of the saved conversation and asks the model to continue. A reply or prompt blocked by the provider (a refusal or content-policy stop) is dropped the same way and retried with a note. These retries share a limit of three consecutive nudges with output-limit continuations, and a productive reply resets the count. Tool calls completed before a `max_tokens` cutoff still run; only calls cut off inside their arguments are dropped. Anthropic web searches that pause a turn are also resumed automatically, up to three times.
 
-If a model ends its turn with no output at all, Ante shows `The model ended its turn without a reply.` without saving a placeholder response. Other unexpected empty replies are retried through the normal reconnect path.
+If the model still ends its turn with no output once the nudges are used up, Ante shows `The model ended its turn without a reply.` without saving a placeholder response. Past the limit, a refusal keeps its partial reply and ends the turn, and a content-policy error fails it. Other unexpected empty replies are retried through the normal reconnect path.
 
 ### Selecting and copying text
 

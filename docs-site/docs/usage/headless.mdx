@@ -110,9 +110,9 @@ The verification pass will:
 2. Complete anything missing or incomplete
 3. Optimize where possible without affecting correctness
 
-## Context enrichment
+## Prompt
 
-In headless mode, Ante automatically appends the current directory's folder structure to your prompt. This gives the agent awareness of the project layout without you needing to describe it.
+Headless sends the prompt exactly as given; the agent explores the working directory with its own tools. To include a directory listing up front, mention it with `@path/to/dir/`.
 
 ## Headless behavior notes
 

@@ -15,11 +15,12 @@ Ante is distributed as a single, self-contained binary with no external dependen
 curl -fsSL https://ante.run/install.sh | bash
 ```
 
-By default this installs to `~/.ante/bin` and configures your shell's `PATH`. Open a new terminal to run `ante`, or use `~/.ante/bin/ante` immediately in the current terminal. Run `ante --version` to check the installation; this guide targets **v0.3.8**.
+By default this installs to `~/.ante/bin` and configures your shell's `PATH`. Open a new terminal to run `ante`, or use `~/.ante/bin/ante` immediately in the current terminal. Run `ante --version` to check the installation; this guide targets **v0.3.9**.
 
-To install somewhere else, set `ANTE_INSTALL_DIR`:
+The installer shows the release version, platform, and download size, then confirms the SHA256 check. To install somewhere else, pass `--dir PATH` or set `ANTE_INSTALL_DIR`:
 
 ```sh
+curl -fsSL https://ante.run/install.sh | bash -s -- --dir ~/.local/bin
 curl -fsSL https://ante.run/install.sh | ANTE_INSTALL_DIR=/usr/local/bin bash
 ```
 
@@ -92,7 +93,7 @@ ante update
 ante update nightly
 
 # Roll back or pin to an exact release
-ante update --version v0.3.8
+ante update --version v0.3.9
 ```
 
 ## What's next?

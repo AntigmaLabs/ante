@@ -111,9 +111,9 @@ ante --check -p "refactor the auth module to use async/await"
 2. 补全任何缺失或未完成的部分
 3. 在不影响正确性的前提下尽可能优化
 
-## 上下文自动补充（Context enrichment） {#context-enrichment}
+## 提示词（Prompt） {#prompt}
 
-在无头模式下，Ante 会自动将当前目录的文件夹结构追加到您的提示词中。这使得智能体能够直接感知项目布局，而无需您手动描述。
+无头模式会原样发送提示词；智能体使用自身工具探索工作目录。如需预先附带目录列表，可用 `@path/to/dir/` 引用该目录。
 
 ## 无头模式行为特性（Headless behavior notes） {#headless-behavior-notes}
 
