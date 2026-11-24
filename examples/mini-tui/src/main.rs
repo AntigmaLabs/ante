@@ -61,7 +61,9 @@ async fn run(
         };
         match op {
             Some(Op::Shutdown) => break,
-            Some(op) => client.send(op).await?,
+            Some(op) => {
+                client.send(op).await?;
+            }
             None => {}
         }
     }
