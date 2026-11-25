@@ -30,11 +30,14 @@ Ante makes this declarative: [one settings profile](#one-binary-many-agents) can
 
 ### 🥇 Continuously evaluated and evolved in public
 
-**We keep up with the frontier so you don't have to.** New models and harder benchmarks land every few weeks. We run each one through the same public eval, so the Ante you install has already been measured against them.
+**We keep up with the frontier so you don't have to.** For more than a year, we have run Ante through every new version of Terminal-Bench as it landed, and kept it at the frontier:
 
-Our primary benchmark is now [Terminal-Bench 4.1](https://antigma.ai/eval). We hold Ante to the same official standard as the frontier labs' own agents: every task keeps the benchmark's timeout and sandbox resource limits. We evaluate it as a harness across model families instead of coupling it to one hero model. Each result pins the exact Ante build you can download and links the raw Harbor run for independent audit. Latest: **40.9%** with **DeepSeek V4.1 Flash 1017** (Ante 0.3.5, about $38 of inference). The verified Claude Code row for the same model reads 38.5%.
+- **[Terminal-Bench 4.1](https://antigma.ai/eval)** (current): **65.6% with Gemini 4 Neon, beating Google's native Antigravity CLI on the same model** (61.2%). With DeepSeek V4.1 Flash 1017, 40.9% against the verified Claude Code row's 38.5%.
+- **Terminal-Bench 2.1**: 83.9% with open-weight DeepSeek V4.1 Flash for about $18 of inference, edging past Fable 5 in its native Claude Code (83.8%, about $553).
+- **Terminal-Bench 2.0** (early 2026): #1 verified agent.
+- **Terminal-Bench 1.0** (2025): #1.
 
-Earlier results stay on the record: #1 on Terminal Bench 1.0 (2025) and #1 verified agent on Terminal Bench 2.0 (early 2026). On Terminal-Bench 2.1, Ante with open-weight DeepSeek V4.1 Flash scored 83.9% for about $18 of inference, edging past Fable 5 in its native Claude Code (83.8%, about $553). [Track record →](https://docs.antigma.ai/benchmarks/eval#track-record)
+New models and harder benchmarks keep landing, and the Ante you install has already been measured against them. Every run keeps the benchmark's official timeouts and sandbox resource limits, the same standard the frontier labs' own agents follow. We evaluate Ante as a harness across model families, and each result pins the exact build you can download plus the raw Harbor run for independent audit. [Track record →](https://docs.antigma.ai/benchmarks/eval#track-record)
 
 #### Same model, different harness
 
@@ -44,7 +47,7 @@ Earlier results stay on the record: #1 on Terminal Bench 1.0 (2025) and #1 verif
 
 ### 🪶 A fraction of the footprint
 
-Ante is hand-written Rust: the heavy parts (`Grep`, `git`) are embedded in one binary and one process, and local inference is handled by a managed llama.cpp. Across the same 20 parallel tasks in Docker, Ante uses **~7× less peak memory**, **~9× less average CPU**, and **~5× less disk I/O** than Claude Code.
+Ante is hand-written Rust: the heavy parts (`Grep`, `git`) are embedded in one binary and one process. Across the same 20 parallel tasks in Docker, Ante uses **~7× less peak memory**, **~9× less average CPU**, and **~5× less disk I/O** than Claude Code.
 
 ![Resource Usage Comparison](docs-site/docs/benchmarks/compare_animated.gif)
 
@@ -52,7 +55,7 @@ Ante is hand-written Rust: the heavy parts (`Grep`, `git`) are embedded in one b
 
 ### 🔌 Natively offline
 
-Ante's inference engine is a pinned, managed version of [llama.cpp](https://github.com/ggml-org/llama.cpp). Point it at a GGUF file and the whole loop runs on your machine: no API key, no account, no internet.
+Ante ships with its own managed inference engine. Point it at a local model and the whole loop runs on your machine: no API key, no account, no internet.
 
 ```sh
 ante --offline-model ~/.ante/models/Qwen3.5-9B-Q4_K_M.gguf \
@@ -178,7 +181,7 @@ git diff | ante -p "review this for security issues"
 # Resume a saved session
 ante --resume ses_01ARZ3NDEKTSV4RRFFQ69G5FAV -p "now add tests"
 
-# Run fully offline with a local GGUF model
+# Run fully offline with a local model
 ante --offline-model ~/.ante/models/Qwen3.5-9B-Q4_K_M.gguf \
   -p "add error handling to src/main.rs"
 ```
@@ -296,7 +299,7 @@ The name is the answer: **An**other **Te**rminal agent, and *ante*, the stake yo
 Ante has most of the features you expect from agents like Claude Code or Codex: multi-agents, skills, MCP, persistent memory. The difference is the build philosophy.
 
 - Built from scratch in Rust: one executable that downloads as ~15MB compressed and unpacks to 34.1 MiB (the figure our [harness comparison](https://antigma.ai/blog/2026/08/04/harness-matter) tables report). Core components like `Grep` (fully rebuilt and customized) and `git` run in the same process, so nothing is shelled out and no resources leak. Most similar projects ship on Node.js or CPython and carry an order-of-magnitude larger footprint.
-- Local inference is built in: a local GGUF model is all Ante needs to run without any provider.
+- Local inference is built in: a local model is all Ante needs to run without any provider.
 - No vendor lock-in, not even to ourselves: no account needed, reuse your existing API credentials. An opt-in, fully integrated server-side experience lives at [antix.antigma.ai](https://antix.antigma.ai).
 - Every claim is backed by public, reproducible benchmarks of the exact builds we ship: [antigma.ai/eval](https://antigma.ai/eval).
 
@@ -315,7 +318,7 @@ But our vision is much bigger: millions of agents self-organizing and communicat
 <details>
 <summary><b>Can I run Ante completely offline?</b></summary>
 
-Yes. Ante has a built-in llama.cpp engine that runs GGUF models locally. It handles engine installation, model discovery, and memory management automatically. No API keys or internet connection required.
+Yes. Ante has a built-in local inference engine. It handles engine installation, model discovery, and memory management automatically. No API keys or internet connection required.
 </details>
 
 <a id="supported-providers"></a>
