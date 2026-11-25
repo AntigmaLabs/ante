@@ -354,3 +354,6 @@ and protocol surface you build against here remain permissively licensed.
 
 We are refactoring the agent and open-sourcing it piece by piece. Progress is
 tracked in [#21](https://github.com/AntigmaLabs/ante/issues/21).
+For now, the most useful contribution is a
+[GitHub issue](https://github.com/AntigmaLabs/ante/issues/new/choose); see
+[CONTRIBUTING.md](CONTRIBUTING.md).
