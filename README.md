@@ -218,7 +218,6 @@ A profile replaces the whole settings file, so anything it omits falls back to A
 
 - **Applications:**
   - [`ante-acp`](ante-acp) — [Agent Client Protocol](https://agentclientprotocol.com) server driving Ante from editors like Zed and JetBrains IDEs.
-  - [`ante-gateway`](ante-gateway) — Slack and Discord gateway for Ante.
 - **Protocol & SDKs:**
   - [`crates/protocol-shape`](crates/protocol-shape) — Wire message schema spoken by `ante serve`.
   - [`crates/ante-sdk`](crates/ante-sdk) — Async Rust SDK for controlling Ante over stdio or Unix domain sockets.
@@ -230,15 +229,17 @@ A profile replaces the whole settings file, so anything it omits falls back to A
 - **Profiles & Docs:**
   - [`curated/`](curated) — Reusable settings profiles (such as [`pi`](curated/pi) and [`plan`](curated/plan)) and skills.
   - [`docs-site/`](docs-site) — Source for [docs.antigma.ai](https://docs.antigma.ai).
-  - [`examples/`](examples) — Example integrations and custom harness implementations.
+- **Examples** (built on the published [`ante-sdk`](https://crates.io/crates/ante-sdk)):
+  - [`examples/mini-tui`](examples/mini-tui) — One-file chat TUI: a starting point for your own harness.
+  - [`examples/ante-gateway`](examples/ante-gateway) — Slack and Discord gateway for Ante.
 
 ### Building applications from source
 
-Build and install either application with Cargo:
+Build and install ACP and the gateway with Cargo:
 
 ```sh
 cargo install --path ante-acp
-cargo install --path ante-gateway
+cargo install --path examples/ante-gateway
 ```
 
 Once installed on `PATH`, they can be invoked directly (`ante-acp`, `ante-gateway`) or dispatched via `ante`:

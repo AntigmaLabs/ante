@@ -22,7 +22,7 @@ jobs:
           - crate: ante-acp
             manifest: ante-acp/Cargo.toml
           - crate: ante-gateway
-            manifest: ante-gateway/Cargo.toml
+            manifest: examples/ante-gateway/Cargo.toml
 
     steps:
       - uses: actions/checkout@v7

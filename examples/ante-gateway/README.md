@@ -7,7 +7,7 @@ Slack and Discord gateway for [Ante](https://github.com/AntigmaLabs/ante). It co
 Build and install `ante-gateway`:
 
 ```bash
-cargo install --path ante-gateway
+cargo install --path examples/ante-gateway
 ```
 
 Once installed, it can be invoked via `ante` or directly:

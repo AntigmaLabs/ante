@@ -6,7 +6,6 @@ on:
       - 'crates/**'
       - 'examples/**'
       - 'ante-acp/**'
-      - 'ante-gateway/**'
       - 'rustfmt.toml'
       - '.github/workflows/public-crates.yml'
   push:
@@ -15,7 +14,6 @@ on:
       - 'crates/**'
       - 'examples/**'
       - 'ante-acp/**'
-      - 'ante-gateway/**'
       - 'rustfmt.toml'
       - '.github/workflows/public-crates.yml'
 
@@ -50,8 +48,8 @@ jobs:
             manifest: ante-acp/Cargo.toml
             workspace: ante-acp
           - crate: ante-gateway
-            manifest: ante-gateway/Cargo.toml
-            workspace: ante-gateway
+            manifest: examples/ante-gateway/Cargo.toml
+            workspace: examples/ante-gateway
           - crate: mini-tui
             manifest: examples/mini-tui/Cargo.toml
             workspace: examples/mini-tui
@@ -64,7 +62,6 @@ jobs:
             crates
             examples
             ante-acp
-            ante-gateway
       - uses: actions-rust-lang/setup-rust-toolchain@v2.0.1
         with:
           toolchain: stable
