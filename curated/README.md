@@ -13,7 +13,7 @@ cp <name>.settings.json ~/.ante/
 ante --profile <name>
 ```
 
-Profiles are whole-file replacements: values a profile omits fall back to Ante defaults, not to your `settings.json`. Explicit CLI flags still override the profile. See the [preferences docs](https://docs.antigma.ai/configuration/preference#named-profiles).
+Profiles are whole-file replacements: values a profile omits fall back to Ante defaults, not to your `settings.json`. Explicit CLI flags still override the profile. See the [preferences docs](https://docs.antigma.ai/configuration/profiles).
 
 ### [pi](./pi/)
 

@@ -46,13 +46,13 @@ The three are one design decision. An agent you can verify, afford, and run anyw
 
 Ante runs as a client-daemon architecture. The daemon manages structured turn lifecycles — prompt, tool calls, confirmation, execution — channeling model power through a safe, predictable loop. The client can be an interactive TUI, a headless CLI, an external process, or a channel bot via `ante gateway`.
 
-Architecturally, Ante is moving toward an agent-centric runtime where long-lived agents coordinate through message passing — an actor model with hierarchical supervision, isolated state, and clear ownership of resources per agent.
-
-Ante can also run as a long-lived server (`ante serve`) that external clients drive through a structured JSONL protocol — ideal for building editor plugins, web UIs, and custom integrations.
+Ante can also run as a long-lived server (`ante serve`) that external clients drive through a structured JSONL protocol, or you can build on it directly with the [Rust SDK](/usage/sdk).
 
 :::warning
 Ante is currently in **preview** and under active development. Expect breaking changes, experimental features, and incomplete functionality. Currently only **macOS** and **Linux** are supported.
 :::
+
+We are refactoring Ante and open-sourcing it piece by piece; [#21](https://github.com/AntigmaLabs/ante/issues/21) tracks the progress. For now, the most useful contribution is a [GitHub issue](https://github.com/AntigmaLabs/ante/issues/new/choose).
 
 ## Next steps
 
@@ -60,11 +60,8 @@ Ante is currently in **preview** and under active development. Expect breaking c
   <Card title="Quickstart" icon="bolt" href="/start/quickstart">
     Install Ante and run your first prompt in under a minute.
   </Card>
-  <Card title="Eval" icon="chart-line" href="/benchmarks/eval">
-    How we evaluate what we ship, and the live Terminal-Bench results.
-  </Card>
-  <Card title="Philosophy" icon="book" href="/start/philosophy">
-    The product and engineering principles we optimize for.
+  <Card title="Connect a Provider" icon="plug" href="/usage/providers">
+    Sign in with an account you already have, or add an API key.
   </Card>
   <Card title="Interactive TUI" icon="terminal" href="/usage/tui">
     Learn to use the rich terminal interface.
@@ -72,23 +69,14 @@ Ante is currently in **preview** and under active development. Expect breaking c
   <Card title="Local Models" icon="wifi-slash" href="/local/overview">
     Run local models natively, from just-a-provider to fully self-contained.
   </Card>
-  <Card title="Server Mode" icon="server" href="/usage/serve">
-    Drive Ante programmatically over stdio, a Unix socket, or WebSocket.
+  <Card title="Profiles" icon="layers" href="/configuration/profiles">
+    One binary, many agents: swap the whole setup per run.
   </Card>
-  <Card title="Gateway Mode" icon="message-square" href="/usage/gateway">
-    Run Ante as a Slack or Discord bot.
+  <Card title="Build on Ante" icon="code" href="/usage/sdk">
+    Drive Ante from your own code over the SDK, a socket, or headless runs.
   </Card>
-  <Card title="Everyday Recipes" icon="book-marked" href="/usage/providing-context">
-    Task-focused guides for common TUI workflows.
-  </Card>
-  <Card title="Providers" icon="plug" href="/usage/providers">
-    Pick and configure your model provider.
-  </Card>
-  <Card title="Core Concepts" icon="shapes" href="/reference/core-concepts">
-    Understand sessions, tasks, turns, and the protocol.
-  </Card>
-  <Card title="Agent Organization" icon="sitemap" href="/experimental/agent-org">
-    How Ante self-organizes agents for complex tasks.
+  <Card title="Eval" icon="chart-line" href="/benchmarks/eval">
+    How we evaluate what we ship, and the live Terminal-Bench results.
   </Card>
   <Card title="Antix Enterprise" icon="server" href="/antix/introduction">
     Scale your AI with Antigma's enterprise LLM Proxy and Identity Provider.

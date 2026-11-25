@@ -7,37 +7,33 @@
     "message": "快速入门",
     "description": "The label for category 'Getting Started' in sidebar 'docs'"
   },
-  "sidebar.docs.category.Eval": {
-    "message": "基准评测",
-    "description": "The label for category 'Eval' in sidebar 'docs'"
+  "sidebar.docs.category.Using the TUI": {
+    "message": "使用 TUI",
+    "description": "The label for category 'Using the TUI' in sidebar 'docs'"
   },
-  "sidebar.docs.category.Using Ante": {
-    "message": "使用 Ante",
-    "description": "The label for category 'Using Ante' in sidebar 'docs'"
-  },
-  "sidebar.docs.category.Input": {
-    "message": "输入与交互",
-    "description": "The label for category 'Input' in sidebar 'docs'"
+  "sidebar.docs.category.Models": {
+    "message": "模型",
+    "description": "The label for category 'Models' in sidebar 'docs'"
   },
   "sidebar.docs.category.Local Models": {
     "message": "本地模型",
     "description": "The label for category 'Local Models' in sidebar 'docs'"
   },
-  "sidebar.docs.category.Configuration": {
-    "message": "系统配置",
-    "description": "The label for category 'Configuration' in sidebar 'docs'"
+  "sidebar.docs.category.Configure & Extend": {
+    "message": "配置与扩展",
+    "description": "The label for category 'Configure & Extend' in sidebar 'docs'"
   },
-  "sidebar.docs.category.Customization": {
-    "message": "扩展与定制",
-    "description": "The label for category 'Customization' in sidebar 'docs'"
-  },
-  "sidebar.docs.category.Programmatic Usage": {
-    "message": "编程与服务调用",
-    "description": "The label for category 'Programmatic Usage' in sidebar 'docs'"
+  "sidebar.docs.category.Build on Ante": {
+    "message": "基于 Ante 构建",
+    "description": "The label for category 'Build on Ante' in sidebar 'docs'"
   },
   "sidebar.docs.category.Reference": {
     "message": "参考手册",
     "description": "The label for category 'Reference' in sidebar 'docs'"
+  },
+  "sidebar.docs.category.Why Ante": {
+    "message": "为什么选择 Ante",
+    "description": "The label for category 'Why Ante' in sidebar 'docs'"
   },
   "sidebar.docs.category.Experimental": {
     "message": "实验性特性",

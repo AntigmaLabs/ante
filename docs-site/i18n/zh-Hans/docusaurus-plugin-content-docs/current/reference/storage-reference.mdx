@@ -11,10 +11,10 @@ Ante 将配置与状态持久化保存在本地文件系统中。本页面为 An
 | 路径位置 | 用途说明 |
 |---|---|
 | `~/.ante/settings.json` | 用户偏好设置（模型、提供商、主题、MCP 服务器） |
-| `~/.ante/<name>.settings.json` | 通过 `--profile <name>` 或 `ANTE_PROFILE` 选定的完整设置 Profile 文件 |
+| `~/.ante/<name>.settings.json` | 通过 `--profile <name>` 或 `ANTE_PROFILE` 选定的完整设置 [Profile](/configuration/profiles) 文件 |
 | `~/.ante/catalog.json` | 自定义提供商、OAuth Profile 与凭据 helper |
 | `~/.ante/auth/credentials/` | 已存储的凭据，仅所有者可读：`secret/`（API 密钥）、`oauth/`（登录）、`helper/`（helper 输出）。使用 [`ante auth`](/reference/cli-reference#ante-auth) 管理 |
-| `~/.ante/AGENTS.md` | 注入到每个项目会话中的全局行为指引 |
+| `~/.ante/AGENTS.md` | 注入到每个项目会话中的全局行为指引（回退到 `~/.claude/CLAUDE.md`） |
 | `~/.ante/skills/` | 用户级全局技能（Skills） |
 | `~/.ante/agents/` | 用户级全局子智能体（Sub-agents） |
 | `~/.ante/.system/` | 由当前安装的 Ante 版本所管理的内置技能与子智能体 |
@@ -36,7 +36,7 @@ Ante 将配置与状态持久化保存在本地文件系统中。本页面为 An
 | `~/.ante/user_input_history.jsonl` | TUI 历史输入提示词记录 |
 | `~/.ante/tip_history.json` | [加载状态技巧提示](/reference/tui-reference#spinner-tips)的展示历史（删除可重置轮播） |
 | `~/.ante/installation-id` | 安装标识，首次初始化遥测导出时写入。重置或自定义标签的方法见[身份标识](/configuration/preference#identity)。 |
-| `AGENTS.md` | 与全局指引一同注入的项目级行为规范 |
+| `AGENTS.md` | 与全局指引一同注入的项目级行为规范（回退到 `CLAUDE.md`） |
 | `.ante/settings.json` | 叠加在用户设置之上的[项目设置](/configuration/preference#project-settings)，从会话目录最近的上级目录解析得到 |
 | `.ante/` | 项目本地配置（技能、子智能体） |
 | `.agents/`, `.claude/` | 兼容的项目本地技能/子智能体目录 |
@@ -80,7 +80,7 @@ WebFetch 溢出文件使用系统缓存目录：macOS 为 `~/Library/Caches/ante
 }
 ```
 
-命名 Profile 文件具有相同的 Schema，但在运行时全量替换 `settings.json`；它们不会从 `settings.json` 继承缺失的字段。关于 Profile 机制及完整字段参考，请参阅[偏好设置](/configuration/preference#named-profiles)。
+命名 Profile 文件具有相同的 Schema，但在运行时全量替换 `settings.json`；它们不会从 `settings.json` 继承缺失的字段。Profile 机制请参阅 [Profile](/configuration/profiles)，完整字段参考请参阅[偏好设置](/configuration/preference)。
 
 项目的 `.ante/settings.json` 使用同一 Schema，但以*叠加*方式作用于用户设置文件：只有它显式设置的键会被覆盖。由于它属于仓库内容，只能收紧或固定、不能放宽，因此 `permission_mode`、`permissions.allow`、`mcp_servers`、`system_prompt`、`model`、`provider` 会被丢弃并给出提示。参见[项目设置](/configuration/preference#project-settings)。
 
@@ -116,6 +116,8 @@ WebFetch 溢出文件使用系统缓存目录：macOS 为 `~/Library/Caches/ante
 ## `AGENTS.md` {#agentsmd}
 
 存储智能体的持久化行为指引。`~/.ante/AGENTS.md` 全局生效，项目 `AGENTS.md` 作用于该代码仓库。当两者同时存在时，Ante 会在对话之前的会话前导提醒中同时注入两者。
+
+当某一层级不存在 `AGENTS.md` 时，Ante 会回退读取 `CLAUDE.md`（全局为 `~/.claude/CLAUDE.md`，项目内为 `CLAUDE.md`），因此 Claude Code 的配置无需迁移即可使用。每个层级只读取一个文件，只要存在 `AGENTS.md`（即使为空文件），就始终优先使用它。
 
 使用指南与优先级规则请参阅 [AGENTS.md](/extend/agents-md)。
 
@@ -164,6 +166,7 @@ WebFetch 溢出文件使用系统缓存目录：macOS 为 `~/Library/Caches/ante
 
 ```
 AGENTS.md               # 项目行为指引规范
+CLAUDE.md               # 项目行为指引规范（无 AGENTS.md 时的兼容回退）
 
 .ante/
 ├── settings.json       # 叠加在用户设置之上的项目设置
@@ -182,6 +185,7 @@ AGENTS.md               # 项目行为指引规范
 ## 相关章节 {#related}
 
 - [偏好设置](/configuration/preference) — 完整 `settings.json` 参考与环境变量列表
+- [Profile](/configuration/profiles) — 通过 `--profile` 选定的命名设置文件
 - [目录参考手册](/reference/catalog-reference) — `catalog.json` Schema、内置提供商及模型 ID
 - [连接提供商](/usage/providers) — 通过 OAuth 或 API 密钥登录
 - [Skills 技能系统](/extend/skills) — 技能目录结构

@@ -28,7 +28,7 @@ curl -fsSL https://ante.run/install.sh | ANTE_INSTALL_DIR=/usr/local/bin bash
 
 macOS 平台的发布二进制文件已经过 Apple 开发者证书签名与公证（Notarized），Gatekeeper 安全检查会自动放行。
 
-## 在项目中完成第一个任务 {#start-with-your-existing-account-or-key}
+## 登录或添加密钥 {#start-with-your-existing-account-or-key}
 
 <span id="interactive-session" />
 
@@ -41,60 +41,19 @@ ante
 
 <span id="use-a-different-provider" />
 
-如果已在 Ante 中登录或已在当前终端导出 API 密钥，可以直接提问。首次连接时，输入 `/providers`，选择提供商，按 `m` 登录或粘贴密钥。详见[连接提供商](/usage/providers)。
+如果已在 Ante 中登录或已在当前终端导出 API 密钥，即可直接开始。首次连接时，输入 `/providers`，选择提供商，按 `m` 登录或粘贴密钥。详见[连接提供商](/usage/providers)。
+
+### 从命令行登录 Antix {#log-in-with-antix}
+
+在项目目录运行 `ante auth login antix`，在浏览器中完成登录，然后运行 `ante --provider antix`。
+
+## 完成第一个任务 {#run-your-first-task}
 
 先让 Ante 帮您找到运行代码的入口：
 
 > 这个项目从哪里开始执行？请指出入口文件，以及覆盖这条执行路径的测试。
 
 按 `Enter` 后，您可以看到 Ante 读取了哪些文件。然后在同一会话中追问：“怎样只运行这个测试？” 要指定文件，可输入 `@` 并从列表中选择。
-
-### 从命令行登录 Antix {#log-in-with-antix}
-
-在项目目录运行 `ante auth login antix`，在浏览器中完成登录，然后运行 `ante --provider antix` 即可开始上述任务。
-
-## 快速示例 {#quick-examples}
-
-### 单次执行（无头模式） {#headless-one-shot}
-
-```bash
-# 运行单个任务并退出
-ante -p "add error handling to src/main.rs"
-```
-
-### 从标准输入通过管道传递内容 {#pipe-input-from-stdin}
-
-```bash
-# 传递文件内容进行分析
-cat src/lib.rs | ante -p "review this code for bugs"
-```
-
-### 跳过工具审批 {#skip-tool-approvals}
-
-```bash
-# YOLO 模式 — 自动批准所有工具调用
-ante --yolo -p "fix all clippy warnings"
-```
-
-### 作为服务端运行 {#run-as-a-server}
-
-```bash
-# 启动长寿命守护进程以进行编程集成
-ante serve
-```
-
-### 更新到最新版本 {#update-to-the-latest-version}
-
-```bash
-# 检查新版本并安装
-ante update
-
-# 尝试开发通道单次更新
-ante update nightly
-
-# 回滚或锁定到指定发布版本
-ante update --version v0.3.9
-```
 
 ## 下一步 {#whats-next}
 
@@ -105,14 +64,20 @@ ante update --version v0.3.9
   <Card title="TUI 终端界面指南" icon="terminal" href="/usage/tui">
     熟练掌握交互式终端界面的全部操作。
   </Card>
-  <Card title="无头模式" icon="code" href="/usage/headless">
-    了解 CLI 命令行参数与输出格式。
+  <Card title="授权与审批" icon="shield-halved" href="/usage/approvals">
+    审查工具调用，或用 YOLO 模式跳过确认。
   </Card>
-  <Card title="本地模型" icon="wifi-slash" href="/local/overview">
-    在自有硬件上直接运行模型。
+  <Card title="无头模式" icon="code" href="/usage/headless">
+    用 `ante -p` 执行单次任务，支持管道输入。
   </Card>
   <Card title="服务模式" icon="server" href="/usage/serve">
     通过 JSONL 协议以编程方式驱动 Ante。
+  </Card>
+  <Card title="更新与通道" icon="rocket" href="/start/update">
+    更新版本、切换通道或锁定指定版本。
+  </Card>
+  <Card title="本地模型" icon="wifi-slash" href="/local/overview">
+    在自有硬件上直接运行模型。
   </Card>
   <Card title="Skills 技能系统" icon="scroll" href="/extend/skills">
     通过轻量便携的 Agent Skills 扩展 Ante 的专业能力。

@@ -26,7 +26,7 @@ const docsFooterItems = isZhHansBuild
       { label: 'Quickstart', to: '/start/quickstart' },
       { label: 'Eval', to: '/benchmarks/eval' },
       { label: 'Local Models', to: '/local/overview' },
-      { label: 'Connect a provider', to: '/usage/providers' },
+      { label: 'Connect a Provider', to: '/usage/providers' },
     ]
 
 const footerCommunityItems = [
@@ -48,7 +48,8 @@ const legacyAnteRedirects = [
   { from: '/usage/offline', to: '/local/offline' },
   { from: '/experimental/offline', to: '/local/offline' },
   { from: '/configuration/providers', to: '/usage/providers' },
-  { from: '/concepts/core-concepts', to: '/reference/core-concepts' },
+  { from: '/concepts/core-concepts', to: '/reference/protocol-reference' },
+  { from: '/reference/core-concepts', to: '/reference/protocol-reference' },
   { from: '/concepts/architecture', to: '/reference/architecture' },
   { from: '/cookbook/login', to: '/usage/providers' },
   { from: '/usage/login', to: '/usage/providers' },

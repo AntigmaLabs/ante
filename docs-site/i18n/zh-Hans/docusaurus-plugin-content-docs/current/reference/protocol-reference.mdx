@@ -6,6 +6,30 @@ description: "Ante 客户端与守护进程之间的消息协议、报文传输�
 
 Ante 在客户端（Client）与守护进程（Daemon）之间采用强类型的消息传递协议。同进程客户端使用有界操作通道和无界事件通道；外部客户端则通过 JSON Lines 或 WebSocket 帧交换相同消息。
 
+## 核心概念 {#concepts}
+
+协议围绕四层嵌套单元组织：
+
+```
+Project (项目)
+ └── Session (会话)
+      └── Turn (轮次)
+           └── Step (单步)
+```
+
+| 概念 | 说明 |
+|---|---|
+| **Project**（项目） | Git 仓库或根目录。可以拥有多个会话。 |
+| **Session**（会话） | 用户与 Ante 之间的一次对话。负责对话状态、Token 用量与上下文压缩。 |
+| **Turn**（轮次） | 智能体的一轮工作。以用户输入开始，以智能体回复、被中断或出错结束。轮次可能因审批或提问而暂停，并在同一轮次内恢复。 |
+| **Step**（单步） | 轮次内的一次模型调用，包括其发起的工具调用。`TurnEnd` 会报告执行的步数。 |
+
+客户端发送操作指令（`Op`），接收事件（`Evt`）。典型会话先发送 `StartSession`，每个轮次发送一次 `UserInput`，然后读取事件直到 `TurnEnd`。轮次暂停时，客户端以 `ApprovalResponse` 或 `QuestionResponse` 作答，同一轮次随即恢复。`Interrupt` 以 `Interrupted` 状态结束当前轮次，会话保持打开，等待下一次 `UserInput`。完整消息序列参见[完整交互生命周期示例](#complete-flow-example)。
+
+当对话接近模型的上下文上限时，Ante 会总结较早的历史并保留近期消息，并通过 `CompactStart` 与 `CompactEnd` 事件告知客户端。客户端也可以通过 [`Compact`](#compact) 主动请求压缩；`auto_compact` [配置项](/configuration/preference#settings-file)可关闭自动触发。过长或较早的工具输出可能在模型上下文中被缩短，完整结果仍保留在已保存会话的事件日志中。
+
+工具调用受[权限规则](/configuration/permission)管控。规则判定为 **Ask** 的调用会以 `TurnPause` 暂停轮次，直到客户端作出响应。
+
 ## 传输协议格式 {#wire-format}
 
 外部客户端使用 **JSON Lines** (JSONL) 与守护进程通信 —— 通过 stdin/stdout 每行传输一个 JSON 对象。

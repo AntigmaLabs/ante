@@ -46,13 +46,13 @@ curl -fsSL https://ante.run/install.sh | bash
 
 Ante 采用客户端-守护进程（Client-Daemon）架构。守护进程管理结构化的 Turn 生命周期 — 提示词、工具调用、确认授权、执行控制 — 驱动模型在安全、可预测的闭环中工作。客户端可以是交互式 TUI、无头 CLI、外部进程，或通过 `ante gateway` 接入的消息渠道机器人。
 
-在架构层面，Ante 正在迈向以智能体为中心的运行时（Agent-Centric Runtime）：长寿命智能体通过消息传递进行协同 — 采用分层监管、状态隔离和资源所有权明确的 Actor 模型。
-
-Ante 还可以作为长寿命服务器运行（`ante serve`），外部客户端通过结构化的 JSONL 协议与其通信 — 非常适合构建编辑器插件、Web UI 和自定义集成。
+Ante 还可以作为长寿命服务器运行（`ante serve`），外部客户端通过结构化的 JSONL 协议与其通信；也可以直接用 [Rust SDK](/usage/sdk) 在其上构建。
 
 :::warning
 Ante 目前处于 **Preview 预览阶段** 并处于活跃开发中。部分功能和配置可能会发生变化。目前仅支持 **macOS** 和 **Linux**。
 :::
+
+我们正在重构 Ante，并逐步将其开源；进展记录在 [#21](https://github.com/AntigmaLabs/ante/issues/21)。目前最有价值的贡献方式是提交 [GitHub Issue](https://github.com/AntigmaLabs/ante/issues/new/choose)。
 
 ## 下一步 {#next-steps}
 
@@ -60,11 +60,8 @@ Ante 目前处于 **Preview 预览阶段** 并处于活跃开发中。部分功�
   <Card title="快速入门" icon="bolt" href="/start/quickstart">
     在一分钟内安装 Ante 并运行第一个提示词任务。
   </Card>
-  <Card title="基准评测" icon="chart-line" href="/benchmarks/eval">
-    了解评测方法以及 Terminal-Bench 的实时表现。
-  </Card>
-  <Card title="设计哲学" icon="book" href="/start/philosophy">
-    Ante 背后的产品与工程设计原则。
+  <Card title="连接提供商" icon="plug" href="/usage/providers">
+    使用已有账户登录，或添加 API 密钥。
   </Card>
   <Card title="交互式 TUI" icon="terminal" href="/usage/tui">
     学习使用功能丰富的终端交互界面。
@@ -72,23 +69,14 @@ Ante 目前处于 **Preview 预览阶段** 并处于活跃开发中。部分功�
   <Card title="本地模型" icon="wifi-slash" href="/local/overview">
     原生运行本地模型，从单个提供商到完全自包含。
   </Card>
-  <Card title="服务模式" icon="server" href="/usage/serve">
-    通过 stdio、Unix 套接字或 WebSocket 以编程方式驱动 Ante。
+  <Card title="配置档案" icon="layers" href="/configuration/profiles">
+    一个二进制，多个智能体：每次运行切换整套配置。
   </Card>
-  <Card title="网关模式" icon="message-square" href="/usage/gateway">
-    将 Ante 作为 Slack 或 Discord 机器人运行。
+  <Card title="基于 Ante 构建" icon="code" href="/usage/sdk">
+    通过 SDK、套接字或无头模式从你自己的代码驱动 Ante。
   </Card>
-  <Card title="常用工作流技巧" icon="book-marked" href="/usage/providing-context">
-    TUI 交互中的常见指南。
-  </Card>
-  <Card title="模型提供商" icon="plug" href="/usage/providers">
-    选择并配置模型提供商。
-  </Card>
-  <Card title="核心概念" icon="shapes" href="/reference/core-concepts">
-    深入了解会话、任务、轮次与协议机制。
-  </Card>
-  <Card title="智能体组织" icon="sitemap" href="/experimental/agent-org">
-    Ante 如何针对复杂任务自组织协调多个智能体。
+  <Card title="基准评测" icon="chart-line" href="/benchmarks/eval">
+    了解评测方法以及 Terminal-Bench 的实时表现。
   </Card>
   <Card title="Antix 企业级网关" icon="server" href="/antix/introduction">
     借助 Antigma 的企业级 LLM 代理与身份网关扩展 AI 能力。

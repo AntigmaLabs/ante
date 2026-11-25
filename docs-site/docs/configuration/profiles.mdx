@@ -1,0 +1,52 @@
+---
+title: "Profiles"
+description: "Swap the whole settings file per run to turn one binary into different agents"
+---
+
+Ante's behavior lives in its settings file: system prompt, tools, skills, memory, MCP servers. A profile is a separate settings file you select per run, so the same binary can be a full assistant in one terminal and a minimal agent in the next.
+
+## Create and select a profile
+
+The profile `work` is the file `~/.ante/work.settings.json`. It uses the same schema as [`settings.json`](/configuration/preference#settings-file). To create one, write or copy the file before launching Ante:
+
+```bash
+cp ~/.ante/settings.json ~/.ante/work.settings.json
+```
+
+Select it with the process-wide `--profile <name>` option or the `ANTE_PROFILE` environment variable. It works with TUI and headless runs as well as subcommands:
+
+```bash
+ante --profile work
+ANTE_PROFILE=review ante -p "review this change"
+ante update --profile work
+```
+
+Under a profile, Ante reads and writes only that file, so changes made in `/config` persist to the profile. Profile names may contain lowercase ASCII letters, digits, `-`, and `_`. An unknown name prints a warning and falls back to `settings.json` rather than creating a new file.
+
+Run `ante doctor --profile <name>` to check that a profile loads and see which provider and model it resolves to.
+
+## Profiles and project settings
+
+A profile replaces `settings.json` wholesale. Values it omits fall back to Ante defaults, not to your `settings.json`. CLI flags still override the selected profile.
+
+[Project settings](/configuration/preference#project-settings) work the other way: a repository's `.ante/settings.json` layers over your user settings, overriding only the keys it sets, and needs no flag. Use a profile to change what kind of agent you run; use project settings to configure a repository.
+
+## The built-in `bare` profile
+
+The first `--profile bare` run seeds `~/.ante/bare.settings.json` with onboarding and ambient UI features disabled, plus `auto_memory`, `skills`, and `session_save` set to `false` (and no MCP servers, since the profile defines none). After that it behaves like any other profile. Explicit run flags such as `--enable-auto-memory` still override it per run.
+
+## Curated profiles
+
+The team and community share ready-to-use profiles in the repository's [`curated/`](https://github.com/AntigmaLabs/ante/tree/main/curated) directory:
+
+- `pi`: Strips Ante down to four tools (`Read`, `Write`, `Edit`, `Bash`) with a concise system prompt, delegating search and automation to shell tools.
+- `plan`: A read-only research and planning agent with file mutations disabled, designed to produce an implementation plan before execution.
+- `rea`: A reverse-engineering agent that connects the [REA](https://github.com/morluto/rea) MCP server for inspecting binaries, apps, and packages, with evidence-grounded findings.
+- `web-search-MCP`: One profile per third-party web search MCP server, for models without native web search.
+
+Copy one into `~/.ante/` and select it:
+
+```bash
+cp curated/pi/pi.settings.json ~/.ante/
+ante --profile pi
+```

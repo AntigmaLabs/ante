@@ -23,104 +23,26 @@ Ante follows a clean separation of concerns with a client-daemon architecture. T
 
 - **Client** — The user-facing layer. The ratatui-based TUI, headless CLI runner, or an external process connected via `ante serve`. Sends `Op` operations and renders `Evt` events.
 - **Daemon** — The core engine. Receives operations, manages sessions, dispatches to LLM providers, schedules tool execution, and emits events.
-- **Transport** — A bounded operation channel and unbounded event channel (Tokio) for in-process clients (TUI, headless), JSONL over stdin/stdout for external clients (`ante serve --stdio`), a Unix domain socket for local clients that dial a shared host (`ante serve --sock`), or WebSocket for networked clients (`ante serve --ws`). Message IDs enable tracing across the boundary.
+- **Transport** — Tokio channels for in-process clients (TUI, headless). External clients use JSONL over stdio, a Unix socket, or WebSocket through `ante serve`. See [Transport](/reference/protocol-reference#transport) for details.
 
-## Architecture direction: Session-centric to Agent-centric
-
-Ante started with a session-centric runtime where `Session` is the primary execution owner. We are moving toward an agent-centric runtime, where long-lived `Agent` instances own execution and communicate through messages.
-
-```mermaid
-flowchart LR
-  subgraph Today["Today: Session-centric"]
-    C1[Client]
-    S1[Session]
-    TS1[Turn/Step]
-    C1 -->|Op| S1 --> TS1
-  end
-
-  subgraph Target["Direction: Agent-centric"]
-    C2[Client]
-    S2[Session<br/>history + coordination]
-    A0[Root Agent]
-    A1[Worker Agent A]
-    A2[Worker Agent B]
-    C2 -->|Op| S2 --> A0
-    A0 <--> A1
-    A0 <--> A2
-  end
-```
-
-This is similar to an actor-based model:
-
-- **Agent as actor** — Each agent has isolated state, a mailbox, and a single logical execution loop.
-- **Message-driven coordination** — Agents coordinate via typed messages/events instead of shared mutable state.
-- **Hierarchical supervision** — Parent agents can spawn child agents (sub-agents), monitor outcomes, and decide retry/escalation policy.
-
-Why this shift:
-
-- Better isolation between concurrent tasks and sub-agents
-- Clear ownership of memory, permissions, and tool budgets per agent
-- More predictable scaling as workflows become multi-agent
-
-In this direction, `Session` remains important, but as a container for user interaction history, persistence, and protocol-level coordination rather than the only unit of execution.
-
+The [Protocol Reference](/reference/protocol-reference) defines every operation and event.
 
 ## LLM providers
 
-Ante is provider-agnostic. Each provider implements a common interface for sending prompts and receiving responses. Transient mid-stream failures reconnect within the turn. Streaming calls fail after five minutes of transport silence; any transport read, including keepalives and partial tool arguments, resets that timer. Buffered calls must finish within the timeout. That window is per provider — override it with [`stream_idle_timeout_secs`](/reference/catalog-reference#provider-fields).
+Ante is provider-agnostic. At session startup it resolves the provider, model, and credential from CLI options or saved preferences. The provider adapter translates the conversation and tool calls into the provider's API format and converts responses back into session events.
 
-At session startup, Ante resolves the provider and model from CLI options or saved preferences. The provider adapter translates the conversation and tool calls into the provider’s API format and converts responses back into session events.
-
-### Authentication
-
-The adapter uses the credential selected for the session. Open `/providers` to sign in, add a key, or choose an account. Custom services can also supply a credential through a helper command. See [Connect a provider](/usage/providers) and [Credentials](/reference/catalog-reference#credentials).
+Transient mid-stream failures reconnect within the turn. A stalled call times out after a per-provider idle window, set with [`stream_idle_timeout_secs`](/reference/catalog-reference#provider-fields). See [Connect a provider](/usage/providers) for sign-in and keys.
 
 ## Tool system
 
-Tools are the agent's hands. Each tool implements the `Tool` trait:
-
-```rust
-#[async_trait]
-pub trait Tool: Send + Sync {
-    fn metadata(&self) -> &ToolMetadata;
-    async fn call(&self, input: ToolCallInput) -> Result<ToolCallOutput>;
-}
-```
-
-### Built-in tools
-
-| Tool | Category | Approval | Description |
-|---|---|---|---|
-| `Read` | File I/O | No | Read text, image, or PDF file contents |
-| `Write` | File I/O | Yes | Create or overwrite files |
-| `Edit` | File I/O | Yes | Exact string replacement in files |
-| `Glob` | File I/O | No | Find files by pattern |
-| `Grep` | File I/O | No | Search file contents with regex |
-| `Bash` | Shell | Yes | Execute shell commands; returns a durable handle when a command outlives its `max_wait_ms` window |
-| `Agent` | Builtin | No | Spawn sub-agent for complex tasks |
-| `AskUser` | Builtin | No | Ask structured questions; pauses attended sessions for an answer |
-| `TodoWrite` | Builtin | No | Manage task lists (opt-in) |
-| `WebFetch` | Builtin | Yes | Fetch and process web content |
-| `WebSearch` | Builtin | Yes | Search the web (auto-enabled on web-search-capable providers) |
-| `ViewImage` | Builtin | No | Read and analyze images (opt-in) |
-
-### Tool filtering
-
-Tools can be filtered at session level:
-
-- **Base list** (`--tools`) — Replace the default set with exactly these tools
-- **Include list** (`--include-tools`) — Add tools on top of the default or `--tools` base set
-- **Exclude list** (`--exclude-tools`) — Remove tools after the base and include lists are applied
-- Supports ToolMatcher syntax: `Bash(ls -la)`, `Agent(explore)`
-- Names are matched case-insensitively
-- The same selection gates dynamically registered tools (MCP servers), so they cannot bypass the filter
+The daemon runs tool calls the model requests, after checking them against [permission rules](/configuration/permission). Built-in tools cover file I/O, shell, web access, sub-agents, and structured questions; [MCP servers](/extend/mcp) add more. The [Tools Reference](/reference/tools-reference) lists each tool, the default set, and filtering flags.
 
 ## Session lifecycle
 
 1. Client sends `Op::StartSession` with model, provider, and policy
 2. Daemon resolves the provider, authenticates, discovers skills and sub-agents
 3. Daemon creates a `Session` and emits `Evt::SessionStart`
-4. User sends `Op::UserInput` to start a task
+4. User sends `Op::UserInput` to start a turn
 5. Session spawns a `Turn` which communicates with the LLM
 6. Turn executes tools, requests approvals, and eventually completes
-7. As the conversation approaches the context limit, Ante summarizes older context while retaining recent conversation and user messages
+7. As the conversation approaches the context limit, Ante [compacts](/reference/protocol-reference#concepts) older history

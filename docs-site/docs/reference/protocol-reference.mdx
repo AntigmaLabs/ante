@@ -5,6 +5,30 @@ description: "Complete reference for Ante's client-daemon message protocol, wire
 
 Ante uses a typed message-passing protocol between the client and daemon. In-process clients use a bounded operation channel and an unbounded event channel; external clients exchange the same messages over JSON Lines or WebSocket frames.
 
+## Concepts
+
+The protocol is organized around four nested units:
+
+```
+Project
+ └── Session
+      └── Turn
+           └── Step
+```
+
+| Concept | Description |
+|---|---|
+| **Project** | A git repo or root directory. It can have many sessions. |
+| **Session** | One conversation between a user and Ante. It owns dialog state, token usage, and context compaction. |
+| **Turn** | One round of agent work. It starts with user input and ends when the agent replies, is interrupted, or fails. It may pause for approval or questions and resume within the same turn. |
+| **Step** | One model call inside a turn, including the tool calls it makes. `TurnEnd` reports how many steps ran. |
+
+Clients send operations (`Op`) and receive events (`Evt`). A typical session sends `StartSession`, then a `UserInput` per turn, and reads events until `TurnEnd`. When a turn pauses, the client answers with `ApprovalResponse` or `QuestionResponse` and the same turn resumes. `Interrupt` ends the active turn with status `Interrupted`, and the session stays open for the next `UserInput`. See the [complete flow example](#complete-flow-example) for the full message sequence.
+
+As a conversation nears the model's context limit, Ante summarizes older history while keeping recent messages, and reports it with `CompactStart` and `CompactEnd`. Clients can also request this with [`Compact`](#compact); the `auto_compact` [setting](/configuration/preference#settings-file) turns the automatic trigger off. Large or older tool outputs may be shortened in the model's context, while the full results stay in the saved session's event log.
+
+Tool calls are gated by [permission rules](/configuration/permission). A call the rules mark **Ask** pauses the turn with `TurnPause` until the client responds.
+
 ## Wire format
 
 External clients communicate with the daemon using **JSON Lines** (JSONL) — one JSON object per line over stdin/stdout.

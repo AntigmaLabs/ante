@@ -1,0 +1,52 @@
+---
+title: "Profile"
+description: "按次替换整个设置文件，让同一个二进制变成不同的智能体"
+---
+
+Ante 的行为由设置文件决定：系统提示词、工具、技能、记忆、MCP 服务器。Profile 是一份可按次选择的独立设置文件，因此同一个二进制可以在一个终端里是完整的助手，在另一个终端里是精简的智能体。
+
+## 创建并选择 Profile {#create-and-select-a-profile}
+
+名为 `work` 的 Profile 对应文件 `~/.ante/work.settings.json`，其 Schema 与 [`settings.json`](/configuration/preference#settings-file) 相同。启动 Ante 前写入或复制该文件即可创建：
+
+```bash
+cp ~/.ante/settings.json ~/.ante/work.settings.json
+```
+
+使用进程级 `--profile <name>` 选项或 `ANTE_PROFILE` 环境变量选择 Profile。它适用于 TUI、无头运行以及各子命令：
+
+```bash
+ante --profile work
+ANTE_PROFILE=review ante -p "审查本次改动"
+ante update --profile work
+```
+
+选定 Profile 后，Ante 只读写该文件，因此在 `/config` 中的修改会保存到该 Profile。Profile 名称可包含小写 ASCII 字母、数字、`-` 和 `_`。未知名称会打印警告并回退使用 `settings.json`，不会自动创建新文件。
+
+运行 `ante doctor --profile <name>` 可检查 Profile 能否正常加载，并查看其解析到的提供商与模型。
+
+## Profile 与项目设置 {#profiles-and-project-settings}
+
+Profile 会整体替换 `settings.json`。Profile 中未指定的字段回退到 Ante 默认值，而不会从 `settings.json` 继承。命令行参数仍优先于选定的 Profile。
+
+[项目设置](/configuration/preference#project-settings)则相反：仓库中的 `.ante/settings.json` 叠加在用户设置之上，只覆盖它显式设置的键，且无需传入任何参数。用 Profile 切换运行哪种智能体，用项目设置配置某个仓库。
+
+## 内置 `bare` Profile {#the-built-in-bare-profile}
+
+首次运行 `--profile bare` 会生成 `~/.ante/bare.settings.json`，默认禁用欢迎引导与环境感知 UI 功能，并将 `auto_memory`、`skills` 和 `session_save` 设为 `false`（且不包含任何 MCP 服务器）。此后其行为与其他 Profile 一致。显式传入的运行参数（如 `--enable-auto-memory`）仍可按次覆盖。
+
+## 精选 Profile {#curated-profiles}
+
+团队与社区在仓库的 [`curated/`](https://github.com/AntigmaLabs/ante/tree/main/curated) 目录中分享开箱即用的 Profile：
+
+- `pi`：将 Ante 缩减至四个工具（`Read`、`Write`、`Edit`、`Bash`）并配合精炼的系统提示词，将检索与自动化交给 Shell 工具。
+- `plan`：只读的调研与规划智能体，禁用文件修改，在执行前产出实施方案。
+- `rea`：逆向工程智能体，接入 [REA](https://github.com/morluto/rea) MCP 服务器，用于检查二进制、应用与软件包，结论基于证据。
+- `web-search-MCP`：每个第三方网页搜索 MCP 服务器一个 Profile，供不支持原生网页搜索的模型使用。
+
+复制到 `~/.ante/` 后选择即可：
+
+```bash
+cp curated/pi/pi.settings.json ~/.ante/
+ante --profile pi
+```

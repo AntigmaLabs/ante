@@ -24,103 +24,26 @@ Ante 采用清晰的职责分离设计，遵循客户端-守护进程（Client-D
 
 - **Client（客户端）** — 用户面向层。基于 ratatui 的 TUI 终端界面、无头 CLI 运行器，或通过 `ante serve` 连接的外部进程。负责发送 `Op` 操作指令并渲染接收到的 `Evt` 事件。
 - **Daemon（守护进程）** — 核心引擎。接收操作指令、管理会话、分发大语言模型请求、调度工具安全执行并分发事件。
-- **Transport（传输层）** — 进程内客户端（TUI、无头模式）使用 Tokio 有界操作通道与无界事件通道；外部客户端使用基于 stdin/stdout 的 JSONL 协议（`ante serve --stdio`）、供本地客户端连入共享宿主的 Unix 域套接字（`ante serve --sock`），或 WebSocket 网络协议（`ante serve --ws`）。通过消息 ID 实现跨进程边界的链路追踪。
+- **Transport（传输层）** — 进程内客户端（TUI、无头模式）使用 Tokio 通道；外部客户端通过 `ante serve` 使用基于 stdio、Unix 套接字或 WebSocket 的 JSONL 协议。详见[传输层](/reference/protocol-reference#transport)。
 
-## 架构演进：从以会话为中心到以智能体为中心 {#architecture-direction-session-centric-to-agent-centric}
-
-Ante 最初采用以会话为中心的运行时，其中 `Session` 是核心执行单元。我们正迈向以智能体为中心（Agent-centric）的现代运行时：长寿命的 `Agent` 实例作为执行的所有者并通过消息通信。
-
-```mermaid
-flowchart LR
-  subgraph Today["现状: 以 Session 为中心"]
-    C1[客户端 Client]
-    S1[会话 Session]
-    TS1[轮次 Turn / 单步 Step]
-    C1 -->|Op| S1 --> TS1
-  end
-
-  subgraph Target["演进方向: 以 Agent 智能体为中心"]
-    C2[客户端 Client]
-    S2[会话 Session<br/>历史记录 + 协调层]
-    A0[根智能体 Root Agent]
-    A1[工作智能体 Worker A]
-    A2[工作智能体 Worker B]
-    C2 -->|Op| S2 --> A0
-    A0 <--> A1
-    A0 <--> A2
-  end
-```
-
-该架构类似 Actor 模型：
-
-- **Agent 即 Actor** — 每个智能体拥有独立隔离的状态、专属邮箱（Mailbox）及单一逻辑执行循环。
-- **消息驱动的协同** — 智能体之间通过类型化消息/事件进行协同，而非共享可变状态。
-- **分层监管** — 父智能体可以派生子智能体、监控执行结果并决定重试或上报策略。
-
-为什么做出这一演进：
-
-- 并发任务与子智能体之间获得更彻底的隔离
-- 每个智能体拥有清晰明确的记忆、权限与工具预算所有权
-- 在多智能体协同工作流中具备更可预测的横向扩展能力
-
-在此方向下，`Session` 依然重要，但转变为承载用户交互历史、持久化快照以及协议级协调的容器，而非唯一的执行单元。
+[通信协议参考手册](/reference/protocol-reference)定义了全部操作指令与事件。
 
 ## 大语言模型提供商 {#llm-providers}
 
-Ante 具备跨提供商无关性。每个提供商均实现了发送提示词与接收响应的通用接口。流式传输过程中的偶发网络闪断会在轮次内自动重连；流式调用在传输层连续 5 分钟没有收到任何数据时超时；任何读取（包括保活事件和部分工具参数）都会重置计时。缓冲调用则必须在超时窗口内完成。该超时窗口支持按提供商配置 —— 可通过 [`stream_idle_timeout_secs`](/reference/catalog-reference#provider-fields) 覆盖。
+Ante 不绑定特定提供商。启动会话时，Ante 根据命令行选项或已保存的偏好确定提供商、模型与凭据。提供商适配器把对话与工具调用转换为相应的 API 格式，再把回复转换为会话事件。
 
-启动会话时，Ante 根据 `--provider`、`--model` 或已保存的偏好选择提供商和模型。提供商适配器把对话与工具调用转换为相应的 API 格式，再把回复转换为会话事件。
-
-### 身份验证 {#authentication}
-
-适配器使用为本次会话选定的凭据。您可以在 `/providers` 中登录、添加密钥或选择账户。自定义服务也可以通过命令提供凭据。参见[连接提供商](/usage/providers)与[凭据配置](/reference/catalog-reference#credentials)。
+流式传输中的偶发故障会在轮次内自动重连。调用停滞时，会在按提供商配置的空闲窗口后超时，可通过 [`stream_idle_timeout_secs`](/reference/catalog-reference#provider-fields) 设置。登录与密钥配置参见[连接提供商](/usage/providers)。
 
 ## 工具系统 {#tool-system}
 
-工具是智能体的双手。每个工具均实现 `Tool` trait：
-
-```rust
-#[async_trait]
-pub trait Tool: Send + Sync {
-    fn metadata(&self) -> &ToolMetadata;
-    async fn call(&self, input: ToolCallInput) -> Result<ToolCallOutput>;
-}
-```
-
-### 内置工具清单 {#built-in-tools}
-
-| 工具 | 分类 | 默认需审批 | 说明 |
-|---|---|---|---|
-| `Read` | 文件 I/O | 否 | 读取文本、图片或 PDF 文件内容 |
-| `Write` | 文件 I/O | 是 | 创建或覆盖文件 |
-| `Edit` | 文件 I/O | 是 | 在文件中执行精确字符串替换 |
-| `Glob` | 文件 I/O | 否 | 按模式查找文件列表 |
-| `Grep` | 文件 I/O | 否 | 使用正则表达式搜索文件内容 |
-| `Bash` | Shell | 是 | 执行 Shell 命令；当命令超出 `max_wait_ms` 窗口时返回持久句柄 |
-| `Agent` | 内置核心 | 否 | 派生子智能体处理复杂任务 |
-| `AskUser` | 内置核心 | 否 | 提出结构化问题；有人值守时暂停会话以等待回答 |
-| `TodoWrite` | 内置核心 | 否 | 维护任务进度清单（可选工具） |
-| `WebFetch` | 内置核心 | 是 | 获取并处理网页内容 |
-| `WebSearch` | 内置核心 | 是 | 检索互联网（在支持网络搜索的提供商上自动启用） |
-| `ViewImage` | 内置核心 | 否 | 读取并分析图片（可选工具） |
-
-### 工具过滤机制 {#tool-filtering}
-
-工具可在会话级别进行过滤控制：
-
-- **基础工具列表** (`--tools`) — 将默认工具集精确替换为指定列表
-- **包含列表** (`--include-tools`) — 在默认或基础工具集之上额外引入工具
-- **排除列表** (`--exclude-tools`) — 在基础与包含列表应用后剔除指定工具
-- 支持 ToolMatcher 匹配器语法：`Bash(ls -la)`、`Agent(explore)`
-- 工具名称匹配不区分大小写
-- 动态注册的工具（MCP 服务器）同样受此约束，无法绕过过滤机制
+守护进程执行模型请求的工具调用，执行前先按[权限规则](/configuration/permission)检查。内置工具涵盖文件 I/O、Shell、网络访问、子智能体与结构化提问；[MCP 服务器](/extend/mcp)可提供更多工具。各工具说明、默认工具集与过滤参数参见[工具参考](/reference/tools-reference)。
 
 ## 会话生命周期 {#session-lifecycle}
 
 1. 客户端发送 `Op::StartSession`（包含模型、提供商与策略配置）
 2. 守护进程解析提供商、验证认证状态，并发现技能与子智能体
 3. 守护进程创建 `Session` 并发出 `Evt::SessionStart`
-4. 用户发送 `Op::UserInput` 提交任务提示词
+4. 用户发送 `Op::UserInput` 开始一个轮次
 5. 会话拉起 `Turn` 轮次与大语言模型通信
 6. 轮次执行工具调用、请求用户审批并最终完成输出
-7. 当对话接近上下文上限时，Ante 会总结较早的上下文，并保留近期对话与用户消息
+7. 当对话接近上下文上限时，Ante 会[压缩](/reference/protocol-reference#concepts)较早的历史

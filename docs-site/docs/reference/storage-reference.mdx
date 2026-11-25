@@ -10,10 +10,10 @@ Ante persists configuration and state on the local filesystem. This page is a re
 | Location | Purpose |
 |---|---|
 | `~/.ante/settings.json` | User preferences (model, provider, theme, MCP servers) |
-| `~/.ante/<name>.settings.json` | Whole-file settings profile selected by `--profile <name>` or `ANTE_PROFILE` |
+| `~/.ante/<name>.settings.json` | Whole-file settings [profile](/configuration/profiles) selected by `--profile <name>` or `ANTE_PROFILE` |
 | `~/.ante/catalog.json` | Custom providers, OAuth profiles, and credential helpers |
 | `~/.ante/auth/credentials/` | Stored credentials, owner-only: `secret/` (API keys), `oauth/` (sign-ins), `helper/` (helper output). Manage with [`ante auth`](/reference/cli-reference#ante-auth) |
-| `~/.ante/AGENTS.md` | Global instructions injected into every project session |
+| `~/.ante/AGENTS.md` | Global instructions injected into every project session (`~/.claude/CLAUDE.md` as a fallback) |
 | `~/.ante/skills/` | User-level skills |
 | `~/.ante/agents/` | User-level sub-agents |
 | `~/.ante/.system/` | Bundled skills and sub-agents managed by the installed Ante version |
@@ -35,7 +35,7 @@ Ante persists configuration and state on the local filesystem. This page is a re
 | `~/.ante/user_input_history.jsonl` | TUI prompt history |
 | `~/.ante/tip_history.json` | Show history for [spinner tips](/reference/tui-reference#spinner-tips) (delete to reset the rotation) |
 | `~/.ante/installation-id` | Installation label written when Ante first initializes telemetry export. To reset or customize it, see [Identity](/configuration/preference#identity). |
-| `AGENTS.md` | Project instructions injected alongside global instructions |
+| `AGENTS.md` | Project instructions injected alongside global instructions (`CLAUDE.md` as a fallback) |
 | `.ante/settings.json` | [Project settings](/configuration/preference#project-settings) layered over the user's, resolved from the nearest ancestor of the session directory |
 | `.ante/` | Project-local configuration (skills, sub-agents) |
 | `.agents/`, `.claude/` | Additional project-local skill/sub-agent directories |
@@ -79,7 +79,7 @@ Stores user preferences. All fields are optional.
 }
 ```
 
-Named profile files have the same schema but replace `settings.json` wholesale for that run; they do not inherit missing values from it. See [Preferences](/configuration/preference#named-profiles) for profile behavior and the full field reference.
+Named profile files have the same schema but replace `settings.json` wholesale for that run; they do not inherit missing values from it. See [Profiles](/configuration/profiles) for profile behavior and [Preferences](/configuration/preference) for the full field reference.
 
 A project's `.ante/settings.json` uses the same schema but *layers* over the user file: only the keys it sets are overridden. As repository content it may pin or narrow only, so `permission_mode`, `permissions.allow`, `mcp_servers`, `system_prompt`, `model`, and `provider` are dropped with a notice. See [Project settings](/configuration/preference#project-settings).
 
@@ -115,6 +115,8 @@ See the [Catalog Reference](/reference/catalog-reference#catalogjson-schema) for
 ## `AGENTS.md`
 
 Stores persistent instructions for the agent. `~/.ante/AGENTS.md` applies globally, and a project `AGENTS.md` applies to that repository. When both exist, Ante includes both in the session preamble, ahead of the conversation.
+
+Each level falls back to a `CLAUDE.md` when no `AGENTS.md` exists, so Claude Code setups work without migration: `~/.claude/CLAUDE.md` globally, and `CLAUDE.md` in the project. Ante reads one file per level, and an existing `AGENTS.md` (even an empty one) always wins.
 
 See [AGENTS.md](/extend/agents-md) for usage guidance and precedence details.
 
@@ -163,6 +165,7 @@ See [AGENTS.md](/extend/agents-md) for usage guidance and precedence details.
 
 ```
 AGENTS.md               # Project instructions
+CLAUDE.md               # Project instructions (fallback when no AGENTS.md)
 
 .ante/
 ├── settings.json       # Project settings layered over the user's
@@ -181,6 +184,7 @@ AGENTS.md               # Project instructions
 ## Related
 
 - [Preferences](/configuration/preference) — full `settings.json` reference and environment variables
+- [Profiles](/configuration/profiles) — named settings files selected with `--profile`
 - [Catalog Reference](/reference/catalog-reference) — `catalog.json` schema, built-in providers, and model IDs
 - [Connect a provider](/usage/providers) — sign in with OAuth or an API key
 - [Skills](/extend/skills) — skill directory layout

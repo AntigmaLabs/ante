@@ -1,5 +1,5 @@
 ---
-title: ante serve
+title: Server Mode
 description: "Run Ante as a long-lived server for programmatic integration"
 ---
 
@@ -129,55 +129,7 @@ send({ StartSession: {
 
 ## Rust SDK
 
-`ante-sdk` is the Ante client for external programs, so a Rust integration does not have to frame JSONL or manage the host process itself. `connect` returns a `Client` — an op sender and an event receiver — over any transport:
-
-```rust
-use ante_sdk::{ConnectOptions, connect, protocol::{Evt, Op, SessionRequest}};
-
-let mut client = connect("stdio".parse()?, ConnectOptions::default()).await?;
-
-client.send(Op::StartSession(SessionRequest {
-    model: Some("claude-sonnet-5-5".into()),
-    provider: Some("anthropic".into()),
-    unattended: Some(true),
-    ..Default::default()
-})).await?;
-
-client.send(Op::UserInput("explain what this project does".into())).await?;
-
-while let Some(event) = client.next_event().await {
-    println!("{event:?}");
-    if matches!(event.event, Evt::TurnEnd { .. } | Evt::Error(_)) {
-        break;
-    }
-}
-client.close().await;
-```
-
-`Client::send` returns the `Id` the op was stamped with, which is the `parent` of every event that answers it. Ignore it with `;` when you do not need to match replies.
-
-An `Endpoint` names where a host is reachable — never a session. Which session a connection drives is decided by the ops sent over it (`StartSession`, `ResumeSession`):
-
-| Endpoint | What the client does | Host lifetime |
-|---|---|---|
-| `stdio` | Spawns `ante serve --stdio` as its own child | Ends with the connection — dropping the op sender closes the child's stdin |
-| `unix:<path>` | Dials the socket file of an `ante serve --sock` host | Someone else's; the host outlives the connection |
-| `ws://<addr>`, `wss://<addr>` | Dials an `ante serve --ws` host, presenting `ConnectOptions::token` as its bearer | Someone else's; the host outlives the connection |
-
-Plain `ws://` is dialed only to loopback hosts; remote connections require `wss://` (under the opt-in `wss` feature) so the bearer token never travels across the network in cleartext.
-
-Every path yields the same `Client`, and a process that hosts sessions itself gets that same type from its host directly — the in-process channel carries the wire types the remote codecs serialize, so nothing a client can observe differs between them.
-
-`ConnectOptions` is all optional and applies across transports: `executable` (defaults to `ante` on `PATH`), `args` appended after `serve --stdio`, `cwd`, extra `env`, and `token` (the bearer token sent when dialing `ws://` or `wss://`). Connecting succeeds at the transport level — the pipe opened, or the socket dialed. There is no greeting, so the first op's reply is the liveness check.
-
-```rust
-// Dial a host someone else is running
-let client = connect("unix:/tmp/ante.sock".parse()?, ConnectOptions::default()).await?;
-```
-
-For a complete client, [`examples/mini-tui`](https://github.com/AntigmaLabs/ante/tree/main/examples/mini-tui) is a one-file chat TUI: it streams `MessageDelta`s, answers `TurnPause` approvals with `y`/`n`, and sends `Interrupt` on Esc. Run it with `cargo run` from that directory.
-
-In SDK 0.2.2, `ante_sdk::claude` and the legacy child-process stdio API were removed. Ante host stdio connections remain supported through `connect(Endpoint::Stdio, options)`, as in the example above.
+The [`ante-sdk`](/usage/sdk) crate connects to a host over any of these transports, so a Rust program does not have to frame JSONL or manage the host process itself. See [SDK](/usage/sdk) for setup, endpoints, and worked examples.
 
 ## Differences from headless mode
 

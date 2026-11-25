@@ -28,7 +28,7 @@ Run the default installer as your normal user, not with `sudo`. A sudoed home-di
 
 macOS release binaries are Developer ID-signed and notarized, so Gatekeeper accepts them without a manual security bypass.
 
-## Run your first task {#start-with-your-existing-account-or-key}
+## Sign in or add a key {#start-with-your-existing-account-or-key}
 
 <span id="interactive-session" />
 
@@ -41,60 +41,19 @@ ante
 
 <span id="use-a-different-provider" />
 
-If you’ve already signed in or exported your API key in this shell, send a prompt. For a first connection, open `/providers`, select your provider, and press `m` to sign in or paste a key. See [Connect a provider](/usage/providers).
+If you’ve already signed in or exported your API key in this shell, Ante is ready. For a first connection, open `/providers`, select your provider, and press `m` to sign in or paste a key. See [Connect a provider](/usage/providers).
+
+### Sign in to Antix from the CLI {#log-in-with-antix}
+
+From your project directory, run `ante auth login antix`, finish signing in through the browser, then run `ante --provider antix`.
+
+## Run your first task
 
 Try asking Ante to trace a path through the code:
 
 > Where does this project start? Show me the entry point and a test that exercises it.
 
 Press `Enter` and watch which files Ante reads. Then ask “How do I run just that test?” in the same session. To point Ante at a particular file, type `@` and choose it from the list.
-
-### Sign in to Antix from the CLI {#log-in-with-antix}
-
-From your project directory, run `ante auth login antix`, finish signing in through the browser, then run `ante --provider antix` to start the same task.
-
-## Quick examples
-
-### Headless one-shot
-
-```bash
-# Run a task and exit
-ante -p "add error handling to src/main.rs"
-```
-
-### Pipe input from stdin
-
-```bash
-# Pipe file contents for analysis
-cat src/lib.rs | ante -p "review this code for bugs"
-```
-
-### Skip tool approvals
-
-```bash
-# YOLO mode — auto-approve all tool calls
-ante --yolo -p "fix all clippy warnings"
-```
-
-### Run as a server
-
-```bash
-# Start a long-lived daemon for programmatic integration
-ante serve
-```
-
-### Update to the latest version
-
-```bash
-# Check for a new release and install it
-ante update
-
-# Try the development channel for one update
-ante update nightly
-
-# Roll back or pin to an exact release
-ante update --version v0.3.9
-```
 
 ## What's next?
 
@@ -105,14 +64,20 @@ ante update --version v0.3.9
   <Card title="TUI Guide" icon="terminal" href="/usage/tui">
     Master the interactive terminal interface.
   </Card>
-  <Card title="Headless Mode" icon="code" href="/usage/headless">
-    All CLI flags and output formats.
+  <Card title="Approvals" icon="shield-halved" href="/usage/approvals">
+    Review tool calls, or skip prompts with YOLO mode.
   </Card>
-  <Card title="Local Models" icon="wifi-slash" href="/local/overview">
-    Run models on your own hardware.
+  <Card title="Headless Mode" icon="code" href="/usage/headless">
+    Run one-shot tasks with `ante -p`, including piped input.
   </Card>
   <Card title="Server Mode" icon="server" href="/usage/serve">
     Drive Ante programmatically via JSONL.
+  </Card>
+  <Card title="Updating" icon="rocket" href="/start/update">
+    Update, switch channels, or pin a release.
+  </Card>
+  <Card title="Local Models" icon="wifi-slash" href="/local/overview">
+    Run models on your own hardware.
   </Card>
   <Card title="Skills" icon="scroll" href="/extend/skills">
     Extend Ante with portable Agent Skills.

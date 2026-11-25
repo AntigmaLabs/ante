@@ -218,7 +218,7 @@ ante --profile pi
 
 A profile replaces the whole settings file, so anything it omits falls back to Ante defaults, and explicit CLI flags still win. Ante also ships a built-in `bare` profile for stripped-down runs: no skills, MCP servers, session saving, or auto-memory. Share what you build in [`curated/`](curated).
 
-**[Named profiles →](https://docs.antigma.ai/configuration/preference#named-profiles)** · [Project settings →](https://docs.antigma.ai/configuration/preference#project-settings) · [Curated profiles →](curated)
+**[Named profiles →](https://docs.antigma.ai/configuration/profiles)** · [Project settings →](https://docs.antigma.ai/configuration/preference#project-settings) · [Curated profiles →](curated)
 
 ## What's in this repo
 

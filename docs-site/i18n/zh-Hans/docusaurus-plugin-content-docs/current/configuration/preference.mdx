@@ -1,7 +1,7 @@
 ---
 title: "偏好设置与环境配置"
 sidebar_label: "偏好设置"
-description: "配置文件、环境变量、遥测机制与目录结构详解"
+description: "配置文件、项目设置、环境变量与遥测机制详解"
 ---
 
 ## 配置文件 {#settings-file}
@@ -101,20 +101,7 @@ Ante 将用户偏好设置保存在 `~/.ante/settings.json` 中。仓库还可�
 
 ### 命名 Profile 配置文件 {#named-profiles}
 
-使用 `--profile <name>` 可为单次 TUI 或无头运行使用独立的配置文件全量替换 `settings.json`：
-
-```bash
-ante --profile work
-ANTE_PROFILE=review ante -p "审查本次改动"
-```
-
-名为 `work` 的 Profile 会读写 `~/.ante/work.settings.json`。Profile 是**整文件替换（whole-file replacements）**而非分层叠加：Profile 中未指定的字段会回退到 Ante 系统默认值，而不会从 `settings.json` 继承。该文件必须已经存在或是内置模板；未知名称会打印警告并回退使用 `settings.json`，不会自动创建 Profile。若要新建，请在启动前写入或复制 `~/.ante/<name>.settings.json`。Profile 名称可包含小写 ASCII 字母、数字、`-` 和 `_`。命令行参数优先级高于选定的 Profile。若需按仓库配置，请优先使用[项目设置](#project-settings)：它是叠加而非替换，且无需传入任何参数。
-
-内置的 `bare` Profile 随 Ante 提供：首次运行 `--profile bare` 会生成 `~/.ante/bare.settings.json`，默认禁用欢迎引导与环境感知 UI 功能，并将 `auto_memory`、`skills` 和 `session_save` 设为 `false`（且不包含任何 MCP 服务）。此后其行为与其他 Profile 完全一致 —— 编辑文件或在 `/config` 中修改均可持久化。显式传入的命令行参数（如 `--enable-auto-memory`）仍可在运行时覆盖。
-
-官方与社区还在仓库的 `curated/` 目录中维护了开箱即用的 Profile：
-- `pi`：将 Ante 缩减至仅四个核心工具（`Read`、`Write`、`Edit`、`Bash`）并配合精炼提示词，将文件检索与自动化交给 Shell 工具执行。
-- `plan`：只读调研与方案设计智能体，禁用文件修改工具，专门在执行前生成完备的实施方案。
+如需通过 `--profile <name>` 按次替换整个设置文件，请参阅 [Profile](/configuration/profiles)。
 
 ### 项目设置 {#project-settings}
 
@@ -131,7 +118,7 @@ ANTE_PROFILE=review ante -p "审查本次改动"
 }
 ```
 
-与[命名 Profile](#named-profiles) 不同，这是叠加而非替换：项目文件未指定的键保留 `~/.ante/settings.json` 中的取值，只有它显式设置的键会被覆盖。无需在命令行传入任何参数 —— 将该文件提交进仓库，所有在其中工作的人便自动生效。
+与 [Profile](/configuration/profiles) 不同，这是叠加而非替换：项目文件未指定的键保留 `~/.ante/settings.json` 中的取值，只有它显式设置的键会被覆盖。无需在命令行传入任何参数 —— 将该文件提交进仓库，所有在其中工作的人便自动生效。
 
 #### 项目可以设置哪些键 {#what-a-project-may-set}
 
@@ -379,71 +366,13 @@ set -g allow-passthrough on
 
 ## 目录结构 {#directory-structure}
 
-### 用户级目录（`~/.ante/`） {#user-level-ante}
-
-```
-~/.ante/
-├── settings.json      # 用户偏好设置
-├── <name>.settings.json # 通过 --profile 选定的命名 Profile
-├── catalog.json       # 自定义提供商/模型目录
-├── auth/credentials/  # 已存储的密钥、登录与 helper 输出
-├── AGENTS.md          # 全局指引
-├── installation-id    # 随机遥测安装标识
-├── sessions/          # 持久化会话（供 /resume 使用）
-├── projects/          # 各项目自动记忆
-├── run/jobs/          # 后台 Bash 状态与输出
-├── run/serve.sock     # `ante serve --sock` 的 Unix 套接字（含同级 .lock 文件）
-├── logs/              # 按 UTC 日期归档的应用日志
-├── skills/            # 用户级技能
-└── agents/            # 用户级子智能体
-```
-
-当 `~/.ante/AGENTS.md` 不存在时，Ante 会回退读取 `~/.claude/CLAUDE.md` 作为全局指引，实现零迁移成本兼容 Claude Code。每次仅读取一个文件 —— 只要存在 `AGENTS.md`（即使为空文件），就绝不回退。
-
-### 项目级目录 {#project-level}
-
-```
-AGENTS.md              # 项目指引规范
-CLAUDE.md              # 项目指引规范（无 AGENTS.md 时的兼容回退）
-
-.ante/
-├── settings.json      # 叠加在用户设置之上的项目设置
-├── skills/            # 项目专属技能
-└── agents/            # 项目专属子智能体
-
-.agents/
-├── skills/            # 项目专属技能
-└── agents/            # 项目专属子智能体
-
-.claude/
-├── skills/            # 项目专属技能（Claude Code 兼容）
-└── agents/            # 项目专属子智能体（Claude Code 兼容）
-```
-
-项目指引通过从当前工作目录向上递归查找：在每个父级目录中 Ante 优先检查 `AGENTS.md`，其次检查 `CLAUDE.md`，首个包含任一文件的目录胜出。若同级下两者并存，仅读取 `AGENTS.md` —— `CLAUDE.md` 仅作为回退备用，绝不会合并读取。
-
-### 项目记忆库（`~/.ante/projects/`） {#project-memory-anteprojects}
-
-项目作用域的自动记忆存储在 `~/.ante/projects/<project-id>/` 下（`<project-id>` 为项目绝对路径的规范化清理形式）。持久化会话独立存放在 `~/.ante/sessions/` 中。
-
-```
-~/.ante/projects/
-└── <project-id>/
-    └── memory/
-        └── MEMORY.md      # 本项目的自动记忆
-```
-
-### 运行时与临时文件 {#runtime-and-temporary-files}
-
-超大的 WebFetch 响应写入[系统缓存目录](/reference/storage-reference#locations)，超过 48 小时的条目会在后续启动时清理。一次性暂存文件与中间下载使用系统临时目录，不属于该缓存清理范围。修改 `ANTE_HOME` 通常不会移动这两个目录。后台 Bash 任务句柄位于 `~/.ante/run/jobs/<proc-id>/` 下，在进程存活期间持续保留，进程结束后保留 24 小时。应用日志位于 `~/.ante/logs/<YYYY-MM-DD>/`，按 UTC 日期归档。
-
-完整文件用途请参阅[存储与目录结构参考手册](/reference/storage-reference)。
+Ante 存放设置、凭据、会话、记忆与日志的位置，请参阅[存储与目录结构参考手册](/reference/storage-reference)。
 
 ## 配置优先级 {#precedence}
 
 配置按以下顺序解析生效（后生效者覆盖前者）：
 
 1. 内置默认值
-2. `~/.ante/settings.json`（使用 `--profile` 时为 `~/.ante/<name>.settings.json`）
+2. `~/.ante/settings.json`（使用 [`--profile`](/configuration/profiles) 时为 `~/.ante/<name>.settings.json`）
 3. 项目的 `.ante/settings.json`，仅限其[允许设置的键](#project-settings)
 4. 命令行参数或协议请求字段（`--model`、`--provider` 等）

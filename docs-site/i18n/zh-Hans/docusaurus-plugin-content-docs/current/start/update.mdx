@@ -56,7 +56,7 @@ ante update --version 0.3.9
 | `stable` | 推荐日常使用。经过发布流程验证的稳定标签版本。 |
 | `nightly` | 基于开发主分支构建。新功能与 Bug 修复首先在这里发布。 |
 
-默认通道为 `stable`。二进制追踪的通道保存在所选设置文件的 `channel` 字段中。`ante update` 默认读取 `~/.ante/settings.json`；传入进程级 `--profile` 参数可选择已有的[命名 Profile](/configuration/preference#named-profiles)。TUI 的更新提示也会使用同一 Profile。
+默认通道为 `stable`。二进制追踪的通道保存在所选设置文件的 `channel` 字段中。`ante update` 默认读取 `~/.ante/settings.json`；传入进程级 `--profile` 参数可选择已有的[命名 Profile](/configuration/profiles)。TUI 的更新提示也会使用同一 Profile。
 
 ```json
 {
