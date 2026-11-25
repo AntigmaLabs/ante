@@ -1,6 +1,6 @@
 # Contributing to Ante
 
-The `ante` agent ships as a closed prebuilt binary under the [Binary Preview Terms](BINARY-TERMS.md). Its source is not in this repository; [#21](https://github.com/AntigmaLabs/ante/issues/21) tracks opening it. Everything that is here is open under [Apache-2.0](LICENSE) and takes contributions.
+The `ante` agent ships as a closed prebuilt binary under the [Binary Preview Terms](BINARY-TERMS.md). We are refactoring it and open-sourcing it piece by piece; [#21](https://github.com/AntigmaLabs/ante/issues/21) tracks the progress. Everything that is here is open under [Apache-2.0](LICENSE) and takes contributions.
 
 ## What's open
 

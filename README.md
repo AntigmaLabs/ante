@@ -351,3 +351,6 @@ licensed under the [Apache License 2.0](LICENSE).
 The prebuilt `ante` binary is free to use, including commercially, under the
 [Binary Preview Terms](BINARY-TERMS.md). The SDK
 and protocol surface you build against here remain permissively licensed.
+
+We are refactoring the agent and open-sourcing it piece by piece. Progress is
+tracked in [#21](https://github.com/AntigmaLabs/ante/issues/21).
