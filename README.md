@@ -8,9 +8,6 @@
   <a href="https://antigma.ai/eval"><img src="https://img.shields.io/badge/Terminal--Bench_4.1-live_results-2ea44f?logo=speedtest&logoColor=white" /></a>
   <a href="https://docs.antigma.ai"><img src="https://img.shields.io/badge/Docs-docs.antigma.ai-orange?logo=safari&logoColor=white" /></a>
   <a href="https://discord.gg/CbAsUR434B"><img src="https://img.shields.io/badge/Discord-Join%20Us-5865F2?logo=discord&logoColor=white" /></a>
-  <a href="https://twitter.com/antigma_labs"><img src="https://img.shields.io/badge/X-@antigma__labs-black?logo=x&logoColor=white" /></a>
-  <a href="https://huggingface.co/Antigma"><img src="https://img.shields.io/badge/HuggingFace-Antigma-yellow?logo=huggingface&logoColor=white" /></a>
-  <a href="LICENSE"><img src="https://img.shields.io/badge/license-Apache--2.0-blue" /></a>
 </p>
 
 # Ante
@@ -23,6 +20,14 @@ It works like Claude Code or Codex, with none of their dependencies or model con
 curl -fsSL https://ante.run/install.sh | bash
 ante
 ```
+
+No API key? [Run it fully offline](#-natively-offline) with a local model. Already using Claude Code or Codex? Give them the [Ante skill](curated/skills/ante) to hand work to Ante.
+
+| 🥇 [Terminal-Bench 1.0 → 4.1](#-continuously-evaluated-and-evolved-in-public) | 🪶 [~7× less memory](#-a-fraction-of-the-footprint) | 🔌 [Offline built in](#-natively-offline) |
+|---|---|---|
+| At the frontier for more than a year | than Claude Code on the same 20 tasks | No key, no account, no internet |
+
+![Ante opening another agent in a terminal split, sending it a question, reading its answer, and detaching the viewer](docs-site/static/assets/cookbook/ante-term-demo.gif)
 
 We care about **the harness, not a co-trained model or a secret prompt**. The harness and the model are a dynamic duo: they should evolve together but not be bound together. Prompts belong to the user.
 
@@ -83,8 +88,6 @@ These three properties are one design decision. An agent you can **verify**, **a
 ```
 
 Each command opens a named terminal and launches the installed CLI when the session is new. Ask the main Ante to give another agent a task, read its progress, send follow-up prompts, or compare answers from several agents. You can watch and type in the same terminal at any time.
-
-![Ante opening another agent in a terminal split, sending it a question, reading its answer, and detaching the viewer](docs-site/static/assets/cookbook/ante-term-demo.gif)
 
 Use an agent's native fork command to **branch a saved conversation**, or ask Ante to hand the current task and findings to a fresh session. These terminals make useful **persistent, interactive subagents**: detach a viewer and the agent keeps running; restart Ante and reconnect to the same live session. Run `/term` to find your sessions, attach or detach, and stop them when you're done.
 

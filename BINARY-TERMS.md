@@ -13,7 +13,7 @@ Version 2.0 — see [LICENSE](LICENSE).
    including mirroring it for personal, internal, or commercial use (e.g.,
    internal registries, CI caches).
 
-3. **Preview software.** The Binary is an alpha research preview. Features
+3. **Preview software.** The Binary is under active development. Features
    may change or be removed, and distribution may be discontinued, at any
    time without notice. Terms for future non-preview releases may differ;
    versions you have already downloaded remain governed by the terms they
