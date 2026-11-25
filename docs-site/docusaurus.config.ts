@@ -118,6 +118,9 @@ const config: Config = {
           routeBasePath: '/',
           sidebarPath: './sidebars.ts',
           include: ['**/*.{md,mdx}'],
+          editUrl: 'https://github.com/AntigmaLabs/ante/edit/main/docs-site/',
+          editLocalizedFiles: true,
+          showLastUpdateTime: true,
         },
         blog: false,
         theme: {

@@ -18,6 +18,8 @@ jobs:
         working-directory: docs-site
     steps:
       - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0 # last-updated dates come from git history
       - uses: actions/setup-node@v7
         with:
           node-version-file: docs-site/.nvmrc
