@@ -16,7 +16,7 @@ commit/
 
 `SKILL.md` uses YAML frontmatter followed by Markdown instructions:
 
-```markdown
+```markdown title="commit/SKILL.md"
 ---
 name: commit
 description: Create a git commit with a descriptive message following conventional commit format.
@@ -36,7 +36,7 @@ review/
     └── checklist.md
 ```
 
-```markdown
+```markdown title="review/SKILL.md"
 ---
 name: review
 description: Review code changes for bugs, security issues, and style.
@@ -110,7 +110,7 @@ Start Ante with `--no-skills` to skip this discovery entirely. No system, user, 
 
 To drop or add specific skills instead of all of them, set `exclude_skills` / `include_skills` in [`settings.json`](/configuration/preference#settings-file):
 
-```json
+```json title="~/.ante/settings.json"
 {
   "exclude_skills": ["noisy-skill"],
   "include_skills": ["deploy-checklist"]

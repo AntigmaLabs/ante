@@ -14,7 +14,7 @@ Ante resolves the engine binary in this order:
 
 Ante does not discover an arbitrary PATH installation for managed mode. To use your own build, point `llama_cpp.binaries.server` at its `llama` multiplexer in `~/.ante/offline-config.json`:
 
-```json
+```json title="~/.ante/offline-config.json"
 {
   "llama_cpp": {
     "binaries": {
@@ -44,7 +44,7 @@ ante offline use Qwen3.8-27B --args "--threads 12 --load-mode mmap --cache-type-
 
 When editing the config directly, use the model's absolute path or verified download URL as the key (`reference` in `ante offline list --json`); the path below is an example.
 
-```json
+```json title="~/.ante/offline-config.json"
 {
   "model_preferences": {
     "/models/Qwen3.6-27B-Q4_K_M.gguf": {
@@ -62,7 +62,7 @@ Ante v0.3.9 pins llama.cpp to `b12606` on macOS and `b12607` on Linux. The old l
 
 **GPU offload.** `llama_cpp.server_defaults.gpu_layers` controls the `-ngl` value. The default `-1` offloads all layers to the GPU; lower it if your VRAM is tight:
 
-```json
+```json title="~/.ante/offline-config.json"
 {
   "llama_cpp": {
     "server_defaults": { "gpu_layers": 24 }

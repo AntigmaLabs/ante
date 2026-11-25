@@ -104,7 +104,7 @@ Token and cache usage from a sub-agent is forwarded into the parent session's to
 
 Set `max_concurrent_subagents` in `~/.ante/settings.json`, a named profile, or [project settings](/configuration/preference#project-settings) to cap running subagents per session. For example, for a local model that handles one request at a time:
 
-```json
+```json title="~/.ante/settings.json"
 { "max_concurrent_subagents": 1 }
 ```
 

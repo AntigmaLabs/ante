@@ -58,7 +58,7 @@ A release channel is a named track of builds. Ante publishes two:
 
 The default channel is `stable`. The channel a binary tracks is stored in the selected settings file under the `channel` field. `ante update` reads `~/.ante/settings.json` unless you select an existing [named profile](/configuration/profiles) with the process-wide `--profile` flag; the TUI uses the same selected profile for its in-app update notices.
 
-```json
+```json title="~/.ante/settings.json"
 {
   "channel": "nightly"
 }

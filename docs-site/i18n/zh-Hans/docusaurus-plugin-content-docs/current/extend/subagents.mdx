@@ -107,7 +107,7 @@ Frontmatter 的读取规则与[技能 Frontmatter](/extend/skills#creating-a-ski
 
 在 `~/.ante/settings.json`、命名配置文件或[项目设置](/configuration/preference#project-settings)中设置 `max_concurrent_subagents`，限制每个会话同时运行的子智能体数量。例如，使用一次仅处理一个请求的本地模型时：
 
-```json
+```json title="~/.ante/settings.json"
 { "max_concurrent_subagents": 1 }
 ```
 

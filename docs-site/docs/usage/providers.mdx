@@ -3,9 +3,19 @@ title: Connect a Provider
 description: "Sign in from the TUI or CLI, or use a provider API key"
 ---
 
+import Tabs from '@theme/Tabs';
+import TabItem from '@theme/TabItem';
+
 Connect Ante to a provider, choose a model, and start a conversation. Use browser sign-in with a supported account or supply your own API key.
 
-## Sign in from the TUI {#authentication}
+## Sign in or add a key {#authentication}
+
+<span id="sign-in-from-the-cli" />
+<span id="use-an-api-key" />
+<span id="paste-an-api-key" />
+
+<Tabs groupId="signin">
+<TabItem value="tui" label="TUI" default>
 
 1. Run `ante` in your project directory.
 2. Type `/providers`, select **Antix**, **Anthropic Subscription**, or **OpenAI Subscription**, and press `m` to manage its access (or `Enter` on a provider that isn't set up yet).
@@ -16,7 +26,8 @@ Connect Ante to a provider, choose a model, and start a conversation. Use browse
 
 Ante saves your credentials for future sessions. Open `/providers` and press `m` again when you need to sign in again.
 
-## Sign in from the CLI
+</TabItem>
+<TabItem value="cli" label="CLI">
 
 Sign in before opening the TUI or running a headless task:
 
@@ -31,7 +42,8 @@ To add a second account, give it a label: `ante auth login anthropic/work`. `ant
 
 To sign in to a service Ante doesn't have built in, or to get tokens from a command such as `gcloud`, see [Custom Sign-ins & Token Commands](/usage/custom-sign-ins).
 
-## Use an API key
+</TabItem>
+<TabItem value="api-key" label="API key">
 
 Export your provider's API key in the shell where you run Ante, then select that provider:
 
@@ -46,9 +58,10 @@ To store a key instead of exporting it, run `ante auth add <provider>` and paste
 ante auth add anthropic
 ```
 
-### Paste a key in the TUI {#paste-an-api-key}
+**Paste a key in the TUI.** Type `/providers`, select the provider, press `m`, and choose **Add or replace API key**. Ante checks the key against the provider, then stores it under `~/.ante/auth/` with access limited to your user. On built-in providers, an environment key takes precedence over a stored one. The same view removes a saved key.
 
-Type `/providers`, select the provider, press `m`, and choose **Add or replace API key**. Ante checks the key against the provider, then stores it under `~/.ante/auth/` with access limited to your user. On built-in providers, an environment key takes precedence over a stored one. The same view removes a saved key.
+</TabItem>
+</Tabs>
 
 ## Choose a model and start working {#selecting-a-provider}
 

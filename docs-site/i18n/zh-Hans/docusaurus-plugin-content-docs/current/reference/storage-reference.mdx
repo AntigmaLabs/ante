@@ -51,7 +51,7 @@ WebFetch 溢出文件使用系统缓存目录：macOS 为 `~/Library/Caches/ante
 
 存储用户偏好设置。所有字段均为可选。
 
-```json
+```json title="~/.ante/settings.json"
 {
   "model": "claude-sonnet-5-5",
   "provider": "anthropic",
@@ -96,7 +96,7 @@ WebFetch 溢出文件使用系统缓存目录：macOS 为 `~/Library/Caches/ante
 
 在内置目录的基础上添加或修改提供商，并定义 OAuth Profile 与凭据 helper。所有顶层键均为可选。`my-provider` 键即为传入 `--provider` 的标识。若键匹配内置预设（如 `openai`），则逐字段修改该提供商；若为新键则添加提供商。
 
-```json
+```json title="~/.ante/catalog.json"
 {
   "providers": {
     "my-provider": {

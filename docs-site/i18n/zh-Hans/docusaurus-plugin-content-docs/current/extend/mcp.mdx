@@ -14,7 +14,7 @@ Ante 支持连接至 [Model Context Protocol (MCP)](https://modelcontextprotocol
 
 MCP 服务器在 `~/.ante/settings.json` 的 `mcp_servers` 映射表中声明。Key 为本地服务标识；Value 描述如何启动或连接该服务。
 
-```json
+```json title="~/.ante/settings.json"
 {
   "mcp_servers": {
     "filesystem": {
@@ -65,7 +65,7 @@ Ante 会自动发现该服务的登录方式，打开浏览器，并以服务名
 
 **在 `headers` 中提供 Token。** 对于使用 API 密钥或个人访问令牌的服务，设置 `Authorization` 请求头即可。Ante 会原样发送，并跳过 OAuth 登录。建议从环境变量读取 Token，避免写入设置文件：
 
-```json
+```json title="~/.ante/settings.json"
 {
   "mcp_servers": {
     "linear": { "url": "https://mcp.linear.app/mcp" },
@@ -85,7 +85,7 @@ Ante 会自动发现该服务的登录方式，打开浏览器，并以服务名
 
 MCP 工具同样遵循 `--tools` / `--include-tools` / `--exclude-tools` 命令行过滤。若基础 `--tools` 未声明 MCP 工具则会被剔除。若想独立控制每个服务暴露哪些工具而不受会话过滤影响，请使用 `enabled_tools`：
 
-```json
+```json title="~/.ante/settings.json"
 {
   "mcp_servers": {
     "filesystem": {

@@ -11,7 +11,7 @@ Most of these settings can also be viewed and changed interactively with the `/c
 
 An example `settings.json`:
 
-```json
+```json title="~/.ante/settings.json"
 {
   "model": "claude-sonnet-5-5",
   "provider": "anthropic",
@@ -170,7 +170,7 @@ Default: all items except `context-tokens`, in the order above. Configure via `~
 
 For full control, `status_line_command` runs a shell command of your choice and renders its output as the status line, replacing the item-based one:
 
-```json
+```json title="~/.ante/settings.json"
 {
   "status_line_command": {
     "command": "~/.config/ante/statusline.sh",
@@ -231,7 +231,7 @@ Make it executable (`chmod +x`) before pointing `command` at it. If the command 
 
 The default `inline` mode keeps the chat in your terminal's normal scrollback. Use `fullscreen` when a terminal or console drops inline history: Ante moves the chat to the alternate screen, owns its scrollback, and enables `PgUp` / `PgDn`, mouse-wheel scrolling, `Ctrl+L` to jump back to the latest output, and drag-to-copy selection.
 
-```json
+```json title="~/.ante/settings.json"
 { "render_mode": "fullscreen" }
 ```
 
@@ -246,7 +246,7 @@ When the terminal window is resized, ante rebuilds its display at the new size. 
 | `conservative` (default) | Never rewrites scrollback that has already been printed. Safe on every terminal; after aggressive drag-resizes, a few lines near the resize point may keep their old wrapping. |
 | `purge` | Clears the terminal's scrollback and replays the recent transcript at the new width — after a resize the session looks as if it had started at the final size. |
 
-```json
+```json title="~/.ante/settings.json"
 { "resize_reflow": "purge" }
 ```
 
@@ -266,7 +266,7 @@ Trade-offs of `purge`: the first resize clears everything in that tab's scrollba
 
 Ante can call you back when a turn finishes, fails, or stops for an approval or a question. Add this to `~/.ante/settings.json` (or your selected profile's settings file), then restart Ante:
 
-```json
+```json title="~/.ante/settings.json"
 {
   "attention": {
     "enabled": true,

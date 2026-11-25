@@ -34,7 +34,7 @@ ante catalog | jq -r '.providers[] | select(.id == "antix") | .preferred_models[
 
 大多数托管端点均兼容 OpenAI 协议。配置 `wire_style: "OpenAiCompatible"`，指定 `base_url` 并列出希望在选择器中展示的模型：
 
-```json
+```json title="~/.ante/catalog.json"
 {
   "providers": {
     "together": {
@@ -85,7 +85,7 @@ ante --provider together --model moonshotai/Kimi-K2-Instruct
 
 对于无需 API 密钥的本地服务，将 `credential` 设为 `null`；若提供商模型变动频繁（如 Ollama）也可省略 `preferred_models`。您仍可以通过 `--provider` 与 `--model` 显式调用任意模型 ID：
 
-```json
+```json title="~/.ante/catalog.json"
 {
   "providers": {
     "ollama": {
@@ -106,7 +106,7 @@ ante --provider ollama --model qwen2.5-coder:7b
 
 当配置中的 key 匹配内置提供商时，仅会修改指定的字段。`"credential": null` 让提供商不再发送凭据，适合本地代理：
 
-```json
+```json title="~/.ante/catalog.json"
 {
   "providers": {
     "openai": {
@@ -121,7 +121,7 @@ ante --provider ollama --model qwen2.5-coder:7b
 
 内置 `deepseek` 提供商使用当前会话的凭据，向同一基础 URL 下的 `/v1/tools/search` 发送 POST 请求。如果您的网关只转发聊天请求，请将以下配置合并到 `~/.ante/catalog.json`，然后重启 Ante。
 
-```json
+```json title="~/.ante/catalog.json"
 {
   "providers": {
     "deepseek": { "supports_web_search": false }
@@ -133,7 +133,7 @@ ante --provider ollama --model qwen2.5-coder:7b
 
 若网关需要按对话归类请求，可在 `headers` 的值或 `extra_body` 的字符串中使用 `${session_id}`。下面的示例修改内置 OpenAI 提供商；配置自己的网关时，请换成该网关的提供商标识：
 
-```json
+```json title="~/.ante/catalog.json"
 {
   "providers": {
     "openai": {
@@ -150,7 +150,7 @@ Ante 为各会话填入对话 ID。恢复会话时保留 ID，分叉则使用新
 
 网关或自定义代理服务经常需要特定请求参数。将其配置在 `extra_body` 中，会自动合并到该提供商的所有 Chat 和 Streaming 请求体中：
 
-```json
+```json title="~/.ante/catalog.json"
 {
   "providers": {
     "my-gateway": {
@@ -172,7 +172,7 @@ Ante 为各会话填入对话 ID。恢复会话时保留 ID，分叉则使用新
 
 在列出该模型的提供商上修改模型。`preferred_models` 中 `id` 与内置模型匹配的条目只会修改您设置的字段，其余保持不变：
 
-```json
+```json title="~/.ante/catalog.json"
 {
   "providers": {
     "anthropic": {
@@ -254,7 +254,7 @@ ANTE_OPENAI_TRANSPORT=websocket_auto ante --provider openai --model gpt-6-luna
 
 启动时，`~/.ante/catalog.json` 会合并覆盖在内置预设之上。包含三个可选的顶层键，均为按名称索引的 map：
 
-```json
+```json title="~/.ante/catalog.json"
 {
   "providers":      { /* add or patch providers */ },
   "oauth_profiles": { /* OAuth sign-ins; see Credentials */ },
@@ -285,7 +285,7 @@ ANTE_OPENAI_TRANSPORT=websocket_auto ante --provider openai --model gpt-6-luna
 | `preferred_models` | — | 在选择器中展示并作为默认模型的推荐列表（参见[模型字段](#model-fields)）。对于内置提供商，匹配的模型 ID 会被合并修改，新 ID 会被追加；省略时保持内置列表不变 |
 | `stream_idle_timeout_secs` | — | 超时秒数，默认 `300`。打开流时，响应头、错误响应体、OAuth 刷新、传输重试与退避，以及 WebSocket 到 HTTP 的回退共用一次预算；非流式 HTTP 调用还需在此预算内读完响应体。流建立后，同一时长限制连续静默，每次底层读取均重置计时，包括 keepalive、生命周期事件和工具参数片段。所有模型生成调用（包括压缩、目标判定和环境提示）都使用流式传输。慢速本地或代理端点可调高该值，需更快发现停滞时可调低。 |
 
-```json
+```json title="~/.ante/catalog.json"
 {
   "providers": {
     "my-provider": {
@@ -311,7 +311,7 @@ ANTE_OPENAI_TRANSPORT=websocket_auto ante --provider openai --model gpt-6-luna
 
 针对内置提供商，仅需填写希望修改的字段。设置的 `credential` 会整体替换预设列表。将 Anthropic 指向无需密钥的本地代理，并去掉内置的 beta 请求头：
 
-```json
+```json title="~/.ante/catalog.json"
 {
   "providers": {
     "anthropic": {
@@ -327,7 +327,7 @@ ANTE_OPENAI_TRANSPORT=websocket_auto ante --provider openai --model gpt-6-luna
 
 `thinking_display` 控制可读推理输出，与[思考深度](/usage/models-and-thinking#effort)相互独立。可选值为 `off`、`concise` 和 `detailed`。内置托管提供商预设默认为 `detailed`；覆盖内置项时省略该字段会保留预设，设为 `null` 则清除预设并交由端点决定。新增自定义提供商在未设置时不会发送显示参数。
 
-```json
+```json title="~/.ante/catalog.json"
 {
   "providers": {
     "openai": { "thinking_display": "concise" },
@@ -342,7 +342,7 @@ ANTE_OPENAI_TRANSPORT=websocket_auto ante --provider openai --model gpt-6-luna
 
 当端点限制单次请求可接受的图片数量时，可设置 `max_request_images`。该上限作用于此提供商的所有模型，统计整个请求中的图片，包括用户消息和工具结果。PDF 等文档附件不计入图片数量。
 
-```json
+```json title="~/.ante/catalog.json"
 {
   "providers": {
     "openrouter": { "max_request_images": 8 }
@@ -366,7 +366,7 @@ Ante 按请求顺序保留最新图片，并将较早的图片替换为文本，
 
 部分网关或代理需要 Ante 原生未建模的特定参数（服务等级、路由提示、厂商专属 Beta 字段）。`extra_body` 是一个 JSON 对象，会直接合并到发送给该提供商的每个请求体顶层：
 
-```json
+```json title="~/.ante/catalog.json"
 {
   "providers": {
     "my-gateway": {
@@ -406,7 +406,7 @@ Skipped 1 entry in ~/.ante/catalog.json:
 
 提供商的 `credential` 指定它发送哪个凭据。取值为一个引用、引用列表或 `null`：
 
-```json
+```json title="~/.ante/catalog.json"
 {
   "providers": {
     "corp":       { "base_url": "https://llm.corp/v1", "wire_style": "OpenAiCompatible",
@@ -449,7 +449,7 @@ ante auth add corp/staging
 
 Helper 是一条输出凭据的命令：可从密钥库、云 CLI 或轮换密钥中获取令牌。在 `helpers` 下定义，并以 `helper:NAME` 引用：
 
-```json
+```json title="~/.ante/catalog.json"
 {
   "helpers": {
     "corp": { "command": ["corp-token", "--audience", "llm"], "ttl_secs": 3000 }
@@ -467,7 +467,7 @@ Helper 是一条输出凭据的命令：可从密钥库、云 CLI 或轮换密�
 
 OAuth Profile 是一次登录的配置方案。内置的有 `anthropic`、`openai` 和 `antix`。在 `oauth_profiles` 下添加自己的 Profile，即可登录其他服务，无需修改代码：
 
-```json
+```json title="~/.ante/catalog.json"
 {
   "oauth_profiles": {
     "corp": {

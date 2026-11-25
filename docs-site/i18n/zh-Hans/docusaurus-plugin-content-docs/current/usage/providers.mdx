@@ -3,9 +3,19 @@ title: 连接提供商
 description: "通过 TUI 或 CLI 登录，或使用提供商 API 密钥"
 ---
 
+import Tabs from '@theme/Tabs';
+import TabItem from '@theme/TabItem';
+
 为 Ante 连接提供商，选择模型，然后开始对话。可以使用受支持账户在浏览器中登录，也可以提供自己的 API 密钥。
 
-## 在 TUI 中登录 {#authentication}
+## 登录或添加密钥 {#authentication}
+
+<span id="sign-in-from-the-cli" />
+<span id="use-an-api-key" />
+<span id="paste-an-api-key" />
+
+<Tabs groupId="signin">
+<TabItem value="tui" label="TUI" default>
 
 1. 在项目目录中运行 `ante`。
 2. 输入 `/providers`，选中 **Antix**、**Anthropic Subscription** 或 **OpenAI Subscription**，按 `m` 管理其访问方式（尚未设置的提供商也可直接按 `Enter`）。
@@ -16,7 +26,8 @@ description: "通过 TUI 或 CLI 登录，或使用提供商 API 密钥"
 
 Ante 会保存凭据供后续会话使用。需要重新登录时，打开 `/providers` 并再次按 `m`。
 
-## 在 CLI 中登录 {#sign-in-from-the-cli}
+</TabItem>
+<TabItem value="cli" label="CLI">
 
 可以在启动 TUI 或执行无头任务之前完成登录：
 
@@ -29,7 +40,8 @@ ante --provider antix
 
 如需添加第二个账户，请为其指定标签：`ante auth login anthropic/work`。`ante auth list` 会列出已保存的凭据。全部命令请参阅 [`ante auth`](/reference/cli-reference#ante-auth)。
 
-## 使用 API 密钥 {#use-an-api-key}
+</TabItem>
+<TabItem value="api-key" label="API 密钥">
 
 在运行 Ante 的 Shell 中导出提供商的 API 密钥，然后选择对应提供商：
 
@@ -44,9 +56,10 @@ ante --provider anthropic
 ante auth add anthropic
 ```
 
-### 在 TUI 中粘贴密钥 {#paste-an-api-key}
+**在 TUI 中粘贴密钥。** 输入 `/providers`，选中提供商，按 `m`，然后选择 **Add or replace API key**（添加或替换 API 密钥）。Ante 会向提供商验证密钥，然后将其保存到 `~/.ante/auth/`，仅允许当前用户访问。对于内置提供商，环境变量中的密钥优先于已保存的密钥。在同一视图中也可以删除已保存的密钥。
 
-输入 `/providers`，选中提供商，按 `m`，然后选择 **Add or replace API key**（添加或替换 API 密钥）。Ante 会向提供商验证密钥，然后将其保存到 `~/.ante/auth/`，仅允许当前用户访问。对于内置提供商，环境变量中的密钥优先于已保存的密钥。在同一视图中也可以删除已保存的密钥。
+</TabItem>
+</Tabs>
 
 ## 选择模型并开始工作 {#selecting-a-provider}
 

@@ -11,7 +11,7 @@ Ante can connect to [Model Context Protocol](https://modelcontextprotocol.io) se
 
 MCP servers are declared in `~/.ante/settings.json` under the `mcp_servers` map. The key is the local server name; the value describes how to launch or connect to it.
 
-```json
+```json title="~/.ante/settings.json"
 {
   "mcp_servers": {
     "filesystem": {
@@ -62,7 +62,7 @@ Ante discovers the server's sign-in, opens your browser, and stores the result u
 
 **A token in `headers`.** For a server that takes an API key or a personal access token, set an `Authorization` header. Ante sends it as written and skips the OAuth sign-in. Read the token from the environment so it stays out of the settings file:
 
-```json
+```json title="~/.ante/settings.json"
 {
   "mcp_servers": {
     "linear": { "url": "https://mcp.linear.app/mcp" },
@@ -82,7 +82,7 @@ Each tool offered by a server is exposed to the agent as `mcp__<server>__<tool>`
 
 MCP tools obey the same `--tools` / `--include-tools` / `--exclude-tools` filtering as built-in tools. A restrictive `--tools` base that doesn't name them will strip them. To shape what each server exposes regardless of the session filter, use `enabled_tools`:
 
-```json
+```json title="~/.ante/settings.json"
 {
   "mcp_servers": {
     "filesystem": {

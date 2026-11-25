@@ -12,7 +12,7 @@ Ante 将用户偏好设置保存在 `~/.ante/settings.json` 中。仓库还可�
 
 `settings.json` 示例：
 
-```json
+```json title="~/.ante/settings.json"
 {
   "model": "claude-sonnet-5-5",
   "provider": "anthropic",
@@ -171,7 +171,7 @@ gpt-6.1-sol(high) · openai · project(⑂ main) · 42% ctx
 
 若需完全自定义，`status_line_command` 可运行您指定的 Shell 命令并将其输出渲染为状态栏，替换基于条目的默认状态栏：
 
-```json
+```json title="~/.ante/settings.json"
 {
   "status_line_command": {
     "command": "~/.config/ante/statusline.sh",
@@ -232,7 +232,7 @@ printf '\033[36m[%s]\033[0m %s' "$model" "$dir"
 
 默认的 `inline` 模式将聊天保留在终端自身的滚动历史中。如果终端或控制台会丢失内联历史，可使用 `fullscreen`：Ante 会将聊天切换到备用屏幕，自行管理滚动，并支持 `PgUp` / `PgDn`、鼠标滚轮、用 `Ctrl+L` 跳回最新输出以及拖拽选择复制。
 
-```json
+```json title="~/.ante/settings.json"
 { "render_mode": "fullscreen" }
 ```
 
@@ -247,7 +247,7 @@ printf '\033[36m[%s]\033[0m %s' "$model" "$dir"
 | `conservative`（保守，默认） | 绝不重写已经打印到滚屏历史中的内容。在所有终端上均安全；在剧烈的窗口拖拽缩放后，缩放点附近的少数几行可能会保留旧的折行。 |
 | `purge`（清除重放） | 清除终端的滚屏缓冲区，并按新宽度重新回放最近的历史记录 —— 缩放后会话看起来就像从最终大小启动一样。 |
 
-```json
+```json title="~/.ante/settings.json"
 { "resize_reflow": "purge" }
 ```
 
@@ -267,7 +267,7 @@ seq 1 200; printf '\033[2J\033[3J\033[H'
 
 当回合完成、出错，或因审批、提问而暂停时，Ante 可以提醒您。将以下内容加入 `~/.ante/settings.json`（或当前 Profile 的设置文件），然后重启 Ante：
 
-```json
+```json title="~/.ante/settings.json"
 {
   "attention": {
     "enabled": true,

@@ -33,7 +33,7 @@ Create `~/.ante/catalog.json` to add a provider Ante doesn't ship, patch a built
 
 Most hosted endpoints are OpenAI-compatible. Register one with `wire_style: "OpenAiCompatible"`, point `base_url` at it, and list the models you want to appear in the picker:
 
-```json
+```json title="~/.ante/catalog.json"
 {
   "providers": {
     "together": {
@@ -84,7 +84,7 @@ An empty list (`"supported_efforts": []`) declares that the model takes no effor
 
 Set `credential` to `null` for a provider that needs no key, and leave `preferred_models` off when the provider has no stable picker/default model list — handy for a local server like Ollama where the available models change as you pull them. You can still pass any model id explicitly with `--provider` and `--model`:
 
-```json
+```json title="~/.ante/catalog.json"
 {
   "providers": {
     "ollama": {
@@ -107,7 +107,7 @@ When the key matches a built-in provider, only the fields you set are changed.
 `"credential": null` stops the provider sending a credential, which suits a
 local proxy:
 
-```json
+```json title="~/.ante/catalog.json"
 {
   "providers": {
     "openai": {
@@ -122,7 +122,7 @@ local proxy:
 
 The built-in `deepseek` provider uses the session credential to POST to `/v1/tools/search` on the same base URL. If your gateway forwards only chat requests, merge this into `~/.ante/catalog.json` and restart Ante.
 
-```json
+```json title="~/.ante/catalog.json"
 {
   "providers": {
     "deepseek": { "supports_web_search": false }
@@ -134,7 +134,7 @@ The built-in `deepseek` provider uses the session credential to POST to `/v1/too
 
 For a gateway that groups requests by conversation, put `${session_id}` in a `headers` value or an `extra_body` string. This example patches the built-in OpenAI provider; use your gateway provider's key when configuring one:
 
-```json
+```json title="~/.ante/catalog.json"
 {
   "providers": {
     "openai": {
@@ -151,7 +151,7 @@ Ante fills in the conversation's ID for each session. Resuming keeps that ID, wh
 
 Gateways and proxies often require a parameter Ante doesn't model. Put it in `extra_body` and it is merged into every chat and streaming request body for that provider:
 
-```json
+```json title="~/.ante/catalog.json"
 {
   "providers": {
     "my-gateway": {
@@ -173,7 +173,7 @@ Gateways and proxies often require a parameter Ante doesn't model. Put it in `ex
 
 Patch a model on the provider that lists it. A `preferred_models` entry whose `id` matches a built-in model changes only the fields you set; everything else is left alone:
 
-```json
+```json title="~/.ante/catalog.json"
 {
   "providers": {
     "anthropic": {
@@ -258,7 +258,7 @@ For something you'll use repeatedly, add a named provider to your [custom catalo
 
 `~/.ante/catalog.json` is merged on top of the built-in presets at startup. It has three optional top-level keys, each a map keyed by name:
 
-```json
+```json title="~/.ante/catalog.json"
 {
   "providers":      { /* add or patch providers */ },
   "oauth_profiles": { /* OAuth sign-ins; see Credentials */ },
@@ -289,7 +289,7 @@ A `providers` entry whose key matches a built-in (e.g. `openai`) patches that pr
 | `preferred_models` | — | Models shown for this provider in the picker and used as provider defaults (see [Model fields](#model-fields)). For built-in provider overlays, matching model ids are patched and new ids are appended; omitted leaves the preset list unchanged. |
 | `stream_idle_timeout_secs` | — | Timeout in seconds; defaults to `300`. Opening a stream uses one shared budget for response headers, error bodies, OAuth refresh, transport retries and backoff, and WebSocket-to-HTTP fallback. Buffered HTTP calls also read their body within that budget. Once streaming, the same duration limits consecutive transport silence; every read resets it, including keepalives, lifecycle events, and partial tool arguments. All model-generation calls stream, including compaction, goal judging, and ambient hints. Raise it for slow local or proxied endpoints; lower it to detect stalls sooner. |
 
-```json
+```json title="~/.ante/catalog.json"
 {
   "providers": {
     "my-provider": {
@@ -317,7 +317,7 @@ For built-in providers, include only the fields you want to change. A
 `credential` you set replaces the preset's list whole. To repoint Anthropic
 at a local proxy that takes no key and drop its built-in beta header:
 
-```json
+```json title="~/.ante/catalog.json"
 {
   "providers": {
     "anthropic": {
@@ -333,7 +333,7 @@ at a local proxy that takes no key and drop its built-in beta header:
 
 `thinking_display` controls readable reasoning output independently of [effort](/usage/models-and-thinking#effort). Accepted values are `off`, `concise`, and `detailed`. Built-in hosted-provider presets default to `detailed`; omitting the field in an overlay keeps that preset, while `null` clears it and leaves display behavior to the endpoint. A new custom provider sends no display parameter until you set one.
 
-```json
+```json title="~/.ante/catalog.json"
 {
   "providers": {
     "openai": { "thinking_display": "concise" },
@@ -348,7 +348,7 @@ The setting never changes reasoning effort or continuation state. OpenAI Respons
 
 Use `max_request_images` when an endpoint limits how many images it accepts in one request. The cap applies to all models on that provider and counts images across the entire request, including user messages and tool results. Document attachments, such as PDFs, do not count.
 
-```json
+```json title="~/.ante/catalog.json"
 {
   "providers": {
     "openrouter": { "max_request_images": 8 }
@@ -372,7 +372,7 @@ On the `OpenAiResponse` wire, Ante places the system prompt in the first develop
 
 Some gateways and proxies require parameters Ante doesn't model — a service tier, a routing hint, a vendor-specific beta block. `extra_body` is a JSON object merged into the top level of every chat and streaming request body Ante sends to that provider:
 
-```json
+```json title="~/.ante/catalog.json"
 {
   "providers": {
     "my-gateway": {
@@ -412,7 +412,7 @@ Skipped 1 entry in ~/.ante/catalog.json:
 
 A provider's `credential` says which credential it sends. It is a reference, a list of references, or `null`:
 
-```json
+```json title="~/.ante/catalog.json"
 {
   "providers": {
     "corp":       { "base_url": "https://llm.corp/v1", "wire_style": "OpenAiCompatible",
@@ -455,7 +455,7 @@ A reference without a label, such as `oauth:anthropic`, can use any of them. A l
 
 A helper is a command that prints a credential: a token from a vault, a cloud CLI, or a rotating key. Define it under `helpers` and reference it as `helper:NAME`:
 
-```json
+```json title="~/.ante/catalog.json"
 {
   "helpers": {
     "corp": { "command": ["corp-token", "--audience", "llm"], "ttl_secs": 3000 }
@@ -473,7 +473,7 @@ A helper is a command that prints a credential: a token from a vault, a cloud CL
 
 An OAuth profile is the recipe for a sign-in. The built-in ones are `anthropic`, `openai`, and `antix`. Add your own under `oauth_profiles` to sign in to another service, with no code change:
 
-```json
+```json title="~/.ante/catalog.json"
 {
   "oauth_profiles": {
     "corp": {

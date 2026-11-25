@@ -3,6 +3,9 @@ title: 快速入门
 description: "在一分钟内安装 Ante 并开始使用"
 ---
 
+import Tabs from '@theme/Tabs';
+import TabItem from '@theme/TabItem';
+
 ## 前置准备 {#prerequisites}
 
 准备一个已有的模型服务账户或 API 密钥。如需在自己的机器上运行模型，请参阅[离线模式](/local/offline)。
@@ -10,6 +13,9 @@ description: "在一分钟内安装 Ante 并开始使用"
 ## 安装 {#installation}
 
 Ante 作为单一独立的二进制文件分发，没有任何外部运行时依赖 —— 下载即可直接运行。
+
+<Tabs groupId="install">
+<TabItem value="script" label="安装脚本" default>
 
 ```sh
 curl -fsSL https://ante.run/install.sh | bash
@@ -26,11 +32,28 @@ curl -fsSL https://ante.run/install.sh | ANTE_INSTALL_DIR=/usr/local/bin bash
 
 请以普通用户身份运行默认安装脚本，不要使用 `sudo`。若使用 sudo 安装到用户主目录会导致 `~/.ante` 归属于 root 用户，从而阻止 Ante 正常保存设置和输入历史，因此安装脚本会拒绝该组合。
 
+</TabItem>
+<TabItem value="homebrew" label="Homebrew">
+
+```sh
+brew install antigmalabs/tap/ante
+```
+
+运行 `ante --version` 可检查安装。Homebrew 安装跟踪 `stable` 通道，`ante update` 会自动运行 `brew upgrade`。详见 [Homebrew 安装](/start/update#homebrew-installs)。
+
+</TabItem>
+</Tabs>
+
 macOS 平台的发布二进制文件已经过 Apple 开发者证书签名与公证（Notarized），Gatekeeper 安全检查会自动放行。
 
 ## 登录或添加密钥 {#start-with-your-existing-account-or-key}
 
 <span id="interactive-session" />
+<span id="use-a-different-provider" />
+<span id="log-in-with-antix" />
+
+<Tabs groupId="signin">
+<TabItem value="tui" label="TUI" default>
 
 在项目根目录中启动 Ante：
 
@@ -39,13 +62,15 @@ cd your-project
 ante
 ```
 
-<span id="use-a-different-provider" />
-
 如果已在 Ante 中登录或已在当前终端导出 API 密钥，即可直接开始。首次连接时，输入 `/providers`，选择提供商，按 `m` 登录或粘贴密钥。详见[连接提供商](/usage/providers)。
 
-### 从命令行登录 Antix {#log-in-with-antix}
+</TabItem>
+<TabItem value="cli" label="CLI">
 
 在项目目录运行 `ante auth login antix`，在浏览器中完成登录，然后运行 `ante --provider antix`。
+
+</TabItem>
+</Tabs>
 
 ## 完成第一个任务 {#run-your-first-task}
 

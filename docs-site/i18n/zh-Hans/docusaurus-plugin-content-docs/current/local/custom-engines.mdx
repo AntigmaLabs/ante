@@ -17,7 +17,7 @@ Ante 解析引擎二进制的优先级如下：
 
 托管模式不会自动发现任意 PATH 安装。若要使用自己的构建，请在 `~/.ante/offline-config.json` 中将 `llama_cpp.binaries.server` 指向其 `llama` 多路复用程序：
 
-```json
+```json title="~/.ante/offline-config.json"
 {
   "llama_cpp": {
     "binaries": {
@@ -47,7 +47,7 @@ ante offline use Qwen3.8-27B --args "--threads 12 --load-mode mmap --cache-type-
 
 直接编辑配置时，请使用模型的绝对文件路径或验证模型下载 URL 作为键（见 `ante offline list --json` 的 `reference`）；下方路径仅为示例。
 
-```json
+```json title="~/.ante/offline-config.json"
 {
   "model_preferences": {
     "/models/Qwen3.6-27B-Q4_K_M.gguf": {
@@ -65,7 +65,7 @@ Ante v0.3.9 固定使用 llama.cpp 版本：macOS 为 `b12606`，Linux 为 `b126
 
 **GPU 卸载层数。** `llama_cpp.server_defaults.gpu_layers` 控制 `-ngl` 参数。默认 `-1` 代表将所有网络层卸载至 GPU；若显存紧张可适当调小数值：
 
-```json
+```json title="~/.ante/offline-config.json"
 {
   "llama_cpp": {
     "server_defaults": { "gpu_layers": 24 }

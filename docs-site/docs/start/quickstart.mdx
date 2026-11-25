@@ -3,6 +3,9 @@ title: Quickstart
 description: "Install Ante and start using it in under a minute"
 ---
 
+import Tabs from '@theme/Tabs';
+import TabItem from '@theme/TabItem';
+
 ## Prerequisites
 
 Have a provider account or API key handy. To run a model on your own machine, follow the [offline setup](/local/offline).
@@ -10,6 +13,9 @@ Have a provider account or API key handy. To run a model on your own machine, fo
 ## Installation
 
 Ante is distributed as a single, self-contained binary with no external dependencies — just download and run.
+
+<Tabs groupId="install">
+<TabItem value="script" label="Install script" default>
 
 ```sh
 curl -fsSL https://ante.run/install.sh | bash
@@ -26,11 +32,28 @@ curl -fsSL https://ante.run/install.sh | ANTE_INSTALL_DIR=/usr/local/bin bash
 
 Run the default installer as your normal user, not with `sudo`. A sudoed home-directory install would leave `~/.ante` root-owned and prevent Ante from saving settings and input history, so the installer refuses that combination.
 
+</TabItem>
+<TabItem value="homebrew" label="Homebrew">
+
+```sh
+brew install antigmalabs/tap/ante
+```
+
+Run `ante --version` to check the installation. Homebrew installs track the `stable` channel, and `ante update` runs `brew upgrade` for you. See [Homebrew installs](/start/update#homebrew-installs).
+
+</TabItem>
+</Tabs>
+
 macOS release binaries are Developer ID-signed and notarized, so Gatekeeper accepts them without a manual security bypass.
 
 ## Sign in or add a key {#start-with-your-existing-account-or-key}
 
 <span id="interactive-session" />
+<span id="use-a-different-provider" />
+<span id="log-in-with-antix" />
+
+<Tabs groupId="signin">
+<TabItem value="tui" label="TUI" default>
 
 Open a terminal in your project and start Ante:
 
@@ -39,13 +62,15 @@ cd your-project
 ante
 ```
 
-<span id="use-a-different-provider" />
-
 If you’ve already signed in or exported your API key in this shell, Ante is ready. For a first connection, open `/providers`, select your provider, and press `m` to sign in or paste a key. See [Connect a provider](/usage/providers).
 
-### Sign in to Antix from the CLI {#log-in-with-antix}
+</TabItem>
+<TabItem value="cli" label="CLI">
 
 From your project directory, run `ante auth login antix`, finish signing in through the browser, then run `ante --provider antix`.
+
+</TabItem>
+</Tabs>
 
 ## Run your first task
 
