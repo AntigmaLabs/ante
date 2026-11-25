@@ -15,9 +15,6 @@
 
 # Ante
 
-> [!WARNING]
-> **Beta preview:** Expect breaking changes and incomplete functionality. macOS and Linux only; on Windows, we suggest [WSL](https://learn.microsoft.com/windows/wsl/install).
-
 **A ghost in your shell.** Ante is a self-contained coding agent that lives in your terminal and self-organizes. One ~15MB compressed download from [Antigma Labs](https://antigma.ai) that expands to a single Rust executable with zero runtime dependencies, built to get the most out of any model.
 
 It works like Claude Code or Codex, with none of their dependencies or model constraints. It can also be the optimized core for [building your own harness](examples/mini-tui) and high-performing assistants.
@@ -142,7 +139,7 @@ Requires `tmux` and whichever agent CLIs you want to run. [**Terminal orchestrat
 
 ### Installation
 
-Ante is a single, self-contained binary with no external dependencies: download and run.
+Ante is a single, self-contained binary with no external dependencies: download and run. It supports macOS and Linux; on Windows, use [WSL](https://learn.microsoft.com/windows/wsl/install).
 
 ```sh
 curl -fsSL https://ante.run/install.sh | bash
@@ -343,6 +340,6 @@ Full documentation is available at [docs.antigma.ai](https://docs.antigma.ai).
 Source code in this repository (including the SDK and protocol crates) is
 licensed under the [Apache License 2.0](LICENSE).
 
-The prebuilt `ante` binary is free to use — including commercially — during
-the alpha preview under the [Binary Preview Terms](BINARY-TERMS.md). The SDK
+The prebuilt `ante` binary is free to use, including commercially, under the
+[Binary Preview Terms](BINARY-TERMS.md). The SDK
 and protocol surface you build against here remain permissively licensed.
