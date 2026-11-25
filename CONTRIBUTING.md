@@ -11,7 +11,7 @@ For now, the most useful contribution is a [GitHub issue](https://github.com/Ant
 | SDK, protocol, core primitives | [`crates/`](crates) | Ported by a maintainer |
 | Harbor adapter | [`ante-harbor/`](ante-harbor) | Ported by a maintainer |
 | ACP server | [`ante-acp/`](ante-acp) | Merged here |
-| Slack and Discord gateway | [`ante-gateway/`](ante-gateway) | Merged here |
+| Slack and Discord gateway | [`examples/ante-gateway/`](examples/ante-gateway) | Merged here |
 | Docs | [`docs-site/`](docs-site) | Merged here |
 | Curated profiles and skills | [`curated/`](curated) | Merged here |
 | Examples | [`examples/`](examples) | Merged here |

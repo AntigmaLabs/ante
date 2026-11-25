@@ -23,7 +23,7 @@ ante gateway
 
 `ante gateway` and `ante-gateway` run the same external application. Ante searches `~/.ante/bin`, then `PATH`, then `~/.cargo/bin`; if the executable is missing, it prints installation guidance and exits with status `127`.
 
-The gateway connects to the host through the Ante SDK (the `ante serve --sock` socket by default, or an endpoint supplied with `--connect`), reads `~/.ante/channels.json`, and connects to your enabled platforms. It uses the 0.2 SDK/protocol series; run it with a compatible Ante host.
+The gateway connects to the host through the Ante SDK (the `ante serve --sock` socket by default, or an endpoint supplied with `--connect`), reads `~/.ante/channels.json`, and connects to your enabled platforms. It is built on the 0.3 SDK, so run it against an Ante 0.3 host.
 
 Alternatively, `ante gateway --connect stdio` spawns an Ante host for each conversation. For stdio, the executable is resolved from a non-empty `ANTE` environment variable, then `--executable PATH`, then `ante` on `PATH`. `ANTE_HOME` controls the default directory for `channels.json` and `run/serve.sock`; `ANTE_SERVE_TOKEN` supplies the bearer token for WebSocket hosts. Logs go to stderr, while `--output-format` controls protocol events on stdout.
 

@@ -26,7 +26,7 @@ ante gateway
 
 `ante gateway` 与直接运行 `ante-gateway` 使用同一个外部程序。Ante 依次在 `~/.ante/bin`、`PATH` 和 `~/.cargo/bin` 中查找它；未安装时会显示安装指引并以状态码 `127` 退出。
 
-网关通过 Ante SDK 连接到宿主（默认为 `ante serve --sock` 的套接字，也可通过 `--connect` 指定），读取 `~/.ante/channels.json`，并连接已启用的平台。网关使用 0.2 系列 SDK/协议；请搭配兼容的 Ante 宿主。
+网关通过 Ante SDK 连接到宿主（默认为 `ante serve --sock` 的套接字，也可通过 `--connect` 指定），读取 `~/.ante/channels.json`，并连接已启用的平台。网关基于 0.3 系列 SDK，请搭配 Ante 0.3 宿主运行。
 
 也可运行 `ante gateway --connect stdio`，为每个对话启动 Ante 宿主。stdio 模式按非空的 `ANTE` 环境变量、`--executable PATH`、`PATH` 上的 `ante` 顺序选择可执行文件。`ANTE_HOME` 控制 `channels.json` 与 `run/serve.sock` 的默认目录；`ANTE_SERVE_TOKEN` 为 WebSocket 宿主提供 Bearer Token。日志写入 stderr，`--output-format` 控制 stdout 上的协议事件格式。
 
