@@ -4,6 +4,8 @@ The `ante` agent ships as a closed prebuilt binary under the [Binary Preview Ter
 
 For now, the most useful contribution is a [GitHub issue](https://github.com/AntigmaLabs/ante/issues/new/choose): bugs, rough edges, and what you wish Ante did. Issues shape what we open and fix next.
 
+We also love documentation fixes and use-case showcases. Send docs changes as a PR to [`docs-site/`](docs-site), and share what you built with Ante in [Show and tell](https://github.com/AntigmaLabs/ante/discussions/categories/show-and-tell).
+
 ## What's open
 
 | Component | Path | PRs |
