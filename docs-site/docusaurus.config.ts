@@ -73,6 +73,14 @@ const config: Config = {
   url: 'https://docs.antigma.ai',
   baseUrl: '/',
 
+  future: {
+    v4: true,
+    faster: true,
+  },
+
+  onBrokenLinks: 'throw',
+  onBrokenAnchors: 'throw',
+
   i18n: {
     defaultLocale: 'en',
     locales: ['en', 'zh-Hans'],
@@ -94,6 +102,11 @@ const config: Config = {
 
   markdown: {
     mermaid: true,
+    // future.v4 turns these off; the docs use {#anchor} heading ids throughout.
+    mdx1Compat: { comments: true, admonitions: true, headingIds: true },
+    hooks: {
+      onBrokenMarkdownLinks: 'throw',
+    },
   },
   themes: [
     '@docusaurus/theme-mermaid',
@@ -181,6 +194,21 @@ const config: Config = {
   ],
 
   themeConfig: {
+    image: 'assets/ante-social-card.png',
+    announcementBar: {
+      // Change the id whenever the content changes, so dismissed bars reappear.
+      id: 'open-sourcing-21',
+      content: isZhHansBuild
+        ? '我们正在逐步开源 Ante，进展见 <a href="https://github.com/AntigmaLabs/ante/issues/21">#21</a>。'
+        : 'We are open-sourcing Ante piece by piece. Follow along in <a href="https://github.com/AntigmaLabs/ante/issues/21">#21</a>.',
+      isCloseable: true,
+    },
+    docs: {
+      sidebar: {
+        hideable: true,
+        autoCollapseCategories: true,
+      },
+    },
     navbar: {
       title: 'Antigma Docs',
       logo: {

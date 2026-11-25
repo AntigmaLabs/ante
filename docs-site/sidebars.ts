@@ -47,6 +47,7 @@ const sidebars: SidebarsConfig = {
       type: 'category',
       label: 'Using the TUI',
       className: 'sidebar-section sidebar-section--use',
+      link: { type: 'generated-index' },
       collapsed: false,
       items: [
         'usage/tui',
@@ -62,6 +63,7 @@ const sidebars: SidebarsConfig = {
       type: 'category',
       label: 'Models',
       className: 'sidebar-section sidebar-section--models',
+      link: { type: 'generated-index' },
       collapsed: false,
       items: ['usage/models-and-thinking', 'usage/custom-sign-ins'],
     },
@@ -69,6 +71,7 @@ const sidebars: SidebarsConfig = {
       type: 'category',
       label: 'Local Models',
       className: 'sidebar-section sidebar-section--local',
+      link: { type: 'generated-index' },
       collapsed: false,
       items: [
         'local/overview',
@@ -82,6 +85,7 @@ const sidebars: SidebarsConfig = {
       type: 'category',
       label: 'Configure & Extend',
       className: 'sidebar-section sidebar-section--config',
+      link: { type: 'generated-index' },
       collapsed: true,
       items: [
         'configuration/preference',
@@ -97,6 +101,7 @@ const sidebars: SidebarsConfig = {
       type: 'category',
       label: 'Build on Ante',
       className: 'sidebar-section sidebar-section--api',
+      link: { type: 'generated-index' },
       collapsed: true,
       items: ['usage/headless', 'usage/serve', 'usage/sdk', 'usage/gateway'],
     },
@@ -104,6 +109,7 @@ const sidebars: SidebarsConfig = {
       type: 'category',
       label: 'Reference',
       className: 'sidebar-section sidebar-section--ref',
+      link: { type: 'generated-index' },
       collapsed: true,
       items: [
         'reference/cli-reference',
@@ -119,6 +125,7 @@ const sidebars: SidebarsConfig = {
       type: 'category',
       label: 'Why Ante',
       className: 'sidebar-section sidebar-section--why',
+      link: { type: 'generated-index' },
       collapsed: true,
       items: ['benchmarks/eval', 'benchmarks/compare_table', 'start/philosophy'],
     },
@@ -126,6 +133,7 @@ const sidebars: SidebarsConfig = {
       type: 'category',
       label: 'Experimental',
       className: 'sidebar-section sidebar-section--exp',
+      link: { type: 'generated-index' },
       collapsed: true,
       items: ['experimental/agent-org', 'experimental/agent-native-inference'],
     },
