@@ -25,13 +25,15 @@ Not yet:
   so the model decides on its own instead of asking you to choose.
 - MCP servers and additional directories passed by the client are ignored.
 
-## Build from source & Run
+## Install & Run
 
-Build and install `ante-acp`:
+Install `ante-acp` from crates.io:
 
 ```bash
-cargo install --path ante-acp
+cargo install ante-acp
 ```
+
+To build this checkout instead, run `cargo install --path ante-acp` from the repository root.
 
 Once installed, it can be invoked via `ante` or directly:
 

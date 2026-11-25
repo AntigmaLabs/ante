@@ -239,14 +239,15 @@ A profile replaces the whole settings file, so anything it omits falls back to A
   - [`examples/mini-tui`](examples/mini-tui) — One-file chat TUI: a starting point for your own harness.
   - [`examples/ante-gateway`](examples/ante-gateway) — Slack and Discord gateway for Ante.
 
-### Building applications from source
+### Installing the applications
 
-Build and install ACP and the gateway with Cargo:
+Install ACP and the gateway from crates.io:
 
 ```sh
-cargo install --path ante-acp
-cargo install --path examples/ante-gateway
+cargo install ante-acp ante-gateway
 ```
+
+To build from this checkout instead, use `cargo install --path ante-acp` or `cargo install --path examples/ante-gateway`.
 
 Once installed on `PATH`, they can be invoked directly (`ante-acp`, `ante-gateway`) or dispatched via `ante`:
 
