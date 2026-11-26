@@ -74,7 +74,8 @@ const config: Config = {
   baseUrl: '/',
 
   future: {
-    v4: true,
+    // Cascade layers let Infima's defaults override custom.css, so keep them off.
+    v4: { removeLegacyPostBuildHeadAttribute: true, useCssCascadeLayers: false },
     faster: true,
   },
 
@@ -195,14 +196,6 @@ const config: Config = {
 
   themeConfig: {
     image: 'assets/ante-social-card.png',
-    announcementBar: {
-      // Change the id whenever the content changes, so dismissed bars reappear.
-      id: 'open-sourcing-21',
-      content: isZhHansBuild
-        ? '我们正在逐步开源 Ante，进展见 <a href="https://github.com/AntigmaLabs/ante/issues/21">#21</a>。'
-        : 'We are open-sourcing Ante piece by piece. Follow along in <a href="https://github.com/AntigmaLabs/ante/issues/21">#21</a>.',
-      isCloseable: true,
-    },
     docs: {
       sidebar: {
         hideable: true,
