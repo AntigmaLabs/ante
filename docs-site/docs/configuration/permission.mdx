@@ -33,7 +33,7 @@ ante --yolo "run cargo clippy and fix all warnings"
 ante --permission-mode auto "update docs and run tests"
 ```
 
-In the TUI, press **Shift+Tab** to cycle the mode live: `strict` → `auto` → `yolo` → `strict`. The change applies immediately, including to later tool calls in a turn that is already running. Cycling to `strict` or `auto` also saves that mode as the default in `~/.ante/settings.json`; cycling to `yolo` is session-only, so future sessions do not silently start with permission checks off.
+In the TUI, press **Shift+Tab** to cycle the mode live: `strict` → `auto` → `yolo` → `strict`. The change applies immediately, including to later tool calls in a turn that is already running. Cycling to `strict` or `auto` also saves that mode as the default in `~/.ante/settings.json`; cycling to `yolo` is session-only, so future sessions do not silently start with permission checks off. To make `yolo` the default on purpose, set it in `/config` or in `settings.json`.
 
 Resuming or rewinding inside the TUI keeps the permission mode you are currently using, including a session-only `yolo` choice. From the command line, `--permission-mode` or `--yolo` also applies when resuming. If a client does not supply a mode, Ante uses the current settings. A mode stored in an old conversation snapshot never overrides that choice. Permission rules are reloaded from current settings on resume.
 
@@ -78,10 +78,14 @@ If no rule matches, the mode decides the fallback: `strict` asks except for know
 | `Glob` | Allow |
 | `Grep` | Allow |
 | `Agent` | Allow |
+| `AskUser` | Allow |
 | `TodoWrite` | Allow |
 | `WebFetch` | Ask |
 | `WebSearch` | Ask |
 | `ViewImage` | Allow |
+| MCP tools | Allow |
+
+`TodoWrite` and `ViewImage` are off by default; add them with `--include-tools`. MCP tools run unprompted unless a rule says otherwise, so add an `ask` or `deny` rule naming any MCP tool you want gated.
 
 In `strict` mode, read-only shell commands can also be auto-approved as a final fallback after explicit rules are checked. This covers vetted read-only programs — and pipelines or `&&` / `||` / `;` sequences built only from them; anything with redirections, command substitution, or an unrecognized command still prompts.
 
@@ -166,9 +170,14 @@ Malformed permission rules are skipped individually, each reported in the sessio
 # Replace the default tool set with exactly these tools
 ante --tools Read,Glob,Grep -p "analyze the code"
 
+# Add default-off tools on top of the default (or --tools) set
+ante --include-tools ViewImage -p "describe the screenshot"
+
 # Remove these tools
 ante --exclude-tools Bash,Write -p "read-only analysis"
 ```
+
+`--exclude-tools` wins over `--tools` and `--include-tools`.
 
 Each filter flag consumes one comma-separated value per occurrence. Repeat the flag when that reads better; a space-separated list such as `--tools Read Glob` is not accepted.
 
