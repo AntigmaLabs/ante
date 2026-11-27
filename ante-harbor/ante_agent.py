@@ -102,8 +102,6 @@ _CATALOG_PAYLOAD_PATH = "/installed-agent/ante-catalog.json"
 # implement the older HTTP+SSE transport. A task that declares a server as
 # ``sse`` is reconfigured to Streamable HTTP only when its URL is listed here,
 # exactly: each entry names an endpoint verified to serve both transports.
-# Nothing else is rewritten, so an unverified ``sse`` server reaches Ante as
-# declared and Ante reports the unsupported transport at startup.
 VERIFIED_STREAMABLE_HTTP_ENDPOINTS = {
     # medical-claims-processing: @playwright/mcp@0.0.64
     # routes /sse to legacy SSE and /mcp to Streamable HTTP on the same port.
@@ -297,28 +295,17 @@ def bundled_skill_names(output: str) -> set[str]:
 
 
 def mcp_settings(servers: list[MCPServerConfig]) -> dict[str, Any]:
-    """Map Harbor MCP server declarations to Ante's ``mcp_servers`` settings.
-
-    Stdio servers launch directly and Streamable HTTP servers are reached at
-    their URL. An ``sse`` declaration becomes Streamable HTTP only through
-    ``VERIFIED_STREAMABLE_HTTP_ENDPOINTS``; otherwise it is written as
-    declared, which Ante refuses with a message naming the transport.
-    """
+    """Map Harbor MCP declarations to command-based or URL-based Ante entries."""
     entries: dict[str, dict[str, Any]] = {}
     for server in servers:
         if server.transport == "stdio":
             entries[server.name] = {"command": server.command, "args": list(server.args)}
             continue
-        transport, url = server.transport, server.url
-        if transport == "sse" and url in VERIFIED_STREAMABLE_HTTP_ENDPOINTS:
-            transport, url = "streamable-http", VERIFIED_STREAMABLE_HTTP_ENDPOINTS[url]
-        entries[server.name] = {"transport": transport, "url": url}
+        url = server.url
+        if server.transport == "sse" and url in VERIFIED_STREAMABLE_HTTP_ENDPOINTS:
+            url = VERIFIED_STREAMABLE_HTTP_ENDPOINTS[url]
+        entries[server.name] = {"url": url}
     return {"mcp_servers": entries}
-
-
-def remote_mcp_servers(servers: list[MCPServerConfig]) -> list[MCPServerConfig]:
-    """The declared servers Ante reaches over the network rather than stdio."""
-    return [server for server in servers if server.transport != "stdio"]
 
 
 def legacy_sse_servers(servers: list[MCPServerConfig]) -> list[MCPServerConfig]:
@@ -328,18 +315,6 @@ def legacy_sse_servers(servers: list[MCPServerConfig]) -> list[MCPServerConfig]:
         for server in servers
         if server.transport == "sse" and server.url not in VERIFIED_STREAMABLE_HTTP_ENDPOINTS
     ]
-
-
-def remote_mcp_support_command() -> str:
-    """Succeed only if the installed Ante knows the Streamable HTTP transport.
-
-    Native support arrived in Ante 0.2.12. An older Ante skips a
-    ``settings.json`` server entry it cannot parse with a log line and nothing
-    else, so a remote server would be missing from the run without any error.
-    The transport's settings name is read from the binary, the way bundled
-    skills are.
-    """
-    return 'LC_ALL=C grep -aq -- "streamable-http" "$(command -v ante)"'
 
 
 def write_json_command(target: str, payload_path: str) -> str:
@@ -667,7 +642,12 @@ class AnteAgent(BaseInstalledAgent):
             if output is not None:
                 hidden_skills = await self._hidden_skills(environment, output.split())
         if self.mcp_servers:
-            await self._check_remote_mcp_support(environment)
+            for server in legacy_sse_servers(self.mcp_servers):
+                self.logger.warning(
+                    f"MCP server {server.name} declares the legacy SSE transport at "
+                    f"{server.url} and has no verified Streamable HTTP endpoint. "
+                    "Registering the declared URL."
+                )
             await environment.upload_file(_MERGE_JSON_SOURCE, _MERGE_JSON_PATH)
             await self._upload_config_text(
                 environment,
@@ -677,34 +657,6 @@ class AnteAgent(BaseInstalledAgent):
             )
             await self._register_step(environment, "MCP servers", register_mcp_command())
         return hidden_skills
-
-    async def _check_remote_mcp_support(self, environment: BaseEnvironment) -> None:
-        """Stop the trial when the installed Ante cannot reach a remote server.
-
-        A task that declares a remote server needs it, and an Ante without
-        native Streamable HTTP support would drop the entry silently and run
-        the task without it. Unverified ``sse`` declarations are warned about
-        here and still registered as declared, so Ante's startup output names
-        the unsupported transport instead of the server simply being absent.
-        """
-        remote = remote_mcp_servers(self.mcp_servers)
-        if not remote:
-            return
-        probe = await environment.exec(command=remote_mcp_support_command())
-        if probe.return_code != 0:
-            names = ", ".join(server.name for server in remote)
-            raise RuntimeError(
-                f"This Ante build has no native remote MCP support, so the task's remote "
-                f"MCP servers ({names}) cannot be registered; use Ante 0.2.12 or newer, "
-                "which accepts `url` entries in `mcp_servers`."
-            )
-        for server in legacy_sse_servers(self.mcp_servers):
-            self.logger.warning(
-                f"MCP server {server.name} declares the legacy SSE transport at "
-                f"{server.url}, which Ante does not implement and which has no verified "
-                "Streamable HTTP endpoint; it is registered as declared, so Ante reports "
-                "the refusal at startup and its tools stay unavailable."
-            )
 
     async def _apply_catalog_overlay(self, environment: BaseEnvironment) -> None:
         """Write the requested provider overrides into Ante's user catalog.

@@ -585,38 +585,22 @@ class TaskExtensionTests(unittest.TestCase):
         settings = ante_agent.mcp_settings(servers)["mcp_servers"]
 
         self.assertEqual(settings["local"], {"command": "srv", "args": ["--x"]})
-        self.assertEqual(
-            settings["remote"], {"transport": "streamable-http", "url": "http://mcp:3080/mcp"}
-        )
+        self.assertEqual(settings["remote"], {"url": "http://mcp:3080/mcp"})
         # Only the verified endpoint is rewritten, to its exact replacement.
         self.assertEqual(
             settings["playwright"],
-            {"transport": "streamable-http", "url": "http://playwright-mcp:3080/mcp"},
+            {"url": "http://playwright-mcp:3080/mcp"},
         )
-        self.assertEqual(settings["legacy"], {"transport": "sse", "url": "http://mcp:3080/sse"})
+        self.assertEqual(settings["legacy"], {"url": "http://mcp:3080/sse"})
         self.assertEqual(ante_agent.legacy_sse_servers(servers), [self.LEGACY])
-        self.assertEqual(
-            ante_agent.remote_mcp_servers(servers), [self.PLAYWRIGHT, self.LEGACY, self.REMOTE]
-        )
 
     def test_verified_endpoint_table_matches_exact_urls_only(self):
         for url in ("http://playwright-mcp:3080/sse/", "http://playwright-mcp:3081/sse"):
             server = MCPServerConfig(name="pw", transport="sse", url=url)
             self.assertEqual(
                 ante_agent.mcp_settings([server])["mcp_servers"]["pw"],
-                {"transport": "sse", "url": url},
+                {"url": url},
             )
-
-    def test_remote_support_probe_reads_the_transport_name_from_the_binary(self):
-        with tempfile.TemporaryDirectory() as d:
-            binary = Path(d) / "ante"
-            path = f"{d}{os.pathsep}{os.environ['PATH']}"
-            cases = ((b"\x00stdio\x00streamable-http\x00", 0), (b"\x00stdio\x00", 1))
-            for content, expected in cases:
-                binary.write_bytes(content)
-                binary.chmod(0o755)
-                result = run_shell(ante_agent.remote_mcp_support_command(), d, d, path=path)
-                self.assertEqual(result.returncode, expected, content)
 
     def test_register_skills_copies_task_dir_contents_and_lists_them(self):
         with tempfile.TemporaryDirectory() as d:
@@ -680,7 +664,7 @@ class TaskExtensionTests(unittest.TestCase):
         self.assertEqual(settings["theme"], "dark")
         self.assertEqual(
             settings["mcp_servers"]["playwright"],
-            {"transport": "streamable-http", "url": "http://playwright-mcp:3080/mcp"},
+            {"url": "http://playwright-mcp:3080/mcp"},
         )
 
     def run_registration(self, agent, return_code=0, responses=None):
@@ -688,7 +672,7 @@ class TaskExtensionTests(unittest.TestCase):
         hidden = asyncio.run(agent._register_task_extensions(environment))
         return environment, hidden
 
-    def test_registration_checks_support_then_uploads_helper_and_payload(self):
+    def test_registration_uploads_helper_and_payload(self):
         with tempfile.TemporaryDirectory() as d:
             agent = ante_agent.AnteAgent(
                 logs_dir=Path(d),
@@ -701,30 +685,17 @@ class TaskExtensionTests(unittest.TestCase):
         self.assertIn("def merge_json", helper)
         payload = json.loads(environment.uploads["/installed-agent/ante-mcp-settings.json"])
         self.assertEqual(payload["mcp_servers"]["playwright"]["url"], "http://playwright-mcp:3080/mcp")
-        self.assertEqual(len(environment.commands), 4)
+        self.assertEqual(len(environment.commands), 3)
         self.assertIn("cp -R /app/site/.agents/skills/.", environment.commands[0])
         self.assertIn("grep -aoE", environment.commands[1])
-        self.assertEqual(environment.commands[2], ante_agent.remote_mcp_support_command())
-        self.assertIn("ante_merge_json.py", environment.commands[3])
+        self.assertIn("ante_merge_json.py", environment.commands[2])
 
-    def test_stdio_only_servers_skip_the_support_probe(self):
-        with tempfile.TemporaryDirectory() as d:
-            agent = ante_agent.AnteAgent(logs_dir=Path(d), mcp_servers=[self.LOCAL])
-            environment, _ = self.run_registration(agent)
-
-        self.assertEqual(len(environment.commands), 1)
-        self.assertIn("ante_merge_json.py", environment.commands[0])
-
-    def test_remote_servers_on_an_ante_without_native_support_stop_the_trial(self):
-        probe = ante_agent.remote_mcp_support_command()
-        environment = RecordingEnvironment(responses={probe: FakeExecResult(return_code=1)})
+    def test_remote_and_stdio_servers_register_without_probing_ante(self):
         with tempfile.TemporaryDirectory() as d:
             agent = ante_agent.AnteAgent(logs_dir=Path(d), mcp_servers=[self.REMOTE, self.LOCAL])
-            with self.assertRaisesRegex(RuntimeError, "no native remote MCP support.*remote"):
-                asyncio.run(agent._register_task_extensions(environment))
+            environment, _ = self.run_registration(agent)
 
-        self.assertEqual(environment.uploads, {})
-        self.assertEqual(environment.commands, [probe])
+        self.assertEqual(environment.commands, [ante_agent.register_mcp_command()])
 
     def test_unverified_sse_servers_are_registered_as_declared_with_a_warning(self):
         with tempfile.TemporaryDirectory() as d:
@@ -733,9 +704,8 @@ class TaskExtensionTests(unittest.TestCase):
                 environment, _ = self.run_registration(agent)
 
         payload = json.loads(environment.uploads["/installed-agent/ante-mcp-settings.json"])
-        self.assertEqual(payload["mcp_servers"]["legacy"]["transport"], "sse")
+        self.assertEqual(payload["mcp_servers"]["legacy"], {"url": "http://mcp:3080/sse"})
         self.assertIn("legacy SSE transport at http://mcp:3080/sse", logs.output[0])
-        self.assertIn("registered as declared", logs.output[0])
 
     def test_hidden_skills_add_binary_skills_and_warn_on_shadowed_task_skills(self):
         responses = {
