@@ -28,6 +28,8 @@ Local is a first-class way to run Ante. Hosted and local providers live in the s
 
 **Native integration.** Ante goes further than tolerating a base URL. [Offline mode](/local/offline) manages llama.cpp itself: pinned, checksum-verified builds matched to your hardware (Metal on Apple silicon, CUDA or Vulkan or CPU on Linux), GGUF discovery across your disk, memory estimation before a model loads, live load progress, and server lifecycle handled in the TUI. A [curated model list](/local/verified-models) tells you what runs well before you download 17 GB. Prefer your own build or launch flags? [Custom engines](/local/custom-engines) covers that.
 
+**Context that fits the model.** A local model usually has a smaller window than a hosted one, and Ante adapts to it. With no context set, the window is sized to the memory you have, and the session works to the window the engine reports. The [skills list](/extend/skills#how-skills-are-discovered) in the prompt is sized to that window, and compaction scales down with it. A fitted window below 32,768 tokens is too small for the agent, so the load is refused. See [After a load](/local/offline#after-a-load).
+
 **Agent-native inference, in progress.** The endgame is an inference engine inside the agent process, tuned for how agents actually call models: prefix reuse across turns, constrained decoding for tool calls, batching across subagents. We explore that in the open with [nanochat-rs](https://github.com/AntigmaLabs/nanochat-rs), a small pure-Rust inference core you can clone and run. See [Agent-Native Inference](/experimental/agent-native-inference).
 
 ## Mixing local and frontier
@@ -69,4 +71,4 @@ The curated [`ante` skill](https://github.com/AntigmaLabs/ante/tree/main/curated
 
 ## Numbers you can check
 
-We benchmark local models with the same rigor as frontier ones: same harness, same pinned public builds, same auditable Harbor runs. Qwen3.6 27B, a 17 GB download, scores **56.2%** on Terminal-Bench 2.1 across 445 trials — live at [antigma.ai/eval](https://antigma.ai/eval), with instructions for inspecting the installed model list on [Verified Models](/local/verified-models).
+We benchmark local models with the same rigor as frontier ones: same harness, same pinned public builds, same auditable Harbor runs. Qwen3.6 27B, a 17 GB download, scored **56.2%** on Terminal-Bench 2.1 across 445 trials. That run stays on the [eval page](/benchmarks/eval#terminal-bench-21); the models in your installed version are listed on [Verified Models](/local/verified-models).

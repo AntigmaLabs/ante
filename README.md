@@ -14,18 +14,18 @@
 
 **A ghost in your shell.** Ante is a self-contained coding agent that lives in your terminal and self-organizes. One ~15MB compressed download from [Antigma Labs](https://antigma.ai) that expands to a single Rust executable with zero runtime dependencies, built to get the most out of any model.
 
-It works like Claude Code or Codex, with none of their dependencies or model constraints. It can also be the optimized core for [building your own harness](examples/mini-tui) and high-performing assistants.
+It keeps pace with frontier agents like Claude Code and Codex, with native local inference as a first-class citizen. It can also be the optimized core for [building your own harness](examples/mini-tui) and high-performing assistants.
 
 ```sh
 curl -fsSL https://ante.run/install.sh | bash
 ante
 ```
 
-No API key? [Run it fully offline](#-natively-offline) with a local model. Already using Claude Code or Codex? Give them the [Ante skill](curated/skills/ante) to hand work to Ante.
+No API key? [Run it fully offline](#-native-local-inference) with a local model. Already using Claude Code or Codex? Give them the [Ante skill](curated/skills/ante) to hand work to Ante.
 
-| 🥇 [Terminal-Bench 1.0 → 4.1](#-continuously-evaluated-and-evolved-in-public) | 🪶 [~7× less memory](#-a-fraction-of-the-footprint) | 🔌 [Offline built in](#-natively-offline) |
+| 🥇 [Terminal-Bench 1.0 → 4.1](#-continuously-evaluated-and-evolved-in-public) | 🔌 [Native local inference](#-native-local-inference) | 🪶 [~7× less memory](#-a-fraction-of-the-footprint) |
 |---|---|---|
-| At the frontier for more than a year | than Claude Code on the same 20 tasks | No key, no account, no internet |
+| Benchmarked as shipped, at the frontier for more than a year | Context that adapts to smaller models | than Claude Code on the same 20 tasks |
 
 ![Ante opening another agent in a terminal split, sending it a question, reading its answer, and detaching the viewer](docs-site/static/assets/cookbook/ante-term-demo.gif)
 
@@ -35,20 +35,41 @@ Ante makes this declarative: [one settings profile](#one-binary-many-agents) can
 
 ### 🥇 Continuously evaluated and evolved in public
 
-**We keep up with the frontier so you don't have to.** For more than a year, we have run Ante through every new version of Terminal-Bench as it landed, and kept it at the frontier:
+**We keep up with the frontier so you don't have to.** We benchmark the build we ship: each result pins the exact release you can download and links the raw Harbor run for independent audit. For more than a year, we have run Ante through every new version of Terminal-Bench as it landed, and kept it at the frontier:
 
-- **[Terminal-Bench 4.1](https://antigma.ai/eval)** (current): **65.6% with Gemini 4 Neon, beating Google's native Antigravity CLI on the same model** (61.2%). With DeepSeek V4.1 Flash 1017, 40.9% against the verified Claude Code row's 38.5%.
+- **[Terminal-Bench 4.1](https://antigma.ai/eval)** (current): **65.6% with Gemini 4 Neon, beating Google's native Antigravity CLI on the same model** (61.2%). With DeepSeek V4.1 Flash 1017, 40.9% against the verified Claude Code row's 38.5%. Ante is the #1 same-model agent on both.
 - **Terminal-Bench 2.1**: 83.9% with open-weight DeepSeek V4.1 Flash for about $18 of inference, edging past Fable 5 in its native Claude Code (83.8%, about $553).
 - **Terminal-Bench 2.0** (early 2026): #1 verified agent.
 - **Terminal-Bench 1.0** (2025): #1.
 
-New models and harder benchmarks keep landing, and the Ante you install has already been measured against them. Every run keeps the benchmark's official timeouts and sandbox resource limits, the same standard the frontier labs' own agents follow. We evaluate Ante as a harness across model families, and each result pins the exact build you can download plus the raw Harbor run for independent audit. [Track record →](https://docs.antigma.ai/benchmarks/eval#track-record)
+New models and harder benchmarks keep landing, and the Ante you install has already been measured against them. Every run keeps the benchmark's official timeouts and sandbox resource limits, the same standard the frontier labs' own agents follow. We evaluate Ante as a harness across model families. [Track record →](https://docs.antigma.ai/benchmarks/eval#track-record)
 
 #### Same model, different harness
 
 [![Benchmark summary for five agent harness configurations running the same DeepSeek model](https://antigma.ai/assets/files/overview-heatmap-86c979b50b72aef4b29d368c5684cecf.png)](https://antigma.ai/blog/2026/08/04/harness-matter)
 
 **[Live cross-model results →](https://antigma.ai/eval)** · [Same-model harness comparison →](https://antigma.ai/blog/2026/08/04/harness-matter) · [Methodology →](https://docs.antigma.ai/benchmarks/eval)
+
+### 🔌 Native local inference
+
+Local models are a first-class way to run Ante. They sit in the same catalog as hosted providers and run the same full prompt and tool stack.
+
+- **Deep.** Ante installs and runs the inference engine itself, with a build matched to your hardware. It finds models on your disk, estimates memory before a load, and manages the server from the TUI.
+- **Adaptive context.** The context window is sized to the memory you have. The skills list and compaction scale to that window, so the agent loop runs in a window as small as 32K.
+- **Verified.** A curated model list is tested against Ante's agent loop for loading, chat templates, and tool calling.
+
+Point Ante at a local model and the whole loop runs on your machine: no API key, no account, no internet.
+
+```sh
+ante --offline-model ~/.ante/models/Qwen3.5-9B-Q4_K_M.gguf \
+  -p "add error handling to src/main.rs"
+```
+
+Set a reusable default with `ante offline use Qwen3.5-9B`, then launch it with `ante --offline-model` (interactive) or `ante --offline-model -p "your task"` (headless). Run `ante offline list` to see available models and `ante offline status` to inspect the engine. Verified models download on first load; install the engine with `ante offline install` before using the launch flag.
+
+We think about the engine layer in public too. [**nanochat-rs**](https://github.com/AntigmaLabs/nanochat-rs) is a small GPT inference core we wrote in pure Rust on [candle](https://github.com/huggingface/candle): readable, runnable, and living in the same process as the code that calls it. It is a study project rather than part of the binary, published because in-process inference is where local models get interesting for agents.
+
+**[Local models →](https://docs.antigma.ai/local/overview)** · [Offline mode →](https://docs.antigma.ai/local/offline) · [nanochat-rs →](https://github.com/AntigmaLabs/nanochat-rs) · [Where this is going →](https://docs.antigma.ai/experimental/agent-native-inference)
 
 ### 🪶 A fraction of the footprint
 
@@ -58,24 +79,9 @@ Ante is hand-written Rust: the heavy parts (`Grep`, `git`) are embedded in one b
 
 **[Raw numbers →](https://docs.antigma.ai/benchmarks/compare_table)** · [Benchmark details →](https://docs.antigma.ai/benchmarks/eval)
 
-### 🔌 Natively offline
-
-Ante ships with its own managed inference engine. Point it at a local model and the whole loop runs on your machine: no API key, no account, no internet.
-
-```sh
-ante --offline-model ~/.ante/models/Qwen3.5-9B-Q4_K_M.gguf \
-  -p "add error handling to src/main.rs"
-```
-
-We think about the engine layer in public too. [**nanochat-rs**](https://github.com/AntigmaLabs/nanochat-rs) is a small GPT inference core we wrote in pure Rust on [candle](https://github.com/huggingface/candle): readable, runnable, and living in the same process as the code that calls it. It is a study project rather than part of the binary, published because in-process inference is where local models get interesting for agents.
-
-Set a reusable default with `ante offline use Qwen3.5-9B`, then launch it with `ante --offline-model` (interactive) or `ante --offline-model -p "your task"` (headless). Run `ante offline list` to see available models and `ante offline status` to inspect the engine. Verified models download on first load; install the engine with `ante offline install` before using the launch flag.
-
-**[Offline mode →](https://docs.antigma.ai/local/offline)** · [nanochat-rs →](https://github.com/AntigmaLabs/nanochat-rs) · [Where this is going →](https://docs.antigma.ai/experimental/agent-native-inference)
-
 ---
 
-These three properties are one design decision. An agent you can **verify**, **afford**, and **run anywhere** is light enough to run by the *thousands*: the substrate for self-organizing intelligence.
+These three properties are one design decision. An agent you can **verify**, **run anywhere**, and **afford** is light enough to run by the *thousands*: the substrate for self-organizing intelligence.
 
 ## Orchestrate agents with `/term`
 
@@ -303,7 +309,7 @@ The name is the answer: **An**other **Te**rminal agent, and *ante*, the stake yo
 Ante has most of the features you expect from agents like Claude Code or Codex: multi-agents, skills, MCP, persistent memory. The difference is the build philosophy.
 
 - Built from scratch in Rust: one executable that downloads as ~15MB compressed and unpacks to 34.1 MiB (the figure our [harness comparison](https://antigma.ai/blog/2026/08/04/harness-matter) tables report). Core components like `Grep` (fully rebuilt and customized) and `git` run in the same process, so nothing is shelled out and no resources leak. Most similar projects ship on Node.js or CPython and carry an order-of-magnitude larger footprint.
-- Local inference is built in: a local model is all Ante needs to run without any provider.
+- Local inference is native: Ante runs the engine itself and fits its context to the model's window, so a local model is all it needs to run without any provider.
 - No vendor lock-in, not even to ourselves: no account needed, reuse your existing API credentials. An opt-in, fully integrated server-side experience lives at [antix.antigma.ai](https://antix.antigma.ai).
 - Every claim is backed by public, reproducible benchmarks of the exact builds we ship: [antigma.ai/eval](https://antigma.ai/eval).
 

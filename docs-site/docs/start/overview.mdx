@@ -9,7 +9,7 @@ slug: /
 
 **A ghost in your shell.** Ante is a self-contained coding agent that lives in your terminal and self-organizes. One ~15MB compressed download from [Antigma Labs](https://antigma.ai) that expands to a single Rust executable with zero runtime dependencies, built to get the most out of any model.
 
-It works like Claude Code or Codex, with none of their dependencies or model constraints. It can also be the optimized core for [building your own harness](https://github.com/AntigmaLabs/ante/tree/main/examples/mini-tui) and high-performing assistants.
+It keeps pace with frontier agents like Claude Code and Codex, with native local inference as a first-class citizen. It can also be the optimized core for [building your own harness](https://github.com/AntigmaLabs/ante/tree/main/examples/mini-tui) and high-performing assistants.
 
 <div className="install-command">
 
@@ -25,15 +25,15 @@ macOS and Linux. No account, no config file, no Node. See the [Quickstart](/star
   <Card title="Continuously evaled, in public" icon="chart-line" href="https://antigma.ai/eval">
     We keep up with the frontier so you don't have to. For more than a year we have run every new version of Terminal-Bench, from 1.0 to today's 4.1, under the same official timeouts and sandbox limits as the frontier labs' own agents. Every result pins the exact downloadable build and links the raw Harbor run. Live at antigma.ai/eval.
   </Card>
+  <Card title="Native local inference" icon="wifi-slash" href="/local/overview">
+    Local models are a first-class way to run Ante. A built-in engine runs them on your machine, with context that adapts to fit smaller models. No API key, no account.
+  </Card>
   <Card title="A fraction of the footprint" icon="feather" href="/benchmarks/compare_table">
     Across the same 20 parallel tasks, Ante uses ~7× less peak memory, ~9× less average CPU, and ~5× less disk I/O than Claude Code.
   </Card>
-  <Card title="Natively offline" icon="wifi-slash" href="/local/overview">
-    A built-in inference engine runs models locally. No API key, no account, and model calls stay on your machine.
-  </Card>
 </CardGroup>
 
-The three are one design decision. An agent you can verify, afford, and run anywhere is light enough to run by the *thousands*: the substrate for self-organizing intelligence. See [Philosophy](/start/philosophy).
+The three are one design decision. An agent you can verify, run anywhere, and afford is light enough to run by the *thousands*: the substrate for self-organizing intelligence. See [Philosophy](/start/philosophy).
 
 ### Beyond the headline numbers
 

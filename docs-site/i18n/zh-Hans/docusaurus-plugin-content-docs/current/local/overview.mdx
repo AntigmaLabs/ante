@@ -28,6 +28,8 @@ Ante 是一个独立的单二进制程序（压缩下载仅 ~15MB），能够自
 
 **原生深度集成。** Ante 不仅支持配置一个基础 URL。[离线模式](/local/offline)能自动管理 llama.cpp 运行时：匹配硬件架构的固定校验构建版本（Apple Silicon Metal；Linux CUDA、Vulkan 或 CPU）、全盘 GGUF 文件自动发现、加载前内存显存智能预估、实时加载进度展示，以及在 TUI 中直接控制服务端生命周期。[推荐验证模型列表](/local/verified-models)让您在下载 17 GB 权重前明确其运行表现。若希望使用自定义构建或启动参数，请参见[自定义引擎](/local/custom-engines)。
 
+**上下文适配模型。** 本地模型的上下文窗口通常小于托管模型，Ante 会随之调整。未设置上下文时，窗口按可用内存确定大小，会话以引擎实际报告的窗口为准。提示词中的[技能列表](/extend/skills#how-skills-are-discovered)按该窗口确定长度，上下文压缩也随之按比例缩小。若适配出的窗口小于 32,768 Token，对智能体而言过小，加载会被拒绝。参见[加载之后](/local/offline#after-a-load)。
+
 **智能体原生推理研发中。** 我们的终极目标是将推理引擎直接嵌入智能体进程，针对智能体调用大模型的行为特征深度调优：跨轮次前缀缓存复用、工具调用的约束解码、子智能体间的批量并发推理。我们通过开源项目 [nanochat-rs](https://github.com/AntigmaLabs/nanochat-rs)（一个纯 Rust 实现的精简推理核心）公开推进探索。参见[智能体原生推理](/experimental/agent-native-inference)。
 
 ## 灵活混合本地与前沿模型 {#mixing-local-and-frontier}
@@ -69,4 +71,4 @@ ANTE_TELEMETRY=off ante --offline-model --no-session-save --tools Read,Write \
 
 ## 真实可验证的基准数据 {#numbers-you-can-check}
 
-我们以评测前沿模型相同的严谨标准评测本地模型：相同的测试环境、固定公开版本、可审计的 Harbor 运行记录。Qwen3.6 27B（17 GB 下载）在 Terminal-Bench 2.1 跨 445 次 Trial 评测中取得 **56.2%** 的准确率 —— 实时数据见 [antigma.ai/eval](https://antigma.ai/eval)，当前模型列表的查询方法见[推荐验证模型](/local/verified-models)。
+我们以评测前沿模型相同的严谨标准评测本地模型：相同的测试环境、固定公开版本、可审计的 Harbor 运行记录。Qwen3.6 27B（17 GB 下载）在 Terminal-Bench 2.1 跨 445 次 Trial 评测中取得了 **56.2%** 的准确率。该次运行记录保留在[评测页面](/benchmarks/eval#terminal-bench-21)；当前安装版本自带的模型列表见[推荐验证模型](/local/verified-models)。

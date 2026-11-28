@@ -9,7 +9,7 @@ slug: /
 
 **驻留在终端中的智能体（A ghost in your shell）。** Ante 是一个独立的终端编码智能体（Coding Agent），具备自组织能力。由 [Antigma Labs](https://antigma.ai) 打造，单个压缩包仅 ~15MB，解压后即为单 Rust 可执行文件，零外部运行时依赖，旨在充分发挥各类模型的最大潜力。
 
-它的工作方式类似于 Claude Code 或 Codex，但没有任何繁重的依赖或模型约束。它还可以作为构建[自定义 Harness 底座](https://github.com/AntigmaLabs/ante/tree/main/examples/mini-tui)和高性能助手的核心引擎。
+它紧跟 Claude Code、Codex 等前沿智能体，同时把原生本地推理作为一等公民。它还可以作为构建[自定义 Harness 底座](https://github.com/AntigmaLabs/ante/tree/main/examples/mini-tui)和高性能助手的核心引擎。
 
 <div className="install-command">
 
@@ -25,15 +25,15 @@ curl -fsSL https://ante.run/install.sh | bash
   <Card title="持续公开评测" icon="chart-line" href="https://antigma.ai/eval">
     我们紧跟前沿，您无需操心。一年多来，我们持续评测 Terminal-Bench 的每个新版本，从 1.0 到如今的 4.1，并采用与前沿实验室自家智能体相同的官方超时与沙箱资源限制。每个评测结果均固定对应可下载的发行版本，并附带公开的原始 Harbor 运行记录。实时看板位于 antigma.ai/eval。
   </Card>
+  <Card title="原生本地推理" icon="wifi-slash" href="/local/overview">
+    本地模型是运行 Ante 的一等公民方式。内置推理引擎在本机运行模型，上下文会自动适配较小的模型。无需 API 密钥，无需注册账号。
+  </Card>
   <Card title="极低的资源占用" icon="feather" href="/benchmarks/compare_table">
     在相同的 20 个并行任务负载中，Ante 相比 Claude Code 峰值内存占用减少约 7 倍，平均 CPU 占用减少约 9 倍，磁盘 I/O 减少约 5 倍。
   </Card>
-  <Card title="原生支持离线与本地模型" icon="wifi-slash" href="/local/overview">
-    内置推理引擎，原生支持在本地运行模型。无需 API 密钥，无需注册账号，所有模型调用均留在本地机器上。
-  </Card>
 </CardGroup>
 
-这三点归结为一个核心设计理念：一个可验证、可负担且能随处运行的智能体，轻量到可以**成千上万个并发运行**：成为自组织智能的基础底座。参见[设计哲学](/start/philosophy)。
+这三点归结为一个核心设计理念：一个可验证、能随处运行且可负担的智能体，轻量到可以**成千上万个并发运行**：成为自组织智能的基础底座。参见[设计哲学](/start/philosophy)。
 
 ### 核心亮点 {#beyond-the-headline-numbers}
 
