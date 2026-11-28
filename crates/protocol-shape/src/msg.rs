@@ -92,11 +92,6 @@ pub enum Op {
         #[serde(default, skip_serializing_if = "Option::is_none")]
         permission_mode: Option<PermissionMode>,
     },
-    RegisterLocalProvider {
-        port: u16,
-        model: Option<ModelSpec>,
-    },
-    RestoreLocalProvider,
     /// Manually trigger conversation compaction on the active session.
     /// `instructions` optionally steer the replacement summary — what to
     /// emphasize or preserve. Ignored when the reduction needs no summary.
@@ -195,24 +190,8 @@ pub enum Evt {
     Thinking(String),
     MessageDelta(String),
     ThinkingDelta(String),
-    Info(String),
-    /// Open a grouped info entry titled `header`, for multi-step background
-    /// notifications such as MCP warm-up. Later `InfoBlockAppend` events
-    /// with the same `id` are its child lines. `loading` marks work still
-    /// in flight until the first append arrives.
-    InfoBlockStart {
-        id: String,
-        header: String,
-        #[serde(default)]
-        loading: bool,
-    },
-    /// Append a child detail line to the `InfoBlockStart` with the same `id`.
-    /// Drops silently if the matching block isn't present.
-    InfoBlockAppend {
-        id: String,
-        detail: String,
-    },
-    Error(String),
+    Info(Notice),
+    Error(Notice),
     ToolStart(ToolUse),
     ToolUpdate(ToolUpdate),
     ToolEnd(ToolEnd),
@@ -383,22 +362,72 @@ pub enum TurnEndStatus {
         #[serde(skip_serializing_if = "Option::is_none")]
         reason: Option<String>,
     },
-    Error {
-        /// Stable machine-readable LLM error kind. Absent for non-LLM errors
-        /// and events produced by older daemons. Notably `"oauth"` means the
-        /// provider's sign-in is missing, expired, or revoked, and only
-        /// re-authenticating can recover; clients may offer their sign-in
-        /// flow for the session's provider.
-        #[serde(default, skip_serializing_if = "Option::is_none")]
+    /// The turn failed. `kind` is the LLM error kind, absent for a non-LLM
+    /// error. Notably `"oauth"` means the provider's sign-in is missing,
+    /// expired, or revoked, and only re-authenticating can recover; clients
+    /// may offer their sign-in flow for the session's provider. For a
+    /// classified LLM failure `headline` reads as that kind, e.g. "rate
+    /// limited", and `details` carry the cause, e.g. ["HTTP 400 Bad
+    /// Request", "<server-provided message>"].
+    Error(Notice),
+}
+
+/// Something reported outside the conversation: one line, with any child
+/// lines under it. A bare string is also read, as a notice with that
+/// `headline` alone.
+#[derive(Debug, Clone, Default, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(from = "NoticeForm")]
+pub struct Notice {
+    /// Stable machine-readable name of what is reported, for a client to act
+    /// on. Absent when the notice is only for reading.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub kind: Option<String>,
+    /// One-line summary.
+    pub headline: String,
+    /// Lines shown as children of the headline. May be empty.
+    pub details: Vec<String>,
+}
+
+/// The two forms a [`Notice`] is read from.
+#[derive(Deserialize)]
+#[serde(untagged)]
+enum NoticeForm {
+    Headline(String),
+    Whole {
         kind: Option<String>,
-        /// One-line summary. For a classified LLM failure this is the semantic
-        /// error kind, e.g. "rate limited"; otherwise the top of the error chain.
         headline: String,
-        /// Expanded cause shown as indented child rows beneath the headline,
-        /// e.g. ["HTTP 400 Bad Request", "<server-provided message>"]. May be
-        /// empty when there is nothing useful to add.
+        #[serde(default)]
         details: Vec<String>,
     },
+}
+
+impl From<NoticeForm> for Notice {
+    fn from(form: NoticeForm) -> Self {
+        match form {
+            NoticeForm::Headline(headline) => headline.into(),
+            NoticeForm::Whole { kind, headline, details } => Self { kind, headline, details },
+        }
+    }
+}
+
+impl From<String> for Notice {
+    fn from(headline: String) -> Self {
+        Self { headline, ..Self::default() }
+    }
+}
+
+impl From<&str> for Notice {
+    fn from(headline: &str) -> Self {
+        headline.to_string().into()
+    }
+}
+
+/// The notice as plain text: the headline, then one indented line per detail.
+impl std::fmt::Display for Notice {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.write_str(&self.headline)?;
+        self.details.iter().try_for_each(|detail| write!(f, "\n  - {detail}"))
+    }
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -1008,7 +1037,7 @@ pub enum Scope {
 #[cfg(test)]
 mod tests {
     use super::{
-        ContextBreakdown, Effort, Evt, Id, ModelSpec, Op, PermissionMode, ProviderSpec,
+        ContextBreakdown, Effort, Evt, Id, ModelSpec, Notice, Op, PermissionMode, ProviderSpec,
         QuestionAnswer, QuestionOption, QuestionReply, QuestionSpec, ReviewDecision, Rollover,
         SessionInfo, SessionRequest, ToolDecision, ToolEnd, ToolEndStatus, ToolUse, TurnEndStatus,
         TurnPauseReason, Usage, WeightClass,
@@ -1064,29 +1093,32 @@ mod tests {
     }
 
     #[test]
-    fn turn_end_error_kind_is_optional_on_the_wire() {
-        // Payloads from daemons predating the field still deserialize.
-        let old: TurnEndStatus = serde_json::from_value(serde_json::json!({
-            "Error": { "headline": "authentication error", "details": [] }
-        }))
-        .unwrap();
-        let TurnEndStatus::Error { kind, .. } = &old else {
-            panic!("expected Error variant");
-        };
-        assert!(kind.is_none());
+    fn a_notice_is_read_from_a_bare_string_or_in_full() {
+        // A bare string reads as the headline; an absent `kind` is not written.
+        let bare: Evt = serde_json::from_str(r#"{"Info":"settings reloaded"}"#).unwrap();
+        assert!(matches!(&bare, Evt::Info(notice) if *notice == "settings reloaded".into()));
+        assert_eq!(
+            serde_json::to_string(&bare).unwrap(),
+            r#"{"Info":{"headline":"settings reloaded","details":[]}}"#
+        );
 
-        // None is skipped, not emitted as null.
-        let json = serde_json::to_value(&old).unwrap();
-        assert!(json["Error"].get("kind").is_none());
-
-        // Some round-trips.
-        let with = TurnEndStatus::Error {
-            kind: Some("oauth".to_string()),
-            headline: "OAuth sign-in required".to_string(),
-            details: vec![],
+        let whole = r#"{"Error":{"kind":"mcp_failed","headline":"MCP: 0 of 1 servers connected","details":["probe: not found"]}}"#;
+        let notice = Notice {
+            kind: Some("mcp_failed".to_string()),
+            headline: "MCP: 0 of 1 servers connected".to_string(),
+            details: vec!["probe: not found".to_string()],
         };
-        let json = serde_json::to_value(&with).unwrap();
-        assert_eq!(json["Error"]["kind"], "oauth");
+        let event: Evt = serde_json::from_str(whole).unwrap();
+        assert!(matches!(&event, Evt::Error(read) if *read == notice));
+        assert_eq!(serde_json::to_string(&event).unwrap(), whole);
+        // A failed turn carries the same object.
+        let status: TurnEndStatus = serde_json::from_str(whole).unwrap();
+        assert!(matches!(&status, TurnEndStatus::Error(read) if *read == notice));
+        assert_eq!(serde_json::to_string(&status).unwrap(), whole);
+        assert_eq!(notice.to_string(), "MCP: 0 of 1 servers connected\n  - probe: not found");
+
+        let short: Notice = serde_json::from_str(r#"{"headline":"only this"}"#).unwrap();
+        assert_eq!(short, "only this".into());
     }
 
     #[test]

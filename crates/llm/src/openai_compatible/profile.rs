@@ -119,7 +119,7 @@ enum OpenAiCompatFamily {
     MiniMax,
     Qwen,
     MistralNoSystem,
-    /// The `local` provider. The server applies the model's chat template
+    /// The `offline` provider. The server applies the model's chat template
     /// itself, so the file name says nothing about the wire.
     LlamaCpp,
     Generic,
@@ -333,7 +333,7 @@ impl OpenAiCompatFamily {
         if provider == "zai" {
             return Self::Glm;
         }
-        if provider == "local" {
+        if provider == "offline" {
             return Self::LlamaCpp;
         }
 
@@ -615,7 +615,7 @@ mod tests {
         assert_eq!(mistral.search, SearchPolicy::OpenRouterWebSearchTool);
 
         let generic =
-            profile("openai-compatible", "gbuzhf/KAT-Coder-V2.5-Dev-APEX-MTP-GGUF:I-Mini_local");
+            profile("openai-compatible", "gbuzhf/KAT-Coder-V2.5-Dev-APEX-MTP-GGUF:I-Mini");
         assert_eq!(generic.system_role, SystemRolePolicy::Merged);
     }
 
@@ -891,32 +891,32 @@ mod tests {
         );
     }
 
-    /// `local` is a llama.cpp server whatever the model file is called: no
+    /// `offline` is a llama.cpp server whatever the model file is called: no
     /// family guess, no search, and `min` sent as `none`.
     #[test]
-    fn local_is_llama_cpp_whatever_the_model_is_called() {
-        for model in ["Qwen3.8-27B-Q4_K_M_local", "deepseek-r1-distill_local", "devstral_local"] {
-            let local = profile("local", model);
-            assert_eq!(local.thinking_dialect, ThinkingDialect::LlamaCpp);
-            assert_eq!(local.system_role, SystemRolePolicy::Merged);
-            assert_eq!(local.search, SearchPolicy::Unsupported);
-            assert!(!local.requires_assistant_reasoning);
-            assert!(effort_levels("local", model, None).is_empty());
-            assert!(effort_levels("local", model, Some(&[])).is_empty());
+    fn offline_is_llama_cpp_whatever_the_model_is_called() {
+        for model in ["Qwen3.8-27B-Q4_K_M", "deepseek-r1-distill", "devstral"] {
+            let offline = profile("offline", model);
+            assert_eq!(offline.thinking_dialect, ThinkingDialect::LlamaCpp);
+            assert_eq!(offline.system_role, SystemRolePolicy::Merged);
+            assert_eq!(offline.search, SearchPolicy::Unsupported);
+            assert!(!offline.requires_assistant_reasoning);
+            assert!(effort_levels("offline", model, None).is_empty());
+            assert!(effort_levels("offline", model, Some(&[])).is_empty());
 
             // Without declared levels nothing is sent.
-            let undeclared = local.thinking_params(Some(Effort::High));
+            let undeclared = offline.thinking_params(Some(Effort::High));
             assert!(undeclared.reasoning_effort.is_none());
             assert!(undeclared.thinking.is_none() && undeclared.enable_thinking.is_none());
         }
 
         // Levels that start above `minimal` get `min` under them, sent as
         // `none`: no thinking.
-        let model = "Qwen3.8-27B-Q4_K_M_local";
-        let local = profile("local", model);
+        let model = "Qwen3.8-27B-Q4_K_M";
+        let offline = profile("offline", model);
         let declared = [Effort::Low, Effort::Medium, Effort::XHigh];
         assert_eq!(
-            effort_levels("local", model, Some(&declared)),
+            effort_levels("offline", model, Some(&declared)),
             [Effort::Min, Effort::Low, Effort::Medium, Effort::XHigh]
         );
         for (requested, expected) in [
@@ -925,22 +925,22 @@ mod tests {
             (Effort::High, ReasoningEffort::Medium),
             (Effort::Max, ReasoningEffort::XHigh),
         ] {
-            let params = local.thinking_params_for_supported_efforts(&declared, Some(requested));
+            let params = offline.thinking_params_for_supported_efforts(&declared, Some(requested));
             assert_eq!(params.reasoning_effort, Some(expected), "llama.cpp {requested}");
         }
-        let unset = local.thinking_params_for_supported_efforts(&declared, None);
+        let unset = offline.thinking_params_for_supported_efforts(&declared, None);
         assert!(unset.reasoning_effort.is_none(), "unset leaves the template's default");
 
         // A template that declares `minimal` is sent it: `none` would fall
         // back to that template's default level.
         let declared = [Effort::Min, Effort::Low, Effort::High];
-        assert_eq!(effort_levels("local", model, Some(&declared)), declared);
+        assert_eq!(effort_levels("offline", model, Some(&declared)), declared);
         for (requested, expected) in [
             (Effort::Min, ReasoningEffort::Minimal),
             (Effort::Medium, ReasoningEffort::Low),
             (Effort::Max, ReasoningEffort::High),
         ] {
-            let params = local.thinking_params_for_supported_efforts(&declared, Some(requested));
+            let params = offline.thinking_params_for_supported_efforts(&declared, Some(requested));
             assert_eq!(params.reasoning_effort, Some(expected), "llama.cpp {requested}");
         }
 
